@@ -4,11 +4,11 @@ import { Bell } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EmptyState from '@/components/emptyState/emptyState';
-import ErrorState from '@/components/errorState/errorState';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import {
     getNotifications,
@@ -39,6 +39,7 @@ export default function NotificationsScreen() {
         data,
         isLoading,
         isError,
+        isFetchNextPageError,
         error,
         refetch,
         fetchNextPage,
@@ -56,6 +57,8 @@ export default function NotificationsScreen() {
         getNextPageParam: (lastPage) =>
             lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
     });
+
+    const retryFailedPage = useRetryFailedPage({ isFetchNextPageError, fetchNextPage, refetch });
 
     const invalidateNotificationQueries = async () => {
         await Promise.all([
@@ -95,25 +98,23 @@ export default function NotificationsScreen() {
                 </Box>
             );
         }
-        if (isError) {
-            return (
-                <ErrorState
-                    title={t('NOTIFICATIONS_LOAD_ERROR')}
-                    backendMessage={extractBackendErrorMessage(error)}
-                    onRetry={() => void refetch()}
-                />
-            );
-        }
-        if (allNotifications.length === 0) {
-            return (
-                <EmptyState
-                    title={t('NO_NOTIFICATIONS')}
-                    icon={<Bell size={32} aria-hidden="true" />}
-                />
-            );
-        }
         return (
-            <>
+            <ListFeedback
+                isEmpty={allNotifications.length === 0}
+                isError={isError}
+                errorTitle={t('NOTIFICATIONS_LOAD_ERROR')}
+                errorMessage={extractBackendErrorMessage(error)}
+                onRetry={retryFailedPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onLoadMore={() => void fetchNextPage()}
+                emptyState={
+                    <EmptyState
+                        title={t('NO_NOTIFICATIONS')}
+                        icon={<Bell size={32} aria-hidden="true" />}
+                    />
+                }
+            >
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {allNotifications.map((notification) => (
                         <NotificationItem
@@ -123,12 +124,7 @@ export default function NotificationsScreen() {
                         />
                     ))}
                 </Box>
-                <LoadMoreSentinel
-                    hasNextPage={hasNextPage}
-                    isFetchingNextPage={isFetchingNextPage}
-                    fetchNextPage={() => void fetchNextPage()}
-                />
-            </>
+            </ListFeedback>
         );
     };
 

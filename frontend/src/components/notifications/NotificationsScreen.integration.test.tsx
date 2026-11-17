@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import NotificationsScreen from './NotificationsScreen';
 import { apiBase } from '@/service';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 jest.mock('@/service', () => ({
 	apiBase: { get: jest.fn(), put: jest.fn() },
@@ -22,10 +23,8 @@ const buildNotification = (id: number, overrides: Record<string, unknown> = {}) 
 	...overrides,
 });
 
-const buildPage = (items: unknown[], page = 1, hasNext = false) => ({
-	items,
-	pagination: { page, page_size: 20, has_next: hasNext, has_prev: page > 1 },
-});
+const buildPage = (items: unknown[], page = 1, hasNext = false) =>
+	buildServerPage(items, { page, pageSize: 20, hasNext });
 
 const LocationProbe = () => <span data-testid="location">{useLocation().pathname}</span>;
 
@@ -138,5 +137,51 @@ describe('components/notifications/NotificationsScreen (seam)', () => {
 				params: expect.objectContaining({ is_read: false }),
 			})
 		);
+	});
+
+	it('keeps page one and shows the error below when page two fails, then retries only page two', async () => {
+		let hasPageTwoFailed = false;
+		mockedApi.get.mockImplementation((_url: string, config: { params: { page: number } }) => {
+			const requestedPage = config.params.page;
+			if (requestedPage === 2 && !hasPageTwoFailed) {
+				hasPageTwoFailed = true;
+				return Promise.reject({ response: { data: { error: 'falha na pagina 2' } } });
+			}
+			return Promise.resolve({
+				data: buildPage(
+					[buildNotification(requestedPage, { title: `Pagina ${requestedPage}` })],
+					requestedPage,
+					requestedPage === 1
+				),
+			});
+		});
+
+		renderScreen();
+		await screen.findByText('Pagina 1');
+
+		fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+		expect(await screen.findByText('falha na pagina 2')).toBeInTheDocument();
+		expect(screen.getByText('Pagina 1')).toBeInTheDocument();
+		expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+
+		mockedApi.get.mockClear();
+		fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+
+		expect(await screen.findByText('Pagina 2')).toBeInTheDocument();
+		expect(screen.getByText('Pagina 1')).toBeInTheDocument();
+		expect(mockedApi.get).toHaveBeenCalledTimes(1);
+		expect(mockedApi.get).toHaveBeenCalledWith('/notifications', {
+			params: expect.objectContaining({ page: 2 }),
+		});
+	});
+
+	it('shows the error state instead of the empty state when the server is down from the start', async () => {
+		mockedApi.get.mockRejectedValue({ response: { data: { error: 'servidor fora' } } });
+
+		renderScreen();
+
+		expect(await screen.findByText('servidor fora')).toBeInTheDocument();
+		expect(screen.queryByText('NO_NOTIFICATIONS')).not.toBeInTheDocument();
 	});
 });
