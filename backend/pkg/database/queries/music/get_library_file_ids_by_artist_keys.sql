@@ -1,7 +1,7 @@
 SELECT
     hf.id
 FROM
-    audio_metadata am
+    audio_metadata_effective am
     JOIN home_file hf ON hf.id = am.file_id
 WHERE
     am.catalog_artist_key = ANY ($2)

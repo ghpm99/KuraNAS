@@ -1,9 +1,6 @@
 SELECT
     am.id,
-    COALESCE(am.artist, ''),
-    COALESCE(am.album_artist, ''),
-    COALESCE(am.album, ''),
-    COALESCE(am.genre, '')
+    am.file_id
 FROM
     audio_metadata am
 WHERE

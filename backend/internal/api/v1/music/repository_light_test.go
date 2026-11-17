@@ -14,6 +14,7 @@ import (
 	queries "nas-go/api/pkg/database/queries/music"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 )
 
 func sequentialCols(total int) []string {
@@ -619,6 +620,13 @@ func TestAudioMetadataRepositorySuccessPaths(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.UpsertAudioMetadataQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(22, now))
+	mock.ExpectQuery(regexp.QuoteMeta(queries.SelectEffectiveCatalogKeySourcesByFileIDsQuery)).
+		WithArgs(pq.Array([]int{20})).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "artist", "album_artist", "album", "genre"}).
+			AddRow(22, "artist", "", "album", "Rock"))
+	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateAudioCatalogKeysQuery)).
+		WithArgs(22, "artist", "artist", "artist::album", "album", pq.Array([]string{"rock"}), pq.Array([]string{"Rock"})).
+		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 	err = repo.Db.ExecTx(func(tx *sql.Tx) error {
 		upserted, err := repo.UpsertAudioMetadata(tx, AudioMetadataModel{FileId: 20, Path: "/a.mp3"})

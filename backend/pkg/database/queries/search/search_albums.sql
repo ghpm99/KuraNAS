@@ -6,7 +6,7 @@ WITH ranked_albums AS (
         COUNT(*) AS track_count
     FROM
         home_file hf
-        INNER JOIN audio_metadata am ON hf.id = am.file_id
+        INNER JOIN audio_metadata_effective am ON hf.id = am.file_id
     WHERE
         hf.deleted_at IS NULL
         AND hf.format = ANY($5)
@@ -18,15 +18,30 @@ WITH ranked_albums AS (
             WHERE kuranas_fold(album_match.album) LIKE kuranas_fold($1)
                 AND kuranas_fold(album_match.album) LIKE ALL (kuranas_fold_terms($2::text[]))
             UNION
+            SELECT override_album_match.file_id
+            FROM audio_metadata_override override_album_match
+            WHERE kuranas_fold(override_album_match.album) LIKE kuranas_fold($1)
+                AND kuranas_fold(override_album_match.album) LIKE ALL (kuranas_fold_terms($2::text[]))
+            UNION
             SELECT album_artist_match.file_id
             FROM audio_metadata album_artist_match
             WHERE kuranas_fold(album_artist_match.album_artist) LIKE kuranas_fold($1)
                 AND kuranas_fold(album_artist_match.album_artist) LIKE ALL (kuranas_fold_terms($2::text[]))
             UNION
+            SELECT override_album_artist_match.file_id
+            FROM audio_metadata_override override_album_artist_match
+            WHERE kuranas_fold(override_album_artist_match.album_artist) LIKE kuranas_fold($1)
+                AND kuranas_fold(override_album_artist_match.album_artist) LIKE ALL (kuranas_fold_terms($2::text[]))
+            UNION
             SELECT artist_match.file_id
             FROM audio_metadata artist_match
             WHERE kuranas_fold(artist_match.artist) LIKE kuranas_fold($1)
                 AND kuranas_fold(artist_match.artist) LIKE ALL (kuranas_fold_terms($2::text[]))
+            UNION
+            SELECT override_artist_match.file_id
+            FROM audio_metadata_override override_artist_match
+            WHERE kuranas_fold(override_artist_match.artist) LIKE kuranas_fold($1)
+                AND kuranas_fold(override_artist_match.artist) LIKE ALL (kuranas_fold_terms($2::text[]))
             UNION
             SELECT name_match.id
             FROM home_file name_match

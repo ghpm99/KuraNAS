@@ -10,7 +10,7 @@ SELECT
 FROM
     playlist_track pt
     INNER JOIN home_file hf ON pt.file_id = hf.id
-    LEFT JOIN audio_metadata am ON hf.id = am.file_id
+    LEFT JOIN audio_metadata_effective am ON hf.id = am.file_id
 WHERE
     pt.playlist_id = $1
     AND hf.deleted_at IS NULL

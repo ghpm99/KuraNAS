@@ -8,7 +8,7 @@ SELECT
     COALESCE(am.album, ''),
     COALESCE(am.LENGTH, 0)
 FROM
-    audio_metadata am
+    audio_metadata_effective am
     JOIN home_file hf ON hf.id = am.file_id
 WHERE
     am.catalog_album_key = $2

@@ -42,7 +42,7 @@ SELECT
     am.created_at
 FROM
     home_file hf
-    INNER JOIN audio_metadata am ON hf.id = am.file_id
+    INNER JOIN audio_metadata_effective am ON hf.id = am.file_id
 WHERE
     hf.format = ANY ($1)
     AND hf.deleted_at IS NULL

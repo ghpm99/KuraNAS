@@ -248,8 +248,8 @@ func (r *Repository) GetArtistClusterInputs() ([]artistClusterInput, error) {
 	return inputs, nil
 }
 
-func (r *AudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioCatalogKeySource, error) {
-	pendingRows := []AudioCatalogKeySource{}
+func (r *AudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioWithoutCatalogKeys, error) {
+	pendingRows := []AudioWithoutCatalogKeys{}
 
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
 		rows, err := tx.Query(queries.SelectAudioWithoutCatalogKeysQuery, afterAudioMetadataID, limit)
@@ -259,8 +259,8 @@ func (r *AudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadata
 		defer rows.Close()
 
 		for rows.Next() {
-			var pendingRow AudioCatalogKeySource
-			if scanErr := rows.Scan(&pendingRow.AudioMetadataID, &pendingRow.Artist, &pendingRow.AlbumArtist, &pendingRow.Album, &pendingRow.Genre); scanErr != nil {
+			var pendingRow AudioWithoutCatalogKeys
+			if scanErr := rows.Scan(&pendingRow.AudioMetadataID, &pendingRow.FileID); scanErr != nil {
 				return scanErr
 			}
 			pendingRows = append(pendingRows, pendingRow)
@@ -293,7 +293,46 @@ func (r *AudioMetadataRepository) ReconcileAlbumGroupings(compilationArtistLabel
 	return regroupedCount, nil
 }
 
-func (r *AudioMetadataRepository) UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error {
+// RecomputeCatalogKeys rebuilds and persists the catalog grouping keys of every
+// audio_metadata row of the given files from their effective values (tag with
+// the user correction applied). It runs inside tx and does not reconcile album
+// groupings; callers that change groupings call ReconcileAlbumGroupings after.
+func (r *AudioMetadataRepository) RecomputeCatalogKeys(tx *sql.Tx, fileIDs []int) error {
+	keySources, err := r.listEffectiveCatalogKeySources(tx, fileIDs)
+	if err != nil {
+		return err
+	}
+	for _, keySource := range keySources {
+		groupingKeys := BuildCatalogGroupingKeys(keySource.Artist, keySource.AlbumArtist, keySource.Album, keySource.Genre)
+		if err := r.updateAudioCatalogKeys(tx, keySource.AudioMetadataID, groupingKeys); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *AudioMetadataRepository) listEffectiveCatalogKeySources(tx *sql.Tx, fileIDs []int) ([]AudioCatalogKeySource, error) {
+	rows, err := tx.Query(queries.SelectEffectiveCatalogKeySourcesByFileIDsQuery, pq.Array(fileIDs))
+	if err != nil {
+		return nil, fmt.Errorf("falha ao ler valores efetivos das faixas: %w", err)
+	}
+	defer rows.Close()
+
+	keySources := []AudioCatalogKeySource{}
+	for rows.Next() {
+		var keySource AudioCatalogKeySource
+		if scanErr := rows.Scan(&keySource.AudioMetadataID, &keySource.Artist, &keySource.AlbumArtist, &keySource.Album, &keySource.Genre); scanErr != nil {
+			return nil, scanErr
+		}
+		keySources = append(keySources, keySource)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return keySources, nil
+}
+
+func (r *AudioMetadataRepository) updateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error {
 	_, err := tx.Exec(queries.UpdateAudioCatalogKeysQuery,
 		audioMetadataID,
 		groupingKeys.ArtistKey,

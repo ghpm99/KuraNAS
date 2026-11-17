@@ -58,6 +58,11 @@ type AudioWithStaleTags struct {
 	Path   string
 }
 
+type AudioWithoutCatalogKeys struct {
+	AudioMetadataID int
+	FileID          int
+}
+
 type AudioCatalogKeySource struct {
 	AudioMetadataID int
 	Artist          string

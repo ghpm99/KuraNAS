@@ -10,7 +10,7 @@ SELECT
     sample_rate,
     channels
 FROM
-    audio_metadata
+    audio_metadata_effective
 WHERE
     file_id = $1
 ORDER BY

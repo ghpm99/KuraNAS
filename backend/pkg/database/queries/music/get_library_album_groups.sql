@@ -10,7 +10,7 @@ WITH album_groups AS (
         MAX(hf.created_at) AS latest_added_at,
         MAX(NULLIF(substring(TRIM(COALESCE(am.year, '')) FROM '^\d{4}'), '')::INT) AS sort_year
     FROM
-        audio_metadata am
+        audio_metadata_effective am
         JOIN home_file hf ON hf.id = am.file_id
     WHERE
         hf.format = ANY ($1)
@@ -60,7 +60,7 @@ FROM
         SELECT
             TRIM(am.year) AS year_label
         FROM
-            audio_metadata am
+            audio_metadata_effective am
             JOIN home_file hf ON hf.id = am.file_id
         WHERE
             am.catalog_album_key = album_page.album_key

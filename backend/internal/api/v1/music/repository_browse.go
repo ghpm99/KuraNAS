@@ -76,7 +76,6 @@ func (r *AudioMetadataRepository) GetAudioMetadataByID(id int) (AudioMetadataMod
 
 func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error) {
 	metadata.ResolveNumbering()
-	groupingKeys := BuildCatalogGroupingKeys(metadata.Artist, metadata.AlbumArtist, metadata.Album, metadata.Genre)
 	var id int
 	var createdAt time.Time
 
@@ -112,13 +111,6 @@ func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata Audio
 		nullableInt(metadata.TrackTotal),
 		CurrentAudioTagsExtractedVersion,
 		time.Now(),
-		groupingKeys.ArtistKey,
-		groupingKeys.ArtistLabel,
-		groupingKeys.AlbumKey,
-		groupingKeys.AlbumLabel,
-		pq.Array(groupingKeys.GenreKeys),
-		pq.Array(groupingKeys.GenreLabels),
-		groupingKeys.AlbumKey,
 	}
 
 	row := tx.QueryRow(queries.UpsertAudioMetadataQuery, args...)
@@ -126,6 +118,10 @@ func (r *AudioMetadataRepository) UpsertAudioMetadata(tx *sql.Tx, metadata Audio
 	err := row.Scan(&id, &createdAt)
 	if err != nil {
 		log.Println("Error scanning audio metadata:", err)
+		return metadata, err
+	}
+
+	if err := r.RecomputeCatalogKeys(tx, []int{metadata.FileId}); err != nil {
 		return metadata, err
 	}
 

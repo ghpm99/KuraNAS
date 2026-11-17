@@ -36,7 +36,7 @@ func newCatalogTestEnvironment(t *testing.T) *catalogTestEnvironment {
 	dbContext := testutil.NewPostgresDB(t, "kuranas_music_it")
 
 	truncateErr := dbContext.ExecTx(func(tx *sql.Tx) error {
-		_, err := tx.Exec(`TRUNCATE playlist_track, playlist, player_state, audio_metadata, home_file RESTART IDENTITY CASCADE`)
+		_, err := tx.Exec(`TRUNCATE playlist_track, playlist, player_state, audio_metadata_override, audio_metadata, home_file RESTART IDENTITY CASCADE`)
 		return err
 	})
 	if truncateErr != nil {
@@ -599,14 +599,12 @@ func TestCatalogKeysBackfillMatchesKeysComputedOnUpsert_Postgres(t *testing.T) {
 		if len(pendingRows) == 0 {
 			break
 		}
+		pendingFileIDs := make([]int, 0, len(pendingRows))
+		for _, pendingRow := range pendingRows {
+			pendingFileIDs = append(pendingFileIDs, pendingRow.FileID)
+		}
 		updateErr := environment.dbContext.ExecTx(func(tx *sql.Tx) error {
-			for _, pendingRow := range pendingRows {
-				groupingKeys := BuildCatalogGroupingKeys(pendingRow.Artist, pendingRow.AlbumArtist, pendingRow.Album, pendingRow.Genre)
-				if err := environment.audioRepository.UpdateAudioCatalogKeys(tx, pendingRow.AudioMetadataID, groupingKeys); err != nil {
-					return err
-				}
-			}
-			return nil
+			return environment.audioRepository.RecomputeCatalogKeys(tx, pendingFileIDs)
 		})
 		if updateErr != nil {
 			t.Fatalf("update keys: %v", updateErr)

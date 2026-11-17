@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -26,10 +27,10 @@ type fakeAudioMetadataRepository struct {
 	staleCalls    int
 	listErr       error
 
-	catalogKeysByPage  [][]musicdom.AudioCatalogKeySource
-	catalogKeysCalls   int
-	catalogKeysUpdates []musicdom.CatalogGroupingKeys
-	upsertedPaths      []string
+	catalogKeysByPage   [][]musicdom.AudioWithoutCatalogKeys
+	catalogKeysCalls    int
+	recomputedFileIDSet [][]int
+	upsertedPaths       []string
 }
 
 func newFakeAudioMetadataRepository(t *testing.T, transactionCount int) *fakeAudioMetadataRepository {
@@ -79,7 +80,7 @@ func (f *fakeAudioMetadataRepository) ListAudioWithStaleTags(afterFileID int, li
 	return page, nil
 }
 
-func (f *fakeAudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]musicdom.AudioCatalogKeySource, error) {
+func (f *fakeAudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]musicdom.AudioWithoutCatalogKeys, error) {
 	if f.catalogKeysCalls >= len(f.catalogKeysByPage) {
 		return nil, nil
 	}
@@ -88,8 +89,8 @@ func (f *fakeAudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMeta
 	return page, nil
 }
 
-func (f *fakeAudioMetadataRepository) UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys musicdom.CatalogGroupingKeys) error {
-	f.catalogKeysUpdates = append(f.catalogKeysUpdates, groupingKeys)
+func (f *fakeAudioMetadataRepository) RecomputeCatalogKeys(tx *sql.Tx, fileIDs []int) error {
+	f.recomputedFileIDSet = append(f.recomputedFileIDSet, fileIDs)
 	return nil
 }
 
@@ -208,27 +209,20 @@ func TestEnqueueAudioMetadataReconcileJob_SkipsWithoutDependenciesAndEnqueuesWit
 	}
 }
 
-func TestExecuteAudioMetadataReconcileStep_BackfillsCatalogKeysFromStoredTags(t *testing.T) {
+func TestExecuteAudioMetadataReconcileStep_BackfillsCatalogKeysThroughSingleRecompute(t *testing.T) {
 	repository := newFakeAudioMetadataRepository(t, 1)
-	repository.catalogKeysByPage = [][]musicdom.AudioCatalogKeySource{{
-		{AudioMetadataID: 7, Artist: " The  Beatles ", AlbumArtist: "", Album: "Abbey Road", Genre: "Hip Hop; Rock"},
-		{AudioMetadataID: 8},
+	repository.catalogKeysByPage = [][]musicdom.AudioWithoutCatalogKeys{{
+		{AudioMetadataID: 7, FileID: 70},
+		{AudioMetadataID: 8, FileID: 80},
 	}}
 
 	err := executeAudioMetadataReconcileStep(newAudioReconcileContext(repository, &workerFilesServiceMock{}), jobs.StepModel{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(repository.catalogKeysUpdates) != 2 {
-		t.Fatalf("expected 2 catalog key updates, got %d", len(repository.catalogKeysUpdates))
-	}
-	firstKeys := repository.catalogKeysUpdates[0]
-	if firstKeys.ArtistKey != "the beatles" || firstKeys.AlbumKey != "the beatles::abbey road" || len(firstKeys.GenreKeys) != 2 || firstKeys.GenreKeys[0] != "hip hop" {
-		t.Fatalf("unexpected backfilled keys: %+v", firstKeys)
-	}
-	emptyKeys := repository.catalogKeysUpdates[1]
-	if emptyKeys.ArtistKey != "" || emptyKeys.GenreKeys == nil {
-		t.Fatalf("a row without tags must still get non-null empty keys: %+v", emptyKeys)
+	expectedFileIDSet := [][]int{{70, 80}}
+	if !reflect.DeepEqual(repository.recomputedFileIDSet, expectedFileIDSet) {
+		t.Fatalf("recomputed file ids = %v, want %v", repository.recomputedFileIDSet, expectedFileIDSet)
 	}
 }
 

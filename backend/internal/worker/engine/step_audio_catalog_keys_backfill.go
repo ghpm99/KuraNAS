@@ -36,16 +36,14 @@ func backfillAudioCatalogKeys(workerContext *WorkerContext) (int, error) {
 	}
 }
 
-func persistAudioCatalogKeys(workerContext *WorkerContext, pendingRows []musicdom.AudioCatalogKeySource) error {
+func persistAudioCatalogKeys(workerContext *WorkerContext, pendingRows []musicdom.AudioWithoutCatalogKeys) error {
 	repository := workerContext.AudioMetadataRepository
+	fileIDs := make([]int, 0, len(pendingRows))
+	for _, pendingRow := range pendingRows {
+		fileIDs = append(fileIDs, pendingRow.FileID)
+	}
 
 	return repository.GetDbContext().ExecTx(func(tx *sql.Tx) error {
-		for _, pendingRow := range pendingRows {
-			groupingKeys := musicdom.BuildCatalogGroupingKeys(pendingRow.Artist, pendingRow.AlbumArtist, pendingRow.Album, pendingRow.Genre)
-			if err := repository.UpdateAudioCatalogKeys(tx, pendingRow.AudioMetadataID, groupingKeys); err != nil {
-				return err
-			}
-		}
-		return nil
+		return repository.RecomputeCatalogKeys(tx, fileIDs)
 	})
 }

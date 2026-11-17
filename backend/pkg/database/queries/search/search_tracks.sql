@@ -8,7 +8,7 @@ SELECT
     hf.path
 FROM
     home_file hf
-    LEFT JOIN audio_metadata am ON hf.id = am.file_id
+    LEFT JOIN audio_metadata_effective am ON hf.id = am.file_id
 WHERE
     hf.deleted_at IS NULL
     AND hf.format = ANY($6)
@@ -17,13 +17,25 @@ WHERE
         FROM audio_metadata title_match
         WHERE kuranas_fold(title_match.title) LIKE kuranas_fold($1)
         UNION
+        SELECT override_title_match.file_id
+        FROM audio_metadata_override override_title_match
+        WHERE kuranas_fold(override_title_match.title) LIKE kuranas_fold($1)
+        UNION
         SELECT artist_match.file_id
         FROM audio_metadata artist_match
         WHERE kuranas_fold(artist_match.artist) LIKE kuranas_fold($1)
         UNION
+        SELECT override_artist_match.file_id
+        FROM audio_metadata_override override_artist_match
+        WHERE kuranas_fold(override_artist_match.artist) LIKE kuranas_fold($1)
+        UNION
         SELECT album_match.file_id
         FROM audio_metadata album_match
         WHERE kuranas_fold(album_match.album) LIKE kuranas_fold($1)
+        UNION
+        SELECT override_album_match.file_id
+        FROM audio_metadata_override override_album_match
+        WHERE kuranas_fold(override_album_match.album) LIKE kuranas_fold($1)
         UNION
         SELECT name_match.id
         FROM home_file name_match

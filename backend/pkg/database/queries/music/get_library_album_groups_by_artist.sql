@@ -23,7 +23,7 @@ WITH artist_albums AS (
         COUNT(*) AS track_count,
         MAX(NULLIF(substring(TRIM(COALESCE(am.year, '')) FROM '^\d{4}'), '')::INT) AS sort_year
     FROM
-        audio_metadata am
+        audio_metadata_effective am
         JOIN home_file hf ON hf.id = am.file_id
     WHERE
         am.catalog_artist_key = $2

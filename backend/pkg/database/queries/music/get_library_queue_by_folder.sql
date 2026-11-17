@@ -9,7 +9,7 @@ SELECT
     COALESCE(am.LENGTH, 0)
 FROM
     home_file hf
-    LEFT JOIN audio_metadata am ON am.file_id = hf.id
+    LEFT JOIN audio_metadata_effective am ON am.file_id = hf.id
 WHERE
     hf.format = ANY ($1)
     AND hf.deleted_at IS NULL

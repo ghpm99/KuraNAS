@@ -4,11 +4,12 @@ WITH album_tracks AS (
         am.catalog_album_base_key AS base_key,
         am.catalog_album_label AS album_label,
         am.catalog_artist_key AS artist_key,
-        TRIM(COALESCE(am.album_artist, '')) AS album_artist,
-        NULLIF(substring(TRIM(COALESCE(am.year, '')) FROM '^\d{4}'), '') AS release_year,
+        TRIM(COALESCE(effective.album_artist, '')) AS album_artist,
+        NULLIF(substring(TRIM(COALESCE(effective.year, '')) FROM '^\d{4}'), '') AS release_year,
         regexp_replace(COALESCE(hf.parent_path, ''), '[/\\](cd|disc|disco|disk)\s*[0-9]+$', '', 'i') AS album_folder
     FROM
         audio_metadata am
+        JOIN audio_metadata_effective effective ON effective.id = am.id
         JOIN home_file hf ON hf.id = am.file_id
     WHERE
         hf.deleted_at IS NULL

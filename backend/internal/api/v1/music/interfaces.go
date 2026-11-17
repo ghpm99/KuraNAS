@@ -82,8 +82,8 @@ type AudioMetadataRepositoryInterface interface {
 	ListAudioWithoutMetadata(afterFileID int, limit int) ([]AudioWithoutMetadata, error)
 	ListAudioWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]AudioWithoutMetadata, error)
 	ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error)
-	ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioCatalogKeySource, error)
-	UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error
+	ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioWithoutCatalogKeys, error)
+	RecomputeCatalogKeys(tx *sql.Tx, fileIDs []int) error
 	ReconcileAlbumGroupings(compilationArtistLabel string) (int64, error)
 }
 

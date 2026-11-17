@@ -42,7 +42,7 @@ SELECT
     COALESCE(am.created_at, TIMESTAMPTZ '0001-01-01 00:00:00+00')
 FROM
     home_file hf
-    LEFT JOIN audio_metadata am ON hf.id = am.file_id
+    LEFT JOIN audio_metadata_effective am ON hf.id = am.file_id
 WHERE
     hf.format = ANY ($1)
     AND hf.deleted_at IS NULL
