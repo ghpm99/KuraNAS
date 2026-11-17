@@ -61,8 +61,8 @@ Regras invariantes:
 | 30 | [Reindexar por escopo](30-reindexar-por-escopo.md) | bug | P1 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-17), inclusive o 30.1 (reindexar recupera só as etapas que faltam — decisão do dono); faltam `21/CA-11`, `16/CA-09` e `21/CA-08` no sistema rodando (dono). | spec 21/RN-15, 16/RN-07 |
 | 31 | [Analytics: links levam à lista certa](31-analytics-links-levam-a-lista-certa.md) | bug | P2 | 20, 21 | pendente | spec 16/RN-06 |
 | 32 | [Atualização confere checksum](32-atualizacao-confere-checksum.md) | segurança | P1 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-17); faltam `23/CA-11` (pacote adulterado recusado no sistema rodando) e publicar o próximo release com `SHA256SUMS` e atualizar a partir dele (dono). Atenção: servidor com este código recusa atualizar para release sem `SHA256SUMS`. | spec 23/RN-15 |
-| 33 | [Desligamento: aviso e cancelar](33-cancelar-desligamento.md) | bug | P1 | — | em execução | spec 23/RN-11 |
-| 34 | [Envio em partes: backend](34-envio-em-partes-backend.md) | feature | P0 | — | pendente | spec 03 §7 |
+| 33 | [Desligamento: aviso e cancelar](33-cancelar-desligamento.md) | bug | P1 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-17); sub-item 33.1 (aviso 30 a 600 s) feito; faltam `23/CA-08` e a faixa num segundo dispositivo no sistema rodando (dono). | spec 23/RN-11 |
+| 34 | [Envio em partes: backend](34-envio-em-partes-backend.md) | feature | P0 | — | em execução | spec 03 §7 |
 | 35 | [Envio em partes: web](35-envio-em-partes-web.md) | feature | P0 | 34 | pendente | spec 03 |
 | 36 | [Android: download em fluxo](36-android-download-em-fluxo.md) | bug | P0 | 22 | pendente | spec 03 |
 | 37 | [Android: transferências em segundo plano](37-android-transferencias-em-segundo-plano.md) | feature | P0 | 24, 34, 36 | pendente | spec 03 |

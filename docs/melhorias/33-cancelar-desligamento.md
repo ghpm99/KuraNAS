@@ -25,12 +25,12 @@ No horário, todos os clientes mostram uma contagem regressiva com "Cancelar des
 
 ## Critérios de aceite
 
-- [ ] Teste do agendador com relógio falso: entra em `warning`, chama o desligamento só ao fim da contagem; com cancelamento, não chama.
-- [ ] Teste: cancelar fora do aviso responde `409`; o dia seguinte dispara normalmente depois de um cancelamento.
-- [ ] Teste de handler decodificando `status`; seam test do `POST /auto-shutdown/cancel`; render sem mock da faixa.
+- [x] Teste do agendador com relógio falso: entra em `warning`, chama o desligamento só ao fim da contagem; com cancelamento, não chama.
+- [x] Teste: cancelar fora do aviso responde `409`; o dia seguinte dispara normalmente depois de um cancelamento.
+- [x] Teste de handler decodificando `status`; seam test do `POST /auto-shutdown/cancel`; render sem mock da faixa.
 - [ ] `23/CA-08` — no sistema rodando: no horário aparece o aviso com contagem; "Cancelar desta vez" impede o desligamento; sem cancelar, o computador desliga.
 - [ ] A faixa aparece em um segundo dispositivo aberto em outra tela.
-- [ ] `make ci` verde.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
