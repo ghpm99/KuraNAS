@@ -33,6 +33,11 @@ func executeDocumentTextIndexStep(workerContext *WorkerContext, step jobs.StepMo
 		return fmt.Errorf("document text repository is required for document text index step")
 	}
 
+	if !currentIndexingPreferences(workerContext).IndexDocumentText {
+		applog.Info("document text index skipped: preference disabled")
+		return ErrStepSkipped
+	}
+
 	outcome, err := indexPendingDocuments(workerContext.DocumentTextRepository)
 	if err != nil {
 		return err
@@ -141,6 +146,9 @@ func buildDocumentTextIndexPlan() PlannedJob {
 
 func enqueueDocumentTextIndexJob(workerContext *WorkerContext) error {
 	if workerContext == nil || workerContext.JobOrchestrator == nil || workerContext.DocumentTextRepository == nil {
+		return nil
+	}
+	if !currentIndexingPreferences(workerContext).IndexDocumentText {
 		return nil
 	}
 

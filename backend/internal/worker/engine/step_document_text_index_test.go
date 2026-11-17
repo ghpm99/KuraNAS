@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/documenttext"
 	"nas-go/api/internal/api/v1/files"
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -242,5 +243,65 @@ func TestDocumentTextIndexTypesAreValidAndRegistered(t *testing.T) {
 	executors := buildStepExecutors(&WorkerContext{})
 	if executors[job.StepTypeDocumentTextIndex] == nil {
 		t.Fatal("document text index executor not registered")
+	}
+}
+
+func documentTextIndexingDisabled(workerContext *WorkerContext) *WorkerContext {
+	workerContext.IndexingPreferences = stubIndexingPreferences{preferences: configuration.IndexingPreferences{
+		ExtractMetadata:   true,
+		GeneratePreviews:  true,
+		IndexDocumentText: false,
+		ScanInterval:      24 * time.Hour,
+	}}
+	return workerContext
+}
+
+func TestEnqueueDocumentTextIndexIfDocument_PreferenceDisabledCreatesNoJob(t *testing.T) {
+	jobsRepository := newFakeJobsRepository()
+	workerContext := documentTextIndexingDisabled(documentTextContext(&fakeDocumentTextRepository{}))
+	workerContext.JobOrchestrator = NewJobOrchestrator(jobsRepository, nil)
+
+	enqueueDocumentTextIndexIfDocument(workerContext, files.FileDto{Name: "Notes.MD"})
+
+	if len(jobsRepository.jobs) != 0 {
+		t.Fatalf("disabled preference must not enqueue, got %d jobs", len(jobsRepository.jobs))
+	}
+}
+
+func TestEnqueueDocumentTextIndexJob_BootWithPreferenceDisabledCreatesNoJob(t *testing.T) {
+	jobsRepository := newFakeJobsRepository()
+	workerContext := documentTextIndexingDisabled(documentTextContext(&fakeDocumentTextRepository{}))
+	workerContext.JobOrchestrator = NewJobOrchestrator(jobsRepository, nil)
+
+	if err := enqueueDocumentTextIndexJob(workerContext); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(jobsRepository.jobs) != 0 {
+		t.Fatalf("disabled preference must not enqueue at boot, got %d jobs", len(jobsRepository.jobs))
+	}
+}
+
+func TestExecuteDocumentTextIndexStep_PreferenceDisabledIndexesNothingUntilReenabled(t *testing.T) {
+	stubDocumentExtractor(t, func(context.Context, string, string) (doctext.Result, error) {
+		return doctext.Result{Text: "hello"}, nil
+	})
+	repository := &fakeDocumentTextRepository{pendingPages: [][]documenttext.PendingDocument{{
+		{FileID: 1, Path: "/a.md", Format: ".md"},
+	}}}
+	workerContext := documentTextIndexingDisabled(documentTextContext(repository))
+
+	if err := executeDocumentTextIndexStep(workerContext, jobs.StepModel{}); !errors.Is(err, ErrStepSkipped) {
+		t.Fatalf("expected ErrStepSkipped, got %v", err)
+	}
+	if len(repository.listCalls) != 0 || len(repository.stored) != 0 {
+		t.Fatalf("disabled step must not touch pending documents: calls=%v stored=%d", repository.listCalls, len(repository.stored))
+	}
+
+	workerContext.IndexingPreferences = nil
+	if err := executeDocumentTextIndexStep(workerContext, jobs.StepModel{}); err != nil {
+		t.Fatalf("unexpected error after re-enabling: %v", err)
+	}
+	if len(repository.stored) != 1 {
+		t.Fatalf("expected pending document indexed after re-enabling, got %d", len(repository.stored))
 	}
 }
