@@ -2092,5 +2092,6 @@
 	"VACUUM_SETTINGS_DISCOVERY_FOUND": "Robot found at {{address}}.",
 	"VACUUM_SETTINGS_TEST_SUCCEEDED": "Connection to the robot is working.",
 	"VACUUM_SETTINGS_CONNECTION_SAVE_FIRST": "Save your changes before finding the robot or testing the connection: they use the stored values.",
-	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Save the device ID and the local key to find the robot or test the connection."
+	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Save the device ID and the local key to find the robot or test the connection.",
+	"LIST_REFRESH_FAILED": "Could not refresh the list. Showing what was already loaded."
 }

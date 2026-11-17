@@ -9,6 +9,7 @@ import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvi
 import GlobalSearchProvider from '../search/GlobalSearchProvider';
 import GlobalShortcutsProvider from '../shortcuts/GlobalShortcutsProvider';
 import DocumentLanguageSync from '../layout/documentMetadata/DocumentLanguageSync';
+import ListRefreshFailureNotice from './listRefreshFailureNotice/ListRefreshFailureNotice';
 import NotificationProvider from './notificationProvider';
 import ColorSchemeProvider from './colorSchemeProvider';
 import SettingsProvider from './settingsProvider';
@@ -43,6 +44,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
                             <ColorSchemeProvider>
                                 <CssBaseline />
                                 <DocumentLanguageSync />
+                                <ListRefreshFailureNotice />
                                 <BrowserRouter>
                                     <NotificationProvider>
                                         <GlobalMusicProvider>

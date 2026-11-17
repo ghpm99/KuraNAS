@@ -2092,5 +2092,6 @@
 	"VACUUM_SETTINGS_DISCOVERY_FOUND": "Robô encontrado em {{address}}.",
 	"VACUUM_SETTINGS_TEST_SUCCEEDED": "Conexão com o robô funcionando.",
 	"VACUUM_SETTINGS_CONNECTION_SAVE_FIRST": "Salve as alterações antes de procurar o robô ou testar a conexão: elas usam os valores gravados.",
-	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Grave o identificador do dispositivo e a chave local para procurar o robô ou testar a conexão."
+	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Grave o identificador do dispositivo e a chave local para procurar o robô ou testar a conexão.",
+	"LIST_REFRESH_FAILED": "Não foi possível atualizar a lista. Mostrando o que já estava carregado."
 }
