@@ -28,7 +28,6 @@ type AppConfigStruct struct {
 	WorkerMaxConcurrentJobs    int
 	WorkerStepTimeoutSeconds   int
 	WorkerHeartbeatSeconds     int
-	WatcherReconcileHours      int
 	LogLevel                   string
 	LogMaxSizeMB               int
 	EmailTokenKey              string
@@ -67,7 +66,6 @@ func InitializeConfig() {
 		WorkerMaxConcurrentJobs:    parseEnvInt("WORKER_MAX_CONCURRENT_JOBS", 4),
 		WorkerStepTimeoutSeconds:   parseEnvInt("WORKER_STEP_TIMEOUT_SECONDS", 120),
 		WorkerHeartbeatSeconds:     parseEnvInt("WORKER_HEARTBEAT_SECONDS", 60),
-		WatcherReconcileHours:      parseEnvInt("WATCHER_RECONCILE_HOURS", 24),
 		LogLevel:                   os.Getenv("LOG_LEVEL"),
 		LogMaxSizeMB:               parseEnvInt("LOG_MAX_SIZE_MB", 50),
 		EmailTokenKey:              os.Getenv("EMAIL_TOKEN_KEY"),

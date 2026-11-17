@@ -70,7 +70,6 @@ var envCatalog = []envField{
 	{Key: "INGEST_FETCH_TIMEOUT_MINUTES", Group: envGroupGeneral, Kind: envKindInt, Default: "360"},
 	{Key: "LOG_LEVEL", Group: envGroupGeneral, Kind: envKindString},
 	{Key: "LOG_MAX_SIZE_MB", Group: envGroupGeneral, Kind: envKindInt, Default: "50"},
-	{Key: "WATCHER_RECONCILE_HOURS", Group: envGroupGeneral, Kind: envKindInt, Default: "24"},
 
 	{Key: "DB_HOST", Group: envGroupDatabase, Kind: envKindString, Dangerous: true},
 	{Key: "DB_PORT", Group: envGroupDatabase, Kind: envKindString, Dangerous: true},

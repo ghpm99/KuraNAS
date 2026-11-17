@@ -472,7 +472,6 @@
 	"ENV_FIELD_INGEST_FETCH_TIMEOUT_MINUTES": "Maximum time of a URL download (min)",
 	"ENV_FIELD_LOG_LEVEL": "Log level",
 	"ENV_FIELD_LOG_MAX_SIZE_MB": "Max log size (MB)",
-	"ENV_FIELD_WATCHER_RECONCILE_HOURS": "Watcher reconcile interval (h)",
 	"ENV_FIELD_DB_HOST": "Database host",
 	"ENV_FIELD_DB_PORT": "Database port",
 	"ENV_FIELD_DB_USER": "Database user",
