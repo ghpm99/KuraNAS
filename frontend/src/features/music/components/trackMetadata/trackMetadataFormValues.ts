@@ -9,7 +9,7 @@ export type TextualFieldName = TextFieldName | NumericFieldName;
 
 export type TrackMetadataFormValues = Record<TextualFieldName, string> & { genres: string[] };
 
-const genreSeparatorPattern = /[;/,]/;
+const genreSeparatorPattern = /[;,|]/;
 const leadingIntegerPattern = /^\s*(\d{1,9})/;
 const wholeNumberPattern = /^\d+$/;
 
