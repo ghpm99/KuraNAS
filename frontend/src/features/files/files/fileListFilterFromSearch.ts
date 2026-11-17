@@ -1,4 +1,10 @@
 import type { FileListCategoryType } from '@/features/files/providers/fileProvider/fileContext';
 
-export const parseFileListFilter = (search: string): FileListCategoryType =>
-    new URLSearchParams(search).get('filter') === 'recent' ? 'recent' : 'all';
+const filtersSelectableByUrl: FileListCategoryType[] = ['recent', 'starred'];
+
+export const fileListFilterSearchParam = 'filter';
+
+export const parseFileListFilter = (search: string): FileListCategoryType => {
+    const requestedFilter = new URLSearchParams(search).get(fileListFilterSearchParam);
+    return filtersSelectableByUrl.find((filter) => filter === requestedFilter) ?? 'all';
+};

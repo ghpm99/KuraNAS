@@ -263,7 +263,11 @@ describe('shell components and pages', () => {
         );
         expect(screen.getByText('Home')).toBeInTheDocument();
 
-        render(<Tabs />);
+        render(
+            <MemoryRouter>
+                <Tabs />
+            </MemoryRouter>
+        );
         expect(screen.getByText('ALL_FILES')).toBeInTheDocument();
 
         render(<ActionBar />);
@@ -362,7 +366,11 @@ describe('shell components and pages', () => {
             ...mockUseFile(),
             selectedItem: { id: 4, type: 2 },
         });
-        render(<Tabs />);
+        render(
+            <MemoryRouter>
+                <Tabs />
+            </MemoryRouter>
+        );
         expect(screen.queryByText('ALL_FILES')).not.toBeInTheDocument();
     });
 });
