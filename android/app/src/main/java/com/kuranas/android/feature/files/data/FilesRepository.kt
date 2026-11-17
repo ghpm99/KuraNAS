@@ -27,11 +27,11 @@ class FilesRepository @Inject constructor(
 ) {
 
     suspend fun getRootFiles(page: Int): AppResult<ListPage<FileItemDto>> = safeApiCall {
-        api.getRootFiles(page, EXPLORER_PAGE_SIZE).toListPage()
+        api.getFolderChildren(ROOT_FOLDER_ID, page, EXPLORER_PAGE_SIZE).toListPage()
     }
 
     suspend fun getChildrenById(id: String, page: Int): AppResult<ListPage<FileItemDto>> = safeApiCall {
-        api.getChildrenById(id, page, EXPLORER_PAGE_SIZE).toListPage()
+        api.getFolderChildren(id, page, EXPLORER_PAGE_SIZE).toListPage()
     }
 
     suspend fun getStarredFiles(
@@ -79,7 +79,7 @@ class FilesRepository @Inject constructor(
      * primeira posição, então pedimos uma página de um item.
      */
     suspend fun getFileInfo(id: String): AppResult<FileItemDto> = safeApiCall {
-        val items = api.getChildrenById(id, FIRST_PAGE, FILE_INFO_PAGE_SIZE).items
+        val items = api.getItemById(id, FIRST_PAGE, FILE_INFO_PAGE_SIZE).items
         items.firstOrNull { it.id == id }
             ?: items.firstOrNull()
             ?: throw NoSuchElementException(context.getString(R.string.file_not_found))

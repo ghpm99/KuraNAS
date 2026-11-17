@@ -133,7 +133,7 @@ class FilesRepositoryTest {
 
         val request = server.takeRequest()
         assertEquals("GET", request.method)
-        assertEquals("/api/v1/files/?page=1&page_size=50", request.path)
+        assertEquals("/api/v1/files/tree?file_parent=0&page=1&page_size=50", request.path)
         assertEquals(listOf("11", "12"), result.data.items.map { it.id })
         assertTrue(result.data.items.first().isDir)
         assertTrue(result.data.hasNext)
@@ -145,7 +145,7 @@ class FilesRepositoryTest {
 
         val result = repository.getChildrenById("11", 2) as AppResult.Success
 
-        assertEquals("/api/v1/files/11?page=2&page_size=50", server.takeRequest().path)
+        assertEquals("/api/v1/files/tree?file_parent=11&page=2&page_size=50", server.takeRequest().path)
         assertEquals(listOf("13"), result.data.items.map { it.id })
         assertFalse(result.data.hasNext)
     }
