@@ -8,6 +8,7 @@ import (
 	"time"
 
 	backupapi "nas-go/api/internal/api/v1/backup"
+	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/documenttext"
 	emailapi "nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
@@ -57,6 +58,7 @@ type WorkerContext struct {
 	NotificationService     notifications.ServiceInterface
 	AIService               ai.ServiceInterface
 	AISettings              AISettingsReader
+	IndexingPreferences     configuration.IndexingPreferencesReader
 	SystemEvents            systemevent.ServiceInterface
 	BackupService           backupapi.WorkerInterface
 	TieringService          tieringapi.WorkerInterface

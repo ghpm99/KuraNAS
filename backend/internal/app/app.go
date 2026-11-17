@@ -153,6 +153,7 @@ func InitializeApp() (*Application, error) {
 	}
 	if appContext.Configuration != nil {
 		workerFileContext.AISettings = appContext.Configuration.Service
+		workerFileContext.IndexingPreferences = appContext.Configuration.Service
 	}
 	if appContext.Backup != nil {
 		workerFileContext.BackupService = appContext.Backup.Service
