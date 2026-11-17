@@ -14,8 +14,9 @@ import {
 } from '@mui/material';
 import { Copy } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import ErrorState from '@/components/errorState/errorState';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
+
+const noop = () => undefined;
 
 const ActivityList = () => {
     const {
@@ -36,20 +37,18 @@ const ActivityList = () => {
         if (isEntriesLoading) {
             return <CircularProgress size={24} role="progressbar" aria-label={t('LOADING')} />;
         }
-        if (hasEntriesError) {
-            return (
-                <ErrorState
-                    title={t('ACTIVITY_DIARY_LOAD_ERROR')}
-                    backendMessage={entriesErrorMessage}
-                    onRetry={reloadEntries}
-                />
-            );
-        }
-        if (!data?.entries?.items?.length) {
-            return <Typography>{t('NO_ACTIVITIES')}</Typography>;
-        }
         return (
-            <>
+            <ListFeedback
+                isEmpty={!data?.entries?.items?.length}
+                isError={Boolean(hasEntriesError)}
+                errorTitle={t('ACTIVITY_DIARY_LOAD_ERROR')}
+                errorMessage={entriesErrorMessage}
+                onRetry={reloadEntries ?? noop}
+                hasNextPage={Boolean(hasMoreEntries)}
+                isFetchingNextPage={Boolean(isFetchingMoreEntries)}
+                onLoadMore={loadMoreEntries ?? noop}
+                emptyState={<Typography>{t('NO_ACTIVITIES')}</Typography>}
+            >
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -100,12 +99,7 @@ const ActivityList = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
-                <LoadMoreSentinel
-                    hasNextPage={hasMoreEntries}
-                    isFetchingNextPage={isFetchingMoreEntries}
-                    fetchNextPage={loadMoreEntries}
-                />
-            </>
+            </ListFeedback>
         );
     };
 

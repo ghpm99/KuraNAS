@@ -192,10 +192,11 @@ describe('activity diary components', () => {
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
-    it('shows an error state with the backend message and retries', () => {
+    it('shows a full-screen error state with the backend message and retries when there are no entries', () => {
         const reloadEntries = jest.fn();
         useActivityDiary.mockReturnValueOnce({
             ...defaultCtx,
+            data: { ...defaultCtx.data, entries: { items: [] } },
             hasEntriesError: true,
             entriesErrorMessage: 'falha do servidor',
             reloadEntries,
@@ -203,6 +204,24 @@ describe('activity diary components', () => {
         render(<ActivityList />);
         expect(screen.getByText('ACTIVITY_DIARY_LOAD_ERROR')).toBeInTheDocument();
         expect(screen.getByText('falha do servidor')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+        expect(reloadEntries).toHaveBeenCalled();
+        expect(screen.queryByText('NO_ACTIVITIES')).not.toBeInTheDocument();
+    });
+
+    it('keeps loaded entries and shows the error below them when a later page fails', () => {
+        const reloadEntries = jest.fn();
+        useActivityDiary.mockReturnValueOnce({
+            ...defaultCtx,
+            hasEntriesError: true,
+            hasMoreEntries: true,
+            entriesErrorMessage: 'falha do servidor',
+            reloadEntries,
+        });
+        render(<ActivityList />);
+        expect(screen.getByText('A1')).toBeInTheDocument();
+        expect(screen.getByText('ACTIVITY_DIARY_LOAD_ERROR')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
         expect(reloadEntries).toHaveBeenCalled();
     });

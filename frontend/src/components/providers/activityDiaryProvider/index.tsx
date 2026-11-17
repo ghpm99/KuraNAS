@@ -9,6 +9,7 @@ import {
     useState,
 } from 'react';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import {
     createActivityDiaryEntry,
@@ -77,6 +78,7 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading: isEntriesLoading,
         hasNextPage: hasMoreEntries,
         isFetchingNextPage: isFetchingMoreEntries,
+        isFetchNextPageError,
         fetchNextPage,
         refetch: refetchList,
     } = useInfiniteQuery({
@@ -102,9 +104,11 @@ const ActivityDiaryProvider = ({ children }: { children: React.ReactNode }) => {
         void fetchNextPage();
     }, [fetchNextPage]);
 
-    const reloadEntries = useCallback(() => {
-        void refetchList();
-    }, [refetchList]);
+    const reloadEntries = useRetryFailedPage({
+        isFetchNextPageError,
+        fetchNextPage,
+        refetch: refetchList,
+    });
 
     const createDiaryMutation = useMutation({
         mutationFn: (form: ActivityDiaryFormData): Promise<ActivityDiaryData> =>
