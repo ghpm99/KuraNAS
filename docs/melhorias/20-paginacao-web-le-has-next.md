@@ -43,9 +43,9 @@ Verificados no sistema rodando, em uma pasta com mais de 500 itens.
 - [ ] O mesmo em Favoritos e em Recentes com mais de três páginas.
 - [ ] Buscar na pasta um termo com mais de 150 resultados mostra todos ao rolar.
 - [ ] No seletor de pasta de "Mover", uma pasta com mais de 150 subpastas mostra todas.
-- [ ] `00/CA-16` — existe teste por tela que usa o construtor conferido contra a resposta real do handler.
-- [ ] `grep -rn "hasNext\b" frontend/src` não encontra nenhuma leitura de campo de resposta da API (sobra só estado de tela, como em `useImageViewer`).
-- [ ] `make ci` verde.
+- [x] `00/CA-16` — existe teste por tela que usa o construtor conferido contra a resposta real do handler.
+- [x] `grep -rn "hasNext\b" frontend/src` não encontra nenhuma leitura de campo de resposta da API (sobra só estado de tela, como em `useImageViewer`).
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
