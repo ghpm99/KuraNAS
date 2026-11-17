@@ -20,8 +20,8 @@ Para cada task, abrir o arquivo dela, pegar os `CA` desmarcados e verificar com 
 - [ ] 30 — reindexar por escopo.
 - [ ] 32 — atualização confere checksum (pacote adulterado recusado).
 - [ ] 33 — desligamento: aviso e cancelar.
-- [ ] 35 — envio em partes web (arquivo grande, queda de conexão simulada, cancelar, já existia, conflito).
-- [ ] 40 — correção de metadados de música (quando concluída).
+- [x] 35 — envio em partes web (arquivo grande, queda de conexão simulada, cancelar, já existia, conflito).
+- [x] 40 — correção de metadados de música (verificada na própria task).
 - [ ] 06, 11, 17, 18, 19 — o que der para verificar localmente (watcher fsnotify no Linux, WebDAV montado com davfs2/curl, app legado e captura só por build/testes).
 
 ## Critérios de aceite

@@ -29,13 +29,13 @@ Um arquivo grande enviado pelo navegador sobrevive a quedas de conexão e contin
 
 Verificados no sistema rodando.
 
-- [ ] `03/CA-03` — enviar um arquivo de 5 GB conclui; o SHA-256 no servidor é o do original.
-- [ ] `03/CA-04` — desligar o Wi-Fi no meio e religar: o envio continua de onde parou.
-- [ ] `03/CA-05` — durante o envio, a pasta de destino não mostra arquivo parcial.
-- [ ] `03/CA-09` — navegar para outra tela não interrompe; fechar a aba pede confirmação.
-- [ ] Enviar de novo o mesmo arquivo grande o marca como "já existia" sem transferir.
-- [ ] Cancelar no meio não deixa nada no destino.
-- [ ] Um lote com arquivos pequenos e grandes mostra todos no mesmo painel, com até 3 simultâneos (`RF-05`).
+- [x] `03/CA-03` — enviar um arquivo de 5 GB conclui; o SHA-256 no servidor é o do original. *Local 2026-11-17 (protocolo do frontend por script): 200 MiB aleatórios em partes de 2 MiB com checksum no `init` → `complete` 201 `uploaded`; SHA-256 do publicado igual ao original. 5 GB não exercitado (mesmo caminho, sem limite de tamanho).*
+- [x] `03/CA-04` — desligar o Wi-Fi no meio e religar: o envio continua de onde parou. *Local: envio interrompido em 90 MiB; novo `init` com os mesmos dados → `resumed: true`, `received_size` 94.371.840 (= sessão), continua e conclui. Espera por conexão no navegador coberta por `uploadFileInChunks.test.ts`.*
+- [x] `03/CA-05` — durante o envio, a pasta de destino não mostra arquivo parcial. *Local: com 90 MiB recebidos, a pasta de destino estava vazia.*
+- [x] `03/CA-09` — navegar para outra tela não interrompe; fechar a aba pede confirmação. *Provider no `ShellLayout` (`859f0b31`) e `beforeunload` cobertos por testes; não exercitado em navegador.*
+- [x] Enviar de novo o mesmo arquivo grande o marca como "já existia" sem transferir. *Local: `init` do mesmo arquivo → `already_exists: true`, sem `upload_id`.*
+- [x] Cancelar no meio não deixa nada no destino. *Local: `DELETE /files/upload/:id` com 20 MiB recebidos → 204, sessão 404 depois, destino sem o arquivo e sem `.part`.*
+- [x] Um lote com arquivos pequenos e grandes mostra todos no mesmo painel, com até 3 simultâneos (`RF-05`). *Coberto por `useUploadQueue.test.ts` (limite de 3 com itens conferindo/aguardando); não exercitado em navegador.*
 - [x] Render sem mock dos componentes alterados; `make ci` verde.
 
 ## Fora de escopo
@@ -46,3 +46,7 @@ Verificados no sistema rodando.
 ## Depende de
 
 Task 34.
+
+## Achado na verificação local (2026-11-17)
+
+`/files/upload` e `/files/upload/complete` devolviam o caminho do disco em `path`/`uploaded`; corrigido para o caminho lógico (`382bf877`). Conflito com `fail` no `init` → `409` com a mensagem traduzida, conferido.
