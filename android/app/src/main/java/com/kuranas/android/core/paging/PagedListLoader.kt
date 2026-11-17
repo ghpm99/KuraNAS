@@ -17,6 +17,7 @@ data class PagedListState<T>(
     val nextPage: Int = FIRST_PAGE,
     val hasMore: Boolean = false,
     val error: String? = null,
+    val loadMoreError: String? = null,
 )
 
 class PagedListLoader<T>(
@@ -32,7 +33,7 @@ class PagedListLoader<T>(
     fun load(fetchPage: suspend (Int) -> AppResult<ListPage<T>>) {
         this.fetchPage = fetchPage
         restartFromFirstPage(
-            onStart = { it.copy(isLoading = true, isRefreshing = false, isLoadingMore = false, error = null) },
+            onStart = { it.copy(isLoading = true, isRefreshing = false, isLoadingMore = false, error = null, loadMoreError = null) },
             onError = { current, message -> current.copy(isLoading = false, error = message) },
         )
     }
@@ -40,22 +41,31 @@ class PagedListLoader<T>(
     fun refresh() {
         if (fetchPage == null) return
         restartFromFirstPage(
-            onStart = { it.copy(isRefreshing = true, isLoadingMore = false, error = null) },
+            onStart = { it.copy(isRefreshing = true, isLoadingMore = false, error = null, loadMoreError = null) },
             onError = { current, message -> current.copy(isRefreshing = false, error = message) },
         )
     }
 
+    /** Automatic next-page request; ignored while a previous next-page failure awaits [retryLoadMore]. */
     fun loadMore() {
+        if (_state.value.loadMoreError != null) return
+        requestNextPage()
+    }
+
+    /** Repeats only the next-page request that failed, clearing [PagedListState.loadMoreError] when it starts. */
+    fun retryLoadMore() = requestNextPage()
+
+    private fun requestNextPage() {
         val fetch = fetchPage ?: return
         val current = _state.value
         val isBusy = current.isLoading || current.isRefreshing || current.isLoadingMore
         if (!current.hasMore || isBusy) return
 
-        _state.update { it.copy(isLoadingMore = true) }
+        _state.update { it.copy(isLoadingMore = true, loadMoreError = null) }
         pageLoadJob = scope.launch {
             when (val result = fetch(current.nextPage)) {
                 is AppResult.Success -> _state.update { it.withAppendedPage(result.data) }
-                is AppResult.Error -> _state.update { it.copy(isLoadingMore = false) }
+                is AppResult.Error -> _state.update { it.copy(isLoadingMore = false, loadMoreError = result.message) }
             }
         }
     }

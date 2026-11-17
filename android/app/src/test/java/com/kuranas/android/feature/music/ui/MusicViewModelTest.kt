@@ -128,8 +128,9 @@ class MusicViewModelTest {
         assertNull(viewModel.tracks.value.error)
         assertFalse(viewModel.tracks.value.isLoadingMore)
         assertTrue(viewModel.tracks.value.hasMore)
+        assertEquals("offline", viewModel.tracks.value.loadMoreError)
 
-        viewModel.loadMoreTracks()
+        viewModel.retryLoadMoreTracks()
 
         assertEquals(listOf(1, 2), viewModel.tracks.value.items.map { it.id })
     }

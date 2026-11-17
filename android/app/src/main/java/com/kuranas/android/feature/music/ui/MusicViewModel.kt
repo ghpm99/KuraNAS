@@ -67,6 +67,7 @@ class MusicViewModel @Inject constructor(
     }
 
     fun loadMoreTracks() = tracksLoader.loadMore()
+    fun retryLoadMoreTracks() = tracksLoader.retryLoadMore()
     fun loadMoreArtists() = artistsLoader.loadMore()
     fun loadMoreAlbums() = albumsLoader.loadMore()
     fun loadMorePlaylists() = playlistsLoader.loadMore()
