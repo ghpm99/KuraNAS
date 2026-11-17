@@ -106,7 +106,7 @@ const makePaginationResponse = (
     items: FileData[],
     hasNext = false,
     page = 1
-) => buildServerPage(items, { page, pageSize: 200, hasNext });
+) => buildServerPage(items, { page, pageSize: 60, hasNext });
 
 function createQueryClient() {
     return new QueryClient({
@@ -340,7 +340,7 @@ describe('FileProvider', () => {
 
             expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
                 page: 1,
-                pageSize: 200,
+                pageSize: 60,
                 kind: 'all',
                 sort: 'name',
             });
@@ -359,7 +359,7 @@ describe('FileProvider', () => {
             await waitFor(() =>
                 expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
                     page: 1,
-                    pageSize: 200,
+                    pageSize: 60,
                     kind: 'media',
                     sort: 'name',
                 })
@@ -377,7 +377,7 @@ describe('FileProvider', () => {
             await waitFor(() =>
                 expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
                     page: 1,
-                    pageSize: 200,
+                    pageSize: 60,
                     kind: 'all',
                     sort: 'starred_at',
                 })
@@ -817,7 +817,7 @@ describe('FileProvider', () => {
         await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7]));
         expect(mockGetStarredFiles).toHaveBeenCalledWith({
             page: 1,
-            pageSize: 200,
+            pageSize: 60,
             kind: 'all',
             sort: 'name',
         });
@@ -830,7 +830,7 @@ describe('FileProvider', () => {
         await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([7, 8]));
         expect(mockGetStarredFiles).toHaveBeenLastCalledWith({
             page: 2,
-            pageSize: 200,
+            pageSize: 60,
             kind: 'all',
             sort: 'name',
         });
@@ -849,7 +849,7 @@ describe('FileProvider', () => {
         });
 
         await waitFor(() => expect(capturedContext!.files.map((file) => file.id)).toEqual([9]));
-        expect(mockGetRecentlyAccessedFiles).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+        expect(mockGetRecentlyAccessedFiles).toHaveBeenCalledWith({ page: 1, pageSize: 60 });
     });
 
     it('resolves the opened folder from a favorites deep link and keeps navigation inside favorites', async () => {

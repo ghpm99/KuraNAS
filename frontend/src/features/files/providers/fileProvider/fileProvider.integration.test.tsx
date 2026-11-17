@@ -191,11 +191,11 @@ describe('features/files/fileProvider (seam)', () => {
 			if (url.startsWith('/files/recent/')) return Promise.resolve({ data: [] });
 			if (config?.params?.page === 2) {
 				return Promise.resolve({
-					data: buildServerPage([buildFile(3)], { page: 2, pageSize: 200, hasNext: false }),
+					data: buildServerPage([buildFile(3)], { page: 2, pageSize: 60, hasNext: false }),
 				});
 			}
 			return Promise.resolve({
-				data: buildServerPage([buildFile(1), buildFile(2)], { page: 1, pageSize: 200, hasNext: true }),
+				data: buildServerPage([buildFile(1), buildFile(2)], { page: 1, pageSize: 60, hasNext: true }),
 			});
 		});
 		const { result } = renderHook(() => useFile(), { wrapper });

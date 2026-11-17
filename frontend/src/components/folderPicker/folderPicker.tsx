@@ -46,7 +46,7 @@ type FolderEntry = {
     path: string;
 };
 
-const folderPageSize = 200;
+const folderPageSize = 50;
 
 const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerProps) => {
     const { t } = useI18n();

@@ -51,7 +51,7 @@ import {
     type FileListingCache,
 } from './fileStarredCache';
 
-const pageSize = 200;
+const pageSize = 60;
 
 const listingQueryKey = ['files'] as const;
 const openedItemQueryKey = ['files-path'] as const;

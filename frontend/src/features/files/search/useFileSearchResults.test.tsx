@@ -45,7 +45,7 @@ describe('useFileSearchResults', () => {
     it('exposes the backend error message and retries the search', async () => {
         mockSearchFiles.mockRejectedValueOnce({ response: { data: { error: 'Busca indisponível' } } });
         mockSearchFiles.mockResolvedValue(
-            buildServerPage([{ id: 1, name: 'foto.png' }], { page: 1, pageSize: 100, hasNext: false })
+            buildServerPage([{ id: 1, name: 'foto.png' }], { page: 1, pageSize: 60, hasNext: false })
         );
         const { result } = renderHook(
             () => useFileSearchResults({ query: 'foto', isRecursive: true }),
@@ -72,8 +72,8 @@ describe('useFileSearchResults', () => {
 
     it('searches the folder scope and walks the next pages', async () => {
         mockSearchFiles
-            .mockResolvedValueOnce(buildServerPage([{ id: 1 }], { page: 1, pageSize: 100, hasNext: true }))
-            .mockResolvedValueOnce(buildServerPage([{ id: 2 }], { page: 2, pageSize: 100, hasNext: false }));
+            .mockResolvedValueOnce(buildServerPage([{ id: 1 }], { page: 1, pageSize: 60, hasNext: true }))
+            .mockResolvedValueOnce(buildServerPage([{ id: 2 }], { page: 2, pageSize: 60, hasNext: false }));
         const { result } = renderHook(
             () => useFileSearchResults({ query: 'foto', parentId: 7, isRecursive: false }),
             { wrapper: createWrapper() }
@@ -86,7 +86,7 @@ describe('useFileSearchResults', () => {
             parentId: 7,
             recursive: false,
             page: 1,
-            pageSize: 100,
+            pageSize: 60,
         });
 
         result.current.fetchNextPage();

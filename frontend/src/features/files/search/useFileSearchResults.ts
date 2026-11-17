@@ -5,7 +5,7 @@ import type { FileData, PaginationResponse } from '@/features/files/providers/fi
 import type { FileSearchRefinements } from '@/types/fileSearch';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
-const searchPageSize = 100;
+const searchPageSize = 60;
 
 type FileSearchScope = {
     query: string;

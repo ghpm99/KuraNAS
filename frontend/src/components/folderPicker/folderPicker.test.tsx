@@ -48,7 +48,7 @@ const makePaginationResponse = (
             directory_content_count: 0,
             starred: false,
         })),
-        { page: 1, pageSize: 200, hasNext }
+        { page: 1, pageSize: 50, hasNext }
     );
 
 describe('FolderPicker', () => {
@@ -81,6 +81,19 @@ describe('FolderPicker', () => {
     it('does not render dialog when closed', () => {
         render(<FolderPicker open={false} onClose={onClose} onSelect={onSelect} />);
         expect(screen.queryByText('SELECT_DESTINATION')).not.toBeInTheDocument();
+    });
+
+    it('asks the server for the first page of 50 folders of the root', async () => {
+        render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+
+        await waitFor(() => {
+            expect(mockGetFilesTree).toHaveBeenCalledWith({
+                page: 1,
+                pageSize: 50,
+                fileParent: undefined,
+                category: 'all',
+            });
+        });
     });
 
     it('fetches and displays folders', async () => {

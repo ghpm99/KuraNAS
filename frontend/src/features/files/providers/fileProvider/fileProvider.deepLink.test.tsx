@@ -38,7 +38,7 @@ const folder = (id: number, name: string, path: string, parentPath: string) => (
     directory_content_count: 1,
 });
 
-const page = (items: unknown[]) => buildServerPage(items, { page: 1, pageSize: 200, hasNext: false });
+const page = (items: unknown[]) => buildServerPage(items, { page: 1, pageSize: 60, hasNext: false });
 
 const wrapper = ({ children }: { children: ReactNode }) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

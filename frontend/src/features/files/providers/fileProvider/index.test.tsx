@@ -93,7 +93,7 @@ describe('providers/fileProvider/index', () => {
                                 file_children: [{ id: 2, type: 2, name: 'file' }],
                             },
                         ],
-                        pagination: { page: 1, page_size: 200, has_next: false, has_prev: false },
+                        pagination: { page: 1, page_size: 60, has_next: false, has_prev: false },
                     },
                 ],
             },
@@ -166,7 +166,7 @@ describe('providers/fileProvider/index', () => {
         await infiniteOptions.queryFn({ pageParam: 3 });
         expect(mockedApiGet).toHaveBeenCalledWith('/files/tree', {
             params: {
-                page_size: 200,
+                page_size: 60,
                 file_parent: undefined,
                 page: 3,
                 category: 'all',
@@ -177,7 +177,7 @@ describe('providers/fileProvider/index', () => {
         await infiniteOptions.queryFn({});
         expect(mockedApiGet).toHaveBeenCalledWith('/files/tree', {
             params: {
-                page_size: 200,
+                page_size: 60,
                 file_parent: undefined,
                 page: 1,
                 category: 'all',
@@ -187,12 +187,12 @@ describe('providers/fileProvider/index', () => {
         });
         expect(
             infiniteOptions.getNextPageParam({
-                pagination: { page: 5, page_size: 200, has_next: true, has_prev: true },
+                pagination: { page: 5, page_size: 60, has_next: true, has_prev: true },
             })
         ).toBe(6);
         expect(
             infiniteOptions.getNextPageParam({
-                pagination: { page: 5, page_size: 200, has_next: false, has_prev: true },
+                pagination: { page: 5, page_size: 60, has_next: false, has_prev: true },
             })
         ).toBeUndefined();
     });

@@ -96,7 +96,7 @@ describe('FilesExplorerScreen search', () => {
             pagination: { page: 1, page_size: 20, has_next: false, has_prev: false },
         });
         mockSearchFiles.mockResolvedValue(
-            buildServerPage([{ id: 1, name: 'relatorio.txt' }], { page: 1, pageSize: 100, hasNext: false })
+            buildServerPage([{ id: 1, name: 'relatorio.txt' }], { page: 1, pageSize: 60, hasNext: false })
         );
     });
 
@@ -118,7 +118,7 @@ describe('FilesExplorerScreen search', () => {
             parentId: 7,
             recursive: true,
             page: 1,
-            pageSize: 100,
+            pageSize: 60,
             refinements: expect.objectContaining({ kinds: undefined, tier: undefined }),
         });
         expect(
@@ -178,7 +178,7 @@ describe('FilesExplorerScreen search', () => {
     });
 
     it('shows the empty state when nothing matched', async () => {
-        mockSearchFiles.mockResolvedValue(buildServerPage([], { page: 1, pageSize: 100, hasNext: false }));
+        mockSearchFiles.mockResolvedValue(buildServerPage([], { page: 1, pageSize: 60, hasNext: false }));
         renderScreen('/files/docs?q=zzz');
 
         expect(await screen.findByText('FILES_SEARCH_EMPTY')).toBeInTheDocument();

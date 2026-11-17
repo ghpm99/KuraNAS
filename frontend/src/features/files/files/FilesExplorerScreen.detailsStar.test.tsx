@@ -67,7 +67,7 @@ describe('Starring from the details panel opened by the explicit action', () => 
         jest.clearAllMocks();
         let isStarredOnServer = false;
         mockGetFilesTree.mockImplementation(async () =>
-            buildServerPage([{ ...folderToInspect, starred: isStarredOnServer }], { page: 1, pageSize: 200, hasNext: false })
+            buildServerPage([{ ...folderToInspect, starred: isStarredOnServer }], { page: 1, pageSize: 60, hasNext: false })
         );
         mockGetFileByPath.mockResolvedValue(null);
         mockGetFileAncestors.mockResolvedValue([]);
