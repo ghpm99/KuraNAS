@@ -2184,5 +2184,17 @@
 	"MUSIC_METADATA_SAVE": "Save",
 	"MUSIC_METADATA_SAVED": "Track info saved.",
 	"MUSIC_METADATA_SAVE_FAILED": "Could not save the track info.",
-	"MUSIC_METADATA_NUMBER_INVALID": "Enter whole numbers only."
+	"MUSIC_METADATA_NUMBER_INVALID": "Enter whole numbers only.",
+	"MUSIC_EDIT_ALBUM": "Edit album",
+	"MUSIC_EDIT_FOLDER": "Edit folder",
+	"MUSIC_BATCH_METADATA_HINT": "Fill in only what you want to change. Empty fields are left untouched.",
+	"MUSIC_BATCH_METADATA_REVIEW": "Review",
+	"MUSIC_BATCH_METADATA_CONFIRM": "Confirm",
+	"MUSIC_BATCH_METADATA_BACK": "Back",
+	"MUSIC_BATCH_METADATA_WILL_CHANGE": "{{count}} tracks will be changed",
+	"MUSIC_BATCH_METADATA_NO_MATCH": "No tracks found to change.",
+	"MUSIC_BATCH_METADATA_UPDATED": "{{count}} tracks changed",
+	"MUSIC_BATCH_METADATA_FAILED_TITLE": "These tracks could not be changed:",
+	"MUSIC_BATCH_METADATA_FAILED_FILE": "File {{id}}",
+	"MUSIC_BATCH_METADATA_FAILED": "Could not change the tracks."
 }

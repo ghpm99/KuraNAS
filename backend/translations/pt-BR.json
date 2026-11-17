@@ -2184,5 +2184,17 @@
 	"MUSIC_METADATA_SAVE": "Salvar",
 	"MUSIC_METADATA_SAVED": "Informações da faixa salvas.",
 	"MUSIC_METADATA_SAVE_FAILED": "Não foi possível salvar as informações da faixa.",
-	"MUSIC_METADATA_NUMBER_INVALID": "Informe apenas números inteiros."
+	"MUSIC_METADATA_NUMBER_INVALID": "Informe apenas números inteiros.",
+	"MUSIC_EDIT_ALBUM": "Editar álbum",
+	"MUSIC_EDIT_FOLDER": "Editar pasta",
+	"MUSIC_BATCH_METADATA_HINT": "Preencha apenas o que deseja alterar. Campos vazios não são modificados.",
+	"MUSIC_BATCH_METADATA_REVIEW": "Revisar",
+	"MUSIC_BATCH_METADATA_CONFIRM": "Confirmar",
+	"MUSIC_BATCH_METADATA_BACK": "Voltar",
+	"MUSIC_BATCH_METADATA_WILL_CHANGE": "{{count}} faixas serão alteradas",
+	"MUSIC_BATCH_METADATA_NO_MATCH": "Nenhuma faixa encontrada para alterar.",
+	"MUSIC_BATCH_METADATA_UPDATED": "{{count}} faixas alteradas",
+	"MUSIC_BATCH_METADATA_FAILED_TITLE": "Não foi possível alterar estas faixas:",
+	"MUSIC_BATCH_METADATA_FAILED_FILE": "Arquivo {{id}}",
+	"MUSIC_BATCH_METADATA_FAILED": "Não foi possível alterar as faixas."
 }
