@@ -23,7 +23,7 @@ Excluir uma captura promovida remove só o registro da captura; o vídeo continu
 - [x] Teste de handler decodifica `deleted` e `library_file_kept`; seam test do `DELETE` no frontend.
 - [ ] `12/CA-09` — no sistema rodando: excluir uma captura promovida não remove o vídeo de Vídeos nem do disco; a confirmação diz isso.
 - [ ] Excluir uma captura que falhou na promoção apaga o arquivo recebido.
-- [ ] `make ci` verde.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
