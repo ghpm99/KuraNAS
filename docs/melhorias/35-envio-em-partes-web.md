@@ -19,7 +19,7 @@ Um arquivo grande enviado pelo navegador sobrevive a quedas de conexão e contin
 5. **Cancelar** chama `DELETE /files/upload/:upload_id`.
 6. **Conflito e espaço**: o `init` leva a política escolhida no seletor do painel, como no envio de uma requisição; `409` (com `fail`) e `507` viram falha com a mensagem do servidor, antes de enviar. O diálogo de conflito de `RF-06` fica para o sub-item 35.1.
 7. **Já existia** (`RN-05`): para arquivos em partes, o SHA-256 é calculado no navegador antes do `init` (em fluxo, sem carregar o arquivo inteiro); `already_exists` marca o item como "já existia". Enquanto calcula, o item fica "conferindo" (`RF-03`).
-8. **Sair da página** (`RF-07`): com envio em andamento, fechar ou recarregar a aba pede confirmação do navegador; navegar dentro do app não interrompe (o painel está acima das rotas).
+8. **Sair da página** (`RF-07`): com envio em andamento, fechar ou recarregar a aba pede confirmação do navegador; navegar dentro do app não interrompe. Conferido em 2026-11-17: o `UploadQueueProvider` estava montado em `features/files/files/filesLayout.tsx` (só Arquivos e Favoritos) — sair dessas telas desmontava a fila e o painel; ele sobe para o `ShellLayout` de `app/App.tsx`.
 
 ### Sub-itens
 
