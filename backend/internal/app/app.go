@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"nas-go/api/internal/api/v1/autoshutdown"
+	"nas-go/api/internal/api/v1/files"
 	ingest "nas-go/api/internal/api/v1/ingest"
 	"nas-go/api/internal/api/v1/notifications"
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
@@ -74,6 +75,7 @@ type Application struct {
 	FolderWatcher     FolderWatcherInterface
 	TrashPurger       *trash.Purger
 	AutoShutdownSched *autoshutdown.Scheduler
+	UploadReaper      *files.UploadSessionReaper
 	SystemEvents      systemevent.ServiceInterface
 }
 
@@ -184,6 +186,9 @@ func InitializeApp() (*Application, error) {
 		trashPurger.Start()
 	}
 
+	uploadReaper := files.NewUploadSessionReaper(files.DefaultUploadReapInterval, nil)
+	uploadReaper.Start()
+
 	autoShutdownSched := startAutoShutdownScheduler(appContext)
 
 	udpListener := discovery.NewUDPListener(discovery.DefaultUDPPort, 8000)
@@ -211,6 +216,7 @@ func InitializeApp() (*Application, error) {
 		FolderWatcher:     folderWatcher,
 		TrashPurger:       trashPurger,
 		AutoShutdownSched: autoShutdownSched,
+		UploadReaper:      uploadReaper,
 		SystemEvents:      systemEvents,
 	}, nil
 }
@@ -377,6 +383,10 @@ func (app *Application) Stop() error {
 
 	if app.TrashPurger != nil {
 		app.TrashPurger.Stop()
+	}
+
+	if app.UploadReaper != nil {
+		app.UploadReaper.Stop()
 	}
 
 	if app.AutoShutdownSched != nil {
