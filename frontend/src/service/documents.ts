@@ -1,3 +1,4 @@
+import type { Pagination } from '@/types/pagination';
 import { apiBase } from '.';
 
 export interface DocumentSearchResult {
@@ -11,17 +12,7 @@ export interface DocumentSearchResult {
     snippet: string;
 }
 
-export interface DocumentSearchPagination {
-    page: number;
-    page_size: number;
-    has_next: boolean;
-    has_prev: boolean;
-}
-
-export interface DocumentSearchResponse {
-    items: DocumentSearchResult[];
-    pagination: DocumentSearchPagination;
-}
+export type DocumentSearchResponse = Pagination<DocumentSearchResult>;
 
 type SearchDocumentsParams = {
     q: string;

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useDocumentSearchResults from './useDocumentSearchResults';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockGet = jest.fn();
 
@@ -16,10 +17,10 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 const pageOf = (fileId: number, page: number, hasNext: boolean) => ({
-    data: {
-        items: [{ file_id: fileId, name: `doc-${fileId}.txt`, path: `/doc-${fileId}.txt` }],
-        pagination: { page, page_size: 20, has_next: hasNext, has_prev: page > 1 },
-    },
+    data: buildServerPage(
+        [{ file_id: fileId, name: `doc-${fileId}.txt`, path: `/doc-${fileId}.txt` }],
+        { page, pageSize: 20, hasNext }
+    ),
 });
 
 describe('useDocumentSearchResults seam', () => {
