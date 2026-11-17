@@ -7,6 +7,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 
 type AboutDetail = {
     label: string;
@@ -123,8 +124,10 @@ export const useAboutScreen = () => {
         onSuccess: () => {
             enqueueSnackbar(t('UPDATE_APPLIED'), { variant: 'success' });
         },
-        onError: () => {
-            enqueueSnackbar(t('ERROR_UPDATE_APPLY'), { variant: 'error' });
+        onError: (applyError) => {
+            enqueueSnackbar(extractBackendErrorMessage(applyError) ?? t('ERROR_UPDATE_APPLY'), {
+                variant: 'error',
+            });
         },
     });
 

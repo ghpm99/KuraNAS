@@ -78,4 +78,27 @@ describe('components/about/AboutScreen (seam)', () => {
 
 		await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/update/apply'));
 	});
+
+	it('shows the server message verbatim when the package is refused', async () => {
+		mockedApi.post.mockRejectedValue({
+			response: { status: 409, data: { error: 'O pacote não confere com o checksum publicado.' } },
+		});
+		renderAbout();
+
+		fireEvent.click(await screen.findByText('ABOUT_UPDATE_APPLY'));
+
+		expect(
+			await screen.findByText('O pacote não confere com o checksum publicado.')
+		).toBeInTheDocument();
+		expect(screen.queryByText('ERROR_UPDATE_APPLY')).not.toBeInTheDocument();
+	});
+
+	it('falls back to the generic message when the server sends none', async () => {
+		mockedApi.post.mockRejectedValue(new Error('network'));
+		renderAbout();
+
+		fireEvent.click(await screen.findByText('ABOUT_UPDATE_APPLY'));
+
+		expect(await screen.findByText('ERROR_UPDATE_APPLY')).toBeInTheDocument();
+	});
 });
