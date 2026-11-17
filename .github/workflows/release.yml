@@ -305,6 +305,9 @@ jobs:
           tag: ${{ needs.version.outputs.tag }}
           last-tag: ${{ needs.version.outputs.last_tag }}
 
+      - name: Gerar SHA256SUMS dos pacotes
+        run: sha256sum kuranas-linux.zip kuranas-windows.zip > SHA256SUMS
+
       - name: Criar GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -314,5 +317,6 @@ jobs:
           files: |
             kuranas-linux.zip
             kuranas-windows.zip
+            SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
