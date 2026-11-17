@@ -10,6 +10,7 @@ import {
 import { Play, Tag } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
+import RenameGenreButton from '@/features/music/components/genreRename/RenameGenreButton';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createGenrePlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
@@ -77,6 +78,17 @@ export default function GenresView() {
         });
     };
 
+    const handleSelectRenamedGenre = (renamedGenreKey: string) => {
+        setSearchParams(
+            (current) => {
+                const next = new URLSearchParams(current);
+                next.set('genre', renamedGenreKey);
+                return next;
+            },
+            { replace: true }
+        );
+    };
+
     const handleBack = () => {
         setSearchParams(
             (current) => {
@@ -89,7 +101,13 @@ export default function GenresView() {
     };
 
     if (selectedGenreKey) {
-        return <GenreTracksView genreKey={selectedGenreKey} onBack={handleBack} />;
+        return (
+            <GenreTracksView
+                genreKey={selectedGenreKey}
+                onBack={handleBack}
+                onRenamed={handleSelectRenamedGenre}
+            />
+        );
     }
 
     return (
@@ -271,7 +289,13 @@ function GenreListView({
     );
 }
 
-function GenreTracksView({ genreKey, onBack }: { genreKey: string; onBack: () => void }) {
+type GenreTracksViewProps = {
+    genreKey: string;
+    onBack: () => void;
+    onRenamed: (renamedGenreKey: string) => void;
+};
+
+function GenreTracksView({ genreKey, onBack, onRenamed }: GenreTracksViewProps) {
     const { replaceQueue } = useGlobalMusic();
     const summary = useMusicGroupSummary<MusicGroupSummary>(['music-genre-summary', genreKey], () =>
         getMusicGenreSummary(genreKey)
@@ -310,6 +334,16 @@ function GenreTracksView({ genreKey, onBack }: { genreKey: string; onBack: () =>
                 onBack={onBack}
                 onPlayAll={() => void queueGenreTracks()}
                 onShuffleAll={() => void queueGenreTracks(undefined, true)}
+                actions={
+                    summary && (
+                        <RenameGenreButton
+                            genreKey={genreKey}
+                            genreName={summary.name}
+                            trackCount={summary.track_count}
+                            onRenamed={onRenamed}
+                        />
+                    )
+                }
             />
 
             <MusicCollectionTrackList

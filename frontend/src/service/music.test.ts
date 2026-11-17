@@ -27,7 +27,9 @@ import {
     getMusicQueueByGenre,
     getMostPlayedTracks,
     getRecentlyPlayedTracks,
+    isGenreNameRefused,
     readRefusedMetadataField,
+    renameMusicGenre,
     recordMusicPlay,
     searchMusicTracks,
     updateTrackMetadata,
@@ -245,6 +247,43 @@ describe('service/music', () => {
                 readRefusedMetadataField(buildAxiosError(404, { error: 'x', field: 'year' }))
             ).toBeUndefined();
             expect(readRefusedMetadataField(new Error('offline'))).toBeUndefined();
+        });
+
+        it('recognizes a refused genre name only on a 400 naming the name field', () => {
+            expect(isGenreNameRefused(buildAxiosError(400, { error: 'x', field: 'name' }))).toBe(
+                true
+            );
+            expect(isGenreNameRefused(buildAxiosError(400, { error: 'x', field: 'year' }))).toBe(
+                false
+            );
+            expect(isGenreNameRefused(buildAxiosError(404, { error: 'x', field: 'name' }))).toBe(
+                false
+            );
+            expect(isGenreNameRefused(new Error('offline'))).toBe(false);
+        });
+
+        describe('renameMusicGenre', () => {
+            it('puts the new name on the encoded genre key and converts the response', async () => {
+                mockedApi.put.mockResolvedValue({
+                    data: { key: 'rock', name: 'Rock', track_count: 412, merged: true },
+                });
+
+                const renamedGenre = await renameMusicGenre('rock n roll', 'Rock');
+
+                expect(mockedApi.put).toHaveBeenCalledTimes(1);
+                expect(mockedApi.put).toHaveBeenCalledWith(
+                    '/music/library/genres/rock%20n%20roll',
+                    {
+                        name: 'Rock',
+                    }
+                );
+                expect(renamedGenre).toEqual({
+                    key: 'rock',
+                    name: 'Rock',
+                    trackCount: 412,
+                    merged: true,
+                });
+            });
         });
 
         describe('updateTracksMetadata', () => {

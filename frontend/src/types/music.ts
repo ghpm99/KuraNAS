@@ -64,6 +64,13 @@ export interface MusicGenre {
     track_count: number;
 }
 
+export interface RenamedMusicGenre {
+    key: string;
+    name: string;
+    trackCount: number;
+    merged: boolean;
+}
+
 export interface MusicFolder {
     folder: string;
     track_count: number;

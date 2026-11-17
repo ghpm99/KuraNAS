@@ -14,8 +14,11 @@ export default function useTrackMetadataSuggestions() {
         queryFn: () => getMusicGenres(1, suggestionPageSize, nameAscending),
     });
 
+    const genreGroups = genrePage?.items ?? [];
+
     return {
         artistNames: artistPage?.items?.map((artistGroup) => artistGroup.artist) ?? [],
-        genreNames: genrePage?.items?.map((genreGroup) => genreGroup.genre) ?? [],
+        genreGroups,
+        genreNames: genreGroups.map((genreGroup) => genreGroup.genre),
     };
 }

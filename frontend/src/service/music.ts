@@ -14,6 +14,7 @@ import {
     MusicQueue,
     BatchTrackMetadataResult,
     BatchTrackMetadataSelector,
+    RenamedMusicGenre,
     TrackMetadataFieldName,
     TrackMetadataFields,
 } from '@/types/music';
@@ -218,10 +219,39 @@ export const updateTracksMetadata = async (
     };
 };
 
-export const readRefusedMetadataField = (error: unknown): TrackMetadataFieldName | undefined => {
+const readRefusedField = (error: unknown): unknown => {
     if (!isAxiosError(error) || error.response?.status !== 400) {
         return undefined;
     }
-    const refusedField = (error.response.data as { field?: unknown } | undefined)?.field;
+    return (error.response.data as { field?: unknown } | undefined)?.field;
+};
+
+export const readRefusedMetadataField = (error: unknown): TrackMetadataFieldName | undefined => {
+    const refusedField = readRefusedField(error);
     return trackMetadataFieldNames.find((fieldName) => fieldName === refusedField);
+};
+
+export const isGenreNameRefused = (error: unknown): boolean => readRefusedField(error) === 'name';
+
+interface RenamedMusicGenreResponse {
+    key: string;
+    name: string;
+    track_count: number;
+    merged: boolean;
+}
+
+export const renameMusicGenre = async (
+    genreKey: string,
+    name: string
+): Promise<RenamedMusicGenre> => {
+    const response = await apiBase.put<RenamedMusicGenreResponse>(
+        `/music/library/genres/${encodeURIComponent(genreKey)}`,
+        { name }
+    );
+    return {
+        key: response.data.key,
+        name: response.data.name,
+        trackCount: response.data.track_count,
+        merged: response.data.merged,
+    };
 };
