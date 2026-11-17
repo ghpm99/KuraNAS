@@ -6,6 +6,8 @@
 
 O extrator lê os `.json` que acompanham cada mídia e monta `Metadata *TakeoutMetadata` em cada `ExtractedFile` (`takeout/extractor.go:104-124`, `:171-183`; campos em `takeout/model.go:16-28`: `PhotoTakenTime`, `CreationTime`, `GeoData`…). Quem consome o resultado só usa `DestinationPath` (`backend/internal/worker/engine/step_takeout.go:40-48`): **os metadados são descartados**. Fotos sem EXIF (capturas de tela, imagens recebidas por mensagem, fotos antigas editadas) entram na galeria com a data da importação, todas amontoadas no dia do envio. Além disso, o JSON é associado pelo nome base, que colide entre pastas.
 
+Conferido em 2026-11-17: depois da task 26 a associação já é por pasta + nome (`indexMetadataByEntryKey`/`findMetadata`, `takeout/extractor.go:172-207`: chave `pasta/nome-da-mídia`, mais `pasta/title` do JSON). Falta o formato `foto.jpg.supplemental-metadata.json` (vira a chave `foto.jpg.supplemental-metadata`) e o nome truncado, que hoje só casa quando o `title` do JSON ajuda. O consumo continua descartando os metadados: `step_takeout.go:47-52` só coleta `DestinationPath`. Descrição e localização da imagem ficam em `image_metadata.image_description`/`gps_latitude`/`gps_longitude` (migração `0008`), preenchidas pelo passo de metadados a partir do EXIF.
+
 ## Objetivo
 
 Cada foto importada aparece na galeria no dia em que foi tirada.
