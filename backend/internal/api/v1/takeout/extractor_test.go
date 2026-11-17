@@ -5,7 +5,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"nas-go/api/internal/api/v1/libraries"
 )
@@ -206,10 +208,10 @@ func TestExtractTakeoutSkipsUnsafeAndSymlinkEntries(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(result.Files) != 1 || result.SkippedEntries != 4 {
-		t.Fatalf("expected 1 extracted and 4 skipped, got %d and %d", len(result.Files), result.SkippedEntries)
+	if len(result.Files) != 1 || result.Ignored != 4 {
+		t.Fatalf("expected 1 extracted and 4 skipped, got %d and %d", len(result.Files), result.Ignored)
 	}
-	if _, err := os.Stat(filepath.Join(imageLib, "takeout", "photo.jpg")); err != nil {
+	if _, err := os.Stat(filepath.Join(imageLib, "takeout", "ok", "photo.jpg")); err != nil {
 		t.Fatalf("expected safe entry extracted: %v", err)
 	}
 	for _, escapedPath := range []string{
@@ -220,5 +222,220 @@ func TestExtractTakeoutSkipsUnsafeAndSymlinkEntries(t *testing.T) {
 		if _, err := os.Stat(escapedPath); err == nil {
 			t.Fatalf("unexpected file written at %s", escapedPath)
 		}
+	}
+}
+
+func extractSingleLibrary(t *testing.T, files map[string]string) (string, ExtractResult, func(zipFiles map[string]string) ExtractResult) {
+	t.Helper()
+	tempDir := t.TempDir()
+	imageLib := filepath.Join(tempDir, "Imagens")
+	resolver := &extractorLibraryResolverMock{paths: map[libraries.LibraryCategory]string{
+		libraries.LibraryCategoryImages: imageLib,
+		libraries.LibraryCategoryVideos: filepath.Join(tempDir, "Videos"),
+	}}
+	extract := func(zipFiles map[string]string) ExtractResult {
+		zipPath := filepath.Join(tempDir, "input.zip")
+		createZipFile(t, zipPath, zipFiles)
+		extraction, err := ExtractTakeout(zipPath, resolver)
+		if err != nil {
+			t.Fatalf("ExtractTakeout returned error: %v", err)
+		}
+		return extraction
+	}
+	return imageLib, extract(files), extract
+}
+
+func readFileContent(t *testing.T, filePath string) string {
+	t.Helper()
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("expected file %s: %v", filePath, err)
+	}
+	return string(content)
+}
+
+func TestExtractTakeoutKeepsSameNameFromDifferentAlbums(t *testing.T) {
+	imageLib, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"Takeout/Google Fotos/Álbum A/IMG_0001.JPG": "photo-a",
+		"Takeout/Google Fotos/Álbum B/IMG_0001.JPG": "photo-b",
+	})
+
+	if extraction.Imported != 2 || extraction.TotalEntries != 2 {
+		t.Fatalf("expected 2 imported of 2, got %+v", extraction)
+	}
+	if got := readFileContent(t, filepath.Join(imageLib, "takeout", "Álbum A", "IMG_0001.JPG")); got != "photo-a" {
+		t.Fatalf("album A content = %q", got)
+	}
+	if got := readFileContent(t, filepath.Join(imageLib, "takeout", "Álbum B", "IMG_0001.JPG")); got != "photo-b" {
+		t.Fatalf("album B content = %q", got)
+	}
+}
+
+func TestExtractTakeoutStripsGooglePhotosPrefixCaseInsensitive(t *testing.T) {
+	imageLib, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"TAKEOUT/Google Photos/Viagem/a.jpg": "a",
+		"Takeout/Google Fotos/b.jpg":         "b",
+	})
+
+	if extraction.Imported != 2 {
+		t.Fatalf("expected 2 imported, got %+v", extraction)
+	}
+	readFileContent(t, filepath.Join(imageLib, "takeout", "Viagem", "a.jpg"))
+	readFileContent(t, filepath.Join(imageLib, "takeout", "b.jpg"))
+}
+
+func TestExtractTakeoutSuffixesDifferentContentInSameFolder(t *testing.T) {
+	tempDir := t.TempDir()
+	imageLib := filepath.Join(tempDir, "Imagens")
+	existingPath := filepath.Join(imageLib, "takeout", "Álbum", "IMG_0001.JPG")
+	if err := os.MkdirAll(filepath.Dir(existingPath), 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(existingPath, []byte("original"), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(filepath.Dir(existingPath), "IMG_0001 (2).JPG"), []byte("second"), 0644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	zipPath := filepath.Join(tempDir, "input.zip")
+	createZipFile(t, zipPath, map[string]string{"Álbum/IMG_0001.JPG": "novo"})
+
+	extraction, err := ExtractTakeout(zipPath, &extractorLibraryResolverMock{paths: map[libraries.LibraryCategory]string{
+		libraries.LibraryCategoryImages: imageLib,
+	}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if extraction.Imported != 1 || extraction.AlreadyExisting != 0 {
+		t.Fatalf("expected 1 imported, got %+v", extraction)
+	}
+	if got := readFileContent(t, existingPath); got != "original" {
+		t.Fatalf("original overwritten: %q", got)
+	}
+	if got := readFileContent(t, filepath.Join(filepath.Dir(existingPath), "IMG_0001 (3).JPG")); got != "novo" {
+		t.Fatalf("suffixed content = %q", got)
+	}
+}
+
+func TestExtractTakeoutCountsSuffixedIdenticalFileAsAlreadyExisting(t *testing.T) {
+	tempDir := t.TempDir()
+	imageLib := filepath.Join(tempDir, "Imagens")
+	folder := filepath.Join(imageLib, "takeout", "Álbum")
+	if err := os.MkdirAll(folder, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	for fileName, content := range map[string]string{"IMG_0001.JPG": "original", "IMG_0001 (2).JPG": "novo"} {
+		if err := os.WriteFile(filepath.Join(folder, fileName), []byte(content), 0644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+	}
+	zipPath := filepath.Join(tempDir, "input.zip")
+	createZipFile(t, zipPath, map[string]string{"Álbum/IMG_0001.JPG": "novo"})
+
+	extraction, err := ExtractTakeout(zipPath, &extractorLibraryResolverMock{paths: map[libraries.LibraryCategory]string{
+		libraries.LibraryCategoryImages: imageLib,
+	}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if extraction.AlreadyExisting != 1 || extraction.Imported != 0 || len(extraction.Files) != 0 {
+		t.Fatalf("expected 1 already existing, got %+v", extraction)
+	}
+}
+
+func TestExtractTakeoutTwiceDoesNotRewriteAnything(t *testing.T) {
+	zipFiles := map[string]string{
+		"Takeout/Google Fotos/A/IMG_0001.JPG": "photo-a",
+		"Takeout/Google Fotos/B/IMG_0001.JPG": "photo-b",
+		"Takeout/Google Fotos/B/clip.mp4":     "clip",
+	}
+	imageLib, first, extractAgain := extractSingleLibrary(t, zipFiles)
+	if first.Imported != 3 {
+		t.Fatalf("expected 3 imported, got %+v", first)
+	}
+	photoPath := filepath.Join(imageLib, "takeout", "A", "IMG_0001.JPG")
+	pastModTime := time.Now().Add(-time.Hour).Truncate(time.Second)
+	if err := os.Chtimes(photoPath, pastModTime, pastModTime); err != nil {
+		t.Fatalf("chtimes: %v", err)
+	}
+
+	second := extractAgain(zipFiles)
+
+	if second.Imported != 0 || second.AlreadyExisting != 3 || second.TotalEntries != 3 || len(second.Files) != 0 {
+		t.Fatalf("expected all already existing, got %+v", second)
+	}
+	info, err := os.Stat(photoPath)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if !info.ModTime().Equal(pastModTime) {
+		t.Fatalf("file was rewritten: modtime %v", info.ModTime())
+	}
+	if _, err := os.Stat(filepath.Join(imageLib, "takeout", "A", "IMG_0001 (2).JPG")); err == nil {
+		t.Fatalf("unexpected suffixed duplicate")
+	}
+}
+
+func TestExtractTakeoutCountsIgnoredAndMetadataSeparately(t *testing.T) {
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"A/IMG_0001.JPG":      "photo",
+		"A/IMG_0001.JPG.json": `{"title":"IMG_0001.JPG"}`,
+		"A/README.txt":        "text",
+	})
+
+	if extraction.TotalEntries != 2 || extraction.Imported != 1 || extraction.Ignored != 1 || extraction.FailedEntries != 0 {
+		t.Fatalf("unexpected counts: %+v", extraction)
+	}
+}
+
+func TestExtractTakeoutMatchesMetadataFromSameFolderOnly(t *testing.T) {
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"Takeout/Google Fotos/A/IMG_0001.JPG":      "photo-a",
+		"Takeout/Google Fotos/A/IMG_0001.JPG.json": `{"title":"IMG_0001.JPG","photoTakenTime":{"timestamp":"111"}}`,
+		"Takeout/Google Fotos/B/IMG_0001.JPG":      "photo-b",
+		"Takeout/Google Fotos/B/IMG_0001.JPG.json": `{"title":"IMG_0001.JPG","photoTakenTime":{"timestamp":"222"}}`,
+		"Takeout/Google Fotos/C/IMG_0001.JPG":      "photo-c",
+	})
+
+	timestampByFolder := map[string]string{}
+	for _, extracted := range extraction.Files {
+		folder := filepath.Base(filepath.Dir(extracted.DestinationPath))
+		if extracted.Metadata == nil {
+			timestampByFolder[folder] = ""
+			continue
+		}
+		timestampByFolder[folder] = extracted.Metadata.PhotoTakenTime.Timestamp
+	}
+	expected := map[string]string{"A": "111", "B": "222", "C": ""}
+	for folder, timestamp := range expected {
+		if timestampByFolder[folder] != timestamp {
+			t.Fatalf("folder %s timestamp = %q, want %q", folder, timestampByFolder[folder], timestamp)
+		}
+	}
+}
+
+func TestExtractTakeoutMatchesMetadataByTitleInSameFolder(t *testing.T) {
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"A/IMG_0001.JPG":  "photo",
+		"A/IMG_0001.json": `{"title":"IMG_0001.JPG","photoTakenTime":{"timestamp":"333"}}`,
+	})
+
+	if len(extraction.Files) != 1 || extraction.Files[0].Metadata == nil || extraction.Files[0].Metadata.PhotoTakenTime.Timestamp != "333" {
+		t.Fatalf("expected metadata matched by title, got %+v", extraction.Files)
+	}
+}
+
+func TestExtractTakeoutUnsafeEntriesAreIgnoredAndCounted(t *testing.T) {
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"../x.jpg": "x",
+		"ok/y.jpg": "y",
+	})
+
+	if extraction.TotalEntries != 2 || extraction.Ignored != 1 || extraction.Imported != 1 {
+		t.Fatalf("unexpected counts: %+v", extraction)
+	}
+	if strings.Contains(extraction.Files[0].DestinationPath, "..") {
+		t.Fatalf("unsafe destination %s", extraction.Files[0].DestinationPath)
 	}
 }

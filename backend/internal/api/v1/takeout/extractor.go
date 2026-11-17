@@ -12,6 +12,7 @@ import (
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/utils"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -44,9 +45,9 @@ func classifyFile(fileName string, mimeType string) libraries.LibraryCategory {
 	return ""
 }
 
-func buildDestinationPath(libraryPath string, fileName string) (string, error) {
+func buildDestinationPath(libraryPath string, relativeEntryPath string) (string, error) {
 	extractionRoot := filepath.Join(libraryPath, "takeout")
-	return safeExtractionPath(extractionRoot, sanitizeTakeoutFileName(filepath.Base(fileName)))
+	return safeExtractionPath(extractionRoot, sanitizeEntryPath(relativeEntryPath))
 }
 
 func safeExtractionPath(extractionRoot string, entryName string) (string, error) {
@@ -89,6 +90,10 @@ func isUnsafeArchiveEntry(entry *zip.File) bool {
 	return false
 }
 
+// ExtractTakeout extracts the photos and videos of a Google Takeout zip into
+// the matching libraries under takeout/<folders of the entry>/, never
+// overwriting existing files. Unreadable entries are counted as failed and the
+// extraction continues; an invalid zip or an unresolvable library aborts it.
 func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (ExtractResult, error) {
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -96,8 +101,8 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 	}
 	defer reader.Close()
 
-	metadataByName := map[string]TakeoutMetadata{}
-	result := ExtractResult{
+	metadataByEntryKey := indexMetadataByEntryKey(reader.File)
+	extraction := ExtractResult{
 		Files: make([]ExtractedFile, 0),
 	}
 
@@ -106,42 +111,22 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 			continue
 		}
 
-		entryName := filepath.Base(entry.Name)
-		if strings.HasSuffix(strings.ToLower(entryName), ".json") {
-			content, readErr := readZipEntry(entry)
-			if readErr != nil {
-				continue
-			}
-			metadata, parseErr := parseTakeoutMetadata(content)
-			if parseErr != nil {
-				continue
-			}
-			metadataByName[strings.TrimSuffix(entryName, ".json")] = metadata
-			if strings.TrimSpace(metadata.Title) != "" {
-				metadataByName[metadata.Title] = metadata
-			}
-		}
-	}
-
-	for _, entry := range reader.File {
-		if entry.FileInfo().IsDir() {
-			continue
-		}
-
 		if isUnsafeArchiveEntry(entry) {
-			result.SkippedEntries++
+			extraction.TotalEntries++
+			extraction.Ignored++
 			continue
 		}
 
-		entryName := filepath.Base(entry.Name)
-		lowerName := strings.ToLower(entryName)
-		if strings.HasSuffix(lowerName, ".json") {
+		relativePath := stripGooglePhotosPrefix(entry.Name)
+		if isMetadataFileName(relativePath) {
 			continue
 		}
+		extraction.TotalEntries++
 
-		mimeType := mime.TypeByExtension(strings.ToLower(filepath.Ext(entryName)))
-		category := classifyFile(entryName, mimeType)
+		entryName := path.Base(relativePath)
+		category := classifyFile(entryName, mime.TypeByExtension(strings.ToLower(filepath.Ext(entryName))))
 		if category == "" {
+			extraction.Ignored++
 			continue
 		}
 
@@ -150,40 +135,78 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 			return ExtractResult{}, fmt.Errorf("resolve library %s: %w", category, resolveErr)
 		}
 
-		destinationPath, pathErr := buildDestinationPath(libraryDto.Path, entryName)
+		destinationPath, pathErr := buildDestinationPath(libraryDto.Path, relativePath)
 		if pathErr != nil {
 			applog.Warn("takeout: skipping entry with unsafe destination", "entry", entry.Name)
-			result.SkippedEntries++
+			extraction.Ignored++
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(destinationPath), 0755); err != nil {
-			return ExtractResult{}, fmt.Errorf("create destination directory: %w", err)
-		}
 
-		content, readErr := readZipEntry(entry)
-		if readErr != nil {
-			return ExtractResult{}, readErr
+		writtenPath, isAlreadyExisting, writeErr := extractEntryWithoutOverwrite(entry, destinationPath)
+		if writeErr != nil {
+			applog.Warn("takeout: failed to extract entry", "entry", entry.Name, "error", writeErr)
+			extraction.FailedEntries++
+			continue
 		}
-		if writeErr := os.WriteFile(destinationPath, content, 0644); writeErr != nil {
-			return ExtractResult{}, fmt.Errorf("write extracted file: %w", writeErr)
+		if isAlreadyExisting {
+			extraction.AlreadyExisting++
+			continue
 		}
+		extraction.Imported++
 
-		metadata, ok := metadataByName[entryName]
-		var metadataPointer *TakeoutMetadata
-		if ok {
-			metadataCopy := metadata
-			metadataPointer = &metadataCopy
-		}
-
-		result.Files = append(result.Files, ExtractedFile{
+		extraction.Files = append(extraction.Files, ExtractedFile{
 			SourcePath:      entry.Name,
-			DestinationPath: destinationPath,
+			DestinationPath: writtenPath,
 			Category:        string(category),
-			Metadata:        metadataPointer,
+			Metadata:        findMetadata(metadataByEntryKey, relativePath),
 		})
 	}
 
-	return result, nil
+	return extraction, nil
+}
+
+func isMetadataFileName(entryPath string) bool {
+	return strings.HasSuffix(strings.ToLower(entryPath), ".json")
+}
+
+func indexMetadataByEntryKey(entries []*zip.File) map[string]TakeoutMetadata {
+	metadataByEntryKey := map[string]TakeoutMetadata{}
+	for _, entry := range entries {
+		if entry.FileInfo().IsDir() || isUnsafeArchiveEntry(entry) {
+			continue
+		}
+		relativePath := stripGooglePhotosPrefix(entry.Name)
+		if !isMetadataFileName(relativePath) {
+			continue
+		}
+		content, readErr := readZipEntry(entry)
+		if readErr != nil {
+			continue
+		}
+		metadata, parseErr := parseTakeoutMetadata(content)
+		if parseErr != nil {
+			continue
+		}
+		folder := path.Dir(relativePath)
+		mediaName := strings.TrimSuffix(path.Base(relativePath), path.Ext(relativePath))
+		metadataByEntryKey[metadataEntryKey(folder, mediaName)] = metadata
+		if strings.TrimSpace(metadata.Title) != "" {
+			metadataByEntryKey[metadataEntryKey(folder, metadata.Title)] = metadata
+		}
+	}
+	return metadataByEntryKey
+}
+
+func findMetadata(metadataByEntryKey map[string]TakeoutMetadata, relativePath string) *TakeoutMetadata {
+	metadata, found := metadataByEntryKey[metadataEntryKey(path.Dir(relativePath), path.Base(relativePath))]
+	if !found {
+		return nil
+	}
+	return &metadata
+}
+
+func metadataEntryKey(folder string, mediaName string) string {
+	return folder + "/" + mediaName
 }
 
 func readZipEntry(entry *zip.File) ([]byte, error) {

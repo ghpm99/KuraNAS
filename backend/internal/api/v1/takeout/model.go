@@ -44,6 +44,10 @@ type ExtractedFile struct {
 }
 
 type ExtractResult struct {
-	Files          []ExtractedFile `json:"files"`
-	SkippedEntries int             `json:"-"`
+	Files           []ExtractedFile `json:"files"`
+	TotalEntries    int             `json:"total_entries"`
+	Imported        int             `json:"imported"`
+	AlreadyExisting int             `json:"already_existing"`
+	Ignored         int             `json:"ignored"`
+	FailedEntries   int             `json:"failed_entries"`
 }
