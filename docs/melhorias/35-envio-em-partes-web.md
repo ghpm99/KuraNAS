@@ -23,7 +23,7 @@ Um arquivo grande enviado pelo navegador sobrevive a quedas de conexão e contin
 
 ### Sub-itens
 
-- [ ] 35.1. Diálogo de conflito (`RF-06`) com as opções de `RN-04` e "aplicar a todos", aberto quando o servidor recusa por nome existente, nos dois caminhos de envio.
+- [x] 35.1. Diálogo de conflito (`RF-06`) com as opções de `RN-04` e "aplicar a todos", aberto quando o servidor recusa por nome existente, nos dois caminhos de envio.
 
 ## Critérios de aceite
 
@@ -36,7 +36,7 @@ Verificados no sistema rodando.
 - [ ] Enviar de novo o mesmo arquivo grande o marca como "já existia" sem transferir.
 - [ ] Cancelar no meio não deixa nada no destino.
 - [ ] Um lote com arquivos pequenos e grandes mostra todos no mesmo painel, com até 3 simultâneos (`RF-05`).
-- [ ] Render sem mock dos componentes alterados; `make ci` verde.
+- [x] Render sem mock dos componentes alterados; `make ci` verde.
 
 ## Fora de escopo
 
