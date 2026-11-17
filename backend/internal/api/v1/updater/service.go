@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"nas-go/api/api"
+	"nas-go/api/pkg/applog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -97,17 +98,8 @@ func (s *Service) DownloadAndApply() error {
 	}
 
 	assetName := getAssetNameFunc()
-	var downloadURL string
-	var expectedSize int64
-	for _, asset := range release.Assets {
-		if asset.Name == assetName {
-			downloadURL = asset.BrowserDownloadURL
-			expectedSize = asset.Size
-			break
-		}
-	}
-
-	if downloadURL == "" {
+	downloadURL, expectedSize, found := findAssetURL(release, assetName)
+	if !found {
 		return fmt.Errorf("no matching asset found for %s", assetName)
 	}
 
@@ -115,41 +107,62 @@ func (s *Service) DownloadAndApply() error {
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
+	defer os.RemoveAll(tmpDir)
 
-	zipPath := filepath.Join(tmpDir, assetName)
-	if err := downloadFileFunc(downloadURL, zipPath); err != nil {
-		os.RemoveAll(tmpDir)
-		return fmt.Errorf("failed to download update: %w", err)
-	}
-
-	info, err := os.Stat(zipPath)
+	zipPath, err := downloadVerifiedPackage(release, assetName, downloadURL, expectedSize, tmpDir)
 	if err != nil {
-		os.RemoveAll(tmpDir)
-		return fmt.Errorf("failed to stat downloaded file: %w", err)
-	}
-	if info.Size() != expectedSize {
-		os.RemoveAll(tmpDir)
-		return fmt.Errorf("downloaded file size mismatch: expected %d, got %d", expectedSize, info.Size())
+		logUpdateRefusal(err)
+		return err
 	}
 
 	extractDir := filepath.Join(tmpDir, "extracted")
 	if err := extractAllFunc(zipPath, extractDir); err != nil {
-		os.RemoveAll(tmpDir)
 		return fmt.Errorf("failed to extract update: %w", err)
 	}
 
 	if err := applyFullUpdateFunc(extractDir); err != nil {
-		os.RemoveAll(tmpDir)
 		return fmt.Errorf("failed to apply update: %w", err)
 	}
-
-	os.RemoveAll(tmpDir)
 
 	if s.shutdownFn != nil {
 		time.AfterFunc(2*time.Second, s.shutdownFn)
 	}
 
 	return nil
+}
+
+func downloadVerifiedPackage(release GitHubRelease, assetName, downloadURL string, expectedSize int64, tmpDir string) (string, error) {
+	expectedChecksum, err := fetchExpectedChecksum(release, assetName, tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to obtain update checksum: %w", err)
+	}
+
+	zipPath := filepath.Join(tmpDir, assetName)
+	if err := downloadFileFunc(downloadURL, zipPath, maxUpdatePackageBytes); err != nil {
+		return "", fmt.Errorf("failed to download update: %w", err)
+	}
+
+	info, err := os.Stat(zipPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to stat downloaded file: %w", err)
+	}
+	if info.Size() != expectedSize {
+		return "", fmt.Errorf("downloaded file size mismatch: expected %d, got %d", expectedSize, info.Size())
+	}
+
+	if err := verifyPackageChecksum(zipPath, expectedChecksum); err != nil {
+		return "", fmt.Errorf("failed to verify update package: %w", err)
+	}
+	return zipPath, nil
+}
+
+func logUpdateRefusal(err error) {
+	for _, refusal := range []error{errChecksumMissing, errChecksumNoEntry, errChecksumMismatch, errPackageTooLarge} {
+		if errors.Is(err, refusal) {
+			applog.Error("update refused", "reason", refusal.Error())
+			return
+		}
+	}
 }
 
 func fetchLatestRelease() (GitHubRelease, error) {
@@ -237,7 +250,7 @@ func parseVersion(version string) []int {
 	return parts
 }
 
-func downloadFile(url, dest string) error {
+func downloadFile(url, dest string, maxBytes int64) error {
 	resp, err := downloadHTTPClient.Get(url)
 	if err != nil {
 		return err
@@ -254,8 +267,16 @@ func downloadFile(url, dest string) error {
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	writtenBytes, err := io.Copy(out, io.LimitReader(resp.Body, maxBytes+1))
+	if err != nil {
+		return err
+	}
+	if writtenBytes > maxBytes {
+		out.Close()
+		os.Remove(dest)
+		return errPackageTooLarge
+	}
+	return nil
 }
 
 // extractAll extracts all files from the zip archive into destDir.

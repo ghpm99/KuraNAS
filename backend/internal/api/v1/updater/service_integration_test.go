@@ -144,7 +144,7 @@ func TestDownloadFile_Success(t *testing.T) {
 	})
 
 	dest := filepath.Join(t.TempDir(), "download.bin")
-	if err := downloadFile("https://example.com/file", dest); err != nil {
+	if err := downloadFile("https://example.com/file", dest, 1024); err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 
@@ -167,7 +167,7 @@ func TestDownloadFile_StatusError(t *testing.T) {
 	})
 
 	dest := filepath.Join(t.TempDir(), "download.bin")
-	if err := downloadFile("https://example.com/file", dest); err == nil {
+	if err := downloadFile("https://example.com/file", dest, 1024); err == nil {
 		t.Fatalf("expected error for non-200 status")
 	}
 }
@@ -361,6 +361,7 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 		TagName: "v2.0.0",
 		Assets: []GitHubAsset{
 			{Name: assetName, Size: 4, BrowserDownloadURL: "https://example.com/download"},
+			{Name: checksumsAssetName, BrowserDownloadURL: "https://example.com/sums"},
 		},
 	}
 
@@ -431,7 +432,10 @@ func TestDownloadAndApply_ErrorsAndSuccess(t *testing.T) {
 				}
 				return tc.release, nil
 			}
-			downloadFileFunc = func(url, dest string) error {
+			downloadFileFunc = func(url, dest string, maxBytes int64) error {
+				if url == "https://example.com/sums" {
+					return os.WriteFile(dest, []byte(fourBytesChecksumList(assetName)), 0644)
+				}
 				if tc.downloadErr != nil {
 					return tc.downloadErr
 				}
@@ -482,11 +486,15 @@ func TestDownloadAndApply_NoShutdownFn(t *testing.T) {
 			TagName: "v2.0.0",
 			Assets: []GitHubAsset{
 				{Name: assetName, Size: 4, BrowserDownloadURL: "https://example.com/download"},
+				{Name: checksumsAssetName, BrowserDownloadURL: "https://example.com/sums"},
 			},
 		}, nil
 	}
 	getAssetNameFunc = func() string { return assetName }
-	downloadFileFunc = func(url, dest string) error {
+	downloadFileFunc = func(url, dest string, maxBytes int64) error {
+		if url == "https://example.com/sums" {
+			return os.WriteFile(dest, []byte(fourBytesChecksumList(assetName)), 0644)
+		}
 		return os.WriteFile(dest, []byte("1234"), 0644)
 	}
 	extractAllFunc = func(zipPath, destDir string) error {
