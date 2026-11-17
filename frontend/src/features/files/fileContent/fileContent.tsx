@@ -16,8 +16,7 @@ import FileViewer from './components/fileViewer/fileViewer';
 import FileViewerNavigation from './components/fileViewer/fileViewerNavigation';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import useMediaOpener from '@/components/hooks/useMediaOpener/useMediaOpener';
-import ErrorState from '@/components/errorState/errorState';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 import useFileActionFlow from '../fileActions/useFileActionFlow';
 import { useRegisterPageShortcuts } from '@/components/shortcuts/shortcutRegistry';
 import { fileShortcutDefinitions } from '../shortcuts/fileShortcutDefinitions';
@@ -120,18 +119,6 @@ const FileContent = ({
     if (listingStatus === 'pending') {
         return <FileListingSkeleton viewMode={viewMode} />;
     }
-    if (listingStatus === 'error') {
-        return (
-            <div className={styles.fileContent}>
-                <ErrorState
-                    title={t('FILES_LISTING_ERROR_TITLE')}
-                    backendMessage={searchListing ? searchListing.errorMessage : listingErrorMessage}
-                    onRetry={searchListing ? searchListing.retry : retryListing}
-                />
-            </div>
-        );
-    }
-
     const fileMetadata = (file: FileData): string => {
         if (file.type === FileType.File) {
             const format = file.format ? `${file.format} - ` : '';
@@ -237,83 +224,81 @@ const FileContent = ({
     const isOpenFolderListing =
         selectedItem?.type === FileType.Directory && items === undefined && !searchListing;
 
-    const renderCollection = (collectionTitle: string, collectionItems: FileData[]) => {
-        if (collectionItems.length === 0) {
-            return (
-                <div className={styles.fileContent}>
-                    {showHeading ? <h1 className={styles.title}>{collectionTitle}</h1> : null}
+    const renderCollectionItems = (collectionTitle: string, collectionItems: FileData[]) =>
+        viewMode === 'list' ? (
+            <div className={styles.fileList} role="table" aria-label={collectionTitle}>
+                {items === undefined && isSelectionEnabled && !searchListing ? (
+                    <FileListHeader sort={filesSort} onSortChange={setFilesSort} />
+                ) : null}
+                {collectionItems.map((file) => (
+                    <FileListRow
+                        key={file.id}
+                        title={file.name}
+                        href={buildBrowserUrl(browserRootPath, file.path)}
+                        starred={file.starred}
+                        isCold={file.tier === 'cold'}
+                        sizeText={formatSizeColumn(file, t)}
+                        modifiedText={formatModifiedDate(file.updated_at)}
+                        typeText={formatTypeColumn(file, t)}
+                        secondaryText={searchListing ? file.parent_path : undefined}
+                        thumbnail={thumbnailUrl(file.id)}
+                        onClick={(event) => handleLinkClick(file, event, collectionItems)}
+                        onClickStar={() => handleStarredItem(file.id)}
+                        {...buildInteractionProps(file, collectionItems)}
+                    />
+                ))}
+            </div>
+        ) : (
+            <div className={styles.fileGrid}>
+                {collectionItems.map((file) => (
+                    <FileCard
+                        key={file.id}
+                        title={file.name}
+                        href={buildBrowserUrl(browserRootPath, file.path)}
+                        starred={file.starred}
+                        isCold={file.tier === 'cold'}
+                        metadata={fileMetadata(file)}
+                        secondaryText={searchListing ? file.parent_path : undefined}
+                        thumbnail={thumbnailUrl(file.id)}
+                        onClick={(event) => handleLinkClick(file, event, collectionItems)}
+                        onClickStar={() => handleStarredItem(file.id)}
+                        {...buildInteractionProps(file, collectionItems)}
+                    />
+                ))}
+            </div>
+        );
+
+    const renderCollection = (collectionTitle: string, collectionItems: FileData[]) => (
+        <div className={styles.fileContent}>
+            {showHeading ? <h1 className={styles.title}>{collectionTitle}</h1> : null}
+            <ListFeedback
+                isEmpty={collectionItems.length === 0}
+                isError={listingStatus === 'error'}
+                errorTitle={t('FILES_LISTING_ERROR_TITLE')}
+                errorMessage={searchListing ? searchListing.errorMessage : listingErrorMessage}
+                onRetry={searchListing?.retry ?? retryListing}
+                hasNextPage={items ? false : pagination.hasNextPage}
+                isFetchingNextPage={pagination.isFetchingNextPage}
+                onLoadMore={pagination.fetchNextPage}
+                emptyState={
                     <FileCollectionEmptyState
                         customMessage={emptyStateMessage}
                         isFolderOpen={isOpenFolderListing}
                         fileListFilter={fileListFilter}
                     />
-                    {actionDialogs}
-                </div>
-            );
-        }
-
-        return (
-            <div className={styles.fileContent}>
-                {showHeading ? <h1 className={styles.title}>{collectionTitle}</h1> : null}
-                {viewMode === 'list' ? (
-                    <div className={styles.fileList} role="table" aria-label={collectionTitle}>
-                        {items === undefined && isSelectionEnabled && !searchListing ? (
-                            <FileListHeader sort={filesSort} onSortChange={setFilesSort} />
-                        ) : null}
-                        {collectionItems.map((file) => (
-                            <FileListRow
-                                key={file.id}
-                                title={file.name}
-                                href={buildBrowserUrl(browserRootPath, file.path)}
-                                starred={file.starred}
-                                isCold={file.tier === 'cold'}
-                                sizeText={formatSizeColumn(file, t)}
-                                modifiedText={formatModifiedDate(file.updated_at)}
-                                typeText={formatTypeColumn(file, t)}
-                                secondaryText={searchListing ? file.parent_path : undefined}
-                                thumbnail={thumbnailUrl(file.id)}
-                                onClick={(event) => handleLinkClick(file, event, collectionItems)}
-                                onClickStar={() => handleStarredItem(file.id)}
-                                {...buildInteractionProps(file, collectionItems)}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className={styles.fileGrid}>
-                        {collectionItems.map((file) => (
-                            <FileCard
-                                key={file.id}
-                                title={file.name}
-                                href={buildBrowserUrl(browserRootPath, file.path)}
-                                starred={file.starred}
-                                isCold={file.tier === 'cold'}
-                                metadata={fileMetadata(file)}
-                                secondaryText={searchListing ? file.parent_path : undefined}
-                                thumbnail={thumbnailUrl(file.id)}
-                                onClick={(event) => handleLinkClick(file, event, collectionItems)}
-                                onClickStar={() => handleStarredItem(file.id)}
-                                {...buildInteractionProps(file, collectionItems)}
-                            />
-                        ))}
-                    </div>
-                )}
+                }
+            >
+                {renderCollectionItems(collectionTitle, collectionItems)}
                 <FileContextMenu
                     anchorPosition={contextMenuState?.anchorPosition ?? null}
                     targetFiles={contextMenuTargetFiles()}
                     onClose={() => setContextMenuState(null)}
                     onOpenFile={(file) => handleOpenItem(file, collectionItems)}
                 />
-                {actionDialogs}
-                {items ? null : (
-                    <LoadMoreSentinel
-                        hasNextPage={pagination.hasNextPage}
-                        isFetchingNextPage={pagination.isFetchingNextPage}
-                        fetchNextPage={pagination.fetchNextPage}
-                    />
-                )}
-            </div>
-        );
-    };
+            </ListFeedback>
+            {actionDialogs}
+        </div>
+    );
 
     if (searchListing) {
         return renderCollection(title ?? '', searchListing.items);

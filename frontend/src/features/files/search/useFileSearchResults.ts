@@ -3,6 +3,7 @@ import { searchFiles } from '@/service/files';
 import { extractBackendErrorMessage } from '@/features/files/fileActions/bulkOutcome';
 import type { FileData, PaginationResponse } from '@/features/files/providers/fileProvider/fileContext';
 import type { FileSearchRefinements } from '@/types/fileSearch';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const searchPageSize = 60;
@@ -25,6 +26,7 @@ const useFileSearchResults = ({ query, parentId, isRecursive, refinements }: Fil
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        isFetchNextPageError,
     } = useInfiniteQuery({
         queryKey: ['files-search', query, parentId ?? null, isRecursive, refinements ?? null],
         queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
@@ -43,6 +45,8 @@ const useFileSearchResults = ({ query, parentId, isRecursive, refinements }: Fil
         staleTime: listingStaleTimeMs,
     });
 
+    const retry = useRetryFailedPage({ isFetchNextPageError, fetchNextPage, refetch });
+
     const items: FileData[] = data?.pages.flatMap((page) => page?.items ?? []) ?? [];
 
     return {
@@ -54,9 +58,7 @@ const useFileSearchResults = ({ query, parentId, isRecursive, refinements }: Fil
             fetchNextPage();
         },
         errorMessage: extractBackendErrorMessage(error),
-        retry: () => {
-            refetch();
-        },
+        retry,
     };
 };
 

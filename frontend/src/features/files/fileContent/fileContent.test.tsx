@@ -76,6 +76,18 @@ describe('fileContent', () => {
         expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
     });
 
+    it('keeps the loaded files on screen when the listing reports an error', () => {
+        mockUseFile.mockReturnValue({
+            status: 'error',
+            selectedItem: null,
+            files: [createFile({ id: 1, name: 'carregado' })],
+            retryListing: jest.fn(),
+        });
+        render(<FileContent />);
+        expect(screen.getByTestId('card-carregado')).toBeInTheDocument();
+        expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
+    });
+
     it('renders root files, directory and file preview branches', () => {
         const rootHandleSelectItem = jest.fn();
         const rootHandleStarredItem = jest.fn();

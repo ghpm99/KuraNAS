@@ -136,6 +136,16 @@ describe('FileContent search listing', () => {
         expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
     });
 
+    it('keeps the results and shows the error below them when a later page of the search fails', () => {
+        const retry = jest.fn();
+        renderSearch(buildListing({ status: 'error', retry }));
+
+        expect(screen.getByText('relatorio.txt')).toBeInTheDocument();
+        expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
     it('lists results even when a file is currently selected in the explorer', () => {
         renderSearch(buildListing(), 'grid', { selectedItem: createTestFile(9) });
 

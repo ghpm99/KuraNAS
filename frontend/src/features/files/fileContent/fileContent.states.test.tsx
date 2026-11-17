@@ -92,6 +92,40 @@ describe('FileContent states', () => {
         expect(retry).toHaveBeenCalledTimes(1);
     });
 
+    it('keeps the listed files and shows the error below them when a later page fails', () => {
+        const retryListing = jest.fn();
+        renderContent({
+            status: 'error',
+            listingErrorMessage: 'Disco indisponível',
+            retryListing,
+            files: [createTestFile(11, { name: 'ja-carregado.txt' })],
+        });
+
+        expect(screen.getByText('ja-carregado.txt')).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent('FILES_LISTING_ERROR_TITLE');
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+        expect(retryListing).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the searched files and shows the search error below them', () => {
+        const retry = jest.fn();
+        const listing: FileSearchListing = {
+            items: [createTestFile(12, { name: 'achado.txt' })],
+            status: 'error',
+            hasNextPage: true,
+            isFetchingNextPage: false,
+            fetchNextPage: jest.fn(),
+            errorMessage: 'Busca falhou',
+            retry,
+        };
+        renderContent({}, { searchListing: listing });
+
+        expect(screen.getByText('achado.txt')).toBeInTheDocument();
+        expect(screen.getByText('Busca falhou')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+        expect(retry).toHaveBeenCalledTimes(1);
+    });
+
     it('shows the empty folder state with upload and create-folder actions', async () => {
         const createFolder = jest.fn().mockResolvedValue(undefined);
         const clickSpy = jest.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => undefined);

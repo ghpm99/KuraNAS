@@ -43,6 +43,7 @@ import { extractBackendErrorMessage } from '../../fileActions/bulkOutcome';
 import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSnackbar } from 'notistack';
 import {
@@ -138,28 +139,38 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [fileListFilter, selectedItemId, starredKind, starredSort]
     );
 
-    const { status, error, data, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-        useInfiniteQuery({
-            queryKey: ['files', queryParams, fileListFilter, filesSort, starredListing],
-            queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
-                isGlobalListing(fileListFilter, selectedItemId)
-                    ? fetchGlobalListing(fileListFilter, pageParam, starredListing)
-                    : getFilesTree({
-                          page: pageParam,
-                          pageSize,
-                          fileParent: selectedItemId ?? undefined,
-                          category: selectedItemId ? 'all' : fileListFilter,
-                          sort: filesSort,
-                      }),
-            initialPageParam: 1,
-            getNextPageParam: (lastPage) => {
-                if (lastPage.pagination.has_next) {
-                    return lastPage.pagination.page + 1;
-                }
-                return undefined;
-            },
-            staleTime: listingStaleTimeMs,
-        });
+    const {
+        status,
+        error,
+        data,
+        refetch,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isFetchNextPageError,
+    } = useInfiniteQuery({
+        queryKey: ['files', queryParams, fileListFilter, filesSort, starredListing],
+        queryFn: ({ pageParam = 1 }): Promise<PaginationResponse> =>
+            isGlobalListing(fileListFilter, selectedItemId)
+                ? fetchGlobalListing(fileListFilter, pageParam, starredListing)
+                : getFilesTree({
+                      page: pageParam,
+                      pageSize,
+                      fileParent: selectedItemId ?? undefined,
+                      category: selectedItemId ? 'all' : fileListFilter,
+                      sort: filesSort,
+                  }),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => {
+            if (lastPage.pagination.has_next) {
+                return lastPage.pagination.page + 1;
+            }
+            return undefined;
+        },
+        staleTime: listingStaleTimeMs,
+    });
+
+    const retryListing = useRetryFailedPage({ isFetchNextPageError, fetchNextPage, refetch });
 
     const loadedItems = useMemo(
         () => data?.pages.flatMap((page) => page?.items ?? []) ?? [],
@@ -466,9 +477,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             files: fileTree || [],
             status: status,
             listingErrorMessage: extractBackendErrorMessage(error),
-            retryListing: () => {
-                refetch();
-            },
+            retryListing,
             browserRootPath,
             selectedItem: effectiveSelectedItem,
             handleSelectItem,
@@ -502,7 +511,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             fileTree,
             status,
             error,
-            refetch,
+            retryListing,
             browserRootPath,
             effectiveSelectedItem,
             handleSelectItem,
