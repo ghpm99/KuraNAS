@@ -114,4 +114,20 @@ describe('components/settings/AutoShutdownSettingsSection', () => {
 
 		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_LOAD_ERROR')).toBeInTheDocument();
 	});
+
+	it('shows the warning notice and the next execution when enabled', () => {
+		render(<AutoShutdownSettingsSection />);
+
+		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE')).toBeInTheDocument();
+		expect(screen.getByText(/SETTINGS_AUTO_SHUTDOWN_NEXT_RUN:/)).toBeInTheDocument();
+	});
+
+	it('shows no next execution when the shutdown is disabled', () => {
+		mockUseAutoShutdownSettings.mockReturnValue(
+			createState({ form: { enabled: false, time: '03:00', grace_period_seconds: 60 } })
+		);
+		render(<AutoShutdownSettingsSection />);
+
+		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE')).toBeInTheDocument();
+	});
 });

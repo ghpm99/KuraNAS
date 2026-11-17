@@ -5,6 +5,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import useAutoShutdownSettings from './useAutoShutdownSettings';
+import { computeNextShutdownExecution } from './nextShutdownExecution';
 import styles from './AutoShutdownSettingsSection.module.css';
 
 type AutoShutdownSettingsSectionProps = {
@@ -26,6 +27,7 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 		handleSuggest,
 	} = useAutoShutdownSettings();
 
+	const nextExecution = form.enabled ? computeNextShutdownExecution(form.time, new Date()) : null;
 	const sectionClassName = `${className} ${styles.section}`.trim();
 
 	if (isLoading) {
@@ -46,7 +48,9 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 				<h2 className={styles.title}>{t('SETTINGS_AUTO_SHUTDOWN_TITLE')}</h2>
 				<p className={styles.description}>{t('SETTINGS_AUTO_SHUTDOWN_DESCRIPTION')}</p>
 			</div>
-			{hasError ? <Alert severity="error">{t('SETTINGS_AUTO_SHUTDOWN_LOAD_ERROR')}</Alert> : null}
+			{hasError ? (
+				<Alert severity="error">{t('SETTINGS_AUTO_SHUTDOWN_LOAD_ERROR')}</Alert>
+			) : null}
 			<FormControlLabel
 				control={
 					<Switch
@@ -73,21 +77,35 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 					label={t('SETTINGS_AUTO_SHUTDOWN_GRACE_LABEL')}
 					helperText={t('SETTINGS_AUTO_SHUTDOWN_GRACE_HELPER')}
 					value={String(form.grace_period_seconds)}
-					onChange={(event) => setField('grace_period_seconds', Number(event.target.value))}
+					onChange={(event) =>
+						setField('grace_period_seconds', Number(event.target.value))
+					}
 					disabled={isSaving || !form.enabled}
 				/>
 			</div>
+			<p className={styles.description}>{t('SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE')}</p>
+			<p className={styles.description}>
+				{nextExecution
+					? t('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN', {
+						  dateTime: nextExecution.toLocaleString(),
+					  })
+					: t('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE')}
+			</p>
 			<div className={styles.suggestRow}>
-				<Button variant="outlined" onClick={() => void handleSuggest()} disabled={isSaving || isSuggesting}>
+				<Button
+					variant="outlined"
+					onClick={() => void handleSuggest()}
+					disabled={isSaving || isSuggesting}
+				>
 					{t('SETTINGS_AUTO_SHUTDOWN_SUGGEST_BUTTON')}
 				</Button>
 				{suggestion ? (
 					<p className={styles.suggestHint}>
 						{suggestion.available
 							? t('SETTINGS_AUTO_SHUTDOWN_SUGGESTION', {
-									time: suggestion.time,
-									count: String(suggestion.sample_size),
-								})
+								  time: suggestion.time,
+								  count: String(suggestion.sample_size),
+							  })
 							: t('SETTINGS_AUTO_SHUTDOWN_SUGGESTION_EMPTY')}
 					</p>
 				) : null}

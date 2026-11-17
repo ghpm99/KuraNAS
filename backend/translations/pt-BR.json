@@ -521,6 +521,7 @@
 	"NOTIFICATION_REMOTE_FETCH_FAILED_MESSAGE": "Não foi possível baixar %s. Veja o motivo na lista de trabalhos.",
 	"ERROR_AUTO_SHUTDOWN_LOAD_FAILED": "Falha ao carregar as configurações de desligamento automático.",
 	"ERROR_AUTO_SHUTDOWN_UPDATE_FAILED": "Falha ao salvar as configurações de desligamento automático.",
+	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "Não há desligamento em contagem para cancelar.",
 	"NOTIFICATION_AUTO_SHUTDOWN_TITLE": "Desligamento automático",
 	"NOTIFICATION_AUTO_SHUTDOWN_BODY": "O servidor será desligado em %d segundo(s).",
 	"SETTINGS_AUTO_SHUTDOWN_TITLE": "Desligamento automático",
@@ -2128,5 +2129,9 @@
 	"SETTINGS_REINDEX_ROOT_MESSAGE": "Todos os arquivos desta raiz serão reverificados. Estrelas, playlists, álbuns e metadados corrigidos são mantidos.",
 	"SETTINGS_REINDEX_CONFIRM": "Reindexar",
 	"SETTINGS_REINDEX_RUNNING": "Reindexando…",
-	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "Não há desligamento em contagem para cancelar."
+	"AUTO_SHUTDOWN_BANNER_MESSAGE": "O computador será desligado em {{seconds}} s.",
+	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancelar desta vez",
+	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "Neste horário o computador será desligado; um aviso com contagem aparece em todas as telas e permite cancelar.",
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Próxima execução: {{dateTime}}",
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado)."
 }

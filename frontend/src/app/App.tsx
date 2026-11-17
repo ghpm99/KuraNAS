@@ -6,6 +6,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell/AppShell';
 import GlobalPlayerControl from '@/features/music/components/player/GlobalPlayerControl';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import AutoShutdownBanner from '@/components/layout/AutoShutdownBanner/AutoShutdownBanner';
 import ConnectionBanner from '@/components/layout/ConnectionBanner/ConnectionBanner';
 import RouteErrorBoundary from '@/components/layout/RouteErrorBoundary/RouteErrorBoundary';
 import RouteFallback from '@/components/layout/RouteFallback/RouteFallback';
@@ -41,7 +42,14 @@ const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
 function ShellLayout() {
     return (
-        <AppShell banner={<ConnectionBanner />}>
+        <AppShell
+            banner={
+                <>
+                    <ConnectionBanner />
+                    <AutoShutdownBanner />
+                </>
+            }
+        >
             <RouteErrorBoundary>
                 <Suspense fallback={<RouteFallback />}>
                     <Outlet />

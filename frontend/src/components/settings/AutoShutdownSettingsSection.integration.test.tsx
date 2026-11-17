@@ -38,7 +38,9 @@ describe('components/settings/AutoShutdownSettingsSection (seam)', () => {
 		mockedApi.get.mockImplementation((url: string) => {
 			if (url === '/auto-shutdown/settings') return Promise.resolve({ data: serverSettings });
 			if (url === '/auto-shutdown/suggested-time')
-				return Promise.resolve({ data: { available: true, time: '02:30', sample_size: 7 } });
+				return Promise.resolve({
+					data: { available: true, time: '02:30', sample_size: 7 },
+				});
 			return Promise.reject(new Error(`unexpected GET ${url}`));
 		});
 		mockedApi.put.mockResolvedValue({ data: serverSettings });
@@ -68,5 +70,14 @@ describe('components/settings/AutoShutdownSettingsSection (seam)', () => {
 		await waitFor(() =>
 			expect(mockedApi.get).toHaveBeenCalledWith('/auto-shutdown/suggested-time')
 		);
+	});
+
+	it('shows the warning notice and the next execution from the configured time', async () => {
+		renderSection();
+
+		expect(
+			await screen.findByText('SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE')
+		).toBeInTheDocument();
+		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN')).toBeInTheDocument();
 	});
 });
