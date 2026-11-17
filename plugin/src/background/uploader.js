@@ -3,6 +3,21 @@ import {
   CAPTURE_UPLOAD_MAX_RETRIES,
 } from "../shared/constants.js";
 
+class ChunkOffsetMismatchError extends Error {
+  constructor(receivedSize) {
+    super(`Chunk offset mismatch: server already has ${receivedSize} bytes`);
+    this.receivedSize = receivedSize;
+  }
+}
+
+async function readJsonOrNull(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
 export function createUploader({
   getApiBaseUrl,
   guessExtension,
@@ -60,9 +75,26 @@ export function createUploader({
     let offset = 0;
     let chunkIndex = 0;
 
+    let realignments = 0;
+
     while (offset < blob.size) {
       const chunkBlob = blob.slice(offset, offset + chunkSize);
-      await uploadChunkWithRetry(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
+      try {
+        await uploadChunkWithRetry(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
+      } catch (error) {
+        const canRealign =
+          error instanceof ChunkOffsetMismatchError &&
+          realignments < CAPTURE_UPLOAD_MAX_RETRIES &&
+          error.receivedSize >= 0 &&
+          error.receivedSize <= blob.size &&
+          error.receivedSize !== offset;
+        if (!canRealign) {
+          throw error;
+        }
+        realignments += 1;
+        offset = error.receivedSize;
+        continue;
+      }
       offset += chunkBlob.size;
       chunkIndex += 1;
     }
@@ -89,6 +121,9 @@ export function createUploader({
         await uploadChunk(apiUrl, uploadID, chunkBlob, offset, chunkIndex);
         return;
       } catch (error) {
+        if (error instanceof ChunkOffsetMismatchError) {
+          throw error;
+        }
         lastError = error;
         if (attempt < CAPTURE_UPLOAD_MAX_RETRIES) {
           await wait(200 * attempt);
@@ -110,6 +145,14 @@ export function createUploader({
       method: "POST",
       body: formData,
     });
+
+    if (response.status === 409) {
+      const mismatchPayload = await readJsonOrNull(response);
+      const receivedSize = Number(mismatchPayload?.received_size);
+      if (Number.isInteger(receivedSize)) {
+        throw new ChunkOffsetMismatchError(receivedSize);
+      }
+    }
 
     if (!response.ok) {
       const body = await response.text();

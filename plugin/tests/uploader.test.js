@@ -109,3 +109,76 @@ test('uploadToKuraNAS rejects an empty blob before any network call', async () =
   );
   assert.equal(fetchCalled, false);
 });
+
+test('uploadToKuraNAS realigns to received_size on chunk 409 without duplicating or skipping bytes', async () => {
+  const { createUploader } = await import(uploaderModuleUrl);
+  const chunkOffsets = [];
+  let serverReceivedSize = 2;
+  let hasRejectedFirstChunk = false;
+
+  const fetchImpl = async (url, options = {}) => {
+    if (url.endsWith('/captures/upload/init')) {
+      return { ok: true, json: async () => ({ upload_id: 'upload-3', chunk_size: 2 }) };
+    }
+
+    if (url.endsWith('/captures/upload/chunk')) {
+      const offset = Number(options.body.get('offset'));
+      chunkOffsets.push(offset);
+      if (offset !== serverReceivedSize) {
+        hasRejectedFirstChunk = true;
+        return {
+          ok: false,
+          status: 409,
+          json: async () => ({ error: 'mismatch', received_size: serverReceivedSize }),
+          text: async () => '',
+        };
+      }
+      serverReceivedSize += options.body.get('chunk').size;
+      return { ok: true, status: 200, text: async () => '' };
+    }
+
+    if (url.endsWith('/captures/upload/complete')) {
+      return { ok: true, json: async () => ({ ok: true }) };
+    }
+
+    throw new Error(`Unexpected URL ${url}`);
+  };
+
+  const uploader = createUploader({
+    getApiBaseUrl: async () => 'http://api.local/api/v1',
+    guessExtension: () => 'mp4',
+    sanitizeFileName: (name) => name,
+    waitFn: async () => {},
+    fetchImpl,
+  });
+
+  await uploader.uploadToKuraNAS(new Blob(['abcdef'], { type: 'video/mp4' }), 'video_name', 'direct');
+
+  assert.equal(hasRejectedFirstChunk, true);
+  assert.deepEqual(chunkOffsets, [0, 2, 4]);
+  assert.equal(serverReceivedSize, 6);
+});
+
+test('uploadToKuraNAS fails on 409 without a valid received_size', async () => {
+  const { createUploader } = await import(uploaderModuleUrl);
+
+  const fetchImpl = async (url) => {
+    if (url.endsWith('/captures/upload/init')) {
+      return { ok: true, json: async () => ({ upload_id: 'upload-4', chunk_size: 2 }) };
+    }
+    return { ok: false, status: 409, json: async () => ({}), text: async () => 'conflict' };
+  };
+
+  const uploader = createUploader({
+    getApiBaseUrl: async () => 'http://api.local/api/v1',
+    guessExtension: () => 'mp4',
+    sanitizeFileName: (name) => name,
+    waitFn: async () => {},
+    fetchImpl,
+  });
+
+  await assert.rejects(
+    uploader.uploadToKuraNAS(new Blob(['abcdef']), 'video_name', 'direct'),
+    /Chunk upload failed \(409\)/
+  );
+});
