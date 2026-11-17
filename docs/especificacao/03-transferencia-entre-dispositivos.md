@@ -69,7 +69,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 - **RF-03** — Painel de transferências, fixo no canto, que não bloqueia a navegação: um item por arquivo com nome, tamanho, barra de progresso, velocidade, tempo restante e estado (na fila, conferindo — cálculo do checksum antes de um envio em partes —, enviando, aguardando conexão, concluído, já existia, falhou, cancelado).
 - **RF-04** — Ações: cancelar um arquivo, cancelar tudo, tentar de novo os que falharam, limpar concluídos. Clicar em um concluído leva ao arquivo.
 - **RF-05** — Progresso geral do lote (arquivos e bytes). Até 3 envios simultâneos.
-- **RF-06** — Diálogo de conflito com as opções de RN-04 e "aplicar a todos".
+- **RF-06** — Diálogo de conflito com as opções de RN-04 e "aplicar a todos". O seletor do painel tem "Perguntar" (padrão, vai ao servidor como `on_conflict=fail`), "Manter os dois", "Substituir" e "Ignorar"; com "Perguntar", o arquivo recusado por nome existente (`conflict` em `/files/upload`, `409` no `init`) fica "aguardando decisão" e o diálogo abre para ele; "aplicar a todos" resolve os outros em conflito e os ainda na fila com "Perguntar"; fechar o diálogo cancela o arquivo.
 - **RF-07** — Sair da página ou fechar a aba com envio em andamento pede confirmação.
 - **RF-08** — Ao concluir, a listagem mostra os arquivos novos sem recarregar.
 
@@ -105,7 +105,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 | GET | `/files/blob/:id` | conteúdo para visualização |
 | GET | `/ingest/targets` ou `/storage-roots` | destinos possíveis |
 
-**Já existe em `POST /files/upload`** (multipart, vários arquivos por requisição): parte `files`; campos `target_folder_id` (vazio ou 0 = raiz principal), `on_conflict` (`fail` — padrão —, `skip`, `replace`, `rename`) e `relative_paths` (lista paralela a `files`, para recriar subpastas). Resposta `202`: `{"message", "uploaded": [...], "job_id", "files": [{"name", "path", "status", "error"}]}`, com `status` em `uploaded`, `skipped`, `replaced`, `renamed`, `failed`. O servidor não impõe limite de tamanho nesta rota e ela não muda; depois que o envio em partes existir, os clientes a usam só para arquivos de até 64 MB.
+**Já existe em `POST /files/upload`** (multipart, vários arquivos por requisição): parte `files`; campos `target_folder_id` (vazio ou 0 = raiz principal), `on_conflict` (`fail` — padrão —, `skip`, `replace`, `rename`) e `relative_paths` (lista paralela a `files`, para recriar subpastas). Resposta `202`: `{"message", "uploaded": [...], "job_id", "files": [{"name", "path", "status", "error"}]}`, com `status` em `uploaded`, `skipped`, `replaced`, `renamed`, `conflict`, `failed`. `conflict` = nome já existe no destino com `on_conflict=fail`: nada é gravado e `error` traz o motivo; é o sinal para a web abrir o diálogo de conflito (RF-06) e reenviar com a política escolhida. O servidor não impõe limite de tamanho nesta rota e ela não muda; depois que o envio em partes existir, os clientes a usam só para arquivos de até 64 MB.
 
 **A criar** — envio em partes com retomada, para arquivos acima de 64 MB e para todo envio do Android em segundo plano. Segue o desenho de `/captures/upload/*`:
 
