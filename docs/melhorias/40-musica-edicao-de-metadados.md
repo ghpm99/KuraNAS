@@ -33,7 +33,7 @@ Uma alteração por item, cada uma em commit próprio, nesta ordem.
 
 ### Sub-itens
 
-- [ ] 40.1. `RN-04` completa nas chaves de gênero: `/` também separa (decidir o caso `r&b/soul`) e acentos não diferenciam; recalcula as chaves de todas as faixas.
+- [ ] 40.1. `RN-04` completa nas chaves de gênero: `/` também separa (decidir o caso `r&b/soul`) e acentos não diferenciam; recalcula as chaves de todas as faixas. O diálogo web (item 6) já separa os gêneros iniciais por `;`, `/` e `,` (`trackMetadataFormValues.ts`) — alinhar com a regra final do backend. A faixa tocando agora no player não atualiza título/artista após a edição (fila em memória do `GlobalMusicProvider`) — fica para depois.
 
 ## Critérios de aceite
 
