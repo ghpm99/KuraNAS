@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
 	"nas-go/api/pkg/utils"
@@ -397,7 +398,7 @@ func toExtensionDto(models []ExtensionDistributionModel) []ExtensionDto {
 func toHotFolderDto(models []FolderHotModel) []HotFolderDto {
 	response := make([]HotFolderDto, 0, len(models))
 	for _, item := range models {
-		responseItem := HotFolderDto{Path: item.ParentPath, NewFiles: item.NewFiles, AddedBytes: item.AddedBytes}
+		responseItem := HotFolderDto{Path: roots.ToRelativePath(item.ParentPath), NewFiles: item.NewFiles, AddedBytes: item.AddedBytes}
 		if item.LastEvent.Valid {
 			responseItem.LastEvent = item.LastEvent.Time.Format(time.RFC3339)
 		}
@@ -409,7 +410,7 @@ func toHotFolderDto(models []FolderHotModel) []HotFolderDto {
 func toFolderUsageDto(models []FolderUsageModel) []FolderUsageDto {
 	response := make([]FolderUsageDto, 0, len(models))
 	for _, item := range models {
-		responseItem := FolderUsageDto{Path: item.ParentPath, Files: item.TotalFiles, Bytes: item.TotalBytes}
+		responseItem := FolderUsageDto{Path: roots.ToRelativePath(item.ParentPath), Files: item.TotalFiles, Bytes: item.TotalBytes}
 		if item.LastModified.Valid {
 			responseItem.LastModified = item.LastModified.Time.Format(time.RFC3339)
 		}
@@ -424,8 +425,8 @@ func toRecentFilesDto(models []RecentFileModel) []RecentFileDto {
 		response = append(response, RecentFileDto{
 			ID:         item.ID,
 			Name:       item.Name,
-			Path:       item.Path,
-			ParentPath: item.ParentPath,
+			Path:       roots.ToRelativePath(item.Path),
+			ParentPath: roots.ToRelativePath(item.ParentPath),
 			Format:     item.Format,
 			SizeBytes:  item.Size,
 			CreatedAt:  item.CreatedAt.Format(time.RFC3339),
@@ -449,7 +450,7 @@ func toDuplicateGroupSummaryDto(model DuplicateGroupModel) DuplicateGroupDto {
 		Copies:          model.Copies,
 		SizeBytes:       model.ItemSize,
 		ReclaimableSize: model.ReclaimableSize,
-		Paths:           model.Paths,
+		Paths:           toRelativePaths(model.Paths),
 	}
 }
 
@@ -460,7 +461,7 @@ func toDuplicateGroupDetailDtos(models []DuplicateGroupDetailModel) []DuplicateG
 		for _, copyFile := range group.Files {
 			copies = append(copies, DuplicateCopyDto{
 				ID:        copyFile.ID,
-				Path:      copyFile.Path,
+				Path:      roots.ToRelativePath(copyFile.Path),
 				UpdatedAt: copyFile.UpdatedAt.Format(time.RFC3339),
 				Tier:      copyFile.Tier,
 			})
@@ -503,4 +504,12 @@ func toHealthDto(model HealthModel) HealthDto {
 		ErrorsLast24h:   model.ErrorsLast24h,
 		RecentErrors:    errorsList,
 	}
+}
+
+func toRelativePaths(absolutePaths []string) []string {
+	relativePaths := make([]string, 0, len(absolutePaths))
+	for _, absolutePath := range absolutePaths {
+		relativePaths = append(relativePaths, roots.ToRelativePath(absolutePath))
+	}
+	return relativePaths
 }
