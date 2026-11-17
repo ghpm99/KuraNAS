@@ -20,17 +20,17 @@ Cada número e cada linha do Analytics leva à lista que representa.
 
 ### Sub-itens
 
-- [ ] 31.1. A distribuição por tipo da visão geral (`analytics/type_distribution.sql`) usa listas de formatos fixas e desatualizadas (sem RAW, `.opus`, `.heif`…); passar a usar as listas canônicas de `pkg/utils` (as mesmas da indexação e do filtro de tipo dos duplicados), para as contagens por tipo baterem entre as telas.
+- [x] 31.1. A distribuição por tipo da visão geral (`analytics/type_distribution.sql`) usa listas de formatos fixas e desatualizadas (sem RAW, `.opus`, `.heif`…); passar a usar as listas canônicas de `pkg/utils` (as mesmas da indexação e do filtro de tipo dos duplicados), para as contagens por tipo baterem entre as telas.
 
 ## Critérios de aceite
 
-- [ ] `16/CA-05` — clicar em uma pasta da lista de maiores abre essa pasta em Arquivos.
-- [ ] `16/CA-06` — "ver todos" em maiores arquivos abre a lista ordenada por tamanho, com scroll infinito.
-- [ ] `16/CA-07` — copiar um arquivo grande cria um grupo de duplicados; excluir uma cópia tira o grupo e atualiza o espaço recuperável.
-- [ ] `16/CA-08` — a lista de duplicados com mais de 100 grupos rola até o fim.
-- [ ] Os CA de `00` (`CA-01` a `CA-12`, `CA-16`) nas duas telas novas.
-- [ ] Testes de handler decodificando o envelope paginado e a resposta sem `page`; render sem mock das telas; seam test do excluir.
-- [ ] `make ci` verde.
+- [x] `16/CA-05` — clicar em uma pasta da lista de maiores abre essa pasta em Arquivos. *Local 2026-11-17: a verificação achou o Analytics devolvendo caminho do disco (corrigido em `618e6f14`); `/analytics/top-folders` → `/Musicas/teste-task40/Generos`, que `/files/path` resolve para a pasta (id 871); a linha navega com `buildFilesUrl(path)`.*
+- [x] `16/CA-06` — "ver todos" em maiores arquivos abre a lista ordenada por tamanho, com scroll infinito. *Local: `/files/top-files-by-size?page=1&page_size=3` em ordem de tamanho com `has_next: true`; scroll infinito coberto pelos testes da tela.*
+- [x] `16/CA-07` — copiar um arquivo grande cria um grupo de duplicados; excluir uma cópia tira o grupo e atualiza o espaço recuperável. *Local: cópia de `rock1.mp3` → grupo novo, resumo 16.879 B recuperáveis; `DELETE /files/path {id}` (a chamada da tela) → grupo some, resumo 248 B.*
+- [x] `16/CA-08` — a lista de duplicados com mais de 100 grupos rola até o fim. *Teste `_Postgres` caminha 137 grupos sem repetir nem pular; scroll até o fim coberto pelos testes da tela.*
+- [x] Os CA de `00` (`CA-01` a `CA-12`, `CA-16`) nas duas telas novas.
+- [x] Testes de handler decodificando o envelope paginado e a resposta sem `page`; render sem mock das telas; seam test do excluir.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
