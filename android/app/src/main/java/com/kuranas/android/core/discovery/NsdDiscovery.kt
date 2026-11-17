@@ -19,7 +19,7 @@ data class DiscoveredServer(val name: String, val host: String, val port: Int) {
 class NsdDiscovery @Inject constructor(@ApplicationContext private val context: Context) {
 
     private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-    private val serviceType = "_nas._tcp."
+    private val serviceType = "_kuranas._tcp."
 
     fun discover(): Flow<DiscoveredServer> = callbackFlow {
         val resolvedServers = mutableSetOf<String>()
