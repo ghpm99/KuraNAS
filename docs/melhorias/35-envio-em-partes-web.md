@@ -4,7 +4,7 @@
 
 ## Contexto
 
-Na web o envio é um arquivo por requisição, com progresso, arrastar e soltar, pasta e política de conflito (`frontend/src/service/files.ts`, perto de `:255-270`), mas sem partes nem retomada: uma queda de Wi-Fi no meio de um arquivo grande perde tudo o que foi enviado (spec 03 §9). A task 34 entrega os endpoints.
+Na web o envio é um arquivo por requisição, com progresso, arrastar e soltar, pasta e política de conflito (`frontend/src/service/files.ts`, perto de `:255-270`), mas sem partes nem retomada: uma queda de Wi-Fi no meio de um arquivo grande perde tudo o que foi enviado (spec 03 §9). A task 34 entrega os endpoints. Conferido em 2026-11-17: a fila fica em `frontend/src/features/files/upload/useUploadQueue.ts` e o painel em `uploadQueuePanel.tsx`; o painel não mostra velocidade nem tempo restante; não há confirmação ao fechar a aba (`RF-07`); e não há diálogo de conflito — a política é escolhida antes, no seletor do painel (`conflictPolicySelect.tsx`), e com `fail` o item falha com a mensagem do servidor.
 
 ## Objetivo
 
@@ -17,8 +17,13 @@ Um arquivo grande enviado pelo navegador sobrevive a quedas de conexão e contin
 3. **Envio em partes**: fatia o arquivo no `chunk_size` devolvido pelo `init`, envia em sequência, atualiza progresso, velocidade e tempo restante por arquivo (`RF-03`).
 4. **Retomada** (`RN-06`): falha de rede em uma parte põe o item em "aguardando conexão"; ao voltar, consulta a sessão e continua do `received_size`; `409` de posição realinha pelo `received_size` da resposta. Depois de 10 minutos sem conexão, o item vira "falhou", com "Tentar de novo" (que retoma a mesma sessão).
 5. **Cancelar** chama `DELETE /files/upload/:upload_id`.
-6. **Conflito e espaço**: `409` do `init` abre o diálogo de conflito existente (`RF-06`) e repete o `init` com a política escolhida; `507` vira falha com a mensagem do servidor, antes de enviar.
-7. **Já existia** (`RN-05`): para arquivos em partes, o SHA-256 é calculado no navegador antes do `init` (em fluxo, sem carregar o arquivo inteiro); `already_exists` marca o item como "já existia".
+6. **Conflito e espaço**: o `init` leva a política escolhida no seletor do painel, como no envio de uma requisição; `409` (com `fail`) e `507` viram falha com a mensagem do servidor, antes de enviar. O diálogo de conflito de `RF-06` fica para o sub-item 35.1.
+7. **Já existia** (`RN-05`): para arquivos em partes, o SHA-256 é calculado no navegador antes do `init` (em fluxo, sem carregar o arquivo inteiro); `already_exists` marca o item como "já existia". Enquanto calcula, o item fica "conferindo" (`RF-03`).
+8. **Sair da página** (`RF-07`): com envio em andamento, fechar ou recarregar a aba pede confirmação do navegador; navegar dentro do app não interrompe (o painel está acima das rotas).
+
+### Sub-itens
+
+- [ ] 35.1. Diálogo de conflito (`RF-06`) com as opções de `RN-04` e "aplicar a todos", aberto quando o servidor recusa por nome existente, nos dois caminhos de envio.
 
 ## Critérios de aceite
 
