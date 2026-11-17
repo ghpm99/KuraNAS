@@ -148,8 +148,9 @@ func (m *filesHandlerServiceMock) CreateFolder(parentID *int, name string) (stri
 func (m *filesHandlerServiceMock) MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error) {
 	return "", nil
 }
-func (m *filesHandlerServiceMock) DeleteFileFromDisk(id int, permanent bool) error { return nil }
-func (m *filesHandlerServiceMock) SetTrashBin(trashBin TrashBinInterface)          {}
+func (m *filesHandlerServiceMock) DeleteFileFromDisk(id int, permanent bool) error         { return nil }
+func (m *filesHandlerServiceMock) SetTrashBin(trashBin TrashBinInterface)                  {}
+func (m *filesHandlerServiceMock) SetProcessingStagesReader(reader ProcessingStagesReader) {}
 func (m *filesHandlerServiceMock) RenameFile(id int, newName string) (string, error) {
 	return newName, nil
 }

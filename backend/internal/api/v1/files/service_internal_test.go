@@ -13,6 +13,7 @@ import (
 	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -1357,5 +1358,55 @@ func TestGetRootNodesRevivesSoftDeletedRow(t *testing.T) {
 	}
 	if len(updates) != 1 || updates[0].DeletedAt.Valid {
 		t.Fatalf("expected an update clearing deleted_at, got %+v", updates)
+	}
+}
+
+type fixedProcessingStages struct {
+	stages ProcessingStages
+}
+
+func (reader fixedProcessingStages) ProcessingStages() ProcessingStages {
+	return reader.stages
+}
+
+func uploadStepTypesFor(t *testing.T, fileName string, reader ProcessingStagesReader) []string {
+	t.Helper()
+	filePath := filepath.Join(t.TempDir(), fileName)
+	if err := os.WriteFile(filePath, []byte("content"), 0644); err != nil {
+		t.Fatalf("failed to create upload file: %v", err)
+	}
+	jobsRepo := newFilesJobsRepoMockForTest(t)
+	service := newFilesServiceForTest(t, &filesRepoMock{})
+	service.JobsRepository = jobsRepo
+	service.SetProcessingStagesReader(reader)
+
+	if _, err := service.CreateUploadProcessJob([]string{filePath}); err != nil {
+		t.Fatalf("expected upload job creation success, got %v", err)
+	}
+	stepTypes := make([]string, 0, len(jobsRepo.createdSteps))
+	for _, step := range jobsRepo.createdSteps {
+		stepTypes = append(stepTypes, step.Type)
+	}
+	return stepTypes
+}
+
+func TestFileService_CreateUploadProcessJobHonorsProcessingStages(t *testing.T) {
+	cases := []struct {
+		name     string
+		reader   ProcessingStagesReader
+		expected []string
+	}{
+		{"no reader keeps every step", nil, []string{"persist", "metadata", "checksum", "thumbnail"}},
+		{"previews off drops thumbnail", fixedProcessingStages{ProcessingStages{ExtractMetadata: true}}, []string{"persist", "metadata", "checksum"}},
+		{"metadata off drops metadata", fixedProcessingStages{ProcessingStages{GeneratePreviews: true}}, []string{"persist", "checksum", "thumbnail"}},
+		{"both off keeps persist and checksum", fixedProcessingStages{}, []string{"persist", "checksum"}},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			stepTypes := uploadStepTypesFor(t, "photo.png", testCase.reader)
+			if !reflect.DeepEqual(stepTypes, testCase.expected) {
+				t.Fatalf("expected %v, got %v", testCase.expected, stepTypes)
+			}
+		})
 	}
 }

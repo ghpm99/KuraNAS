@@ -28,6 +28,8 @@ type Service struct {
 	Tasks          chan utils.Task
 	TrashBin       TrashBinInterface
 	StillConverter img.StillImageConverter
+
+	ProcessingStagesReader ProcessingStagesReader
 }
 
 func (s *Service) stillImageConverter() img.StillImageConverter {
@@ -385,6 +387,7 @@ func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
 		return 0, fmt.Errorf("paths are required")
 	}
 
+	stages := s.currentProcessingStages()
 	var createdJob jobs.JobModel
 	err := database.ExecOptionalTx(s.JobsRepository.GetDbContext(), func(tx *sql.Tx) error {
 		scopeJSON, scopeErr := json.Marshal(map[string]any{"paths": paths})
@@ -446,17 +449,19 @@ func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
 				return dependsErr
 			}
 
-			if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
-				JobID:       createdJob.ID,
-				Type:        "metadata",
-				Status:      "queued",
-				DependsOn:   dependsOnPersist,
-				Attempts:    0,
-				MaxAttempts: 3,
-				Progress:    0,
-				Payload:     commonPayload,
-			}); createStepErr != nil {
-				return createStepErr
+			if stages.ExtractMetadata {
+				if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
+					JobID:       createdJob.ID,
+					Type:        "metadata",
+					Status:      "queued",
+					DependsOn:   dependsOnPersist,
+					Attempts:    0,
+					MaxAttempts: 3,
+					Progress:    0,
+					Payload:     commonPayload,
+				}); createStepErr != nil {
+					return createStepErr
+				}
 			}
 
 			if _, createStepErr := s.JobsRepository.CreateStep(tx, jobs.StepModel{
@@ -473,7 +478,8 @@ func (s *Service) CreateUploadProcessJob(paths []string) (int, error) {
 			}
 
 			formatType := utils.GetFormatTypeByExtension(fileDto.Format)
-			if formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo {
+			isPreviewable := formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo
+			if stages.GeneratePreviews && isPreviewable {
 				thumbnailPayload, thumbnailPayloadErr := json.Marshal(uploadJobPayload{Path: path})
 				if thumbnailPayloadErr != nil {
 					return thumbnailPayloadErr

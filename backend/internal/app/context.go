@@ -318,6 +318,7 @@ func NewContext(db *sql.DB) *AppContext {
 	// Delete-to-trash: files cannot import trash (trash already leans on
 	// files), so the bin arrives by interface after both contexts exist.
 	fileContext.Service.SetTrashBin(trashContext.Service)
+	fileContext.Service.SetProcessingStagesReader(newConfigurationProcessingStages(configurationContext.Service))
 	storageRootsContext := newStorageRootsContext(dbContext, loggerService, fileContext.Service)
 	// Load the registered roots (seeding ENTRY_POINT on first boot) before
 	// workers and watchers start consuming the registry.

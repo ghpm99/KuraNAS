@@ -88,6 +88,7 @@ type ServiceInterface interface {
 	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)
 	DeleteFileFromDisk(id int, permanent bool) error
 	SetTrashBin(trashBin TrashBinInterface)
+	SetProcessingStagesReader(reader ProcessingStagesReader)
 	RenameFile(id int, newName string) (string, error)
 	CopyFile(sourceID int, destinationFolderID *int, destinationPath string, newName string) (string, error)
 }
