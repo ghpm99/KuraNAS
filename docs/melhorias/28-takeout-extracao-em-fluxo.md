@@ -21,12 +21,12 @@ A importação usa memória constante, qualquer que seja o tamanho dos arquivos 
 
 ## Critérios de aceite
 
-- [ ] Teste do extrator com uma entrada de 200 MB gerada no teste: a memória alocada durante a extração fica abaixo de 32 MB.
-- [ ] Teste: uma entrada corrompida no meio do zip não impede as seguintes; nenhum `.part` sobra no destino.
-- [ ] Teste do step: em falha, zip e pasta da sessão são removidos.
-- [ ] `13/CA-07` — no sistema rodando: um zip com um vídeo de 3 GB é importado sem o servidor ficar sem memória.
-- [ ] `13/CA-10` — depois de concluir, o zip e os temporários não ocupam espaço.
-- [ ] `make ci-backend` verde.
+- [x] Teste do extrator com uma entrada de 200 MB gerada no teste: a memória alocada durante a extração fica abaixo de 32 MB. *`TotalAlloc` ≈ 0,73 MB.*
+- [x] Teste: uma entrada corrompida no meio do zip não impede as seguintes; nenhum `.part` sobra no destino.
+- [x] Teste do step: em falha, zip e pasta da sessão são removidos.
+- [x] `13/CA-07` — no sistema rodando: um zip com um vídeo de 3 GB é importado sem o servidor ficar sem memória. *Local 2026-11-17: zip de 3,22 GB (entrada `.mp4` de 3 GiB) enviado por `/takeout/upload/*` → importação `completed` 1/1/0, vídeo com 3.221.225.472 bytes; RSS do backend 76 MB antes, pico 95 MB (amostragem de 1 s, 1206 amostras). Reimportar o mesmo zip conta "já existia".*
+- [x] `13/CA-10` — depois de concluir, o zip e os temporários não ocupam espaço. *Local: `.takeout_uploads/` vazio e nenhum `.part` no destino após as duas importações.*
+- [x] `make ci-backend` verde.
 
 ## Fora de escopo
 
