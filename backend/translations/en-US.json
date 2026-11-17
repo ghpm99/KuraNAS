@@ -2135,5 +2135,6 @@
 	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancel this time",
 	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "At this time the computer will be shut down; a countdown notice appears on every screen and lets you cancel.",
 	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Next run: {{dateTime}}",
-	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Next run: none (automatic shutdown is off)."
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Next run: none (automatic shutdown is off).",
+	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "The chunk position does not match what the server already received"
 }

@@ -76,6 +76,14 @@ func (m *capturesHandlerErrServiceMock) UploadCaptureChunk(file *multipart.FileH
 	return errors.New("chunk failed")
 }
 
+type capturesHandlerOffsetMismatchServiceMock struct {
+	capturesHandlerServiceMock
+}
+
+func (m *capturesHandlerOffsetMismatchServiceMock) UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptureChunkDto) error {
+	return fmt.Errorf("wrapped: %w", &ChunkOffsetMismatchError{ReceivedSize: 4, GivenOffset: dto.Offset})
+}
+
 func (m *capturesHandlerErrServiceMock) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error) {
 	return CaptureDto{}, errors.New("complete failed")
 }
@@ -487,5 +495,33 @@ func TestCapturesHandlerDeleteReportsLibraryFileKept(t *testing.T) {
 		if !body["deleted"] || body["library_file_kept"] != libraryFileKept {
 			t.Fatalf("unexpected body %v for libraryFileKept=%v", body, libraryFileKept)
 		}
+	}
+}
+
+func TestCapturesHandlerChunkOffsetMismatchRespondsConflictWithReceivedSize(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&capturesHandlerOffsetMismatchServiceMock{}, &capturesLoggerMock{})
+	router := gin.New()
+	router.POST("/captures/upload/chunk", handler.UploadCaptureChunkHandler)
+
+	req := buildChunkUploadRequest(t, "/captures/upload/chunk", "abc", 9, true)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusConflict {
+		t.Fatalf("expected %d, got %d", http.StatusConflict, w.Code)
+	}
+	var body struct {
+		Error        string `json:"error"`
+		ReceivedSize *int64 `json:"received_size"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.ReceivedSize == nil || *body.ReceivedSize != 4 {
+		t.Fatalf("expected received_size 4, got %v", body.ReceivedSize)
+	}
+	if body.Error == "" {
+		t.Fatal("expected error message")
 	}
 }

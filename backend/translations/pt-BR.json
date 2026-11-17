@@ -2135,5 +2135,6 @@
 	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancelar desta vez",
 	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "Neste horário o computador será desligado; um aviso com contagem aparece em todas as telas e permite cancelar.",
 	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Próxima execução: {{dateTime}}",
-	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado)."
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado).",
+	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "A posição do trecho não confere com o que o servidor já recebeu"
 }

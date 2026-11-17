@@ -136,6 +136,14 @@ func (h *Handler) UploadCaptureChunkHandler(c *gin.Context) {
 
 	if err := h.service.UploadCaptureChunk(file, dto); err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
+		var offsetMismatch *ChunkOffsetMismatchError
+		if errors.As(err, &offsetMismatch) {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":         i18n.GetMessage("ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH"),
+				"received_size": offsetMismatch.ReceivedSize,
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
 		return
 	}

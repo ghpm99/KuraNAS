@@ -1029,3 +1029,47 @@ func TestSaveUploadedFileInvalidPath(t *testing.T) {
 		t.Fatal("expected error for invalid file header")
 	}
 }
+
+func TestServiceUploadCaptureChunkRejectsWrongOffsetWithoutWriting(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+	service := newServiceForTest(t, &repoMock{}, &uploadJobDispatcherMock{}, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:      "offset_show",
+		MediaType: "recording",
+		MimeType:  "video/webm",
+		Size:      10,
+		FileName:  "recording.webm",
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+	firstChunk := buildTestFileHeader(t, "chunk_a.bin", "1234")
+	if err := service.UploadCaptureChunk(firstChunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("first chunk upload failed: %v", err)
+	}
+	tempPath := service.captureUploadTempFilePath(initResult.UploadID)
+	contentBefore, err := os.ReadFile(tempPath)
+	if err != nil {
+		t.Fatalf("read temp file: %v", err)
+	}
+
+	misplacedChunk := buildTestFileHeader(t, "chunk_b.bin", "567890")
+	err = service.UploadCaptureChunk(misplacedChunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 2})
+
+	var offsetMismatch *ChunkOffsetMismatchError
+	if !errors.As(err, &offsetMismatch) {
+		t.Fatalf("expected ChunkOffsetMismatchError, got %v", err)
+	}
+	if offsetMismatch.ReceivedSize != 4 {
+		t.Fatalf("expected received size 4, got %d", offsetMismatch.ReceivedSize)
+	}
+	contentAfter, err := os.ReadFile(tempPath)
+	if err != nil {
+		t.Fatalf("read temp file: %v", err)
+	}
+	if string(contentAfter) != string(contentBefore) {
+		t.Fatalf("temp file changed: %q -> %q", contentBefore, contentAfter)
+	}
+}

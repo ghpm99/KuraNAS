@@ -30,6 +30,15 @@ const captureUploadChunkSize int64 = 2 * 1024 * 1024
 // maps it to 400, not 500.
 var ErrEmptyCapture = errors.New("capture upload is empty")
 
+type ChunkOffsetMismatchError struct {
+	ReceivedSize int64
+	GivenOffset  int64
+}
+
+func (e *ChunkOffsetMismatchError) Error() string {
+	return fmt.Sprintf("chunk offset mismatch: expected %d got %d", e.ReceivedSize, e.GivenOffset)
+}
+
 type Service struct {
 	Repository          RepositoryInterface
 	UploadJobDispatcher UploadJobDispatcherInterface
@@ -230,7 +239,7 @@ func (s *Service) UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptu
 	}
 
 	if dto.Offset != session.ReceivedSize {
-		return fmt.Errorf("UploadCaptureChunk: offset mismatch, expected %d got %d", session.ReceivedSize, dto.Offset)
+		return &ChunkOffsetMismatchError{ReceivedSize: session.ReceivedSize, GivenOffset: dto.Offset}
 	}
 
 	src, err := file.Open()
