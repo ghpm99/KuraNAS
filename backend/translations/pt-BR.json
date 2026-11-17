@@ -778,6 +778,8 @@
 	"ERROR_MUSIC_METADATA_SELECTOR_INVALID": "Informe exatamente um seletor: file_ids, album_key ou folder_key",
 	"ERROR_MUSIC_METADATA_FILE_IDS_INVALID": "Informe de 1 a 500 ids de arquivo",
 	"ERROR_MUSIC_METADATA_FIELDS_EMPTY": "Informe ao menos um campo para corrigir",
+	"ERROR_MUSIC_GENRE_NAME_EMPTY": "Informe o nome do gênero",
+	"ERROR_MUSIC_GENRE_NAME_SEPARATOR": "O nome do gênero não pode conter ; , ou |",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "Esta faixa já está na playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Recurso de video nao encontrado",
 	"ERROR_VIDEO_POSTER_NOT_FOUND": "Poster local de video nao encontrado",

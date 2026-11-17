@@ -778,6 +778,8 @@
 	"ERROR_MUSIC_METADATA_SELECTOR_INVALID": "Provide exactly one selector: file_ids, album_key or folder_key",
 	"ERROR_MUSIC_METADATA_FILE_IDS_INVALID": "Provide between 1 and 500 file ids",
 	"ERROR_MUSIC_METADATA_FIELDS_EMPTY": "Provide at least one field to correct",
+	"ERROR_MUSIC_GENRE_NAME_EMPTY": "Enter the genre name",
+	"ERROR_MUSIC_GENRE_NAME_SEPARATOR": "The genre name cannot contain ; , or |",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "This track is already in the playlist",
 	"ERROR_VIDEO_NOT_FOUND": "Video resource not found",
 	"ERROR_VIDEO_POSTER_NOT_FOUND": "Local video poster not found",
