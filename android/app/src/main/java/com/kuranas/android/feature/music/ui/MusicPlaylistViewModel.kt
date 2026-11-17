@@ -29,5 +29,7 @@ class MusicPlaylistViewModel @Inject constructor(
 
     fun loadMore() = tracksLoader.loadMore()
 
+    fun retryLoadMore() = tracksLoader.retryLoadMore()
+
     fun play(track: TrackDto) = player.play(track, state.value.items)
 }

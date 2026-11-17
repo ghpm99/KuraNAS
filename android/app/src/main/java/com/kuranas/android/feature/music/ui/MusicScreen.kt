@@ -42,6 +42,7 @@ import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
+import com.kuranas.android.core.ui.components.PagedListFooter
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.music.data.AlbumDto
 import com.kuranas.android.feature.music.data.ArtistDto
@@ -110,14 +111,15 @@ fun MusicScreen(
                     currentList.isLoading -> LoadingView()
                     currentList.error != null -> ErrorView(currentList.error)
                     else -> when (tab) {
-                        MusicTab.ARTISTS -> ArtistsList(artists, onOpenArtist, viewModel::loadMoreArtists)
-                        MusicTab.ALBUMS -> AlbumsList(albums, onOpenAlbum, viewModel::loadMoreAlbums)
-                        MusicTab.PLAYLISTS -> PlaylistsList(playlists, onOpenPlaylist, viewModel::loadMorePlaylists)
-                        MusicTab.FOLDERS -> FoldersList(folders, onOpenFolder, viewModel::loadMoreFolders)
+                        MusicTab.ARTISTS -> ArtistsList(artists, onOpenArtist, viewModel::loadMoreArtists, viewModel::retryLoadMoreArtists)
+                        MusicTab.ALBUMS -> AlbumsList(albums, onOpenAlbum, viewModel::loadMoreAlbums, viewModel::retryLoadMoreAlbums)
+                        MusicTab.PLAYLISTS -> PlaylistsList(playlists, onOpenPlaylist, viewModel::loadMorePlaylists, viewModel::retryLoadMorePlaylists)
+                        MusicTab.FOLDERS -> FoldersList(folders, onOpenFolder, viewModel::loadMoreFolders, viewModel::retryLoadMoreFolders)
                         MusicTab.TRACKS -> TracksList(
                             pagedState = tracks,
                             starredById = starredById,
                             onLoadMore = viewModel::loadMoreTracks,
+                            onRetryLoadMore = viewModel::retryLoadMoreTracks,
                             onToggleStar = viewModel.stars::toggle,
                             onPlay = { track ->
                                 viewModel.play(track, tracks.items)
@@ -136,7 +138,7 @@ private data class ListStatus(val isLoading: Boolean, val isRefreshing: Boolean,
 private fun PagedListState<*>.toListStatus() = ListStatus(isLoading, isRefreshing, error)
 
 @Composable
-private fun ArtistsList(pagedState: PagedListState<ArtistDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit) {
+private fun ArtistsList(pagedState: PagedListState<ArtistDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit, onRetryLoadMore: () -> Unit) {
     val artists = pagedState.items
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, artists.size, pagedState.hasMore, onLoadMore)
@@ -162,11 +164,14 @@ private fun ArtistsList(pagedState: PagedListState<ArtistDto>, onOpen: (String) 
                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        item {
+            PagedListFooter(isLoadingMore = pagedState.isLoadingMore, loadMoreError = pagedState.loadMoreError, onRetry = onRetryLoadMore)
+        }
     }
 }
 
 @Composable
-private fun AlbumsList(pagedState: PagedListState<AlbumDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit) {
+private fun AlbumsList(pagedState: PagedListState<AlbumDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit, onRetryLoadMore: () -> Unit) {
     val albums = pagedState.items
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, albums.size, pagedState.hasMore, onLoadMore)
@@ -192,6 +197,9 @@ private fun AlbumsList(pagedState: PagedListState<AlbumDto>, onOpen: (String) ->
                 Text("${album.trackCount}", style = MaterialTheme.typography.bodySmall)
             }
         }
+        item {
+            PagedListFooter(isLoadingMore = pagedState.isLoadingMore, loadMoreError = pagedState.loadMoreError, onRetry = onRetryLoadMore)
+        }
     }
 }
 
@@ -200,6 +208,7 @@ private fun TracksList(
     pagedState: PagedListState<TrackDto>,
     starredById: Map<String, Boolean>,
     onLoadMore: () -> Unit,
+    onRetryLoadMore: () -> Unit,
     onToggleStar: (TrackDto) -> Unit,
     onPlay: (TrackDto) -> Unit,
 ) {
@@ -216,11 +225,14 @@ private fun TracksList(
                 onClick = { onPlay(track) },
             )
         }
+        item {
+            PagedListFooter(isLoadingMore = pagedState.isLoadingMore, loadMoreError = pagedState.loadMoreError, onRetry = onRetryLoadMore)
+        }
     }
 }
 
 @Composable
-private fun FoldersList(pagedState: PagedListState<FolderDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit) {
+private fun FoldersList(pagedState: PagedListState<FolderDto>, onOpen: (String) -> Unit, onLoadMore: () -> Unit, onRetryLoadMore: () -> Unit) {
     val folders = pagedState.items
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, folders.size, pagedState.hasMore, onLoadMore)
@@ -246,11 +258,14 @@ private fun FoldersList(pagedState: PagedListState<FolderDto>, onOpen: (String) 
                 Text(pluralStringResource(R.plurals.music_track_count, folder.trackCount, folder.trackCount), style = MaterialTheme.typography.bodySmall)
             }
         }
+        item {
+            PagedListFooter(isLoadingMore = pagedState.isLoadingMore, loadMoreError = pagedState.loadMoreError, onRetry = onRetryLoadMore)
+        }
     }
 }
 
 @Composable
-private fun PlaylistsList(pagedState: PagedListState<PlaylistDto>, onOpen: (Int) -> Unit, onLoadMore: () -> Unit) {
+private fun PlaylistsList(pagedState: PagedListState<PlaylistDto>, onOpen: (Int) -> Unit, onLoadMore: () -> Unit, onRetryLoadMore: () -> Unit) {
     val playlists = pagedState.items
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, playlists.size, pagedState.hasMore, onLoadMore)
@@ -272,6 +287,9 @@ private fun PlaylistsList(pagedState: PagedListState<PlaylistDto>, onOpen: (Int)
                 }
                 Text(pluralStringResource(R.plurals.music_track_count, playlist.trackCount, playlist.trackCount), style = MaterialTheme.typography.bodySmall)
             }
+        }
+        item {
+            PagedListFooter(isLoadingMore = pagedState.isLoadingMore, loadMoreError = pagedState.loadMoreError, onRetry = onRetryLoadMore)
         }
     }
 }

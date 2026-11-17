@@ -24,6 +24,7 @@ import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
+import com.kuranas.android.core.ui.components.PagedListFooter
 
 @Composable
 fun MusicFolderScreen(
@@ -57,6 +58,9 @@ fun MusicFolderScreen(
                                 onPlayTrack()
                             },
                         )
+                    }
+                    item {
+                        PagedListFooter(isLoadingMore = state.isLoadingMore, loadMoreError = state.loadMoreError, onRetry = viewModel::retryLoadMore)
                     }
                 }
             }

@@ -136,6 +136,41 @@ class MusicViewModelTest {
     }
 
     @Test
+    fun `load more failure of each secondary list keeps items and retry appends the same page`() {
+        coEvery { repository.getAllTracks(1) } returns tracksPage(false, 1)
+        coEvery { repository.getArtists(1) } returns AppResult.Success(ListPage(listOf(ArtistDto(key = "a")), true))
+        coEvery { repository.getArtists(2) } returns AppResult.Error("offline") andThen AppResult.Success(ListPage(listOf(ArtistDto(key = "b")), false))
+        coEvery { repository.getAlbums(1) } returns AppResult.Success(ListPage(listOf(AlbumDto(key = "a")), true))
+        coEvery { repository.getAlbums(2) } returns AppResult.Error("offline") andThen AppResult.Success(ListPage(listOf(AlbumDto(key = "b")), false))
+        coEvery { repository.getPlaylists(1) } returns AppResult.Success(ListPage(listOf(PlaylistDto(id = 1)), true))
+        coEvery { repository.getPlaylists(2) } returns AppResult.Error("offline") andThen AppResult.Success(ListPage(listOf(PlaylistDto(id = 2)), false))
+        coEvery { repository.getFolders(1) } returns AppResult.Success(ListPage(listOf(FolderDto(folder = "a")), true))
+        coEvery { repository.getFolders(2) } returns AppResult.Error("offline") andThen AppResult.Success(ListPage(listOf(FolderDto(folder = "b")), false))
+        val viewModel = MusicViewModel(repository, player, FileStarToggler(mockk(), FileStarStore()))
+
+        viewModel.loadMoreArtists()
+        viewModel.loadMoreAlbums()
+        viewModel.loadMorePlaylists()
+        viewModel.loadMoreFolders()
+
+        assertEquals("offline", viewModel.artists.value.loadMoreError)
+        assertEquals("offline", viewModel.albums.value.loadMoreError)
+        assertEquals("offline", viewModel.playlists.value.loadMoreError)
+        assertEquals("offline", viewModel.folders.value.loadMoreError)
+        assertEquals(listOf("a"), viewModel.artists.value.items.map { it.key })
+
+        viewModel.retryLoadMoreArtists()
+        viewModel.retryLoadMoreAlbums()
+        viewModel.retryLoadMorePlaylists()
+        viewModel.retryLoadMoreFolders()
+
+        assertEquals(listOf("a", "b"), viewModel.artists.value.items.map { it.key })
+        assertEquals(listOf("a", "b"), viewModel.albums.value.items.map { it.key })
+        assertEquals(listOf(1, 2), viewModel.playlists.value.items.map { it.id })
+        assertEquals(listOf("a", "b"), viewModel.folders.value.items.map { it.folder })
+    }
+
+    @Test
     fun `refresh restarts from the first page`() {
         coEvery { repository.getAllTracks(1) } returns tracksPage(true, 1) andThen tracksPage(true, 9)
         coEvery { repository.getAllTracks(2) } returns tracksPage(false, 2)

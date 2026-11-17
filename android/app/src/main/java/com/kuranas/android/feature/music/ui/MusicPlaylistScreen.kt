@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.R
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
+import com.kuranas.android.core.ui.components.PagedListFooter
 
 @Composable
 fun MusicPlaylistScreen(
@@ -54,6 +55,9 @@ fun MusicPlaylistScreen(
                                 onPlayTrack()
                             },
                         )
+                    }
+                    item {
+                        PagedListFooter(isLoadingMore = state.isLoadingMore, loadMoreError = state.loadMoreError, onRetry = viewModel::retryLoadMore)
                     }
                 }
             }

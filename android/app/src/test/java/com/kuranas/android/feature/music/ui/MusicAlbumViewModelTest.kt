@@ -8,6 +8,7 @@ import com.kuranas.android.feature.files.data.FileStarToggler
 import com.kuranas.android.feature.music.data.TrackDto
 import com.kuranas.android.feature.music.playback.PlayerConnection
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -75,5 +77,24 @@ class MusicAlbumViewModelTest {
 
         assertFalse(viewModel.state.value.isLoading)
         assertEquals("boom", viewModel.state.value.error)
+    }
+
+    @Test
+    fun `load more failure keeps loaded tracks and retry requests the same page`() {
+        coEvery { repository.getTracksByAlbum("album-key", 1) } returns tracksPage(true, 1)
+        coEvery { repository.getTracksByAlbum("album-key", 2) } returns AppResult.Error("offline") andThen tracksPage(false, 2)
+        val viewModel = MusicAlbumViewModel(repository, player, FileStarToggler(mockk(), FileStarStore()))
+        viewModel.load("album-key")
+
+        viewModel.loadMore()
+
+        assertEquals(listOf(1), viewModel.state.value.items.map { it.id })
+        assertEquals("offline", viewModel.state.value.loadMoreError)
+
+        viewModel.retryLoadMore()
+
+        assertEquals(listOf(1, 2), viewModel.state.value.items.map { it.id })
+        assertNull(viewModel.state.value.loadMoreError)
+        coVerify(exactly = 2) { repository.getTracksByAlbum("album-key", 2) }
     }
 }
