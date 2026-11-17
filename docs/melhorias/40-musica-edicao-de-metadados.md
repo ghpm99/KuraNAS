@@ -35,7 +35,7 @@ Uma alteração por item, cada uma em commit próprio, nesta ordem.
 
 - [x] 40.1. `RN-04` completa nas chaves de gênero: `/` também separa (nomes compostos conhecidos como `R&B/Soul` continuam um gênero) e acentos não diferenciam; `catalog_keys_version` (migração `0074`) faz o backfill recalcular as chaves de todas as faixas.
 
-- [ ] 40.3. A faixa tocando agora no player atualiza título/artista depois de uma edição de metadados (a fila fica em memória e persistida pelo `GlobalMusicProvider`; hoje só a próxima carga mostra o valor novo).
+- [x] 40.3. A faixa tocando agora no player atualiza título/artista depois de uma edição de metadados (a fila fica em memória e persistida pelo `GlobalMusicProvider`; hoje só a próxima carga mostra o valor novo).
 - [x] 40.2. Seleção múltipla de faixas nas listas de música e "Editar informações" em lote a partir da seleção (seletor `file_ids`, até 500).
 
 ## Critérios de aceite
