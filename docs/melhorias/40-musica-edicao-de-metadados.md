@@ -12,7 +12,7 @@ Conferido no código em 2026-11-17:
 - **Leitura de valores exibidos**: `get_library_tracks`, `get_library_files_by_ids` (hidrata quase todas as listas), `search_library_tracks`, `get_music` (`/files/music`, Android), filas (`get_library_queue_by_file_ids`, `get_playlist_queue`, `get_player_queue`), `get_playlist_tracks`, `get_audio_summary_by_file_id`, a navegação legada `/files/music/{artists,albums,genres}*` (agrupa pela tag crua; o frontend não usa, o Android só usa `/files/music`) e a busca global (`search/search_{tracks,artists,albums}.sql`, com índices trigram `kuranas_fold` das migrações `0054`–`0056`).
 - **RN-04 hoje é parcial**: separadores de gênero são `;`, `,` e `|` — a `/` não separa (e há o caso especial `r&b/soul`); maiúsculas e espaços são ignorados, **acentos não** ("Música" ≠ "Musica"). Corrigir muda as chaves de todas as faixas e vira o sub-item 40.1.
 - Mover/renomear mantém o `home_file.id` (`update_file.sql`), então a correção acompanha o arquivo; apagar de vez o arquivo apaga a correção (`ON DELETE CASCADE`).
-- Próxima migração livre: `0073`.
+- Próxima migração livre: `0075`.
 
 ## Objetivo
 
@@ -33,7 +33,7 @@ Uma alteração por item, cada uma em commit próprio, nesta ordem.
 
 ### Sub-itens
 
-- [ ] 40.1. `RN-04` completa nas chaves de gênero: `/` também separa (decidir o caso `r&b/soul`) e acentos não diferenciam; recalcula as chaves de todas as faixas. O diálogo web (item 6) já separa os gêneros iniciais por `;`, `/` e `,` (`trackMetadataFormValues.ts`) — alinhar com a regra final do backend. A faixa tocando agora no player não atualiza título/artista após a edição (fila em memória do `GlobalMusicProvider`) — fica para depois.
+- [ ] 40.1. `RN-04` completa nas chaves de gênero: `/` também separa (decidir o caso `r&b/soul`) e acentos não diferenciam; recalcula as chaves de todas as faixas. A faixa tocando agora no player não atualiza título/artista após a edição (fila em memória do `GlobalMusicProvider`) — fica para depois.
 
 - [ ] 40.2. Seleção múltipla de faixas nas listas de música e "Editar informações" em lote a partir da seleção (seletor `file_ids`, até 500).
 
