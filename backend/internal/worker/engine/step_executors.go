@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -500,7 +501,7 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 
-		plan, planErr := buildFileProcessingPlan(fileDto, job.JobTypeFSEvent, job.JobPriorityLow)
+		plan, planErr := buildFileProcessingPlan(fileDto, job.JobTypeFSEvent, job.JobPriorityLow, currentIndexingPreferences(context))
 		if planErr != nil {
 			log.Printf("[diff] skipping file %q: %v\n", path, planErr)
 			return nil
@@ -609,7 +610,12 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 	return nil
 }
 
-func buildFileProcessingPlan(fileDto files.FileDto, jobType job.JobType, priority job.JobPriority) (PlannedJob, error) {
+func buildFileProcessingPlan(
+	fileDto files.FileDto,
+	jobType job.JobType,
+	priority job.JobPriority,
+	preferences configuration.IndexingPreferences,
+) (PlannedJob, error) {
 	persistPayload, err := marshalPayload(StepFilePayload{
 		Path: fileDto.Path,
 		File: &fileDto,
@@ -632,13 +638,6 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType job.JobType, priorit
 			Payload:     persistPayload,
 		},
 		{
-			Key:         "metadata",
-			Type:        job.StepTypeMetadata,
-			DependsOn:   []string{"persist"},
-			MaxAttempts: 3,
-			Payload:     commonPayload,
-		},
-		{
 			Key:         "checksum",
 			Type:        job.StepTypeChecksum,
 			DependsOn:   []string{"persist"},
@@ -647,8 +646,19 @@ func buildFileProcessingPlan(fileDto files.FileDto, jobType job.JobType, priorit
 		},
 	}
 
+	if preferences.ExtractMetadata {
+		steps = append(steps, PlannedStep{
+			Key:         "metadata",
+			Type:        job.StepTypeMetadata,
+			DependsOn:   []string{"persist"},
+			MaxAttempts: 3,
+			Payload:     commonPayload,
+		})
+	}
+
 	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
-	if formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo {
+	isThumbnailable := formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo
+	if preferences.GeneratePreviews && isThumbnailable {
 		steps = append(steps, PlannedStep{
 			Key:         "thumbnail",
 			Type:        job.StepTypeThumbnail,

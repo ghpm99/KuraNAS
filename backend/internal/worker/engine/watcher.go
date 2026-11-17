@@ -198,7 +198,7 @@ func dispatchWatcherChanges(context *WorkerContext, rootPath string, changed []s
 			continue
 		}
 
-		plan, planErr := buildFileProcessingPlan(fileDto, job.JobTypeFSEvent, job.JobPriorityNormal)
+		plan, planErr := buildFileProcessingPlan(fileDto, job.JobTypeFSEvent, job.JobPriorityNormal, currentIndexingPreferences(context))
 		if planErr != nil {
 			log.Printf("[watcher] failed to build plan for %q: %v\n", path, planErr)
 			continue

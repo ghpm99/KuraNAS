@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
 	jobs "nas-go/api/internal/api/v1/jobs"
@@ -73,6 +74,7 @@ func TestBuildStepExecutorsAndPlans(t *testing.T) {
 		files.FileDto{Path: "/tmp/image.jpg", Format: ".jpg"},
 		jobdomain.JobTypeFSEvent,
 		jobdomain.JobPriorityLow,
+		configuration.DefaultIndexingPreferences(),
 	)
 	if err != nil {
 		t.Fatalf("buildFileProcessingPlan image error: %v", err)
@@ -85,6 +87,7 @@ func TestBuildStepExecutorsAndPlans(t *testing.T) {
 		files.FileDto{Path: "/tmp/video.mp4", Format: ".mp4"},
 		jobdomain.JobTypeFSEvent,
 		jobdomain.JobPriorityLow,
+		configuration.DefaultIndexingPreferences(),
 	)
 	if err != nil {
 		t.Fatalf("buildFileProcessingPlan video error: %v", err)
