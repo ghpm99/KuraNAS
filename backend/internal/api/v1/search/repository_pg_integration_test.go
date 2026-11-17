@@ -391,3 +391,17 @@ func TestSearchFilesReportsSizeUpdatedAtAndColdTier_Postgres(t *testing.T) {
 		t.Fatalf("hot file reported as cold: %+v", hotFile)
 	}
 }
+
+func TestSearchAlbumsReturnsEmptyYearWhenTagHasNoYear_Postgres(t *testing.T) {
+	repository, dbContext := newSearchPostgresRepository(t)
+	fileID := seedHomeFile(t, dbContext, searchSeedFile{name: "untagged.mp3", format: ".mp3", fileType: 2, updatedAt: time.Now().UTC()})
+	seedAudioTrackMetadata(t, dbContext, fileID, "Song", "Yearless Artist", "Yearless Album")
+
+	albums, err := repository.SearchAlbums("yearless", 10)
+	if err != nil {
+		t.Fatalf("search albums without year: %v", err)
+	}
+	if len(albums) != 1 || albums[0].Album != "Yearless Album" || albums[0].Year != "" {
+		t.Fatalf("albums = %+v, want one yearless album with empty year", albums)
+	}
+}

@@ -2,7 +2,7 @@ WITH ranked_albums AS (
     SELECT
         COALESCE(NULLIF(TRIM(am.album_artist), ''), NULLIF(TRIM(am.artist), '')) AS artist,
         TRIM(am.album) AS album,
-        MAX(TRIM(am.year)) AS year,
+        COALESCE(MAX(TRIM(am.year)), '') AS year,
         COUNT(*) AS track_count
     FROM
         home_file hf
