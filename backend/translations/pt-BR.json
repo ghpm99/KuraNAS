@@ -36,6 +36,7 @@
 	"FILES_MORE_ACTIONS": "Mais ações",
 	"FOLDER_PICKER_MOVE_HERE": "Mover para cá",
 	"FOLDER_PICKER_COPY_HERE": "Copiar para cá",
+	"FOLDER_PICKER_LOAD_ERROR": "Não foi possível carregar as pastas",
 	"NEW_FOLDER": "Criar pasta",
 	"UPLOAD_FILE": "Enviar",
 	"RECENT_FILES": "Recentes",

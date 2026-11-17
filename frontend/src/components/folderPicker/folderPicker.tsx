@@ -19,7 +19,7 @@ import { getFilesTree } from '@/service/files';
 import { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 
 export type FolderPickerResult = {
     folderId?: number;
@@ -58,6 +58,7 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
 
     const [hasNextPage, setHasNextPage] = useState(false);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const [failedPage, setFailedPage] = useState<number | null>(null);
     const loadedPageRef = useRef(1);
     const currentFolderIdRef = useRef<number | undefined>(undefined);
 
@@ -80,12 +81,14 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
             loadedPageRef.current = 1;
             setLoading(true);
             setHasNextPage(false);
+            setFailedPage(null);
             try {
                 const { folderEntries, hasNext } = await requestFolderPage(folderId, 1);
                 setFolders(folderEntries);
                 setHasNextPage(hasNext);
             } catch {
                 setFolders([]);
+                setFailedPage(1);
             } finally {
                 setLoading(false);
             }
@@ -97,6 +100,7 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
         const folderId = currentFolderIdRef.current;
         const nextPage = loadedPageRef.current + 1;
         setIsFetchingNextPage(true);
+        setFailedPage(null);
         try {
             const { folderEntries, hasNext } = await requestFolderPage(folderId, nextPage);
             if (currentFolderIdRef.current !== folderId) return;
@@ -104,15 +108,22 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
             setFolders((currentFolders) => [...currentFolders, ...folderEntries]);
             setHasNextPage(hasNext);
         } catch {
-            setHasNextPage(false);
+            if (currentFolderIdRef.current === folderId) setFailedPage(nextPage);
         } finally {
             setIsFetchingNextPage(false);
         }
     }, [requestFolderPage]);
 
+    const retryFailedPage = () => {
+        if (failedPage === 1) {
+            fetchFolders(currentFolderIdRef.current);
+            return;
+        }
+        fetchNextFolderPage();
+    };
+
     useEffect(() => {
         if (open) {
-
             setBreadcrumbs([]);
             setPathInput('');
             setSelectedFolder(null);
@@ -121,7 +132,6 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
     }, [open, fetchFolders]);
 
     const navigateInto = (folder: FolderEntry) => {
-
         setBreadcrumbs((prev) => [...prev, folder]);
         setPathInput(folder.path);
         setSelectedFolder(folder);
@@ -130,7 +140,6 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
 
     const navigateToBreadcrumb = (index: number) => {
         if (index < 0) {
-
             setBreadcrumbs([]);
             setPathInput('');
             setSelectedFolder(null);
@@ -212,40 +221,44 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
                         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                             <CircularProgress size={24} />
                         </Box>
-                    ) : folders.length === 0 ? (
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ p: 2, textAlign: 'center' }}
-                        >
-                            {t('EMPTY_FILE_LIST')}
-                        </Typography>
                     ) : (
-                        <List dense disablePadding>
-                            {folders.map((folder) => (
-                                <ListItemButton
-                                    key={folder.id}
-                                    selected={selectedFolder?.id === folder.id}
-                                    onClick={() => navigateInto(folder)}
-                                    sx={{ borderRadius: 1 }}
-                                >
-                                    <ListItemIcon sx={{ minWidth: 32 }}>
-                                        <Folder size={16} />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={folder.name}
-                                        primaryTypographyProps={{ variant: 'body2' }}
-                                    />
-                                </ListItemButton>
-                            ))}
-                        </List>
-                    )}
-                    {loading ? null : (
-                        <LoadMoreSentinel
+                        <ListFeedback
+                            isEmpty={folders.length === 0}
+                            isError={failedPage !== null}
+                            errorTitle={t('FOLDER_PICKER_LOAD_ERROR')}
+                            onRetry={retryFailedPage}
                             hasNextPage={hasNextPage}
                             isFetchingNextPage={isFetchingNextPage}
-                            fetchNextPage={fetchNextFolderPage}
-                        />
+                            onLoadMore={fetchNextFolderPage}
+                            emptyState={
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ p: 2, textAlign: 'center' }}
+                                >
+                                    {t('EMPTY_FILE_LIST')}
+                                </Typography>
+                            }
+                        >
+                            <List dense disablePadding>
+                                {folders.map((folder) => (
+                                    <ListItemButton
+                                        key={folder.id}
+                                        selected={selectedFolder?.id === folder.id}
+                                        onClick={() => navigateInto(folder)}
+                                        sx={{ borderRadius: 1 }}
+                                    >
+                                        <ListItemIcon sx={{ minWidth: 32 }}>
+                                            <Folder size={16} />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={folder.name}
+                                            primaryTypographyProps={{ variant: 'body2' }}
+                                        />
+                                    </ListItemButton>
+                                ))}
+                            </List>
+                        </ListFeedback>
                     )}
                 </Box>
                 <TextField

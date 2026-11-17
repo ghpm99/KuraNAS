@@ -36,6 +36,7 @@
 	"FILES_MORE_ACTIONS": "More actions",
 	"FOLDER_PICKER_MOVE_HERE": "Move here",
 	"FOLDER_PICKER_COPY_HERE": "Copy here",
+	"FOLDER_PICKER_LOAD_ERROR": "Could not load the folders",
 	"NEW_FOLDER": "Create folder",
 	"UPLOAD_FILE": "Upload",
 	"RECENT_FILES": "Recent",

@@ -20,6 +20,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 FOLDER_PICKER_MOVE_HERE: 'FOLDER_PICKER_MOVE_HERE',
                 FOLDER_PICKER_COPY_HERE: 'FOLDER_PICKER_COPY_HERE',
                 EMPTY_FILE_LIST: 'EMPTY_FILE_LIST',
+                FOLDER_PICKER_LOAD_ERROR: 'FOLDER_PICKER_LOAD_ERROR',
+                TRY_AGAIN: 'TRY_AGAIN',
             };
             return map[key] ?? key;
         },
@@ -111,7 +113,6 @@ describe('FolderPicker', () => {
             expect(screen.getByText('Documents')).toBeInTheDocument();
             expect(screen.getByText('Photos')).toBeInTheDocument();
         });
-        // Files should be filtered out
         expect(screen.queryByText('readme.txt')).not.toBeInTheDocument();
     });
 
@@ -136,7 +137,6 @@ describe('FolderPicker', () => {
         await waitFor(() => {
             expect(screen.getByText('Sub')).toBeInTheDocument();
         });
-        // Breadcrumb should show Documents
         expect(screen.getByText('Documents')).toBeInTheDocument();
         expect(screen.getByLabelText('PATH')).toHaveValue('/Documents');
     });
@@ -229,7 +229,6 @@ describe('FolderPicker', () => {
         fireEvent.click(screen.getByText('Target'));
         await waitFor(() => expect(screen.getByLabelText('PATH')).toHaveValue('/Target'));
 
-        // Modify the path manually
         fireEvent.change(screen.getByLabelText('PATH'), {
             target: { value: '/Target/new-sub' },
         });
@@ -248,14 +247,30 @@ describe('FolderPicker', () => {
         });
     });
 
-    it('handles API error gracefully', async () => {
+    it('shows the error state instead of the empty state when the first page fails', async () => {
         mockGetFilesTree.mockRejectedValue(new Error('API error'));
 
         render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
 
-        await waitFor(() => {
-            expect(screen.getByText('EMPTY_FILE_LIST')).toBeInTheDocument();
-        });
+        await waitFor(() => expect(screen.getByText('FOLDER_PICKER_LOAD_ERROR')).toBeInTheDocument());
+        expect(screen.queryByText('EMPTY_FILE_LIST')).not.toBeInTheDocument();
+    });
+
+    it('retries the first page after it failed', async () => {
+        mockGetFilesTree
+            .mockRejectedValueOnce(new Error('API error'))
+            .mockResolvedValueOnce(
+                makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }])
+            );
+
+        render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+        await waitFor(() => expect(screen.getByText('FOLDER_PICKER_LOAD_ERROR')).toBeInTheDocument());
+
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+
+        await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+        expect(screen.queryByText('FOLDER_PICKER_LOAD_ERROR')).not.toBeInTheDocument();
+        expect(mockGetFilesTree).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }));
     });
 
     it('resets state when reopened', async () => {
@@ -280,7 +295,6 @@ describe('FolderPicker', () => {
         fireEvent.click(screen.getByText('Docs'));
         await waitFor(() => expect(screen.getByLabelText('PATH')).toHaveValue('/Docs'));
 
-        // Close and reopen
         rerender(<FolderPicker open={false} onClose={onClose} onSelect={onSelect} />);
         rerender(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
 
@@ -308,18 +322,29 @@ describe('FolderPicker', () => {
         expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
     });
 
-    it('stops offering more pages when loading the next page fails', async () => {
+    it('keeps the loaded folders and retries only the failed page when the next page fails', async () => {
         const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }], true);
-        mockGetFilesTree.mockResolvedValueOnce(firstPage).mockRejectedValueOnce(new Error('fail'));
+        mockGetFilesTree
+            .mockResolvedValueOnce(firstPage)
+            .mockRejectedValueOnce(new Error('fail'))
+            .mockResolvedValueOnce(
+                makePaginationResponse([{ id: 2, name: 'Beta', path: '/Beta', type: 1 }])
+            );
 
         render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
         await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
 
         fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
 
-        await waitFor(() =>
-            expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument()
-        );
+        await waitFor(() => expect(screen.getByText('FOLDER_PICKER_LOAD_ERROR')).toBeInTheDocument());
         expect(screen.getByText('Alpha')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+
+        await waitFor(() => expect(screen.getByText('Beta')).toBeInTheDocument());
+        expect(screen.getByText('Alpha')).toBeInTheDocument();
+        expect(screen.queryByText('FOLDER_PICKER_LOAD_ERROR')).not.toBeInTheDocument();
+        expect(mockGetFilesTree).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
     });
 });
