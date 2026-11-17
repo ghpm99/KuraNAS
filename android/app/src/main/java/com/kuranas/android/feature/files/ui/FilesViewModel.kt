@@ -4,13 +4,15 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
-import com.kuranas.android.core.paging.FIRST_PAGE
+import com.kuranas.android.core.paging.PagedListLoader
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.FilesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -19,9 +21,12 @@ const val FOLDER_ID_ARGUMENT = "folderId"
 const val FOLDER_NAME_ARGUMENT = "name"
 
 data class FilesUiState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val files: List<FileItemDto> = emptyList(),
+    val isLoadingMore: Boolean = false,
+    val hasMore: Boolean = false,
+    val loadMoreError: String? = null,
     val breadcrumb: List<Pair<String, String>> = emptyList(),
     val error: String? = null,
     val showCreateFolderDialog: Boolean = false,
@@ -35,8 +40,20 @@ class FilesViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(FilesUiState(isLoading = true))
-    val state: StateFlow<FilesUiState> = _state.asStateFlow()
+    private val filesLoader = PagedListLoader<FileItemDto>(viewModelScope) { it.id }
+    private val navigationState = MutableStateFlow(FilesUiState())
+
+    val state: StateFlow<FilesUiState> = combine(navigationState, filesLoader.state) { navigation, files ->
+        navigation.copy(
+            isLoading = files.isLoading,
+            isRefreshing = files.isRefreshing,
+            files = files.items,
+            isLoadingMore = files.isLoadingMore,
+            hasMore = files.hasMore,
+            loadMoreError = files.loadMoreError,
+            error = files.error,
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, FilesUiState())
 
     init {
         val initialFolderId = savedStateHandle.get<String>(FOLDER_ID_ARGUMENT)
@@ -50,133 +67,94 @@ class FilesViewModel @Inject constructor(
     )
 
     fun loadRoot() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null, breadcrumb = emptyList()) }
-            when (val r = repository.getRootFiles(FIRST_PAGE)) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, files = r.data.items) }
-                is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
-            }
-        }
+        navigationState.update { it.copy(breadcrumb = emptyList()) }
+        loadCurrentFolder()
     }
 
     fun openFolder(folder: FileItemDto) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            when (val r = repository.getChildrenById(folder.id, FIRST_PAGE)) {
-                is AppResult.Success -> _state.update { state ->
-                    state.copy(
-                        isLoading = false,
-                        files = r.data.items,
-                        breadcrumb = state.breadcrumb + (folder.name to folder.id),
-                    )
-                }
-                is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
-            }
-        }
+        navigationState.update { it.copy(breadcrumb = it.breadcrumb + (folder.name to folder.id)) }
+        loadCurrentFolder()
     }
 
     fun navigateUp() {
-        val crumb = _state.value.breadcrumb
-        if (crumb.isEmpty()) return
-        val newCrumb = crumb.dropLast(1)
-        if (newCrumb.isEmpty()) {
-            loadRoot()
-            return
-        }
-        val parentId = newCrumb.last().second
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, breadcrumb = newCrumb) }
-            when (val r = repository.getChildrenById(parentId, FIRST_PAGE)) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, files = r.data.items) }
-                is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
-            }
+        val breadcrumb = navigationState.value.breadcrumb
+        if (breadcrumb.isEmpty()) return
+        navigationState.update { it.copy(breadcrumb = breadcrumb.dropLast(1)) }
+        loadCurrentFolder()
+    }
+
+    fun retry() = loadCurrentFolder()
+
+    fun loadMore() = filesLoader.loadMore()
+
+    fun retryLoadMore() = filesLoader.retryLoadMore()
+
+    /** Reloads the current folder from the first page keeping the visible list (pull-to-refresh and resume). */
+    fun refresh() = filesLoader.refresh()
+
+    private fun loadCurrentFolder() {
+        val currentFolderId = navigationState.value.breadcrumb.lastOrNull()?.second
+        filesLoader.load { page ->
+            if (currentFolderId == null) repository.getRootFiles(page) else repository.getChildrenById(currentFolderId, page)
         }
     }
 
     fun requestDelete(file: FileItemDto) {
-        _state.update { it.copy(fileAwaitingDeleteConfirmation = file) }
+        navigationState.update { it.copy(fileAwaitingDeleteConfirmation = file) }
     }
 
     fun cancelDelete() {
-        _state.update { it.copy(fileAwaitingDeleteConfirmation = null) }
+        navigationState.update { it.copy(fileAwaitingDeleteConfirmation = null) }
     }
 
     fun confirmDelete() {
-        val confirmedFile = _state.value.fileAwaitingDeleteConfirmation ?: return
-        _state.update { it.copy(fileAwaitingDeleteConfirmation = null) }
+        val confirmedFile = navigationState.value.fileAwaitingDeleteConfirmation ?: return
+        navigationState.update { it.copy(fileAwaitingDeleteConfirmation = null) }
         viewModelScope.launch {
             when (val deletion = repository.deleteFile(confirmedFile.id)) {
                 is AppResult.Success -> {
-                    _state.update { state -> state.copy(files = state.files.filterNot { it.id == confirmedFile.id }) }
-                    refreshCurrent()
+                    filesLoader.removeItem(confirmedFile.id)
+                    filesLoader.refresh()
                 }
-                is AppResult.Error -> _state.update { it.copy(actionErrorMessage = deletion.message) }
+                is AppResult.Error -> navigationState.update { it.copy(actionErrorMessage = deletion.message) }
             }
         }
     }
 
     fun toggleFileStarred(file: FileItemDto) {
-        val currentIsStarred = _state.value.files.firstOrNull { it.id == file.id }?.starred ?: return
+        val currentIsStarred = state.value.files.firstOrNull { it.id == file.id }?.starred ?: return
         applyStarred(file.id, !currentIsStarred)
         viewModelScope.launch {
-            when (val result = repository.setFileStarred(file.id, !currentIsStarred)) {
-                is AppResult.Success -> applyStarred(file.id, result.data.starred)
+            when (val starring = repository.setFileStarred(file.id, !currentIsStarred)) {
+                is AppResult.Success -> applyStarred(file.id, starring.data.starred)
                 is AppResult.Error -> {
                     applyStarred(file.id, currentIsStarred)
-                    _state.update { it.copy(actionErrorMessage = result.message) }
+                    navigationState.update { it.copy(actionErrorMessage = starring.message) }
                 }
             }
         }
     }
 
     fun dismissActionError() {
-        _state.update { it.copy(actionErrorMessage = null) }
+        navigationState.update { it.copy(actionErrorMessage = null) }
     }
 
     private fun applyStarred(fileId: String, isStarred: Boolean) {
-        _state.update { state ->
-            state.copy(files = state.files.map { if (it.id == fileId) it.copy(starred = isStarred) else it })
-        }
+        val currentFile = state.value.files.firstOrNull { it.id == fileId } ?: return
+        val index = filesLoader.removeItem(fileId)
+        filesLoader.reinsertItem(index, currentFile.copy(starred = isStarred))
     }
 
     fun createFolder(name: String) {
-        val parentId = _state.value.breadcrumb.lastOrNull()?.second
+        val parentId = navigationState.value.breadcrumb.lastOrNull()?.second
         viewModelScope.launch {
             repository.createFolder(name, parentId)
-            _state.update { it.copy(showCreateFolderDialog = false) }
-            refreshCurrent()
+            navigationState.update { it.copy(showCreateFolderDialog = false) }
+            filesLoader.refresh()
         }
     }
 
     fun toggleCreateFolderDialog(show: Boolean) {
-        _state.update { it.copy(showCreateFolderDialog = show) }
-    }
-
-    private fun refreshCurrent() {
-        val crumb = _state.value.breadcrumb
-        if (crumb.isEmpty()) loadRoot()
-        else viewModelScope.launch {
-            when (val r = repository.getChildrenById(crumb.last().second, FIRST_PAGE)) {
-                is AppResult.Success -> _state.update { it.copy(files = r.data.items) }
-                is AppResult.Error -> _state.update { it.copy(error = r.message) }
-            }
-        }
-    }
-
-    /**
-     * Recarrega a pasta atual mantendo a lista visível (sem spinner de tela cheia).
-     * Usado pelo pull-to-refresh e pelo refetch ao retomar a tela.
-     */
-    fun refresh() {
-        val crumb = _state.value.breadcrumb
-        viewModelScope.launch {
-            _state.update { it.copy(isRefreshing = true, error = null) }
-            val result = if (crumb.isEmpty()) repository.getRootFiles(FIRST_PAGE)
-            else repository.getChildrenById(crumb.last().second, FIRST_PAGE)
-            when (result) {
-                is AppResult.Success -> _state.update { it.copy(isRefreshing = false, files = result.data.items) }
-                is AppResult.Error -> _state.update { it.copy(isRefreshing = false, error = result.message) }
-            }
-        }
+        navigationState.update { it.copy(showCreateFolderDialog = show) }
     }
 }

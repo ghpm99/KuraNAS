@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -56,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.LocalActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,6 +68,8 @@ import com.kuranas.android.core.ui.components.FileSizeText
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
+import com.kuranas.android.core.ui.components.PagedListFooter
+import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.files.data.FileItemDto
 
@@ -80,12 +84,16 @@ fun FilesScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var newFolderName by remember { mutableStateOf("") }
+    val listState = rememberSaveable(state.breadcrumb.lastOrNull()?.second, saver = LazyListState.Saver) { LazyListState() }
+    LoadMoreOnNearEnd(listState, state.files.size, state.hasMore, viewModel::loadMore)
 
-    // Recarrega a pasta atual ao retomar a tela (voltar de outra tela / background),
-    // pulando o primeiro ON_RESUME pra não duplicar o load do init.
-    var firstResume by rememberSaveable { mutableStateOf(true) }
+    val activity = LocalActivity.current
+    var shouldSkipNextResumeRefresh by rememberSaveable { mutableStateOf(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        if (activity?.isChangingConfigurations == true) shouldSkipNextResumeRefresh = true
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        if (firstResume) firstResume = false else viewModel.refresh()
+        if (shouldSkipNextResumeRefresh) shouldSkipNextResumeRefresh = false else viewModel.refresh()
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -131,9 +139,10 @@ fun FilesScreen(
             ) {
             when {
                 state.isLoading -> LoadingView()
-                state.error != null -> ErrorView(state.error!!, onRetry = viewModel::loadRoot)
+                state.error != null -> ErrorView(state.error!!, onRetry = viewModel::retry)
                 state.files.isEmpty() -> EmptyView(stringResource(R.string.files_empty_folder))
                 else -> LazyColumn(
+                    state = listState,
                     contentPadding = PaddingValues(bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
@@ -146,6 +155,13 @@ fun FilesScreen(
                             },
                             onStar = { viewModel.toggleFileStarred(file) },
                             onDelete = { viewModel.requestDelete(file) },
+                        )
+                    }
+                    item(key = "paged-list-footer") {
+                        PagedListFooter(
+                            isLoadingMore = state.isLoadingMore,
+                            loadMoreError = state.loadMoreError,
+                            onRetry = viewModel::retryLoadMore,
                         )
                     }
                 }

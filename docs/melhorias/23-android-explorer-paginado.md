@@ -33,8 +33,8 @@ Verificados em aparelho real.
 - [ ] Derrubar o servidor depois da primeira página: os itens ficam e aparece o erro com "Tentar de novo" no fim.
 - [ ] `24/CA-11` — girar o aparelho mantém itens e posição.
 - [ ] Renomear, mover, excluir e nova pasta continuam atualizando a lista.
-- [ ] Testes: `FilesViewModelTest` cobre segunda página, fim de lista e erro de página seguinte; `FilesRepositoryTest` decodifica um JSON igual ao do handler real.
-- [ ] `assembleDebug` e `testDebugUnitTest` verdes.
+- [x] Testes: `FilesViewModelTest` cobre segunda página, fim de lista e erro de página seguinte; `FilesRepositoryTest` decodifica um JSON igual ao do handler real.
+- [x] `assembleDebug` e `testDebugUnitTest` verdes.
 
 ## Fora de escopo
 

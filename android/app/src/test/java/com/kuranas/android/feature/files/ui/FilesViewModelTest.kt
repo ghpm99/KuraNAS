@@ -161,4 +161,75 @@ class FilesViewModelTest {
         assertEquals(1, viewModel.state.value.files.size)
         assertEquals("mensagem do servidor", viewModel.state.value.actionErrorMessage)
     }
+
+    private fun fileNamed(rawId: Int) = FileItemDto(rawId = rawId, name = "file-$rawId.txt")
+
+    @Test
+    fun `second page appends its items to the folder list`() {
+        coEvery { repository.getRootFiles(1) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), true))
+        coEvery { repository.getRootFiles(2) } returns AppResult.Success(ListPage(listOf(fileNamed(2)), false))
+        val viewModel = FilesViewModel(repository, SavedStateHandle())
+
+        viewModel.loadMore()
+
+        assertEquals(listOf("1", "2"), viewModel.state.value.files.map { it.id })
+        assertFalse(viewModel.state.value.hasMore)
+    }
+
+    @Test
+    fun `end of list does not request another page`() {
+        coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), false))
+        val viewModel = FilesViewModel(repository, SavedStateHandle())
+
+        viewModel.loadMore()
+
+        coVerify(exactly = 1) { repository.getRootFiles(any()) }
+    }
+
+    @Test
+    fun `next page failure keeps the items and retry asks for the same page`() {
+        coEvery { repository.getRootFiles(1) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), true))
+        coEvery { repository.getRootFiles(2) } returns AppResult.Error("falhou")
+        val viewModel = FilesViewModel(repository, SavedStateHandle())
+
+        viewModel.loadMore()
+
+        assertEquals(1, viewModel.state.value.files.size)
+        assertEquals("falhou", viewModel.state.value.loadMoreError)
+
+        coEvery { repository.getRootFiles(2) } returns AppResult.Success(ListPage(listOf(fileNamed(2)), false))
+        viewModel.retryLoadMore()
+
+        coVerify(exactly = 2) { repository.getRootFiles(2) }
+        assertEquals(2, viewModel.state.value.files.size)
+        assertNull(viewModel.state.value.loadMoreError)
+    }
+
+    @Test
+    fun `opening a folder restarts from the first page`() {
+        coEvery { repository.getRootFiles(1) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), true))
+        coEvery { repository.getRootFiles(2) } returns AppResult.Success(ListPage(listOf(fileNamed(2)), true))
+        coEvery { repository.getChildrenById("9", 1) } returns AppResult.Success(ListPage(listOf(fileNamed(3)), false))
+        val viewModel = FilesViewModel(repository, SavedStateHandle())
+        viewModel.loadMore()
+
+        viewModel.openFolder(FileItemDto(rawId = 9, name = "docs", type = FileItemDto.TYPE_DIRECTORY))
+
+        assertEquals(listOf("3"), viewModel.state.value.files.map { it.id })
+        assertEquals(listOf("docs" to "9"), viewModel.state.value.breadcrumb)
+        coVerify(exactly = 1) { repository.getChildrenById("9", 1) }
+    }
+
+    @Test
+    fun `creating a folder reloads the current folder`() {
+        coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), false))
+        coEvery { repository.createFolder("novo", null) } returns AppResult.Success(Unit)
+        val viewModel = FilesViewModel(repository, SavedStateHandle())
+        coEvery { repository.getRootFiles(any()) } returns
+            AppResult.Success(ListPage(listOf(fileNamed(1), fileNamed(2)), false))
+
+        viewModel.createFolder("novo")
+
+        assertEquals(2, viewModel.state.value.files.size)
+    }
 }
