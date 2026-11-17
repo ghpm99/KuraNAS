@@ -101,7 +101,7 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 	}
 	defer reader.Close()
 
-	metadataByEntryKey := indexMetadataByEntryKey(reader.File)
+	metadataIndex := indexMetadataEntries(reader.File)
 	extraction := ExtractResult{
 		Files: make([]ExtractedFile, 0),
 	}
@@ -154,11 +154,13 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 		}
 		extraction.Imported++
 
+		metadata := metadataIndex.find(relativePath)
+		applyTakenTimeToFile(writtenPath, metadata)
 		extraction.Files = append(extraction.Files, ExtractedFile{
 			SourcePath:      entry.Name,
 			DestinationPath: writtenPath,
 			Category:        string(category),
-			Metadata:        findMetadata(metadataByEntryKey, relativePath),
+			Metadata:        metadata,
 		})
 	}
 
@@ -169,8 +171,8 @@ func isMetadataFileName(entryPath string) bool {
 	return strings.HasSuffix(strings.ToLower(entryPath), ".json")
 }
 
-func indexMetadataByEntryKey(entries []*zip.File) map[string]TakeoutMetadata {
-	metadataByEntryKey := map[string]TakeoutMetadata{}
+func indexMetadataEntries(entries []*zip.File) *metadataIndex {
+	index := newMetadataIndex()
 	for _, entry := range entries {
 		if entry.FileInfo().IsDir() || isUnsafeArchiveEntry(entry) {
 			continue
@@ -187,26 +189,9 @@ func indexMetadataByEntryKey(entries []*zip.File) map[string]TakeoutMetadata {
 		if parseErr != nil {
 			continue
 		}
-		folder := path.Dir(relativePath)
-		mediaName := strings.TrimSuffix(path.Base(relativePath), path.Ext(relativePath))
-		metadataByEntryKey[metadataEntryKey(folder, mediaName)] = metadata
-		if strings.TrimSpace(metadata.Title) != "" {
-			metadataByEntryKey[metadataEntryKey(folder, metadata.Title)] = metadata
-		}
+		index.add(relativePath, metadata)
 	}
-	return metadataByEntryKey
-}
-
-func findMetadata(metadataByEntryKey map[string]TakeoutMetadata, relativePath string) *TakeoutMetadata {
-	metadata, found := metadataByEntryKey[metadataEntryKey(path.Dir(relativePath), path.Base(relativePath))]
-	if !found {
-		return nil
-	}
-	return &metadata
-}
-
-func metadataEntryKey(folder string, mediaName string) string {
-	return folder + "/" + mediaName
+	return index
 }
 
 func readZipEntry(entry *zip.File) ([]byte, error) {

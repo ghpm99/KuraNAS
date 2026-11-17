@@ -65,6 +65,8 @@ type WorkerContext struct {
 	EmailService            emailapi.WorkerInterface
 	CapturesService         CapturePromoter
 	TakeoutImports          takeout.ImportRecorderInterface
+	TakeoutSidecarRecorder  takeout.SidecarRecorderInterface
+	TakeoutSidecars         takeout.SidecarFinderInterface
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
 	VideoPlaylistRebuild    *VideoPlaylistRebuildCoordinator

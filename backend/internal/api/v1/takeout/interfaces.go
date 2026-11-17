@@ -33,3 +33,11 @@ type ImportRecorderInterface interface {
 	CloseImportCompleted(jobID int, summary ImportSummary) error
 	CloseImportFailed(jobID int, failureMessage string) error
 }
+
+type SidecarRecorderInterface interface {
+	SaveSidecars(sidecars []PhotoSidecar) error
+}
+
+type SidecarFinderInterface interface {
+	FindSidecarByPath(path string) (*PhotoSidecar, error)
+}

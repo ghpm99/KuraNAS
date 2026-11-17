@@ -15,6 +15,7 @@ type takeoutGeoData struct {
 
 type TakeoutMetadata struct {
 	Title              string           `json:"title"`
+	Description        string           `json:"description"`
 	PhotoTakenTime     takeoutTimestamp `json:"photoTakenTime"`
 	GeoData            takeoutGeoData   `json:"geoData"`
 	GeoDataExif        takeoutGeoData   `json:"geoDataExif"`

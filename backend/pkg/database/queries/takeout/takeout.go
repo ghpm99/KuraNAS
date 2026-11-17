@@ -15,3 +15,9 @@ var CloseTakeoutImportCompletedQuery string
 
 //go:embed close_takeout_import_failed.sql
 var CloseTakeoutImportFailedQuery string
+
+//go:embed upsert_takeout_photo_sidecar.sql
+var UpsertTakeoutPhotoSidecarQuery string
+
+//go:embed select_takeout_photo_sidecar_by_path.sql
+var SelectTakeoutPhotoSidecarByPathQuery string

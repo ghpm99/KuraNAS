@@ -439,3 +439,78 @@ func TestExtractTakeoutUnsafeEntriesAreIgnoredAndCounted(t *testing.T) {
 		t.Fatalf("unsafe destination %s", extraction.Files[0].DestinationPath)
 	}
 }
+
+func findExtractedBySourceSuffix(t *testing.T, extraction ExtractResult, sourceSuffix string) ExtractedFile {
+	t.Helper()
+	for _, extracted := range extraction.Files {
+		if strings.HasSuffix(extracted.SourcePath, sourceSuffix) {
+			return extracted
+		}
+	}
+	t.Fatalf("no extracted file with source suffix %q in %+v", sourceSuffix, extraction.Files)
+	return ExtractedFile{}
+}
+
+func assertModTimeIsUnix(t *testing.T, filePath string, unixSeconds int64) {
+	t.Helper()
+	info, err := os.Stat(filePath)
+	if err != nil {
+		t.Fatalf("stat %s: %v", filePath, err)
+	}
+	if !info.ModTime().Equal(time.Unix(unixSeconds, 0)) {
+		t.Fatalf("expected mod time %v, got %v", time.Unix(unixSeconds, 0), info.ModTime())
+	}
+}
+
+func TestExtractTakeoutSetsModTimeFromPhotoTakenTimeInEachFolder(t *testing.T) {
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"Takeout/Google Fotos/A/IMG_0001.JPG":                            "photo-a",
+		"Takeout/Google Fotos/A/IMG_0001.JPG.supplemental-metadata.json": `{"title":"IMG_0001.JPG","photoTakenTime":{"timestamp":"1400000000"},"creationTime":{"timestamp":"1999999999"}}`,
+		"Takeout/Google Fotos/B/IMG_0001.JPG":                            "photo-b",
+		"Takeout/Google Fotos/B/IMG_0001.JPG.json":                       `{"title":"IMG_0001.JPG","photoTakenTime":{"timestamp":"1450000000"}}`,
+	})
+
+	assertModTimeIsUnix(t, findExtractedBySourceSuffix(t, extraction, "A/IMG_0001.JPG").DestinationPath, 1400000000)
+	assertModTimeIsUnix(t, findExtractedBySourceSuffix(t, extraction, "B/IMG_0001.JPG").DestinationPath, 1450000000)
+}
+
+func TestExtractTakeoutSetsModTimeFromCreationTimeWhenPhotoTakenTimeIsMissing(t *testing.T) {
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"A/IMG_0002.JPG":      "photo",
+		"A/IMG_0002.JPG.json": `{"title":"IMG_0002.JPG","creationTime":{"timestamp":"1420000000"}}`,
+	})
+
+	assertModTimeIsUnix(t, extraction.Files[0].DestinationPath, 1420000000)
+}
+
+func TestExtractTakeoutKeepsModTimeWithoutValidDate(t *testing.T) {
+	startedAt := time.Now().Add(-time.Minute)
+	_, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"A/IMG_0003.JPG":      "photo",
+		"A/IMG_0003.JPG.json": `{"title":"IMG_0003.JPG","photoTakenTime":{"timestamp":"not-a-number"}}`,
+	})
+
+	info, err := os.Stat(extraction.Files[0].DestinationPath)
+	if err != nil {
+		t.Fatalf("stat: %v", err)
+	}
+	if info.ModTime().Before(startedAt) {
+		t.Fatalf("mod time must stay at extraction time, got %v", info.ModTime())
+	}
+}
+
+func TestExtractTakeoutNeitherImportsNorIgnoresMetadataJSON(t *testing.T) {
+	libraryPath, extraction, _ := extractSingleLibrary(t, map[string]string{
+		"A/IMG_0004.JPG": "photo",
+		"A/IMG_0004.JPG.supplemental-metadata.json": `{"title":"IMG_0004.JPG"}`,
+		"A/metadata.json": `{"title":"album"}`,
+	})
+
+	if extraction.Imported != 1 || extraction.Ignored != 0 || extraction.TotalEntries != 1 || len(extraction.Files) != 1 {
+		t.Fatalf("JSON must be neither imported nor ignored: %+v", extraction)
+	}
+	jsonFiles, err := filepath.Glob(filepath.Join(libraryPath, "takeout", "A", "*.json"))
+	if err != nil || len(jsonFiles) != 0 {
+		t.Fatalf("no JSON may be written to the library, got %v (err %v)", jsonFiles, err)
+	}
+}

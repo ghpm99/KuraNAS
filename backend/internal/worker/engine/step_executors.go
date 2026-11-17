@@ -209,6 +209,7 @@ func executeMetadataStep(context *WorkerContext, step jobs.StepModel) error {
 	// image repository so files never imports image (one-directional dependency).
 	if imgMeta, ok := metadata.(imagedom.MetadataModel); ok {
 		imgMeta.FileId = fileDto.ID
+		applyTakeoutSidecarToImageMetadata(context, fileDto, &imgMeta)
 		if context.ImageRepository != nil {
 			dbCtx := context.ImageRepository.GetDbContext()
 			upsertErr := dbCtx.ExecTx(func(tx *sql.Tx) error {

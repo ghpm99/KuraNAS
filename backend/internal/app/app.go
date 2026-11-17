@@ -169,6 +169,10 @@ func InitializeApp() (*Application, error) {
 	if appContext.Takeout != nil && appContext.Takeout.ImportRepository != nil {
 		workerFileContext.TakeoutImports = appContext.Takeout.ImportRepository
 	}
+	if appContext.Takeout != nil && appContext.Takeout.SidecarRepository != nil {
+		workerFileContext.TakeoutSidecarRecorder = appContext.Takeout.SidecarRepository
+		workerFileContext.TakeoutSidecars = appContext.Takeout.SidecarRepository
+	}
 	if appContext.Captures != nil {
 		workerFileContext.CapturesService = appContext.Captures.Service
 	}

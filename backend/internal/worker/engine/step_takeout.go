@@ -44,6 +44,8 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 		return err
 	}
 
+	recordTakeoutSidecars(context, extraction)
+
 	if context.FilesService != nil {
 		paths := make([]string, 0, len(extraction.Files))
 		for _, extracted := range extraction.Files {
@@ -75,6 +77,19 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 	}
 
 	return nil
+}
+
+func recordTakeoutSidecars(context *WorkerContext, extraction takeout.ExtractResult) {
+	if context.TakeoutSidecarRecorder == nil {
+		return
+	}
+	sidecars := takeout.BuildPhotoSidecars(extraction.Files)
+	if len(sidecars) == 0 {
+		return
+	}
+	if err := context.TakeoutSidecarRecorder.SaveSidecars(sidecars); err != nil {
+		applog.Error("takeout sidecar: save failed", "error", err.Error())
+	}
 }
 
 func takeoutFailureMessageKey(extractionErr error) string {

@@ -318,3 +318,57 @@ func TestExecuteTakeoutExtractStepIgnoresRecordFailures(t *testing.T) {
 		t.Fatalf("record failure must not fail the import, got %v", err)
 	}
 }
+
+type sidecarRecorderSpy struct {
+	saved []takeout.PhotoSidecar
+}
+
+func (spy *sidecarRecorderSpy) SaveSidecars(sidecars []takeout.PhotoSidecar) error {
+	spy.saved = append(spy.saved, sidecars...)
+	return nil
+}
+
+func TestExecuteTakeoutExtractStepRecordsSidecarOfExtractedPhoto(t *testing.T) {
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "upload", "takeout.zip")
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("failed to create zip: %v", err)
+	}
+	writer := zip.NewWriter(zipFile)
+	for name, content := range map[string]string{
+		"Takeout/Google Fotos/IMG_01.jpg":      "img",
+		"Takeout/Google Fotos/IMG_01.jpg.json": `{"title":"IMG_01.jpg","description":"Praia","geoData":{"latitude":-23.5,"longitude":-46.6}}`,
+		"Takeout/Google Fotos/IMG_02.jpg":      "img2",
+	} {
+		entry, createErr := writer.Create(name)
+		if createErr != nil {
+			t.Fatalf("failed to create zip entry: %v", createErr)
+		}
+		_, _ = entry.Write([]byte(content))
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+	zipFile.Close()
+
+	imageLib := filepath.Join(tempDir, "Imagens")
+	payload, _ := json.Marshal(TakeoutStepPayload{ZipPath: zipPath, UploadID: "u1"})
+	spy := &sidecarRecorderSpy{}
+
+	stepErr := executeTakeoutExtractStep(&WorkerContext{
+		LibrariesService:       &librariesServiceMock{paths: map[libraries.LibraryCategory]string{libraries.LibraryCategoryImages: imageLib}},
+		TakeoutSidecarRecorder: spy,
+	}, jobs.StepModel{Payload: payload})
+	if stepErr != nil {
+		t.Fatalf("executeTakeoutExtractStep returned error: %v", stepErr)
+	}
+
+	expectedPath := filepath.Join(imageLib, "takeout", "IMG_01.jpg")
+	if len(spy.saved) != 1 || spy.saved[0].Path != expectedPath || spy.saved[0].Description != "Praia" || !spy.saved[0].HasLocation() {
+		t.Fatalf("expected exactly the sidecar of IMG_01.jpg at %s, got %+v", expectedPath, spy.saved)
+	}
+}
