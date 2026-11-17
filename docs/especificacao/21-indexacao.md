@@ -122,7 +122,7 @@ Detecção de mudanças no disco, varredura de reconciliação, reindexação ma
 | `index_document_text` (nova; padrão ligada) | desligada, a etapa de texto de documento não roda |
 | `scan_on_startup` (existe, hoje sem efeito) | **sai da tela**: a varredura ao iniciar é obrigatória (RN-03). A chave continua aceita e devolvida, sem efeito, por compatibilidade |
 
-  Religar uma etapa não reprocessa o passado sozinho: o que ficou sem processar entra pela reindexação. A marcação por IA é ligada e desligada em Configurações → IA ([18/RF-11](18-assistente.md)).
+  Religar uma etapa não reprocessa o passado na hora: o que ficou sem processar entra pela reindexação. Exceção: as duas filas de pendência que já existem — documentos sem texto indexado e arquivos sem metadados, reconciliados ao iniciar — são processadas quando a etapa volta a ficar ligada; enquanto ela está desligada, essas filas não rodam. A marcação por IA é ligada e desligada em Configurações → IA ([18/RF-11](18-assistente.md)).
 
 ## 9. Situação em 2026-11-10
 
