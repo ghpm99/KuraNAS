@@ -28,6 +28,7 @@ const (
 	UploadStatusSkipped  = "skipped"
 	UploadStatusReplaced = "replaced"
 	UploadStatusRenamed  = "renamed"
+	UploadStatusConflict = "conflict"
 	UploadStatusFailed   = "failed"
 )
 
@@ -102,11 +103,11 @@ func (s *Service) UploadFilesWithOptions(targetFolderID int, files []*multipart.
 	fileResults := make([]UploadFileResult, 0, len(files))
 	for _, pending := range pendingUploads {
 		fileResult, storeErr := s.storeUploadedFile(resolvedTargetPath, pending, policy)
-		if storeErr != nil && policy == UploadConflictFail {
+		if storeErr != nil && policy == UploadConflictFail && !isNameAlreadyTaken(storeErr) {
 			return UploadFilesResult{}, storeErr
 		}
 		if storeErr != nil {
-			fileResult = failedUploadResult(pending.fileName, storeErr)
+			fileResult = uploadResultForStoreError(pending.fileName, storeErr, policy)
 		}
 		if isWrittenStatus(fileResult.Status) {
 			uploaded = append(uploaded, fileResult.Path)
@@ -135,6 +136,25 @@ func (s *Service) createUploadJobWhenNeeded(uploaded []string) (int, error) {
 
 func isWrittenStatus(status string) bool {
 	return status == UploadStatusUploaded || status == UploadStatusReplaced || status == UploadStatusRenamed
+}
+
+func uploadResultForStoreError(fileName string, storeErr error, policy UploadConflictPolicy) UploadFileResult {
+	if policy == UploadConflictFail && isNameAlreadyTaken(storeErr) {
+		return conflictUploadResult(fileName)
+	}
+	return failedUploadResult(fileName, storeErr)
+}
+
+func isNameAlreadyTaken(storeErr error) bool {
+	var operationErr *FileOperationError
+	if !errors.As(storeErr, &operationErr) {
+		return false
+	}
+	return operationErr.StatusCode == http.StatusConflict && operationErr.MessageKey == "ERROR_TARGET_ALREADY_EXISTS"
+}
+
+func conflictUploadResult(fileName string) UploadFileResult {
+	return UploadFileResult{Name: fileName, Status: UploadStatusConflict, Error: i18n.GetMessage("ERROR_TARGET_ALREADY_EXISTS")}
 }
 
 func failedUploadResult(fileName string, storeErr error) UploadFileResult {

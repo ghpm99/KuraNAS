@@ -187,8 +187,13 @@ func TestUploadFilesWithFolderID(t *testing.T) {
 	requireOperationError(t, err, http.StatusBadRequest, "ERROR_NO_FILES_UPLOADED")
 
 	// Upload duplicate
-	_, err = service.UploadFiles(10, buildMultipartFileHeaders(t, "files", map[string]string{"photo.jpg": "again"}))
-	requireOperationError(t, err, http.StatusConflict, "ERROR_TARGET_ALREADY_EXISTS")
+	duplicateResult, err := service.UploadFiles(10, buildMultipartFileHeaders(t, "files", map[string]string{"photo.jpg": "again"}))
+	if err != nil {
+		t.Fatalf("UploadFiles duplicate returned error: %v", err)
+	}
+	if len(duplicateResult.Files) != 1 || duplicateResult.Files[0].Status != UploadStatusConflict {
+		t.Fatalf("expected conflict result for duplicate, got %+v", duplicateResult.Files)
+	}
 
 	// Upload to non-existent folder ID
 	_, err = service.UploadFiles(999, buildMultipartFileHeaders(t, "files", map[string]string{"x.txt": "data"}))

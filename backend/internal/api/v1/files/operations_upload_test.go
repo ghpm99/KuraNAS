@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"nas-go/api/pkg/i18n"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -48,21 +50,64 @@ func requireFileContent(t *testing.T, path string, expected string) {
 	}
 }
 
-func TestUploadDefaultPolicyKeepsConflictAbort(t *testing.T) {
+func requireConflictResult(t *testing.T, result UploadFilesResult, fileName string) {
+	t.Helper()
+	if len(result.Files) != 1 {
+		t.Fatalf("expected one file result, got %+v", result.Files)
+	}
+	fileResult := result.Files[0]
+	if fileResult.Name != fileName || fileResult.Status != UploadStatusConflict {
+		t.Fatalf("expected conflict result for %s, got %+v", fileName, fileResult)
+	}
+	if fileResult.Error != i18n.GetMessage("ERROR_TARGET_ALREADY_EXISTS") || fileResult.Error == "" {
+		t.Fatalf("unexpected conflict message %q", fileResult.Error)
+	}
+	if len(result.Uploaded) != 0 || result.JobID != 0 {
+		t.Fatalf("conflict must not record an upload or create a job: %+v", result)
+	}
+}
+
+func TestUploadDefaultPolicyReportsConflictWithoutWriting(t *testing.T) {
 	service, entryPoint := newUploadTestService(t, nil)
 	writeExistingFile(t, filepath.Join(entryPoint, "a.txt"), "old")
 
-	_, err := uploadSingle(t, service, "a.txt", "new", UploadOptions{})
-	requireOperationError(t, err, http.StatusConflict, "ERROR_TARGET_ALREADY_EXISTS")
+	result, err := uploadSingle(t, service, "a.txt", "new", UploadOptions{})
+	if err != nil {
+		t.Fatalf("conflict must not abort the request: %v", err)
+	}
+	requireConflictResult(t, result, "a.txt")
 	requireFileContent(t, filepath.Join(entryPoint, "a.txt"), "old")
 }
 
-func TestUploadPolicyFailExplicitAbortsOnConflict(t *testing.T) {
+func TestUploadPolicyFailExplicitReportsConflict(t *testing.T) {
 	service, entryPoint := newUploadTestService(t, nil)
 	writeExistingFile(t, filepath.Join(entryPoint, "a.txt"), "old")
 
-	_, err := uploadSingle(t, service, "a.txt", "new", UploadOptions{OnConflict: UploadConflictFail})
-	requireOperationError(t, err, http.StatusConflict, "ERROR_TARGET_ALREADY_EXISTS")
+	result, err := uploadSingle(t, service, "a.txt", "new", UploadOptions{OnConflict: UploadConflictFail})
+	if err != nil {
+		t.Fatalf("conflict must not abort the request: %v", err)
+	}
+	requireConflictResult(t, result, "a.txt")
+}
+
+func TestUploadPolicyFailUploadsFilesWithoutConflictAlongsideConflicting(t *testing.T) {
+	service, entryPoint := newUploadTestService(t, nil)
+	writeExistingFile(t, filepath.Join(entryPoint, "a.txt"), "old")
+	headers := buildMultipartFileHeaders(t, "files", map[string]string{"a.txt": "new", "b.txt": "fresh"})
+
+	result, err := service.UploadFilesWithOptions(0, headers, UploadOptions{OnConflict: UploadConflictFail})
+	if err != nil {
+		t.Fatalf("conflict must not abort the request: %v", err)
+	}
+	statusByName := map[string]string{}
+	for _, fileResult := range result.Files {
+		statusByName[fileResult.Name] = fileResult.Status
+	}
+	if statusByName["a.txt"] != UploadStatusConflict || statusByName["b.txt"] != UploadStatusUploaded {
+		t.Fatalf("unexpected statuses %+v", statusByName)
+	}
+	requireFileContent(t, filepath.Join(entryPoint, "a.txt"), "old")
+	requireFileContent(t, filepath.Join(entryPoint, "b.txt"), "fresh")
 }
 
 func TestUploadPolicyInvalidIsRejected(t *testing.T) {
