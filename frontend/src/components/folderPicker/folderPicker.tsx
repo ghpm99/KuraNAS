@@ -20,6 +20,7 @@ import { FileData } from '@/features/files/providers/fileProvider/fileContext';
 import { FileType } from '@/utils';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import ListFeedback from '@/components/listFeedback/ListFeedback';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 
 export type FolderPickerResult = {
     folderId?: number;
@@ -46,6 +47,11 @@ type FolderEntry = {
     path: string;
 };
 
+type PageFailure = {
+    page: number;
+    message?: string;
+};
+
 const folderPageSize = 50;
 
 const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerProps) => {
@@ -58,7 +64,7 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
 
     const [hasNextPage, setHasNextPage] = useState(false);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
-    const [failedPage, setFailedPage] = useState<number | null>(null);
+    const [pageFailure, setPageFailure] = useState<PageFailure | null>(null);
     const loadedPageRef = useRef(1);
     const currentFolderIdRef = useRef<number | undefined>(undefined);
 
@@ -81,14 +87,14 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
             loadedPageRef.current = 1;
             setLoading(true);
             setHasNextPage(false);
-            setFailedPage(null);
+            setPageFailure(null);
             try {
                 const { folderEntries, hasNext } = await requestFolderPage(folderId, 1);
                 setFolders(folderEntries);
                 setHasNextPage(hasNext);
-            } catch {
+            } catch (error) {
                 setFolders([]);
-                setFailedPage(1);
+                setPageFailure({ page: 1, message: extractBackendErrorMessage(error) });
             } finally {
                 setLoading(false);
             }
@@ -100,22 +106,24 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
         const folderId = currentFolderIdRef.current;
         const nextPage = loadedPageRef.current + 1;
         setIsFetchingNextPage(true);
-        setFailedPage(null);
+        setPageFailure(null);
         try {
             const { folderEntries, hasNext } = await requestFolderPage(folderId, nextPage);
             if (currentFolderIdRef.current !== folderId) return;
             loadedPageRef.current = nextPage;
             setFolders((currentFolders) => [...currentFolders, ...folderEntries]);
             setHasNextPage(hasNext);
-        } catch {
-            if (currentFolderIdRef.current === folderId) setFailedPage(nextPage);
+        } catch (error) {
+            if (currentFolderIdRef.current === folderId) {
+                setPageFailure({ page: nextPage, message: extractBackendErrorMessage(error) });
+            }
         } finally {
             setIsFetchingNextPage(false);
         }
     }, [requestFolderPage]);
 
     const retryFailedPage = () => {
-        if (failedPage === 1) {
+        if (pageFailure?.page === 1) {
             fetchFolders(currentFolderIdRef.current);
             return;
         }
@@ -224,9 +232,10 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
                     ) : (
                         <ListFeedback
                             isEmpty={folders.length === 0}
-                            isError={failedPage !== null}
-                            isNextPageError={failedPage !== null && failedPage > 1}
+                            isError={pageFailure !== null}
+                            isNextPageError={pageFailure !== null && pageFailure.page > 1}
                             errorTitle={t('FOLDER_PICKER_LOAD_ERROR')}
+                            errorMessage={pageFailure?.message}
                             onRetry={retryFailedPage}
                             hasNextPage={hasNextPage}
                             isFetchingNextPage={isFetchingNextPage}

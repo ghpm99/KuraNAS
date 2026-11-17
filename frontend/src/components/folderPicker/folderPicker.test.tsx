@@ -347,4 +347,47 @@ describe('FolderPicker', () => {
         expect(screen.queryByText('FOLDER_PICKER_LOAD_ERROR')).not.toBeInTheDocument();
         expect(mockGetFilesTree).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 }));
     });
+
+    describe('server error message', () => {
+        const serverError = (message: string) => ({ response: { data: { error: message } } });
+
+        it('shows the server message next to the title when the first page fails', async () => {
+            mockGetFilesTree.mockRejectedValue(serverError('mensagem do servidor'));
+
+            render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+
+            await waitFor(() => expect(screen.getByText('FOLDER_PICKER_LOAD_ERROR')).toBeInTheDocument());
+            expect(screen.getByText('mensagem do servidor')).toBeInTheDocument();
+        });
+
+        it('shows the server message below the folders when the next page fails', async () => {
+            mockGetFilesTree
+                .mockResolvedValueOnce(
+                    makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }], true)
+                )
+                .mockRejectedValueOnce(serverError('mensagem do servidor'));
+
+            render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+            await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+            fireEvent.click(screen.getByRole('button', { name: 'LOAD_MORE' }));
+
+            await waitFor(() => expect(screen.getByText('mensagem do servidor')).toBeInTheDocument());
+            expect(screen.getByText('Alpha')).toBeInTheDocument();
+        });
+
+        it('clears the server message when the retry succeeds', async () => {
+            mockGetFilesTree
+                .mockRejectedValueOnce(serverError('mensagem do servidor'))
+                .mockResolvedValueOnce(
+                    makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }])
+                );
+
+            render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);
+            await waitFor(() => expect(screen.getByText('mensagem do servidor')).toBeInTheDocument());
+            fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+
+            await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
+            expect(screen.queryByText('mensagem do servidor')).not.toBeInTheDocument();
+        });
+    });
 });
