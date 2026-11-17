@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { getMusicRoute } from '@/app/routes';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import CoverArt from '@/features/music/components/CoverArt';
+import EditCollectionMetadataButton from '@/features/music/components/trackMetadata/EditCollectionMetadataButton';
 import { getArtistKeyFromLabel } from '@/features/music/components/contextMenu/musicGroupingKeys';
 import { createAlbumPlaybackContext } from '@/features/music/components/playbackContext';
 import { findStartIndex } from '@/features/music/components/musicQueueTracks';
@@ -90,6 +91,7 @@ export default function AlbumPage({ albumKey, onBack }: AlbumPageProps) {
                 onBack={onBack}
                 onPlayAll={() => void queueAlbumTracks()}
                 onShuffleAll={() => void queueAlbumTracks(undefined, true)}
+                actions={<EditCollectionMetadataButton selector={{ albumKey }} />}
             />
 
             <MusicCollectionTrackList

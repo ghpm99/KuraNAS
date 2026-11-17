@@ -5,15 +5,9 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { invalidateMusicMetadataViews } from '@/features/music/queryKeys/invalidateMusicMetadataViews';
 import { readRefusedMetadataField, updateTrackMetadata } from '@/service/music';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
-import type { IMusicData, TrackMetadataFieldName } from '@/types/music';
-import {
-    buildChangedFields,
-    readInitialFormValues,
-    type TextualFieldName,
-    type TrackMetadataFormValues,
-} from './trackMetadataFormValues';
-
-type FieldErrors = Partial<Record<TrackMetadataFieldName, string>>;
+import type { IMusicData } from '@/types/music';
+import { buildChangedFields, readInitialFormValues } from './trackMetadataFormValues';
+import useTrackMetadataFieldState from './useTrackMetadataFieldState';
 
 interface UseTrackMetadataFormOptions {
     track: IMusicData;
@@ -25,8 +19,8 @@ export default function useTrackMetadataForm({ track, onSaved }: UseTrackMetadat
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
     const initialValues = useMemo(() => readInitialFormValues(track), [track]);
-    const [values, setValues] = useState<TrackMetadataFormValues>(initialValues);
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+    const { values, fieldErrors, setFieldErrors, setTextualValue, setGenres } =
+        useTrackMetadataFieldState(initialValues);
     const [topError, setTopError] = useState<string | undefined>(undefined);
 
     const { fields: changedFields, invalidNumericFields } = useMemo(
@@ -55,19 +49,6 @@ export default function useTrackMetadataForm({ track, onSaved }: UseTrackMetadat
             setTopError(message);
         },
     });
-
-    const clearFieldError = (fieldName: TrackMetadataFieldName) =>
-        setFieldErrors((currentErrors) => ({ ...currentErrors, [fieldName]: undefined }));
-
-    const setTextualValue = (fieldName: TextualFieldName, fieldValue: string) => {
-        setValues((currentValues) => ({ ...currentValues, [fieldName]: fieldValue }));
-        clearFieldError(fieldName);
-    };
-
-    const setGenres = (genres: string[]) => {
-        setValues((currentValues) => ({ ...currentValues, genres }));
-        clearFieldError('genres');
-    };
 
     const submit = () => {
         if (invalidNumericFields.length > 0) {

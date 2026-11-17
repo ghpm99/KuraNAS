@@ -12,6 +12,8 @@ import {
     MusicMostPlayedPeriod,
     MusicPlayedTrack,
     MusicQueue,
+    BatchTrackMetadataResult,
+    BatchTrackMetadataSelector,
     TrackMetadataFieldName,
     TrackMetadataFields,
 } from '@/types/music';
@@ -183,6 +185,37 @@ export const updateTrackMetadata = async (
 ): Promise<IMusicData> => {
     const response = await apiBase.put<IMusicData>(`/music/tracks/${fileId}/metadata`, fields);
     return response.data;
+};
+
+interface BatchTrackMetadataResponse {
+    matched: number;
+    updated: number;
+    failed: { file_id: number; error: string }[] | null;
+}
+
+const toBatchRequestBody = (selector: BatchTrackMetadataSelector, fields: TrackMetadataFields) =>
+    'albumKey' in selector
+        ? { fields, album_key: selector.albumKey }
+        : { fields, folder_key: selector.folderKey };
+
+export const updateTracksMetadata = async (
+    selector: BatchTrackMetadataSelector,
+    fields: TrackMetadataFields,
+    options: { isDryRun: boolean }
+): Promise<BatchTrackMetadataResult> => {
+    const url = '/music/tracks/metadata';
+    const body = toBatchRequestBody(selector, fields);
+    const response = options.isDryRun
+        ? await apiBase.put<BatchTrackMetadataResponse>(url, body, { params: { dry_run: true } })
+        : await apiBase.put<BatchTrackMetadataResponse>(url, body);
+    return {
+        matched: response.data.matched,
+        updated: response.data.updated,
+        failed: (response.data.failed ?? []).map((failure) => ({
+            fileId: failure.file_id,
+            error: failure.error,
+        })),
+    };
 };
 
 export const readRefusedMetadataField = (error: unknown): TrackMetadataFieldName | undefined => {

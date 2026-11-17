@@ -82,3 +82,25 @@ export const buildChangedFields = (
 
     return { fields, invalidNumericFields };
 };
+
+export const emptyFormValues: TrackMetadataFormValues = {
+    title: '',
+    artist: '',
+    album: '',
+    album_artist: '',
+    genres: [],
+    year: '',
+    disc_number: '',
+    track_number: '',
+};
+
+export const buildFilledFields = (currentValues: TrackMetadataFormValues): ChangedFields => {
+    const { fields: changedFields, invalidNumericFields } = buildChangedFields(
+        emptyFormValues,
+        currentValues
+    );
+    const filledFields = Object.fromEntries(
+        Object.entries(changedFields).filter(([, fieldValue]) => fieldValue !== null)
+    ) as TrackMetadataFields;
+    return { fields: filledFields, invalidNumericFields };
+};

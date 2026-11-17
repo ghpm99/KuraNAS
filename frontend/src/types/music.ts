@@ -168,3 +168,16 @@ export interface TrackMetadataFields {
 }
 
 export type TrackMetadataFieldName = keyof TrackMetadataFields;
+
+export type BatchTrackMetadataSelector = { albumKey: string } | { folderKey: string };
+
+export interface BatchTrackMetadataFailure {
+    fileId: number;
+    error: string;
+}
+
+export interface BatchTrackMetadataResult {
+    matched: number;
+    updated: number;
+    failed: BatchTrackMetadataFailure[];
+}

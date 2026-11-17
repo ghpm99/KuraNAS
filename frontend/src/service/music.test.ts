@@ -31,6 +31,7 @@ import {
     recordMusicPlay,
     searchMusicTracks,
     updateTrackMetadata,
+    updateTracksMetadata,
 } from './music';
 import { AxiosError, AxiosHeaders } from 'axios';
 
@@ -244,6 +245,58 @@ describe('service/music', () => {
                 readRefusedMetadataField(buildAxiosError(404, { error: 'x', field: 'year' }))
             ).toBeUndefined();
             expect(readRefusedMetadataField(new Error('offline'))).toBeUndefined();
+        });
+
+        describe('updateTracksMetadata', () => {
+            beforeEach(() => {
+                mockedApi.put.mockResolvedValue({
+                    data: { matched: 3, updated: 2, failed: [{ file_id: 9, error: 'locked' }] },
+                });
+            });
+
+            it('simulates an album batch with the dry_run query and the album key body', async () => {
+                const batchResult = await updateTracksMetadata(
+                    { albumKey: 'band::hits' },
+                    { genres: ['Rock'] },
+                    { isDryRun: true }
+                );
+
+                expect(mockedApi.put).toHaveBeenCalledWith(
+                    '/music/tracks/metadata',
+                    { fields: { genres: ['Rock'] }, album_key: 'band::hits' },
+                    { params: { dry_run: true } }
+                );
+                expect(batchResult).toEqual({
+                    matched: 3,
+                    updated: 2,
+                    failed: [{ fileId: 9, error: 'locked' }],
+                });
+            });
+
+            it('applies a folder batch without any query', async () => {
+                await updateTracksMetadata(
+                    { folderKey: '/music/rock' },
+                    { year: 1999 },
+                    { isDryRun: false }
+                );
+
+                expect(mockedApi.put).toHaveBeenCalledWith('/music/tracks/metadata', {
+                    fields: { year: 1999 },
+                    folder_key: '/music/rock',
+                });
+            });
+
+            it('treats a null failed list as no failures', async () => {
+                mockedApi.put.mockResolvedValue({ data: { matched: 1, updated: 1, failed: null } });
+
+                const batchResult = await updateTracksMetadata(
+                    { albumKey: 'a' },
+                    { title: 'T' },
+                    { isDryRun: false }
+                );
+
+                expect(batchResult.failed).toEqual([]);
+            });
         });
     });
 });

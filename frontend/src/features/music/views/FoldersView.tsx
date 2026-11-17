@@ -11,6 +11,7 @@ import { Folder, Play } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
+import EditCollectionMetadataButton from '@/features/music/components/trackMetadata/EditCollectionMetadataButton';
 import { createFolderPlaybackContext } from '@/features/music/components/playbackContext';
 import { queueToTracks, findStartIndex } from '@/features/music/components/musicQueueTracks';
 import { shuffleItems } from '@/utils/shuffleItems';
@@ -256,6 +257,7 @@ function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => vo
                 onBack={onBack}
                 onPlayAll={() => void queueFolderTracks()}
                 onShuffleAll={() => void queueFolderTracks(undefined, true)}
+                actions={<EditCollectionMetadataButton selector={{ folderKey: folder }} />}
             />
 
             <MusicCollectionTrackList
