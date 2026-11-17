@@ -90,6 +90,9 @@ type AudioMetadataRepositoryInterface interface {
 // TrackMetadataRepositoryInterface is the write-side for user corrections of track metadata.
 type TrackMetadataRepositoryInterface interface {
 	ApplyTrackMetadataPatch(tx *sql.Tx, fileIDs []int, patch TrackMetadataPatch, compilationArtistLabel string) error
+	FilterIndexedTrackFileIDs(fileIDs []int) ([]int, error)
+	ListTrackFileIDsByAlbumKey(albumKey string) ([]int, error)
+	ListTrackFileIDsByFolder(folderPath string) ([]int, error)
 }
 
 type ServiceInterface interface {
@@ -108,6 +111,7 @@ type ServiceInterface interface {
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetLibraryTrackByID(fileID int) (files.FileDto, error)
 	UpdateTrackMetadata(fileID int, patch TrackMetadataPatch) (files.FileDto, error)
+	UpdateTracksMetadata(request BatchTracksMetadataRequest, isDryRun bool) (BatchMetadataResultDto, error)
 	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetLibraryArtists(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error)
 	GetLibraryAlbumSummary(albumKey string) (MusicAlbumSummaryDto, error)

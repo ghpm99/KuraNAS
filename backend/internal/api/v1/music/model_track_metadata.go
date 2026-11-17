@@ -102,3 +102,8 @@ func nonBlankTextOrNil(text string) *string {
 	}
 	return &trimmedText
 }
+
+func (patch TrackMetadataPatch) hasAnyField() bool {
+	return patch.Title.IsSet || patch.Artist.IsSet || patch.Album.IsSet || patch.AlbumArtist.IsSet ||
+		patch.Genres.IsSet || patch.Year.IsSet || patch.DiscNumber.IsSet || patch.TrackNumber.IsSet
+}

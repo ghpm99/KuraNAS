@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -50,10 +51,14 @@ func respondTrackMetadataError(c *gin.Context, err error) {
 func respondInvalidMetadataBody(c *gin.Context, err error) {
 	var typeError *json.UnmarshalTypeError
 	if errors.As(err, &typeError) && typeError.Field != "" {
-		respondRefusedField(c, typeError.Field, "ERROR_INVALID_REQUEST")
+		respondRefusedField(c, lastFieldSegment(typeError.Field), "ERROR_INVALID_REQUEST")
 		return
 	}
 	c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+}
+
+func lastFieldSegment(fieldPath string) string {
+	return fieldPath[strings.LastIndex(fieldPath, ".")+1:]
 }
 
 func respondRefusedField(c *gin.Context, fieldName string, messageKey string) {

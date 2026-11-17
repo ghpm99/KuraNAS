@@ -234,3 +234,12 @@ var UpsertAudioMetadataOverrideQuery string
 
 //go:embed delete_empty_audio_metadata_overrides.sql
 var DeleteEmptyAudioMetadataOverridesQuery string
+
+//go:embed filter_indexed_track_file_ids.sql
+var FilterIndexedTrackFileIDsQuery string
+
+//go:embed get_track_file_ids_by_album_key.sql
+var GetTrackFileIDsByAlbumKeyQuery string
+
+//go:embed get_track_file_ids_by_folder.sql
+var GetTrackFileIDsByFolderQuery string

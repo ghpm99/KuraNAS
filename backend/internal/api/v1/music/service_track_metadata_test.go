@@ -14,6 +14,29 @@ type trackMetadataStoreMock struct {
 	appliedPatch   TrackMetadataPatch
 	appliedLabel   string
 	applyCallCount int
+
+	indexedFileIDs      []int
+	albumFileIDs        []int
+	folderFileIDs       []int
+	selectionError      error
+	filteredFileIDs     []int
+	requestedAlbumKey   string
+	requestedFolderPath string
+}
+
+func (mock *trackMetadataStoreMock) FilterIndexedTrackFileIDs(fileIDs []int) ([]int, error) {
+	mock.filteredFileIDs = fileIDs
+	return mock.indexedFileIDs, mock.selectionError
+}
+
+func (mock *trackMetadataStoreMock) ListTrackFileIDsByAlbumKey(albumKey string) ([]int, error) {
+	mock.requestedAlbumKey = albumKey
+	return mock.albumFileIDs, mock.selectionError
+}
+
+func (mock *trackMetadataStoreMock) ListTrackFileIDsByFolder(folderPath string) ([]int, error) {
+	mock.requestedFolderPath = folderPath
+	return mock.folderFileIDs, mock.selectionError
 }
 
 func (mock *trackMetadataStoreMock) ApplyTrackMetadataPatch(tx *sql.Tx, fileIDs []int, patch TrackMetadataPatch, compilationArtistLabel string) error {
