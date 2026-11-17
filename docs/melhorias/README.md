@@ -68,7 +68,7 @@ Regras invariantes:
 | 37 | [Android: transferências em segundo plano](37-android-transferencias-em-segundo-plano.md) | feature | P0 | 24, 34, 36 | pendente | spec 03 |
 | 38 | [Android: envio automático da câmera](38-android-envio-automatico-da-camera.md) | feature | P0 | 37 | pendente | spec 03 |
 | 39 | [Android: navegação](39-android-navegacao.md) | bug | P1 | 22 | pendente | spec 24 |
-| 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | pendente | spec 05 |
+| 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | em execução | spec 05 |
 | 41 | [Música: playlist por regra](41-musica-playlist-por-regra.md) | feature | P0 | 40 | pendente | spec 05 |
 | 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | pendente | spec 06 |
 | 43 | [Vídeos: faixa de áudio](43-videos-faixa-de-audio.md) | feature | P1 | — | pendente | spec 06 |
