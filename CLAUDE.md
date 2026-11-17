@@ -21,7 +21,7 @@ Each app has its own build system and its own `CLAUDE.md` with stack-specific de
 **O que o sistema deve fazer está em `docs/especificacao/`** — uma spec por feature (objetivo, escopo, regras de negócio `RN`, requisitos por tela `RF`, contrato, critérios de aceite `CA`, fora de escopo) e `00-padroes-transversais.md` para o que vale em toda tela (listas paginadas, estados, mutações, erros). A spec é normativa: se o código diverge, o código está errado; se a regra não existe, a spec é atualizada primeiro, em commit próprio.
 
 - Antes de implementar, leia a spec da feature e a `00`; a mudança cita os `RN`/`RF`/`CA` que satisfaz.
-- Um `CA` só é marcado depois de verificado **no sistema rodando** — teste verde com mock não é evidência (os mocks escritos à mão com o formato errado esconderam a quebra da paginação de arquivos).
+- Um `CA` só é marcado depois de verificado **no sistema rodando** — rodando localmente pelo agente (backend local, chamadas à API, banco local de dev); não se espera validação do dono para seguir — teste verde com mock não é evidência (os mocks escritos à mão com o formato errado esconderam a quebra da paginação de arquivos).
 - Mudança em componente compartilhado reverifica as telas que o usam.
 - Os boards `docs/melhorias/` e `docs/revisao-produto/` são listas de trabalho; cada lacuna aponta para a regra da spec que ela satisfaz.
 
