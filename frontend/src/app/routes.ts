@@ -52,7 +52,7 @@ export type VideoSection =
     | 'clips'
     | 'folders'
     | 'hidden';
-export type AnalyticsSection = 'overview' | 'library';
+export type AnalyticsSection = 'overview' | 'library' | 'largest' | 'duplicates';
 
 export const getImageRoute = (section: ImageSection) => {
     if (section === 'library') {
@@ -94,6 +94,8 @@ export const getAnalyticsRoute = (section: AnalyticsSection) => {
 
     return `${appRoutes.analytics}/${section}`;
 };
+
+export const getFilesRecentRoute = () => `${appRoutes.files}?filter=recent`;
 
 export const getAnalyticsImageDuplicatesRoute = () => `${appRoutes.analytics}?type=image`;
 

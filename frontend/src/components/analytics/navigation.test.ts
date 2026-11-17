@@ -1,13 +1,12 @@
-import {
-    getAnalyticsSectionFromPath,
-    getAnalyticsSectionMeta,
-} from './navigation';
+import { getAnalyticsSectionFromPath, getAnalyticsSectionMeta } from './navigation';
 
 describe('analytics navigation helpers', () => {
     it('resolves the current section from known paths', () => {
         expect(getAnalyticsSectionFromPath('/analytics')).toBe('overview');
         expect(getAnalyticsSectionFromPath('/analytics/library')).toBe('library');
         expect(getAnalyticsSectionFromPath('/analytics/library/errors')).toBe('library');
+        expect(getAnalyticsSectionFromPath('/analytics/largest')).toBe('largest');
+        expect(getAnalyticsSectionFromPath('/analytics/duplicates')).toBe('duplicates');
     });
 
     it('falls back to overview metadata for unknown paths', () => {

@@ -1,0 +1,46 @@
+.group {
+    list-style: none;
+    border: 1px solid var(--app-color-border, rgba(128, 128, 128, 0.3));
+    border-radius: var(--app-radius-md, 8px);
+}
+
+.groupHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.groupTitle {
+    font-weight: 600;
+}
+
+.copies {
+    margin: 0;
+    padding: 0 12px 8px;
+}
+
+.copy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+}
+
+.copyPath {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.copyDate {
+    color: var(--app-color-text-secondary);
+    font-size: 13px;
+}

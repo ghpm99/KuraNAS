@@ -1,8 +1,11 @@
+import type { Pagination } from '@/types/pagination';
 import { apiBase } from './index';
 import {
     AIUsage,
     AnalyticsPeriod,
+    DuplicateCategory,
     DuplicateGroup,
+    DuplicateGroupDetail,
     DuplicatesSummary,
     DuplicatesType,
     ExtensionStat,
@@ -85,8 +88,27 @@ export const fetchAnalyticsDuplicateGroups = async (
     type?: DuplicatesType
 ): Promise<DuplicateGroup[]> => {
     const response = await apiBase.get<DuplicateGroup[]>('/analytics/duplicates/groups', {
-        params: limit || type ? { ...(limit ? { limit } : {}), ...(type ? { type } : {}) } : undefined,
+        params:
+            limit || type ? { ...(limit ? { limit } : {}), ...(type ? { type } : {}) } : undefined,
     });
+    return response.data;
+};
+
+type DuplicateGroupsPageParams = {
+    page: number;
+    pageSize: number;
+    type?: DuplicateCategory;
+};
+
+export const getDuplicateGroupsPage = async ({
+    page,
+    pageSize,
+    type,
+}: DuplicateGroupsPageParams): Promise<Pagination<DuplicateGroupDetail>> => {
+    const response = await apiBase.get<Pagination<DuplicateGroupDetail>>(
+        '/analytics/duplicates/groups',
+        { params: { page, page_size: pageSize, ...(type ? { type } : {}) } }
+    );
     return response.data;
 };
 

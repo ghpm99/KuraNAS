@@ -17,6 +17,16 @@ export const analyticsNavigationItems: AnalyticsNavigationItem[] = [
         labelKey: 'ANALYTICS_SECTION_LIBRARY',
         descriptionKey: 'ANALYTICS_SECTION_LIBRARY_DESCRIPTION',
     },
+    {
+        key: 'largest',
+        labelKey: 'ANALYTICS_SECTION_LARGEST',
+        descriptionKey: 'ANALYTICS_SECTION_LARGEST_DESCRIPTION',
+    },
+    {
+        key: 'duplicates',
+        labelKey: 'ANALYTICS_SECTION_DUPLICATES',
+        descriptionKey: 'ANALYTICS_SECTION_DUPLICATES_DESCRIPTION',
+    },
 ];
 
 const analyticsRouteEntries = analyticsNavigationItems.map(

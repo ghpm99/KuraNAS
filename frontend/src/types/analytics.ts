@@ -62,6 +62,10 @@ export interface RecentFile {
 
 export type DuplicatesType = 'image';
 
+export const duplicateCategories = ['image', 'audio', 'video', 'document', 'other'] as const;
+
+export type DuplicateCategory = (typeof duplicateCategories)[number];
+
 export interface DuplicatesSummary {
     groups: number;
     files: number;
@@ -74,6 +78,17 @@ export interface DuplicateGroup {
     size_bytes: number;
     reclaimable_size: number;
     paths: string[];
+}
+
+export interface DuplicateCopy {
+    id: number;
+    path: string;
+    updated_at: string;
+    tier: string;
+}
+
+export interface DuplicateGroupDetail extends DuplicateGroup {
+    files: DuplicateCopy[];
 }
 
 export interface LibraryStats {

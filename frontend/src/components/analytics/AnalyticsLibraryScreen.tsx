@@ -1,4 +1,4 @@
-import { appRoutes } from '@/app/routes';
+import { buildFilesUrl } from '@/app/routes';
 import AnalyticsKpiCard from '@/components/analytics/AnalyticsKpiCard';
 import AnalyticsSection from '@/components/analytics/AnalyticsSection';
 import { type AnalyticsScreenState } from '@/components/analytics/useAnalyticsScreenState';
@@ -232,7 +232,7 @@ const AnalyticsLibraryScreen = ({ state }: AnalyticsLibraryScreenProps) => {
                                     <TableRow
                                         key={file.id}
                                         hover
-                                        onClick={() => navigate(appRoutes.files)}
+                                        onClick={() => navigate(buildFilesUrl(file.path))}
                                         className={styles.tableCellAction}
                                     >
                                         <TableCell>{file.name}</TableCell>

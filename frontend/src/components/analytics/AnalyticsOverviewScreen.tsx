@@ -1,4 +1,4 @@
-import { appRoutes } from '@/app/routes';
+import { buildFilesUrl, getAnalyticsRoute, getFilesRecentRoute } from '@/app/routes';
 import Button from '@/components/ui/Button/Button';
 import AnalyticsChartCard from '@/components/analytics/AnalyticsChartCard';
 import AnalyticsReindexAction from '@/components/analytics/AnalyticsReindexAction';
@@ -49,13 +49,16 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
             </div>
 
             <div className={styles.actions}>
-                <Button variant="secondary" onClick={() => navigate(appRoutes.files)}>
+                <Button
+                    variant="secondary"
+                    onClick={() => navigate(getAnalyticsRoute('duplicates'))}
+                >
                     {t('ANALYTICS_ACTION_VIEW_DUPLICATES')}
                 </Button>
-                <Button variant="secondary" onClick={() => navigate(appRoutes.files)}>
+                <Button variant="secondary" onClick={() => navigate(getFilesRecentRoute())}>
                     {t('ANALYTICS_ACTION_VIEW_RECENT')}
                 </Button>
-                <Button variant="secondary" onClick={() => navigate(appRoutes.files)}>
+                <Button variant="secondary" onClick={() => navigate(getAnalyticsRoute('largest'))}>
                     {t('ANALYTICS_ACTION_VIEW_LARGEST')}
                 </Button>
                 <Button variant="secondary" onClick={() => void refresh()}>
@@ -213,7 +216,7 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
                                     <TableRow
                                         key={folder.path}
                                         hover
-                                        onClick={() => navigate(appRoutes.files)}
+                                        onClick={() => navigate(buildFilesUrl(folder.path))}
                                         className={styles.tableCellAction}
                                     >
                                         <TableCell>{folder.path}</TableCell>
@@ -274,7 +277,7 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
                                 <Chip
                                     size="small"
                                     label={t('ANALYTICS_DUPLICATES_FILTER_IMAGES')}
-                                    onDelete={() => navigate(appRoutes.analytics)}
+                                    onDelete={() => navigate(getAnalyticsRoute('overview'))}
                                 />
                             )}
                             <Typography variant="body2" color="text.secondary">

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import AnalyticsContent from './AnalyticsContent';
 
@@ -157,5 +158,23 @@ describe('AnalyticsContent', () => {
         expect(screen.getByText('ANALYTICS_LIBRARY_TITLE')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_PROCESSING_QUEUE')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_CATEGORIZED_MEDIA')).toBeInTheDocument();
+    });
+
+    it.each([
+        ['/analytics/largest', 'ANALYTICS_SECTION_LARGEST_DESCRIPTION'],
+        ['/analytics/duplicates', 'ANALYTICS_SECTION_DUPLICATES_DESCRIPTION'],
+    ])('renders the %s section with its own header and no period toolbar', (route, description) => {
+        render(
+            <QueryClientProvider
+                client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+            >
+                <MemoryRouter initialEntries={[route]}>
+                    <AnalyticsContent />
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+
+        expect(screen.getByText(description)).toBeInTheDocument();
+        expect(screen.queryByText('ANALYTICS_PERIOD')).not.toBeInTheDocument();
     });
 });

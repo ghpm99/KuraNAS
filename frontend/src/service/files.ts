@@ -86,6 +86,16 @@ type FilesPageParams = {
     pageSize: number;
 };
 
+export const getLargestFilesPage = async ({
+    page,
+    pageSize,
+}: FilesPageParams): Promise<FilePaginationResponse> => {
+    const response = await apiBase.get<FilePaginationResponse>('/files/top-files-by-size', {
+        params: { page, page_size: pageSize },
+    });
+    return response.data;
+};
+
 export type StarredKind = 'all' | 'folders' | 'files' | 'media';
 export type StarredSort = 'name' | 'starred_at';
 

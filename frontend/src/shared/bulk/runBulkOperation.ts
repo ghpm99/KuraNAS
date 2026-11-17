@@ -1,7 +1,7 @@
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { runWithConcurrencyLimit } from '@/shared/utils/runWithConcurrencyLimit';
 
-const bulkConcurrencyLimit = 4;
+export const bulkConcurrencyLimit = 4;
 
 export type BulkItemsOutcome<TItem> = {
     succeededItems: TItem[];

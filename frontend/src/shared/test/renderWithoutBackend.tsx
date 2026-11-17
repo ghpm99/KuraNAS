@@ -13,7 +13,10 @@ import I18nProvider from '@/components/i18n/provider';
 // first test of every component renders it through here and asserts it does not
 // throw. A component that assumes a complete/!nil backend response crashes here,
 // which is exactly what we want to catch.
-export const renderWithoutBackend = (ui: ReactNode): RenderResult => {
+export const renderWithoutBackend = (
+    ui: ReactNode,
+    initialEntries: string[] = ['/']
+): RenderResult => {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false },
@@ -25,7 +28,7 @@ export const renderWithoutBackend = (ui: ReactNode): RenderResult => {
         <QueryClientProvider client={queryClient}>
             <I18nProvider>
                 <SnackbarProvider>
-                    <MemoryRouter>{ui}</MemoryRouter>
+                    <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
                 </SnackbarProvider>
             </I18nProvider>
         </QueryClientProvider>

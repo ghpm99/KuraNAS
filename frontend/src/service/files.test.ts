@@ -14,6 +14,7 @@ import {
     getStarredFiles,
     getStarredCounts,
     getRecentlyAccessedFiles,
+    getLargestFilesPage,
     getRecentAccessByFileId,
     getFileByPath,
     getFileLocation,
@@ -184,6 +185,21 @@ describe('service/files', () => {
             params: { page: 1, page_size: 30 },
         });
         expect(result).toEqual(payload);
+    });
+
+    it('gets a page of the largest files with page and page_size', async () => {
+        const payload = {
+            items: [],
+            pagination: { page: 2, page_size: 50, has_next: false, has_prev: true },
+        };
+        mockedApi.get.mockResolvedValue({ data: payload });
+
+        const page = await getLargestFilesPage({ page: 2, pageSize: 50 });
+
+        expect(mockedApi.get).toHaveBeenCalledWith('/files/top-files-by-size', {
+            params: { page: 2, page_size: 50 },
+        });
+        expect(page).toEqual(payload);
     });
 
     it('gets files tree with pagination params', async () => {

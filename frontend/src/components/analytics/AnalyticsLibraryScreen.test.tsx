@@ -201,7 +201,7 @@ describe('AnalyticsLibraryScreen', () => {
 
         const row = screen.getByText('song.mp3').closest('tr');
         fireEvent.click(row!);
-        expect(mockNavigate).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('/files/music/song.mp3');
     });
 
     it('handles null data gracefully', () => {

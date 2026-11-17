@@ -243,7 +243,7 @@ describe('AnalyticsOverviewScreen', () => {
         expect(row).toBeInTheDocument();
         fireEvent.click(row!);
 
-        expect(mockNavigate).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('/files/media');
     });
 
     it('renders extensions table', () => {
@@ -303,12 +303,13 @@ describe('AnalyticsOverviewScreen', () => {
         render(<AnalyticsOverviewScreen state={state} />);
 
         fireEvent.click(screen.getByText('ANALYTICS_ACTION_VIEW_DUPLICATES'));
-        expect(mockNavigate).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenLastCalledWith('/analytics/duplicates');
 
         fireEvent.click(screen.getByText('ANALYTICS_ACTION_VIEW_RECENT'));
-        expect(mockNavigate).toHaveBeenCalledTimes(2);
+        expect(mockNavigate).toHaveBeenLastCalledWith('/files?filter=recent');
 
         fireEvent.click(screen.getByText('ANALYTICS_ACTION_VIEW_LARGEST'));
+        expect(mockNavigate).toHaveBeenLastCalledWith('/analytics/largest');
         expect(mockNavigate).toHaveBeenCalledTimes(3);
     });
 
