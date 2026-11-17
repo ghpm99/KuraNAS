@@ -256,6 +256,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/download-zip", context.Files.Handler.DownloadZipHandler)
 	files.POST("/upload", context.Files.Handler.UploadFilesHandler)
 	files.POST("/upload/init", context.Files.Handler.InitUploadHandler)
+	files.POST("/upload/chunk", context.Files.Handler.UploadChunkHandler)
 	files.POST("/folder", context.Files.Handler.CreateFolderHandler)
 	files.POST("/move", context.Files.Handler.MoveFileHandler)
 	files.POST("/copy", context.Files.Handler.CopyFileHandler)
