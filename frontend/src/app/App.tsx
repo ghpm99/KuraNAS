@@ -10,6 +10,7 @@ import AutoShutdownBanner from '@/components/layout/AutoShutdownBanner/AutoShutd
 import ConnectionBanner from '@/components/layout/ConnectionBanner/ConnectionBanner';
 import RouteErrorBoundary from '@/components/layout/RouteErrorBoundary/RouteErrorBoundary';
 import RouteFallback from '@/components/layout/RouteFallback/RouteFallback';
+import UploadQueueProvider from '@/features/files/upload/uploadQueueProvider';
 
 const HomePage = lazy(() => import('@/pages/home'));
 const FilePage = lazy(() => import('@/pages/files'));
@@ -42,20 +43,22 @@ const VideoPlayerPage = lazy(() => import('@/pages/videoPlayer/videoPlayer'));
 
 function ShellLayout() {
     return (
-        <AppShell
-            banner={
-                <>
-                    <ConnectionBanner />
-                    <AutoShutdownBanner />
-                </>
-            }
-        >
-            <RouteErrorBoundary>
-                <Suspense fallback={<RouteFallback />}>
-                    <Outlet />
-                </Suspense>
-            </RouteErrorBoundary>
-        </AppShell>
+        <UploadQueueProvider>
+            <AppShell
+                banner={
+                    <>
+                        <ConnectionBanner />
+                        <AutoShutdownBanner />
+                    </>
+                }
+            >
+                <RouteErrorBoundary>
+                    <Suspense fallback={<RouteFallback />}>
+                        <Outlet />
+                    </Suspense>
+                </RouteErrorBoundary>
+            </AppShell>
+        </UploadQueueProvider>
     );
 }
 

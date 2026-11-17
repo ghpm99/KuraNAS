@@ -1,16 +1,21 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { transferFile } from './transferFile';
 import UploadQueueProvider from './uploadQueueProvider';
 import useUploadQueueContext from './uploadQueueContext';
 
-jest.mock('@/service/files', () => ({
-    uploadSingleFile: jest.fn().mockResolvedValue({ status: 'uploaded' }),
+jest.mock('./transferFile', () => ({
+    transferFile: jest.fn().mockResolvedValue({ status: 'uploaded' }),
 }));
 
 const Enqueuer = () => {
     const { enqueue } = useUploadQueueContext();
     return (
-        <button onClick={() => enqueue([{ file: new File(['x'], 'a.txt') }, { file: new File(['x'], 'b.txt') }], 3)}>
+        <button
+            onClick={() =>
+                enqueue([{ file: new File(['x'], 'a.txt') }, { file: new File(['x'], 'b.txt') }], 3)
+            }
+        >
             enqueue
         </button>
     );
@@ -56,5 +61,36 @@ describe('UploadQueueProvider', () => {
 
         expect(invalidateSpy).toHaveBeenCalledTimes(3);
         jest.useRealTimers();
+    });
+
+    it('asks for confirmation to leave only while a transfer is active', async () => {
+        let finishTransfer: () => void = () => undefined;
+        jest.mocked(transferFile).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    finishTransfer = () => resolve({ status: 'uploaded' });
+                })
+        );
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <UploadQueueProvider>
+                    <Enqueuer />
+                </UploadQueueProvider>
+            </QueryClientProvider>
+        );
+        const leavePage = () => {
+            const event = new Event('beforeunload', { cancelable: true });
+            window.dispatchEvent(event);
+            return event.defaultPrevented;
+        };
+        expect(leavePage()).toBe(false);
+
+        await act(async () => {
+            fireEvent.click(screen.getByText('enqueue'));
+        });
+        expect(leavePage()).toBe(true);
+
+        await act(async () => finishTransfer());
+        expect(leavePage()).toBe(false);
     });
 });

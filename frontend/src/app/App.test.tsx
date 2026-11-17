@@ -22,6 +22,9 @@ jest.mock('@/components/layout/AppShell/AppShell', () => ({
     AppShell: ({ children }: any) => <div data-testid="app-shell">{children}</div>,
 }));
 
+jest.mock('@/features/files/upload/uploadQueueProvider', () => ({ children }: any) => (
+    <div data-testid="upload-queue-provider">{children}</div>
+));
 jest.mock('@/components/providers/appProviders', () => ({ children }: any) => (
     <div data-testid="app-providers">{children}</div>
 ));
