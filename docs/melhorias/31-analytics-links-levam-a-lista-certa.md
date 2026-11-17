@@ -18,6 +18,10 @@ Cada número e cada linha do Analytics leva à lista que representa.
 4. **Excluir em lote** nas cópias selecionadas, com confirmação extra quando a seleção inclui todas as cópias de um grupo.
 5. **Ligações da visão geral**: "Ver maiores" → `/analytics/largest`; "Ver duplicados" → `/analytics/duplicates`; "Ver recentes" → a tela Recentes de Arquivos; linha de pasta → a pasta em Arquivos; linha de arquivo → o arquivo.
 
+### Sub-itens
+
+- [ ] 31.1. A distribuição por tipo da visão geral (`analytics/type_distribution.sql`) usa listas de formatos fixas e desatualizadas (sem RAW, `.opus`, `.heif`…); passar a usar as listas canônicas de `pkg/utils` (as mesmas da indexação e do filtro de tipo dos duplicados), para as contagens por tipo baterem entre as telas.
+
 ## Critérios de aceite
 
 - [ ] `16/CA-05` — clicar em uma pasta da lista de maiores abre essa pasta em Arquivos.
