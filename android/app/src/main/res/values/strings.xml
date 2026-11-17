@@ -29,7 +29,7 @@
     <!-- Connection -->
     <string name="connection_connect_to_server">Connect to the server</string>
     <string name="connection_servers_on_network">Servers on the network</string>
-    <string name="connection_no_servers_found">No servers found on the local network</string>
+    <string name="connection_no_servers_found">No server found</string>
     <string name="connection_or_connect_manually">Or connect manually</string>
     <string name="connection_server_address_label">Server address</string>
     <string name="connection_server_address_placeholder">192.168.1.100:8000</string>
@@ -38,6 +38,9 @@
     <string name="connection_not_kuranas">This address answered, but it is not a KuraNAS server.</string>
     <string name="connection_access_denied">The server refused this device. Allow its IP in the server access list.</string>
     <string name="connection_invalid_address">Enter a valid address</string>
+    <string name="connection_searching_server">Searching for the server on the network…</string>
+    <string name="connection_check_same_wifi">Check that this phone is on the same Wi-Fi as the server and that the server is on.</string>
+    <string name="connection_search_again">Search again</string>
     <string name="cd_search_again">Search again</string>
 
     <!-- Diary -->

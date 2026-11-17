@@ -28,10 +28,10 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -51,6 +51,8 @@ import com.kuranas.android.core.ui.components.glass
 @Composable
 fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val searchPanel = serverSearchPanelOf(state)
+    val manualPanel = manualAddressPanelOf(state)
     val infiniteTransition = rememberInfiniteTransition(label = "scan")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -76,30 +78,39 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
         Text(stringResource(R.string.connection_connect_to_server), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(32.dp))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.connection_servers_on_network), style = MaterialTheme.typography.titleMedium)
-            if (state.isDiscovering) {
+        Text(stringResource(R.string.connection_servers_on_network), style = MaterialTheme.typography.titleMedium)
+
+        if (searchPanel.isSearchingNoticeVisible) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            ) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp).rotate(rotation),
                     strokeWidth = 2.dp,
                 )
-            } else {
-                IconButton(onClick = viewModel::startDiscovery) {
-                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_search_again))
-                }
+                Text(stringResource(R.string.connection_searching_server), style = MaterialTheme.typography.bodyMedium)
             }
         }
 
-        if (state.discovered.isEmpty() && !state.isDiscovering) {
+        if (searchPanel.isNoServerNoticeVisible) {
             Text(
                 stringResource(R.string.connection_no_servers_found),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(vertical = 8.dp),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 8.dp),
             )
+            Text(
+                stringResource(R.string.connection_check_same_wifi),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(vertical = 4.dp),
+            )
+        }
+
+        TextButton(onClick = viewModel::startDiscovery, enabled = searchPanel.isSearchAgainEnabled) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(8.dp))
+            Text(stringResource(R.string.connection_search_again))
         }
 
         LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
@@ -123,13 +134,21 @@ fun ConnectionScreen(viewModel: ConnectionViewModel = hiltViewModel()) {
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(onDone = { viewModel.connectManual() }),
-            isError = state.error != null,
+            isError = manualPanel.isErrorVisible,
             supportingText = state.error?.let { { Text(it) } },
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(12.dp))
-        Button(onClick = viewModel::connectManual, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
+        Button(
+            onClick = viewModel::connectManual,
+            enabled = manualPanel.isConnectEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (manualPanel.isProgressVisible) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Dns, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
             Spacer(Modifier.size(8.dp))
             Text(stringResource(R.string.action_connect))
         }
