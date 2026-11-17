@@ -30,7 +30,7 @@ Vale para **toda** lista de itens vindos do servidor: arquivos, fotos, faixas, �
 - **RN-05** — Só há um pedido de próxima página em andamento por lista. Rolar rápido não dispara pedidos duplicados nem pula páginas.
 - **RN-06** — A lista termina quando o servidor diz que não há próxima página. No fim aparece o total ("N itens") em vez do indicador de carregamento. Página seguinte vazia com indicação de que não há mais é fim de lista, não erro.
 - **RN-07** — Um item nunca aparece duas vezes. Se uma página traz um item já exibido (porque algo foi inserido ou removido no servidor entre os pedidos), ele é ignorado pela identidade (`id`).
-- **RN-08** — Tamanho de página padrão: 50 itens em listas de linha, 60 em grades de miniaturas. Todo cliente envia `page` e `page_size` explicitamente — nenhum depende do padrão do servidor. O servidor impõe teto de 500 e limita ao teto o pedido que passar dele.
+- **RN-08** — Tamanho de página padrão: 50 itens em listas de linha, 60 em grades de miniaturas. Tela que alterna entre grade e lista (Arquivos, Favoritos, Recentes, busca na pasta) usa 60 nos dois modos, para que trocar o modo não recarregue a lista. Todo cliente envia `page` e `page_size` explicitamente — nenhum depende do padrão do servidor. O servidor impõe teto de 500 e limita ao teto o pedido que passar dele.
 
 ### 4.2 Falha ao carregar
 
