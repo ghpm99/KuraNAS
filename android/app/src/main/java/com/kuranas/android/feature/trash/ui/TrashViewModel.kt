@@ -25,7 +25,9 @@ data class TrashUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val items: List<TrashItemDto> = emptyList(),
+    val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
+    val loadMoreError: String? = null,
     val error: String? = null,
     val actionErrorMessage: String? = null,
     val pendingConfirmation: TrashConfirmation? = null,
@@ -43,7 +45,9 @@ class TrashViewModel @Inject constructor(private val repository: TrashRepository
             isLoading = trash.isLoading,
             isRefreshing = trash.isRefreshing,
             items = trash.items,
+            isLoadingMore = trash.isLoadingMore,
             hasMore = trash.hasMore,
+            loadMoreError = trash.loadMoreError,
             error = trash.error,
             actionErrorMessage = currentInteraction.actionErrorMessage,
             pendingConfirmation = currentInteraction.pendingConfirmation,
@@ -56,6 +60,8 @@ class TrashViewModel @Inject constructor(private val repository: TrashRepository
     fun refresh() = trashLoader.refresh()
 
     fun loadMore() = trashLoader.loadMore()
+
+    fun retryLoadMore() = trashLoader.retryLoadMore()
 
     fun restore(item: TrashItemDto) = takeOutOfTrash(item) { repository.restoreItem(item.id) }
 

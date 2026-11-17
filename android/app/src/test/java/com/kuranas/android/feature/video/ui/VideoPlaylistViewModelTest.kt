@@ -136,4 +136,25 @@ class VideoPlaylistViewModelTest {
         assertNull(state.error)
         assertEquals("Series", state.playlist?.name)
     }
+
+    @Test
+    fun `a failed next page keeps the items and retry appends the same page`() {
+        givenHeader()
+        givenPage(1, true, 1, 2)
+        coEvery { repository.getPlaylistItems(playlistId, 2) } returns AppResult.Error("sem rede")
+        val viewModel = VideoPlaylistViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
+        viewModel.load(playlistId)
+
+        viewModel.loadMore()
+
+        assertEquals(listOf("1", "2"), viewModel.state.value.items.map { it.video.id })
+        assertEquals("sem rede", viewModel.state.value.loadMoreError)
+
+        givenPage(2, false, 3)
+        viewModel.retryLoadMore()
+
+        assertEquals(listOf("1", "2", "3"), viewModel.state.value.items.map { it.video.id })
+        assertNull(viewModel.state.value.loadMoreError)
+        coVerify(exactly = 2) { repository.getPlaylistItems(playlistId, 2) }
+    }
 }

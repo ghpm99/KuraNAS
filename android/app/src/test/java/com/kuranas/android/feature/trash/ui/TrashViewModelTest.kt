@@ -174,4 +174,23 @@ class TrashViewModelTest {
 
         assertNull(viewModel.state.value.actionErrorMessage)
     }
+
+    @Test
+    fun `a failed next page keeps the items and retry appends the same page`() {
+        coEvery { repository.getTrashItems(1) } returns AppResult.Success(ListPage(listOf(report), hasNext = true))
+        coEvery { repository.getTrashItems(2) } returns AppResult.Error("sem rede")
+        val viewModel = TrashViewModel(repository).also { it.loadTrash() }
+
+        viewModel.loadMore()
+
+        assertEquals(listOf(1), viewModel.listedIds())
+        assertEquals("sem rede", viewModel.state.value.loadMoreError)
+
+        coEvery { repository.getTrashItems(2) } returns AppResult.Success(ListPage(listOf(photos), hasNext = false))
+        viewModel.retryLoadMore()
+
+        assertEquals(listOf(1, 2), viewModel.listedIds())
+        assertNull(viewModel.state.value.loadMoreError)
+        coVerify(exactly = 2) { repository.getTrashItems(2) }
+    }
 }

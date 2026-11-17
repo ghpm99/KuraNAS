@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.R
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
+import com.kuranas.android.core.ui.components.PagedListFooter
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.KNHeader
@@ -84,6 +85,13 @@ fun FavoritesScreen(
                                 else openFileByType(file, onOpenImage, onOpenVideo, onPlayAudio, onOpenFile)
                             },
                             onStar = { viewModel.unstar(file) },
+                        )
+                    }
+                    item {
+                        PagedListFooter(
+                            isLoadingMore = state.isLoadingMore,
+                            loadMoreError = state.loadMoreError,
+                            onRetry = viewModel::retryLoadMore,
                         )
                     }
                 }

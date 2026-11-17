@@ -26,6 +26,7 @@ data class VideoLibraryUiState(
     val videos: List<VideoItemDto> = emptyList(),
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
+    val loadMoreError: String? = null,
     val error: String? = null,
 )
 
@@ -47,6 +48,7 @@ class VideoLibraryViewModel @Inject constructor(
             videos = videos.items,
             isLoadingMore = videos.isLoadingMore,
             hasMore = videos.hasMore,
+            loadMoreError = videos.loadMoreError,
             error = videos.error,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, VideoLibraryUiState())
@@ -65,6 +67,8 @@ class VideoLibraryViewModel @Inject constructor(
     }
 
     fun loadMore() = videosLoader.loadMore()
+
+    fun retryLoadMore() = videosLoader.retryLoadMore()
 
     fun retry() = loadFirstPage()
 

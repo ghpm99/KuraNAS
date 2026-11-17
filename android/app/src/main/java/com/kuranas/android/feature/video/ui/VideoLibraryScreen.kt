@@ -28,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.R
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
+import com.kuranas.android.core.ui.components.PagedListFooter
 import com.kuranas.android.core.ui.components.EmptyView
 import com.kuranas.android.core.ui.components.ErrorView
 import com.kuranas.android.core.ui.components.GlassLevel
@@ -85,6 +86,13 @@ fun VideoLibraryScreen(
                             isStarred = starredById[video.id] ?: video.starred,
                         onToggleStar = { viewModel.stars.toggle(video) },
                         onClick = { onPlayVideo(video.id) },
+                        )
+                    }
+                    item {
+                        PagedListFooter(
+                            isLoadingMore = state.isLoadingMore,
+                            loadMoreError = state.loadMoreError,
+                            onRetry = viewModel::retryLoadMore,
                         )
                     }
                 }

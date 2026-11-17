@@ -104,4 +104,23 @@ class VideoLibraryViewModelTest {
         assertFalse(state.isLoading)
         assertEquals("library unavailable", state.error)
     }
+
+    @Test
+    fun `a failed next page keeps the items and retry appends the same page`() {
+        givenPage("", 1, true, 1, 2)
+        coEvery { repository.getLibraryVideos("", 2) } returns AppResult.Error("sem rede")
+        val viewModel = VideoLibraryViewModel(repository, FileStarToggler(mockk(), FileStarStore()))
+
+        viewModel.loadMore()
+
+        assertEquals(listOf("1", "2"), viewModel.state.value.videos.map { it.id })
+        assertEquals("sem rede", viewModel.state.value.loadMoreError)
+
+        givenPage("", 2, false, 3)
+        viewModel.retryLoadMore()
+
+        assertEquals(listOf("1", "2", "3"), viewModel.state.value.videos.map { it.id })
+        assertNull(viewModel.state.value.loadMoreError)
+        coVerify(exactly = 2) { repository.getLibraryVideos("", 2) }
+    }
 }

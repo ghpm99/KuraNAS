@@ -22,7 +22,7 @@ Qualquer pasta rola até o último item no explorer do app.
 
 ## Sub-itens levantados na execução (2026-11-16)
 
-- [ ] 23.1. Com o item 4, `PagedListLoader.loadMore()` deixa de repetir sozinho depois de uma falha de página seguinte (só `retryLoadMore()` repete). As outras telas que usam o carregador — Favoritos, Lixeira, Vídeos e Música (lista de faixas, artista, álbum, playlist, pasta) — ainda não mostram o `PagedListFooter`; nelas a lista para até recarregar. Cada uma adota o rodapé com o "Tentar de novo" ligado a `retryLoadMore()` — `00/RN-09`.
+- [x] 23.1. Com o item 4, `PagedListLoader.loadMore()` deixa de repetir sozinho depois de uma falha de página seguinte (só `retryLoadMore()` repete). As outras telas que usam o carregador — Favoritos, Lixeira, Vídeos e Música (lista de faixas, artista, álbum, playlist, pasta) — ainda não mostram o `PagedListFooter`; nelas a lista para até recarregar. Cada uma adota o rodapé com o "Tentar de novo" ligado a `retryLoadMore()` — `00/RN-09`.
 
 ## Critérios de aceite
 

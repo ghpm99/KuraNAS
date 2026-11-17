@@ -25,6 +25,7 @@ data class VideoPlaylistUiState(
     val items: List<VideoPlaylistItemDto> = emptyList(),
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
+    val loadMoreError: String? = null,
     val error: String? = null,
 )
 
@@ -51,6 +52,7 @@ class VideoPlaylistViewModel @Inject constructor(
             items = items.items,
             isLoadingMore = items.isLoadingMore,
             hasMore = items.hasMore,
+            loadMoreError = items.loadMoreError,
             error = header.error ?: items.error,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, VideoPlaylistUiState())
@@ -70,6 +72,8 @@ class VideoPlaylistViewModel @Inject constructor(
     }
 
     fun loadMore() = itemsLoader.loadMore()
+
+    fun retryLoadMore() = itemsLoader.retryLoadMore()
 
     fun retry() {
         val playlistId = requestedPlaylistId ?: return

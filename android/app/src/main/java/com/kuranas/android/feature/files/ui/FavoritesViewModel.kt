@@ -25,6 +25,7 @@ data class FavoritesUiState(
     val favorites: List<FileItemDto> = emptyList(),
     val isLoadingMore: Boolean = false,
     val hasMore: Boolean = false,
+    val loadMoreError: String? = null,
     val error: String? = null,
     val actionErrorMessage: String? = null,
 )
@@ -48,6 +49,7 @@ class FavoritesViewModel @Inject constructor(private val repository: FilesReposi
             favorites = favorites.items,
             isLoadingMore = favorites.isLoadingMore,
             hasMore = favorites.hasMore,
+            loadMoreError = favorites.loadMoreError,
             error = favorites.error,
             actionErrorMessage = actionError,
         )
@@ -68,6 +70,8 @@ class FavoritesViewModel @Inject constructor(private val repository: FilesReposi
     }
 
     fun loadMore() = favoritesLoader.loadMore()
+
+    fun retryLoadMore() = favoritesLoader.retryLoadMore()
 
     fun retry() = loadFirstPage()
 

@@ -141,4 +141,23 @@ class FavoritesViewModelTest {
         assertEquals("down", state.error)
         assertFalse(state.isLoading)
     }
+
+    @Test
+    fun `a failed next page keeps the items and retry appends the same page`() {
+        givenPage(1, true, 1, 2)
+        coEvery { repository.getStarredFiles(2, StarredKind.ALL, StarredSort.NAME) } returns AppResult.Error("sem rede")
+        val viewModel = FavoritesViewModel(repository)
+
+        viewModel.loadMore()
+
+        assertEquals(listOf("1", "2"), viewModel.state.value.favorites.map { it.id })
+        assertEquals("sem rede", viewModel.state.value.loadMoreError)
+
+        givenPage(2, false, 3)
+        viewModel.retryLoadMore()
+
+        assertEquals(listOf("1", "2", "3"), viewModel.state.value.favorites.map { it.id })
+        assertNull(viewModel.state.value.loadMoreError)
+        coVerify(exactly = 2) { repository.getStarredFiles(2, StarredKind.ALL, StarredSort.NAME) }
+    }
 }
