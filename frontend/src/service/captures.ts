@@ -32,8 +32,14 @@ export const getCaptureById = async (id: number): Promise<Capture> => {
     return response.data;
 };
 
-export const deleteCapture = async (id: number): Promise<void> => {
-    await apiBase.delete(`/captures/${id}`);
+export type DeleteCaptureResult = {
+    deleted: boolean;
+    library_file_kept: boolean;
+};
+
+export const deleteCapture = async (id: number): Promise<DeleteCaptureResult> => {
+    const response = await apiBase.delete<DeleteCaptureResult>(`/captures/${id}`);
+    return response.data;
 };
 
 // captureThumbnailHref prefers the provenance thumbnail captured from the source

@@ -25,6 +25,7 @@ export const useCapturesScreen = () => {
     const { t } = useI18n();
     const queryClient = useQueryClient();
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [captureAwaitingDeletion, setCaptureAwaitingDeletion] = useState<Capture | null>(null);
 
     const { data, isLoading, isError } = useQuery<Pagination<Capture>>({
         queryKey: ['captures'],
@@ -43,6 +44,12 @@ export const useCapturesScreen = () => {
 
     const items = useMemo(() => data?.items ?? [], [data]);
 
+    const confirmRemoval = () => {
+        if (!captureAwaitingDeletion) return;
+        removeMutation.mutate(captureAwaitingDeletion.id);
+        setCaptureAwaitingDeletion(null);
+    };
+
     return {
         t,
         items,
@@ -50,7 +57,10 @@ export const useCapturesScreen = () => {
         isError,
         isEmpty: !isLoading && !isError && items.length === 0,
         deletingId,
-        removeCapture: (id: number) => removeMutation.mutate(id),
+        captureAwaitingDeletion,
+        requestRemoval: setCaptureAwaitingDeletion,
+        cancelRemoval: () => setCaptureAwaitingDeletion(null),
+        confirmRemoval,
         formatSize,
         captureThumbnailHref,
         captureStatusLabelKey,

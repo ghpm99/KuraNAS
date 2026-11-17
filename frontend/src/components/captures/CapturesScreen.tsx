@@ -3,6 +3,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
 import { ExternalLink, Film, Trash2 } from 'lucide-react';
 import type { Capture, CaptureStatus } from '@/types/captures';
+import CaptureDeleteDialog from './CaptureDeleteDialog';
 import styles from './CapturesScreen.module.css';
 import { useCapturesScreen } from './useCapturesScreen';
 
@@ -31,7 +32,10 @@ const CapturesScreen = () => {
         isError,
         isEmpty,
         deletingId,
-        removeCapture,
+        captureAwaitingDeletion,
+        requestRemoval,
+        cancelRemoval,
+        confirmRemoval,
         formatSize,
         captureThumbnailHref,
         captureStatusLabelKey,
@@ -131,7 +135,7 @@ const CapturesScreen = () => {
                                         aria-label={t('CAPTURES_DELETE')}
                                         size="small"
                                         disabled={deletingId === capture.id}
-                                        onClick={() => removeCapture(capture.id)}
+                                        onClick={() => requestRemoval(capture)}
                                     >
                                         <Trash2 size={16} />
                                     </IconButton>
@@ -141,6 +145,12 @@ const CapturesScreen = () => {
                     })}
                 </ul>
             )}
+
+            <CaptureDeleteDialog
+                capture={captureAwaitingDeletion}
+                onCancel={cancelRemoval}
+                onConfirm={confirmRemoval}
+            />
         </PageContainer>
     );
 };

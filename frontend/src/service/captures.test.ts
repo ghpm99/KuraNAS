@@ -56,10 +56,11 @@ describe('captures service', () => {
         expect(result.id).toBe(1);
     });
 
-    it('deleteCapture hits the delete route', async () => {
-        mockedDelete.mockResolvedValue({});
-        await deleteCapture(9);
+    it('deleteCapture hits the delete route and decodes library_file_kept', async () => {
+        mockedDelete.mockResolvedValue({ data: { deleted: true, library_file_kept: true } });
+        const result = await deleteCapture(9);
         expect(mockedDelete).toHaveBeenCalledWith('/captures/9');
+        expect(result).toEqual({ deleted: true, library_file_kept: true });
     });
 
     describe('captureThumbnailHref', () => {

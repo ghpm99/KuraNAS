@@ -114,13 +114,55 @@ describe('CapturesScreen', () => {
         expect(screen.getByText('E5')).toBeInTheDocument();
     });
 
-    it('deletes a capture when the delete button is clicked', async () => {
-        mockedGetCaptures.mockResolvedValue({ items: [capture({ id: 5 })], pagination: {} });
-        mockedDeleteCapture.mockResolvedValue(undefined);
+    it('asks for confirmation with the library-kept message for a promoted capture', async () => {
+        mockedGetCaptures.mockResolvedValue({
+            items: [capture({ id: 5, status: 'promoted', file_id: 42 })],
+            pagination: {},
+        });
         renderScreen();
 
         await waitFor(() => expect(screen.getByText('recording_1')).toBeInTheDocument());
         fireEvent.click(screen.getByLabelText('CAPTURES_DELETE'));
+
+        expect(screen.getByText('CAPTURE_DELETE_PROMOTED_MESSAGE')).toBeInTheDocument();
+        expect(screen.queryByText('CAPTURE_DELETE_UNPROMOTED_MESSAGE')).not.toBeInTheDocument();
+        expect(mockedDeleteCapture).not.toHaveBeenCalled();
+    });
+
+    it('asks for confirmation with the file-deleted message for an unpromoted capture', async () => {
+        mockedGetCaptures.mockResolvedValue({ items: [capture({ id: 5 })], pagination: {} });
+        renderScreen();
+
+        await waitFor(() => expect(screen.getByText('recording_1')).toBeInTheDocument());
+        fireEvent.click(screen.getByLabelText('CAPTURES_DELETE'));
+
+        expect(screen.getByText('CAPTURE_DELETE_UNPROMOTED_MESSAGE')).toBeInTheDocument();
+        expect(screen.queryByText('CAPTURE_DELETE_PROMOTED_MESSAGE')).not.toBeInTheDocument();
+    });
+
+    it('does not call the service when the confirmation is cancelled', async () => {
+        mockedGetCaptures.mockResolvedValue({ items: [capture({ id: 5 })], pagination: {} });
+        renderScreen();
+
+        await waitFor(() => expect(screen.getByText('recording_1')).toBeInTheDocument());
+        fireEvent.click(screen.getByLabelText('CAPTURES_DELETE'));
+        fireEvent.click(screen.getByRole('button', { name: 'ACTION_CANCEL' }));
+
+        await waitFor(() =>
+            expect(screen.queryByText('CAPTURE_DELETE_UNPROMOTED_MESSAGE')).not.toBeInTheDocument()
+        );
+        expect(mockedDeleteCapture).not.toHaveBeenCalled();
+    });
+
+    it('deletes the capture only after the confirmation', async () => {
+        mockedGetCaptures.mockResolvedValue({ items: [capture({ id: 5 })], pagination: {} });
+        mockedDeleteCapture.mockResolvedValue({ deleted: true, library_file_kept: false });
+        renderScreen();
+
+        await waitFor(() => expect(screen.getByText('recording_1')).toBeInTheDocument());
+        fireEvent.click(screen.getByLabelText('CAPTURES_DELETE'));
+        fireEvent.click(screen.getByRole('button', { name: 'CAPTURES_DELETE' }));
+
         await waitFor(() => expect(mockedDeleteCapture).toHaveBeenCalledWith(5));
     });
 });

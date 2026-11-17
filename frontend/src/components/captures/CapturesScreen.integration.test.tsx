@@ -46,12 +46,19 @@ describe('CapturesScreen (seam)', () => {
 		mockedApi.delete.mockResolvedValue({ data: undefined });
 	});
 
-	it('deleting a capture issues DELETE /captures/:id', async () => {
+	it('confirming the deletion issues DELETE /captures/:id and reloads the list', async () => {
+		mockedApi.delete.mockResolvedValue({ data: { deleted: true, library_file_kept: false } });
 		renderScreen();
 		await screen.findByText('recording_1');
+		const listLoadsBefore = mockedApi.get.mock.calls.length;
 
 		fireEvent.click(screen.getByLabelText('CAPTURES_DELETE'));
+		expect(mockedApi.delete).not.toHaveBeenCalled();
+		fireEvent.click(screen.getByRole('button', { name: 'CAPTURES_DELETE' }));
 
 		await waitFor(() => expect(mockedApi.delete).toHaveBeenCalledWith('/captures/7'));
+		await waitFor(() =>
+			expect(mockedApi.get.mock.calls.length).toBeGreaterThan(listLoadsBefore)
+		);
 	});
 });
