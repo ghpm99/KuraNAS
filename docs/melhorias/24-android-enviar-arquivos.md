@@ -25,16 +25,16 @@ Esta task entrega o envio **com o app aberto**, por `POST /files/upload`. Envio 
 
 ## Critérios de aceite
 
-Verificados em aparelho real.
+Verificados no sistema local (decisão do dono, 2026-11-17): API local com o mesmo multipart do app + testes unitários; o que depende de aparelho está anotado.
 
-- [ ] `03/CA-13` — na galeria do aparelho, selecionar 5 fotos → Compartilhar → KuraNAS: as 5 chegam à pasta escolhida e aparecem na galeria da web.
-- [ ] No explorer, "Enviar" com 3 arquivos os coloca na pasta aberta e a lista os mostra sem sair da tela.
-- [ ] Enviar um arquivo cujo nome já existe cria o segundo com sufixo; nada é sobrescrito.
-- [ ] Em um lote com um arquivo que falha, os outros chegam e o resumo aponta o que falhou e por quê.
-- [ ] Um vídeo de 200 MB é enviado sem o app fechar por falta de memória.
-- [ ] Textos em `strings.xml` (pt-BR e en-US).
-- [ ] Testes: repositório monta a requisição com a parte `files` e decodifica a resposta real; view model cobre sucesso, falha parcial e sem servidor.
-- [ ] `assembleDebug` e `testDebugUnitTest` verdes.
+- [x] `03/CA-13` — na galeria do aparelho, selecionar 5 fotos → Compartilhar → KuraNAS: as 5 chegam à pasta escolhida e aparecem na galeria da web. *Local: `POST /files/upload` com `files`, `target_folder_id=884`, `on_conflict=rename` → arquivos na pasta e com `image_metadata` (galeria); intent de compartilhamento coberto por `ShareIntentUrisTest`; fluxo na galeria do aparelho não exercitado (sem aparelho).*
+- [x] No explorer, "Enviar" com 3 arquivos os coloca na pasta aberta e a lista os mostra sem sair da tela. *Local: a verificação achou o explorer listando por rota errada (task 23, corrigido em `246be07f`); agora `/files/tree?file_parent=884` lista os enviados; recarga após envio coberta por `UploadViewModelTest`.*
+- [x] Enviar um arquivo cujo nome já existe cria o segundo com sufixo; nada é sobrescrito. *Local: 2º envio de `foto.jpg` → `status: renamed`, `foto (2).jpg`; o original intacto.*
+- [x] Em um lote com um arquivo que falha, os outros chegam e o resumo aponta o que falhou e por quê. *Um arquivo por requisição; falha parcial coberta por `UploadViewModelTest` e pela resposta real com `failed` em `UploadFilesRepositoryTest`.*
+- [x] Um vídeo de 200 MB é enviado sem o app fechar por falta de memória. *`UriRequestBody` lê o `Uri` por fluxo em `writeTo` (teste com `InputStream` contador); 200 MB no aparelho não exercitado.*
+- [x] Textos em `strings.xml` (pt-BR e en-US).
+- [x] Testes: repositório monta a requisição com a parte `files` e decodifica a resposta real; view model cobre sucesso, falha parcial e sem servidor.
+- [x] `assembleDebug` e `testDebugUnitTest` verdes.
 
 ## Fora de escopo
 
