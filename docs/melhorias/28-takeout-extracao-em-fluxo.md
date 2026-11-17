@@ -6,6 +6,8 @@
 
 O zip é lido do disco (`zip.OpenReader`, `takeout/extractor.go:93`), mas **cada entrada é carregada inteira na memória**: `readZipEntry` (`:189-205`) copia para um `bytes.Buffer` e `os.WriteFile` grava depois (`:163-167`). Um vídeo de 3 GB dentro do zip ocupa 3 GB de RAM e pode derrubar o servidor. O zip e a pasta da sessão só são apagados no sucesso (`backend/internal/worker/engine/step_takeout.go:50-51`): em falha, ficam ocupando disco.
 
+Conferido em 2026-11-17: depois da task 26 a leitura inteira da mídia está em `takeout/extraction_destination.go:54` (`readZipEntry` + `sha256.Sum256(content)` para comparar com o arquivo já existente no destino — `existingFileHasContent`, `:103`); o `readZipEntry` (`extractor.go:197`) segue servindo também aos `.json`; a limpeza só no sucesso continua em `step_takeout.go:61-62`.
+
 ## Objetivo
 
 A importação usa memória constante, qualquer que seja o tamanho dos arquivos do zip, e sempre limpa o que enviou.
