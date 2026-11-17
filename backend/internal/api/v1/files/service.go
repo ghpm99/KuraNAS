@@ -29,6 +29,8 @@ type Service struct {
 	TrashBin       TrashBinInterface
 	StillConverter img.StillImageConverter
 
+	AvailableBytesAt func(path string) (int64, error)
+
 	ProcessingStagesReader ProcessingStagesReader
 }
 

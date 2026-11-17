@@ -545,6 +545,15 @@
 	"ERROR_UPLOAD_RELATIVE_PATHS_MISMATCH": "A quantidade de caminhos relativos não corresponde à de arquivos",
 	"ERROR_UPLOAD_REPLACE_COLD_UNSUPPORTED": "Não é possível substituir um arquivo no armazenamento frio",
 	"ERROR_UPLOAD_FAILED": "Falha ao enviar arquivo",
+	"ERROR_UPLOAD_ID_INVALID": "Identificador de envio inválido",
+	"ERROR_UPLOAD_SESSION_NOT_FOUND": "Envio não encontrado ou expirado",
+	"ERROR_UPLOAD_SIZE_INVALID": "Tamanho do arquivo inválido",
+	"ERROR_UPLOAD_CHECKSUM_INVALID": "Checksum inválido: informe o SHA-256 em hexadecimal",
+	"ERROR_UPLOAD_INSUFFICIENT_SPACE": "Espaço livre insuficiente no destino para este arquivo",
+	"ERROR_UPLOAD_OFFSET_INVALID": "Posição da parte inválida",
+	"ERROR_UPLOAD_OFFSET_MISMATCH": "A posição da parte difere do que o servidor já recebeu",
+	"ERROR_UPLOAD_CHUNK_REQUIRED": "A parte do arquivo é obrigatória",
+	"ERROR_UPLOAD_CHUNK_EXCEEDS_SIZE": "A parte ultrapassa o tamanho declarado do arquivo",
 	"ERROR_FOLDER_NAME_REQUIRED": "Nome da pasta é obrigatório",
 	"ERROR_FOLDER_NAME_INVALID": "Nome da pasta é inválido",
 	"ERROR_FOLDER_ALREADY_EXISTS": "A pasta já existe no destino",
@@ -1201,6 +1210,7 @@
 	"ERROR_CAPTURE_NO_FILE": "Nenhum arquivo enviado para captura",
 	"ERROR_CAPTURE_NAME_REQUIRED": "Nome da captura e obrigatorio",
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Falha ao salvar captura",
+	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "A posição do trecho não confere com o que o servidor já recebeu",
 	"ERROR_CAPTURE_UPLOAD_EMPTY": "A captura esta vazia: nenhum dado foi recebido",
 	"ERROR_CAPTURE_NOT_FOUND": "Captura nao encontrada",
 	"ERROR_CAPTURE_LIST_FAILED": "Falha ao listar capturas",
@@ -2135,6 +2145,5 @@
 	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancelar desta vez",
 	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "Neste horário o computador será desligado; um aviso com contagem aparece em todas as telas e permite cancelar.",
 	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Próxima execução: {{dateTime}}",
-	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado).",
-	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "A posição do trecho não confere com o que o servidor já recebeu"
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado)."
 }

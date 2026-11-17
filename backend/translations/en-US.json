@@ -545,6 +545,15 @@
 	"ERROR_UPLOAD_RELATIVE_PATHS_MISMATCH": "The number of relative paths does not match the number of files",
 	"ERROR_UPLOAD_REPLACE_COLD_UNSUPPORTED": "Cannot replace a file in cold storage",
 	"ERROR_UPLOAD_FAILED": "Failed to upload file",
+	"ERROR_UPLOAD_ID_INVALID": "Invalid upload identifier",
+	"ERROR_UPLOAD_SESSION_NOT_FOUND": "Upload not found or expired",
+	"ERROR_UPLOAD_SIZE_INVALID": "Invalid file size",
+	"ERROR_UPLOAD_CHECKSUM_INVALID": "Invalid checksum: provide the SHA-256 in hexadecimal",
+	"ERROR_UPLOAD_INSUFFICIENT_SPACE": "Not enough free space at the destination for this file",
+	"ERROR_UPLOAD_OFFSET_INVALID": "Invalid chunk offset",
+	"ERROR_UPLOAD_OFFSET_MISMATCH": "The chunk offset differs from what the server already received",
+	"ERROR_UPLOAD_CHUNK_REQUIRED": "The file chunk is required",
+	"ERROR_UPLOAD_CHUNK_EXCEEDS_SIZE": "The chunk exceeds the declared file size",
 	"ERROR_FOLDER_NAME_REQUIRED": "Folder name is required",
 	"ERROR_FOLDER_NAME_INVALID": "Folder name is invalid",
 	"ERROR_FOLDER_ALREADY_EXISTS": "Folder already exists in destination",
@@ -1201,6 +1210,7 @@
 	"ERROR_CAPTURE_NO_FILE": "No file uploaded for capture",
 	"ERROR_CAPTURE_NAME_REQUIRED": "Capture name is required",
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Failed to save capture",
+	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "The chunk position does not match what the server already received",
 	"ERROR_CAPTURE_UPLOAD_EMPTY": "The capture is empty: no data was received",
 	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
 	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
@@ -2135,6 +2145,5 @@
 	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancel this time",
 	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "At this time the computer will be shut down; a countdown notice appears on every screen and lets you cancel.",
 	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Next run: {{dateTime}}",
-	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Next run: none (automatic shutdown is off).",
-	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "The chunk position does not match what the server already received"
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Next run: none (automatic shutdown is off)."
 }
