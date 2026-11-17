@@ -24,13 +24,13 @@ Uma alteração por item.
 
 ## Critérios de aceite
 
-- [ ] Teste do pipeline: com `generate_previews` desligada, um arquivo novo é registrado e não gera etapa de miniatura; religada, volta a gerar.
-- [ ] O mesmo para `extract_metadata` e `index_document_text`.
-- [ ] Teste: `scan_interval_hours` muda o intervalo usado pelo agendador; 0 e 169 são recusados com `400`.
+- [x] Teste do pipeline: com `generate_previews` desligada, um arquivo novo é registrado e não gera etapa de miniatura; religada, volta a gerar.
+- [x] O mesmo para `extract_metadata` e `index_document_text`.
+- [x] Teste: `scan_interval_hours` muda o intervalo usado pelo agendador; 0 e 169 são recusados com `400`.
 - [ ] `21/CA-12` — no sistema rodando: desligar "gerar miniaturas" faz um arquivo novo aparecer sem miniatura; religar volta a gerar.
-- [ ] "Varrer ao iniciar" não aparece mais na tela; `GET /configuration/settings` ainda devolve `scan_on_startup`.
-- [ ] Seam test do `PUT /configuration/settings` com as chaves novas; render sem mock da seção.
-- [ ] `make ci` verde.
+- [x] "Varrer ao iniciar" não aparece mais na tela; `GET /configuration/settings` ainda devolve `scan_on_startup`.
+- [x] Seam test do `PUT /configuration/settings` com as chaves novas; render sem mock da seção.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
