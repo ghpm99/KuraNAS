@@ -25,6 +25,7 @@ const createState = (overrides: Record<string, unknown> = {}) => ({
 	isSuggesting: false,
 	hasError: false,
 	hasUnsavedChanges: true,
+	isGracePeriodInvalid: false,
 	setField: mockSetField,
 	handleSave: mockHandleSave,
 	handleSuggest: mockHandleSuggest,
@@ -82,6 +83,21 @@ describe('components/settings/AutoShutdownSettingsSection', () => {
 		render(<AutoShutdownSettingsSection />);
 
 		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_SUGGESTION_EMPTY')).toBeInTheDocument();
+	});
+
+	it('shows the range error and disables save when the grace period is invalid', () => {
+		mockUseAutoShutdownSettings.mockReturnValue(
+			createState({
+				isGracePeriodInvalid: true,
+				form: { enabled: true, time: '03:00', grace_period_seconds: 10 },
+			})
+		);
+		render(<AutoShutdownSettingsSection />);
+
+		expect(
+			screen.getByText('SETTINGS_AUTO_SHUTDOWN_GRACE_INVALID:{"min":"30","max":"600"}')
+		).toBeInTheDocument();
+		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_SAVE')).toBeDisabled();
 	});
 
 	it('disables the save button without unsaved changes', () => {

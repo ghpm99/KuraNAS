@@ -21,7 +21,7 @@ No horário, todos os clientes mostram uma contagem regressiva com "Cancelar des
 
 ## Sub-itens levantados na execução (2026-11-17)
 
-- [ ] 33.1. O período de aviso já existia como `grace_period_seconds`, com faixa 0 a 86400. Com 0 não há aviso nem como cancelar (contraria `RN-11`). Passa a valer 30 a 600 s (padrão 60): `PUT /auto-shutdown/settings` fora da faixa → `400` com mensagem própria; valor salvo antes fora da faixa é ajustado ao limite mais próximo na leitura. A web valida a mesma faixa.
+- [x] 33.1. O período de aviso já existia como `grace_period_seconds`, com faixa 0 a 86400. Com 0 não há aviso nem como cancelar (contraria `RN-11`). Passa a valer 30 a 600 s (padrão 60): `PUT /auto-shutdown/settings` fora da faixa → `400` com mensagem própria; valor salvo antes fora da faixa é ajustado ao limite mais próximo na leitura. A web valida a mesma faixa.
 
 ## Critérios de aceite
 

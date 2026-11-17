@@ -80,4 +80,30 @@ describe('components/settings/AutoShutdownSettingsSection (seam)', () => {
 		).toBeInTheDocument();
 		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN')).toBeInTheDocument();
 	});
+
+	it('does not issue the PUT while the grace period is outside 30 to 600', async () => {
+		renderSection();
+		await screen.findByRole('switch');
+
+		fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '29' } });
+
+		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_GRACE_INVALID')).toBeInTheDocument();
+		expect(screen.getByText('SETTINGS_AUTO_SHUTDOWN_SAVE')).toBeDisabled();
+		expect(mockedApi.put).not.toHaveBeenCalled();
+	});
+
+	it.each([30, 600])('issues the PUT with grace_period_seconds %i', async (seconds) => {
+		renderSection();
+		await screen.findByRole('switch');
+
+		fireEvent.change(screen.getByRole('spinbutton'), { target: { value: String(seconds) } });
+		fireEvent.click(screen.getByText('SETTINGS_AUTO_SHUTDOWN_SAVE'));
+
+		await waitFor(() => expect(mockedApi.put).toHaveBeenCalledTimes(1));
+		expect(mockedApi.put).toHaveBeenCalledWith('/auto-shutdown/settings', {
+			enabled: true,
+			time: '03:00',
+			grace_period_seconds: seconds,
+		});
+	});
 });

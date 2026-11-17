@@ -8,6 +8,7 @@ import type { AutoShutdownSettings, SuggestedShutdownTime } from '@/types/autoSh
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { isGracePeriodInRange } from './autoShutdownGraceRange';
 import { settingsStaleTimeMs } from '@/components/providers/queryFreshness';
 
 const defaultSettings: AutoShutdownSettings = {
@@ -60,7 +61,10 @@ const useAutoShutdownSettings = () => {
 		mutationFn: getSuggestedShutdownTime,
 	});
 
+	const isGracePeriodInvalid = !isGracePeriodInRange(form.grace_period_seconds);
+
 	const handleSave = useCallback(async () => {
+		if (isGracePeriodInvalid) return;
 		try {
 			await saveMutation.mutateAsync(form);
 			setDraft(null);
@@ -72,7 +76,7 @@ const useAutoShutdownSettings = () => {
 				variant: 'error',
 			});
 		}
-	}, [enqueueSnackbar, form, saveMutation, t]);
+	}, [enqueueSnackbar, form, isGracePeriodInvalid, saveMutation, t]);
 
 	const handleSuggest = useCallback(async () => {
 		try {
@@ -98,6 +102,7 @@ const useAutoShutdownSettings = () => {
 		isSuggesting: suggestMutation.isPending,
 		hasError: settingsQuery.isError,
 		hasUnsavedChanges: draft !== null,
+		isGracePeriodInvalid,
 		setField,
 		handleSave,
 		handleSuggest,

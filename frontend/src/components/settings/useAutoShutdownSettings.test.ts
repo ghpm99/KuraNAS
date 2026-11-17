@@ -115,11 +115,28 @@ describe('components/settings/useAutoShutdownSettings', () => {
 		});
 
 		expect(mockedUpdate).toHaveBeenCalledWith({ ...sampleSettings, time: '04:30' });
-		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ['auto-shutdown-settings'] });
+		expect(mockInvalidateQueries).toHaveBeenCalledWith({
+			queryKey: ['auto-shutdown-settings'],
+		});
 		expect(mockEnqueueSnackbar).toHaveBeenCalledWith('SETTINGS_AUTO_SHUTDOWN_SAVE_SUCCESS', {
 			variant: 'success',
 		});
 		expect(result.current.hasUnsavedChanges).toBe(false);
+	});
+
+	it('does not save while the grace period is outside the allowed range', async () => {
+		const { result } = renderHook(() => useAutoShutdownSettings());
+
+		act(() => {
+			result.current.setField('grace_period_seconds', 29);
+		});
+		expect(result.current.isGracePeriodInvalid).toBe(true);
+
+		await act(async () => {
+			await result.current.handleSave();
+		});
+
+		expect(mockedUpdate).not.toHaveBeenCalled();
 	});
 
 	it('shows the backend message verbatim when the save fails', async () => {
@@ -154,7 +171,11 @@ describe('components/settings/useAutoShutdownSettings', () => {
 			await result.current.handleSuggest();
 		});
 
-		expect(result.current.suggestion).toEqual({ available: true, time: '02:15', sample_size: 9 });
+		expect(result.current.suggestion).toEqual({
+			available: true,
+			time: '02:15',
+			sample_size: 9,
+		});
 		expect(result.current.form.time).toBe('02:15');
 		expect(result.current.hasUnsavedChanges).toBe(true);
 	});

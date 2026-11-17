@@ -531,6 +531,7 @@
 	"SETTINGS_AUTO_SHUTDOWN_TIME_LABEL": "Horário do desligamento",
 	"SETTINGS_AUTO_SHUTDOWN_GRACE_LABEL": "Período de aviso (segundos)",
 	"SETTINGS_AUTO_SHUTDOWN_GRACE_HELPER": "Tempo entre o aviso e o desligamento de fato.",
+	"SETTINGS_AUTO_SHUTDOWN_GRACE_INVALID": "O período de aviso deve ficar entre {{min}} e {{max}} segundos.",
 	"SETTINGS_AUTO_SHUTDOWN_SUGGEST_BUTTON": "Sugerir horário",
 	"SETTINGS_AUTO_SHUTDOWN_SUGGESTION": "Sugerido {{time}} com base em {{count}} desligamento(s).",
 	"SETTINGS_AUTO_SHUTDOWN_SUGGESTION_EMPTY": "Ainda não há desligamentos suficientes para sugerir um horário.",

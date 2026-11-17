@@ -531,6 +531,7 @@
 	"SETTINGS_AUTO_SHUTDOWN_TIME_LABEL": "Shutdown time",
 	"SETTINGS_AUTO_SHUTDOWN_GRACE_LABEL": "Warning period (seconds)",
 	"SETTINGS_AUTO_SHUTDOWN_GRACE_HELPER": "Time between the warning and the actual shutdown.",
+	"SETTINGS_AUTO_SHUTDOWN_GRACE_INVALID": "The warning period must be between {{min}} and {{max}} seconds.",
 	"SETTINGS_AUTO_SHUTDOWN_SUGGEST_BUTTON": "Suggest time",
 	"SETTINGS_AUTO_SHUTDOWN_SUGGESTION": "Suggested {{time}} based on {{count}} shutdown(s).",
 	"SETTINGS_AUTO_SHUTDOWN_SUGGESTION_EMPTY": "Not enough shutdowns yet to suggest a time.",

@@ -6,6 +6,7 @@ import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import useAutoShutdownSettings from './useAutoShutdownSettings';
 import { computeNextShutdownExecution } from './nextShutdownExecution';
+import { maxGracePeriodSeconds, minGracePeriodSeconds } from './autoShutdownGraceRange';
 import styles from './AutoShutdownSettingsSection.module.css';
 
 type AutoShutdownSettingsSectionProps = {
@@ -22,6 +23,7 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 		isSuggesting,
 		hasError,
 		hasUnsavedChanges,
+		isGracePeriodInvalid,
 		setField,
 		handleSave,
 		handleSuggest,
@@ -75,7 +77,18 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 					size="small"
 					type="number"
 					label={t('SETTINGS_AUTO_SHUTDOWN_GRACE_LABEL')}
-					helperText={t('SETTINGS_AUTO_SHUTDOWN_GRACE_HELPER')}
+					error={isGracePeriodInvalid}
+					helperText={
+						isGracePeriodInvalid
+							? t('SETTINGS_AUTO_SHUTDOWN_GRACE_INVALID', {
+									min: String(minGracePeriodSeconds),
+									max: String(maxGracePeriodSeconds),
+								})
+							: t('SETTINGS_AUTO_SHUTDOWN_GRACE_HELPER')
+					}
+					slotProps={{
+						htmlInput: { min: minGracePeriodSeconds, max: maxGracePeriodSeconds },
+					}}
 					value={String(form.grace_period_seconds)}
 					onChange={(event) =>
 						setField('grace_period_seconds', Number(event.target.value))
@@ -87,8 +100,8 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 			<p className={styles.description}>
 				{nextExecution
 					? t('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN', {
-						  dateTime: nextExecution.toLocaleString(),
-					  })
+							dateTime: nextExecution.toLocaleString(),
+						})
 					: t('SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE')}
 			</p>
 			<div className={styles.suggestRow}>
@@ -103,9 +116,9 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 					<p className={styles.suggestHint}>
 						{suggestion.available
 							? t('SETTINGS_AUTO_SHUTDOWN_SUGGESTION', {
-								  time: suggestion.time,
-								  count: String(suggestion.sample_size),
-							  })
+									time: suggestion.time,
+									count: String(suggestion.sample_size),
+								})
 							: t('SETTINGS_AUTO_SHUTDOWN_SUGGESTION_EMPTY')}
 					</p>
 				) : null}
@@ -114,7 +127,7 @@ const AutoShutdownSettingsSection = ({ className = '' }: AutoShutdownSettingsSec
 				<Button
 					variant="contained"
 					onClick={() => void handleSave()}
-					disabled={isSaving || !hasUnsavedChanges}
+					disabled={isSaving || !hasUnsavedChanges || isGracePeriodInvalid}
 				>
 					{t('SETTINGS_AUTO_SHUTDOWN_SAVE')}
 				</Button>
