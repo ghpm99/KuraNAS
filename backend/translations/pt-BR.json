@@ -322,6 +322,8 @@
 	"ARCHIVE_7Z": "Arquivo 7z",
 	"ARCHIVE_TAR": "Arquivo TAR",
 	"ARCHIVE_GZIP": "Arquivo GZIP",
+	"ARCHIVE_BZIP2": "Arquivo BZIP2",
+	"ARCHIVE_XZ": "Arquivo XZ",
 	"UNKNOWN_FORMAT": "Formato desconhecido",
 	"DOCUMENT_MARKDOWN": "Documento Markdown",
 	"DOCUMENT_SOURCE_CODE": "Código-fonte",
