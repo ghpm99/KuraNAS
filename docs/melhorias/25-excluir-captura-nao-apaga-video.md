@@ -21,9 +21,13 @@ Excluir uma captura promovida remove só o registro da captura; o vídeo continu
 - [x] Teste de serviço: excluir captura promovida não remove o arquivo de `FilePath` e remove a linha da captura.
 - [x] Teste de serviço: excluir captura não promovida remove o arquivo recebido e a linha.
 - [x] Teste de handler decodifica `deleted` e `library_file_kept`; seam test do `DELETE` no frontend.
-- [ ] `12/CA-09` — no sistema rodando: excluir uma captura promovida não remove o vídeo de Vídeos nem do disco; a confirmação diz isso.
-- [ ] Excluir uma captura que falhou na promoção apaga o arquivo recebido.
+- [x] `12/CA-09` — no sistema rodando: excluir uma captura promovida não remove o vídeo de Vídeos nem do disco; a confirmação diz isso. *Local 2026-11-17: captura MP4 real promovida para `Videos/Captura boa.mp4` (file_id 910); `DELETE /captures/19` → `{deleted:true, library_file_kept:true}`, arquivo no disco e linha ativa mantidos, captura 404; texto da confirmação coberto pelos testes do frontend.*
+- [ ] Excluir uma captura que falhou na promoção apaga o arquivo recebido. *Não verificável localmente hoje: nenhuma promoção falha — ver 25.1.*
 - [x] `make ci` verde.
+
+### Sub-itens
+
+- [ ] 25.1. Promoção que não consegue ajustar o vídeo falha de verdade (`12/RN-07`, `RN-09`): hoje, se o remux do ffmpeg falha, `placeRecordingInLibrary` (`captures/service_promote.go:128`) move o arquivo assim mesmo e a captura fica `promoted` — verificado localmente: um `.mp4` com bytes aleatórios entrou em Vídeos. Além disso, o rollback não devolve o `file_path` da captura ao arquivo recebido (já foi trocado pelo destino em `UpdateCapturePromotion`), então "Tentar de novo" leria um caminho inexistente, e o estado "falhou" é gravado sem o motivo.
 
 ## Fora de escopo
 
