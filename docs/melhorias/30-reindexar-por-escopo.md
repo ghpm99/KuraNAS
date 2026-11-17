@@ -31,13 +31,13 @@ Reindexar uma pasta, uma raiz ou tudo inicia um job daquele escopo, mostra o and
 
 ## Critérios de aceite
 
-- [ ] Teste de handler: os três escopos devolvem `job_id`; escopo inválido `400`; pasta inexistente `404`; segundo pedido do mesmo escopo em andamento `409`.
-- [ ] Teste do worker: o job de pasta não visita arquivos fora dela.
+- [x] Teste de handler: os três escopos devolvem `job_id`; escopo inválido `400`; pasta inexistente `404`; segundo pedido do mesmo escopo em andamento `409`.
+- [x] Teste do worker: o job de pasta não visita arquivos fora dela.
 - [ ] `21/CA-11` — no sistema rodando: "Reindexar esta pasta" reindexa só aquela pasta, mostra progresso e a listagem se atualiza ao concluir.
 - [ ] `16/CA-09` — "Reindexar" no Analytics inicia um job visível em `GET /jobs`.
 - [ ] `21/CA-08` — reindexar não remove estrelas, playlists, álbuns, progresso nem metadados corrigidos.
-- [ ] Seam test de cada chamada nova no frontend; consumidores de `POST /files/update` conferidos (web; Android e plugin não usam).
-- [ ] `make ci` verde.
+- [x] Seam test de cada chamada nova no frontend; consumidores de `POST /files/update` conferidos (web; Android e plugin não usam).
+- [x] `make ci` verde.
 
 ## Fora de escopo
 

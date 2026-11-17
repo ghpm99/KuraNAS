@@ -58,9 +58,9 @@ Regras invariantes:
 | 27 | [Takeout: aplicar datas](27-takeout-aplica-datas.md) | bug | P0 | 26 | pendente | spec 13/RN-07 |
 | 28 | [Takeout: extração em fluxo](28-takeout-extracao-em-fluxo.md) | bug | P1 | 26 | pendente | spec 13/RN-09 |
 | 29 | [Indexação: preferências com efeito](29-preferencias-de-indexacao-com-efeito.md) | bug | P1 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-17); falta `21/CA-12` no sistema rodando (dono): desligar "gerar miniaturas" faz um arquivo novo aparecer sem miniatura e religar volta a gerar. Spec 21 §8 ganhou a exceção das filas de pendência; `WATCHER_RECONCILE_HOURS` removida. | spec 21/RN-14 |
-| 30 | [Reindexar por escopo](30-reindexar-por-escopo.md) | bug | P1 | — | em execução | spec 21/RN-15, 16/RN-07 |
+| 30 | [Reindexar por escopo](30-reindexar-por-escopo.md) | bug | P1 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-17), inclusive o 30.1 (reindexar recupera só as etapas que faltam — decisão do dono); faltam `21/CA-11`, `16/CA-09` e `21/CA-08` no sistema rodando (dono). | spec 21/RN-15, 16/RN-07 |
 | 31 | [Analytics: links levam à lista certa](31-analytics-links-levam-a-lista-certa.md) | bug | P2 | 20, 21 | pendente | spec 16/RN-06 |
-| 32 | [Atualização confere checksum](32-atualizacao-confere-checksum.md) | segurança | P1 | — | pendente | spec 23/RN-15 |
+| 32 | [Atualização confere checksum](32-atualizacao-confere-checksum.md) | segurança | P1 | — | em execução | spec 23/RN-15 |
 | 33 | [Desligamento: aviso e cancelar](33-cancelar-desligamento.md) | bug | P1 | — | pendente | spec 23/RN-11 |
 | 34 | [Envio em partes: backend](34-envio-em-partes-backend.md) | feature | P0 | — | pendente | spec 03 §7 |
 | 35 | [Envio em partes: web](35-envio-em-partes-web.md) | feature | P0 | 34 | pendente | spec 03 |
