@@ -42,8 +42,8 @@ Verificados em aparelho real, na rede do servidor.
 - [ ] `24/CA-04` — fechar e reabrir conecta direto.
 - [ ] `24/CA-05` — trocar o IP do servidor: o app o reencontra sem digitar.
 - [ ] Com mDNS bloqueado no roteador, o servidor ainda é achado (por UDP).
-- [ ] Testes unitários: validação do servidor (quatro resultados), montagem do endereço a partir da resposta UDP, normalização do endereço manual, término da busca no tempo limite.
-- [ ] `assembleDebug` e `testDebugUnitTest` verdes.
+- [x] Testes unitários: validação do servidor (quatro resultados), montagem do endereço a partir da resposta UDP, normalização do endereço manual, término da busca no tempo limite.
+- [x] `assembleDebug` e `testDebugUnitTest` verdes.
 
 ## Fora de escopo
 
