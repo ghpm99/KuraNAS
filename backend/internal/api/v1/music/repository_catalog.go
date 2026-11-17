@@ -252,7 +252,7 @@ func (r *AudioMetadataRepository) ListAudioWithoutCatalogKeys(afterAudioMetadata
 	pendingRows := []AudioWithoutCatalogKeys{}
 
 	err := r.Db.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.SelectAudioWithoutCatalogKeysQuery, afterAudioMetadataID, limit)
+		rows, err := tx.Query(queries.SelectAudioWithoutCatalogKeysQuery, afterAudioMetadataID, limit, CurrentCatalogKeysVersion)
 		if err != nil {
 			return err
 		}
@@ -345,6 +345,7 @@ func (r *AudioMetadataRepository) updateAudioCatalogKeys(tx *sql.Tx, audioMetada
 		groupingKeys.AlbumLabel,
 		pq.Array(groupingKeys.GenreKeys),
 		pq.Array(groupingKeys.GenreLabels),
+		CurrentCatalogKeysVersion,
 	)
 	if err != nil {
 		return fmt.Errorf("falha ao atualizar chaves de catalogo do audio: %w", err)

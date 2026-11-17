@@ -7,6 +7,7 @@ SET
     catalog_album_artist_label = NULL,
     catalog_album_label = $5,
     catalog_genre_keys = $6,
-    catalog_genre_labels = $7
+    catalog_genre_labels = $7,
+    catalog_keys_version = $8
 WHERE
     id = $1;

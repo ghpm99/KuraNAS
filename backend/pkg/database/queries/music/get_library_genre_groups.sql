@@ -1,7 +1,7 @@
 WITH genre_groups AS (
     SELECT
         genre.genre_key,
-        MIN(genre.genre_label COLLATE "C") AS genre_label,
+        MAX(genre.genre_label COLLATE "C") AS genre_label,
         COUNT(*) AS track_count,
         MAX(hf.created_at) AS latest_added_at
     FROM

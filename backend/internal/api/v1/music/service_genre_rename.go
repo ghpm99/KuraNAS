@@ -24,7 +24,7 @@ func (s *Service) RenameGenre(genreKey string, name string) (GenreRenameResultDt
 	if len(sources) == 0 {
 		return GenreRenameResultDto{}, sql.ErrNoRows
 	}
-	newKey := normalizeLookupKey(newLabel)
+	newKey := genreLookupKey(newLabel)
 	isMerge, err := s.isMergeIntoExistingGenre(genreKey, newKey)
 	if err != nil {
 		return GenreRenameResultDto{}, err

@@ -3,11 +3,11 @@ package music
 import "strings"
 
 func replaceGenreLabel(genre string, genreKey string, newLabel string) []string {
-	newKey := normalizeLookupKey(newLabel)
+	newKey := genreLookupKey(newLabel)
 	replacedLabels := []string{}
 	seenKeys := map[string]bool{}
 	for _, label := range normalizeGenreLabels(genre) {
-		labelKey := normalizeLookupKey(label)
+		labelKey := genreLookupKey(label)
 		if labelKey == genreKey {
 			label, labelKey = newLabel, newKey
 		}

@@ -625,7 +625,7 @@ func TestAudioMetadataRepositorySuccessPaths(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "artist", "album_artist", "album", "genre"}).
 			AddRow(22, "artist", "", "album", "Rock"))
 	mock.ExpectExec(regexp.QuoteMeta(queries.UpdateAudioCatalogKeysQuery)).
-		WithArgs(22, "artist", "artist", "artist::album", "album", pq.Array([]string{"rock"}), pq.Array([]string{"Rock"})).
+		WithArgs(22, "artist", "artist", "artist::album", "album", pq.Array([]string{"rock"}), pq.Array([]string{"Rock"}), CurrentCatalogKeysVersion).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 	err = repo.Db.ExecTx(func(tx *sql.Tx) error {

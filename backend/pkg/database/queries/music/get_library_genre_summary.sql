@@ -1,6 +1,6 @@
 SELECT
     genre.genre_key,
-    MIN(genre.genre_label COLLATE "C") AS genre_label,
+    MAX(genre.genre_label COLLATE "C") AS genre_label,
     COUNT(*) AS track_count,
     COALESCE(ROUND(SUM(am.length)), 0)::BIGINT AS total_length_seconds
 FROM

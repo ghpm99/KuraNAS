@@ -77,6 +77,7 @@ func TestServiceRenameGenreReportsMergeOnlyWhenTheNewKeyAlreadyHasTracks(t *test
 		"new key unused":             {map[string]int{}, "rock n roll", "Heavy Rock", false},
 		"only spelling changes":      {map[string]int{"rock n roll": 3}, "rock n roll", "ROCK N ROLL", false},
 		"same key different spacing": {map[string]int{"hip hop": 4}, "hip hop", "hip-hop", false},
+		"accent-free spelling":       {map[string]int{"musica": 4}, "rock n roll", "Música", true},
 	}
 	for scenarioName, scenario := range scenarios {
 		store := &trackMetadataStoreMock{
@@ -88,6 +89,25 @@ func TestServiceRenameGenreReportsMergeOnlyWhenTheNewKeyAlreadyHasTracks(t *test
 
 		if err != nil || renamedGenre.Merged != scenario.wantMerged {
 			t.Fatalf("%s: merged=%v err=%v, want merged=%v", scenarioName, renamedGenre.Merged, err, scenario.wantMerged)
+		}
+	}
+}
+
+func TestServiceRenameGenreMergesAnUnaccentedGenreIntoItsAccentedSpelling(t *testing.T) {
+	store := &trackMetadataStoreMock{genreSources: []GenreTrackSource{
+		{FileID: 1, Genre: "Musica"},
+		{FileID: 2, Genre: "Musica;Rock"},
+	}}
+
+	_, err := genreRenameService(store, MusicGroupSummaryDto{}).RenameGenre("musica", "Música")
+
+	if err != nil {
+		t.Fatalf("RenameGenre: %v", err)
+	}
+	wantGenresByFileID := map[int]string{1: "Música", 2: "Música;Rock"}
+	for _, group := range store.appliedGroups {
+		if genresOfGroup(group) != wantGenresByFileID[group.FileIDs[0]] {
+			t.Fatalf("group %+v genres=%q", group, genresOfGroup(group))
 		}
 	}
 }
@@ -127,6 +147,7 @@ func TestServiceRenameGenreRefusesTheNameFieldBeforeTouchingTheStore(t *testing.
 		"semicolon":        {"Rock;Pop", "ERROR_MUSIC_GENRE_NAME_SEPARATOR"},
 		"comma":            {"Rock, Pop", "ERROR_MUSIC_GENRE_NAME_SEPARATOR"},
 		"pipe":             {"Rock|Pop", "ERROR_MUSIC_GENRE_NAME_SEPARATOR"},
+		"slash":            {"Pop/Rock", "ERROR_MUSIC_GENRE_NAME_SEPARATOR"},
 	}
 	for refusalName, refusal := range refusals {
 		store := &trackMetadataStoreMock{genreSources: []GenreTrackSource{{FileID: 1, Genre: "Rock n Roll"}}}

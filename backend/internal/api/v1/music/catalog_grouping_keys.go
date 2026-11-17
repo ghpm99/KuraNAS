@@ -5,7 +5,13 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
+
+const CurrentCatalogKeysVersion = 1
 
 var spaceNormalizerRegexp = regexp.MustCompile(`\s+`)
 
@@ -25,7 +31,7 @@ func BuildCatalogGroupingKeys(artist string, albumArtist string, album string, g
 	genreLabels := normalizeGenreLabels(genre)
 	genreKeys := make([]string, 0, len(genreLabels))
 	for _, genreLabel := range genreLabels {
-		genreKeys = append(genreKeys, normalizeLookupKey(genreLabel))
+		genreKeys = append(genreKeys, genreLookupKey(genreLabel))
 	}
 	if genreLabels == nil {
 		genreLabels = []string{}
@@ -70,20 +76,36 @@ func normalizeLookupKey(rawText string) string {
 	return spaceNormalizerRegexp.ReplaceAllString(normalized, " ")
 }
 
+func genreLookupKey(genreLabel string) string {
+	diacriticsRemover := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	unaccentedLabel, _, err := transform.String(diacriticsRemover, normalizeLookupKey(genreLabel))
+	if err != nil {
+		return normalizeLookupKey(genreLabel)
+	}
+	return unaccentedLabel
+}
+
+func knownCompoundGenreLabel(normalizedGenre string) (string, bool) {
+	switch normalizedGenre {
+	case "r&b", "r & b", "rnb", "rhythm and blues":
+		return "R&B", true
+	case "r&b/soul", "r&b / soul", "rnb/soul", "rnb / soul", "soul/r&b", "soul / r&b":
+		return "R&B / Soul", true
+	case "hip hop", "hiphop", "hip-hop":
+		return "Hip-Hop", true
+	case "lo fi", "lofi", "lo-fi":
+		return "Lo-Fi", true
+	case "soundtrack", "ost":
+		return "Soundtrack", true
+	}
+	return "", false
+}
+
 func normalizeGenreLabel(rawGenre string) string {
 	normalized := normalizeLookupKey(rawGenre)
 
-	switch normalized {
-	case "r&b", "r & b", "rnb", "rhythm and blues":
-		return "R&B"
-	case "r&b/soul", "r&b / soul", "rnb/soul", "rnb / soul", "soul/r&b", "soul / r&b":
-		return "R&B / Soul"
-	case "hip hop", "hiphop", "hip-hop":
-		return "Hip-Hop"
-	case "lo fi", "lofi", "lo-fi":
-		return "Lo-Fi"
-	case "soundtrack", "ost":
-		return "Soundtrack"
+	if knownLabel, isKnown := knownCompoundGenreLabel(normalized); isKnown {
+		return knownLabel
 	}
 
 	if normalized == "" {
@@ -106,8 +128,19 @@ func capitalizeFirstRune(word string) string {
 	return string(unicode.ToUpper(firstRune)) + word[firstRuneSize:]
 }
 
-func isGenreSeparator(character rune) bool {
+func isGenreListSeparator(character rune) bool {
 	return character == ';' || character == ',' || character == '|'
+}
+
+func isGenreSeparator(character rune) bool {
+	return isGenreListSeparator(character) || character == '/'
+}
+
+func splitGenrePart(genrePart string) []string {
+	if _, isKnown := knownCompoundGenreLabel(normalizeLookupKey(genrePart)); isKnown {
+		return []string{genrePart}
+	}
+	return strings.FieldsFunc(genrePart, func(character rune) bool { return character == '/' })
 }
 
 func normalizeGenreLabels(rawGenres string) []string {
@@ -116,20 +149,20 @@ func normalizeGenreLabels(rawGenres string) []string {
 		return nil
 	}
 
-	genreParts := strings.FieldsFunc(normalized, isGenreSeparator)
-
-	if len(genreParts) == 0 {
-		genreParts = []string{normalized}
+	genreParts := []string{}
+	for _, listEntry := range strings.FieldsFunc(normalized, isGenreListSeparator) {
+		genreParts = append(genreParts, splitGenrePart(listEntry)...)
 	}
 
 	labels := make([]string, 0, len(genreParts))
-	seenLabels := map[string]bool{}
+	seenKeys := map[string]bool{}
 	for _, genrePart := range genreParts {
 		label := normalizeGenreLabel(genrePart)
-		if label == "" || seenLabels[label] {
+		labelKey := genreLookupKey(label)
+		if label == "" || seenKeys[labelKey] {
 			continue
 		}
-		seenLabels[label] = true
+		seenKeys[labelKey] = true
 		labels = append(labels, label)
 	}
 
