@@ -1,10 +1,10 @@
 SELECT
 	CASE
-		WHEN lower(COALESCE(format, '')) IN ('.mp4', '.mkv', '.avi', '.mov', '.wmv', '.webm', '.m4v') THEN 'video'
-		WHEN lower(COALESCE(format, '')) IN ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.heic') THEN 'image'
-		WHEN lower(COALESCE(format, '')) IN ('.mp3', '.flac', '.wav', '.ogg', '.aac', '.m4a') THEN 'audio'
-		WHEN lower(COALESCE(format, '')) IN ('.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.md', '.csv') THEN 'document'
-		WHEN lower(COALESCE(format, '')) IN ('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz') THEN 'archive'
+		WHEN lower(COALESCE(format, '')) = ANY($1::text[]) THEN 'video'
+		WHEN lower(COALESCE(format, '')) = ANY($2::text[]) THEN 'image'
+		WHEN lower(COALESCE(format, '')) = ANY($3::text[]) THEN 'audio'
+		WHEN lower(COALESCE(format, '')) = ANY($4::text[]) THEN 'document'
+		WHEN lower(COALESCE(format, '')) = ANY($5::text[]) THEN 'archive'
 		ELSE 'other'
 	END AS category,
 	COUNT(*) AS total_count,

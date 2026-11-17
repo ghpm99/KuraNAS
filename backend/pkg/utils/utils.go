@@ -216,7 +216,7 @@ var ImageFormats = append(
 var AudioFormats = []string{".mp3", ".wav", ".aac", ".flac", ".m4a", ".ogg", ".oga", ".opus", ".wma", ".alac", ".aiff", ".aif", ".ape", ".wv"}
 var VideoFormats = []string{".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".ogv", ".m4v", ".mpg", ".mpeg", ".m2ts", ".3gp", ".vob"}
 var DocumentFormats = []string{".pdf", ".txt", ".html", ".htm", ".xml", ".json", ".csv"}
-var ArchiveFormats = []string{".zip", ".rar", ".7z", ".tar", ".gz"}
+var ArchiveFormats = []string{".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"}
 
 func NormalizeExtension(ext string) string {
 	return strings.ToLower(ext)
@@ -325,6 +325,10 @@ func GetFormatTypeByExtension(ext string) FormatType {
 		return FormatType{Type: FormatTypeArchive, Mime: "application/x-tar", Description: "ARCHIVE_TAR"}
 	case ".gz":
 		return FormatType{Type: FormatTypeArchive, Mime: "application/gzip", Description: "ARCHIVE_GZIP"}
+	case ".bz2":
+		return FormatType{Type: FormatTypeArchive, Mime: "application/x-bzip2", Description: "ARCHIVE_BZIP2"}
+	case ".xz":
+		return FormatType{Type: FormatTypeArchive, Mime: "application/x-xz", Description: "ARCHIVE_XZ"}
 
 	default:
 		return FormatType{Type: FormatTypeUnknown, Mime: "", Description: "UNKNOWN_FORMAT"}

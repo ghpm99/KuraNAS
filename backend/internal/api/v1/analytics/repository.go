@@ -68,7 +68,14 @@ func (r *Repository) GetStorageTimeSeries(period PeriodConfig) ([]StorageTimeSer
 func (r *Repository) GetTypeDistribution() ([]TypeDistributionModel, error) {
 	result := []TypeDistributionModel{}
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.TypeDistributionQuery)
+		rows, err := tx.Query(
+			queries.TypeDistributionQuery,
+			pq.Array(DuplicateCategoryVideo.includedFormats()),
+			pq.Array(DuplicateCategoryImage.includedFormats()),
+			pq.Array(DuplicateCategoryAudio.includedFormats()),
+			pq.Array(DuplicateCategoryDocument.includedFormats()),
+			pq.Array(archiveFormats()),
+		)
 		if err != nil {
 			return err
 		}
