@@ -19,6 +19,10 @@ No horário, todos os clientes mostram uma contagem regressiva com "Cancelar des
 5. **Web — faixa em todas as telas** (`RF-07`): o shell consulta o status a cada 30 s (a cada 5 s em `warning`) e mostra a faixa com a contagem e "Cancelar desta vez"; ao cancelar, a faixa some em todos os dispositivos na consulta seguinte.
 6. **Web — seção de Configurações** (`RF-06`): mostra a próxima execução e o texto dizendo que o computador será desligado.
 
+## Sub-itens levantados na execução (2026-11-17)
+
+- [ ] 33.1. O período de aviso já existia como `grace_period_seconds`, com faixa 0 a 86400. Com 0 não há aviso nem como cancelar (contraria `RN-11`). Passa a valer 30 a 600 s (padrão 60): `PUT /auto-shutdown/settings` fora da faixa → `400` com mensagem própria; valor salvo antes fora da faixa é ajustado ao limite mais próximo na leitura. A web valida a mesma faixa.
+
 ## Critérios de aceite
 
 - [ ] Teste do agendador com relógio falso: entra em `warning`, chama o desligamento só ao fim da contagem; com cancelamento, não chama.
