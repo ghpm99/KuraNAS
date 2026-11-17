@@ -12,9 +12,13 @@ import {
     MusicMostPlayedPeriod,
     MusicPlayedTrack,
     MusicQueue,
+    TrackMetadataFieldName,
+    TrackMetadataFields,
 } from '@/types/music';
 import { IMusicData } from '@/types/music';
+import { isAxiosError } from 'axios';
 import { apiBase } from '.';
+import { trackMetadataFieldNames } from './trackMetadataFieldNames';
 
 const toSortParams = (listSort?: MusicListSort) =>
     listSort ? { sort: listSort.sort, order: listSort.order } : {};
@@ -171,4 +175,20 @@ export const getRecentlyPlayedTracks = async (page: number, pageSize: number) =>
         { params: { page, page_size: pageSize } }
     );
     return response.data;
+};
+
+export const updateTrackMetadata = async (
+    fileId: number,
+    fields: TrackMetadataFields
+): Promise<IMusicData> => {
+    const response = await apiBase.put<IMusicData>(`/music/tracks/${fileId}/metadata`, fields);
+    return response.data;
+};
+
+export const readRefusedMetadataField = (error: unknown): TrackMetadataFieldName | undefined => {
+    if (!isAxiosError(error) || error.response?.status !== 400) {
+        return undefined;
+    }
+    const refusedField = (error.response.data as { field?: unknown } | undefined)?.field;
+    return trackMetadataFieldNames.find((fieldName) => fieldName === refusedField);
 };

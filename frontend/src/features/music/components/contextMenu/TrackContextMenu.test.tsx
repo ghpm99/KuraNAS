@@ -3,6 +3,13 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { IMusicData } from '@/types/music';
 import TrackContextMenu from './TrackContextMenu';
 
+jest.mock('../trackMetadata/TrackMetadataDialog', () => ({
+    __esModule: true,
+    default: ({ track: editedTrack }: { track: { id: number } }) => (
+        <div data-testid="metadata-dialog">{editedTrack.id}</div>
+    ),
+}));
+
 const mockPlayNext = jest.fn();
 const mockAddToQueue = jest.fn();
 
@@ -72,6 +79,15 @@ describe('TrackContextMenu', () => {
         fireEvent.click(screen.getByRole('menuitem', { name: 'MUSIC_ADD_TO_PLAYLIST' }));
 
         expect(onAddToPlaylist).toHaveBeenCalled();
+    });
+
+    it('opens the metadata dialog for the track', () => {
+        renderMenu(track);
+        expect(screen.queryByTestId('metadata-dialog')).toBeNull();
+
+        fireEvent.click(screen.getByRole('menuitem', { name: 'MUSIC_EDIT_INFO' }));
+
+        expect(screen.getByTestId('metadata-dialog')).toHaveTextContent('7');
     });
 
     it('navigates to the album and to the artist', () => {

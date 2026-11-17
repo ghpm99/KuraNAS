@@ -1,6 +1,7 @@
 import { useCallback, useContext, useSyncExternalStore } from 'react';
-import { QueryClientContext, type Query } from '@tanstack/react-query';
+import { QueryClientContext } from '@tanstack/react-query';
 import { toggleStarredFile } from '@/service/files';
+import { isMusicMetadataDependentQuery } from '@/features/music/queryKeys/isMusicMetadataDependentQuery';
 import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import {
     clearStarredOverride,
@@ -13,21 +14,6 @@ interface StarrableTrack {
     id: number;
     starred?: boolean;
 }
-
-const starredDependentQueryPrefixes = [
-    'music',
-    'automatic-playlists',
-    'playlists',
-    'playlist-tracks',
-];
-
-const isStarredDependentQuery = (query: Query): boolean => {
-    const queryRoot = query.queryKey[0];
-    return (
-        typeof queryRoot === 'string' &&
-        starredDependentQueryPrefixes.some((prefix) => queryRoot.startsWith(prefix))
-    );
-};
 
 const restoreStarredOverride = (trackId: number, previousOverride: boolean | undefined) => {
     if (previousOverride === undefined) {
@@ -64,7 +50,7 @@ export default function useTrackStar(track: StarrableTrack) {
             return;
         }
         await Promise.all([
-            queryClient.invalidateQueries({ predicate: isStarredDependentQuery }),
+            queryClient.invalidateQueries({ predicate: isMusicMetadataDependentQuery }),
             invalidateStarredViews(queryClient),
         ]);
         if (isOverrideOwnedByThisToggle()) {

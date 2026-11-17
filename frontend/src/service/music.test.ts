@@ -2,6 +2,7 @@ jest.mock('./index', () => ({
     apiBase: {
         get: jest.fn(),
         post: jest.fn(),
+        put: jest.fn(),
     },
 }));
 
@@ -26,13 +27,17 @@ import {
     getMusicQueueByGenre,
     getMostPlayedTracks,
     getRecentlyPlayedTracks,
+    readRefusedMetadataField,
     recordMusicPlay,
     searchMusicTracks,
+    updateTrackMetadata,
 } from './music';
+import { AxiosError, AxiosHeaders } from 'axios';
 
 const mockedApi = apiBase as unknown as {
     get: jest.Mock;
     post: jest.Mock;
+    put: jest.Mock;
 };
 
 describe('service/music', () => {
@@ -40,6 +45,7 @@ describe('service/music', () => {
         jest.clearAllMocks();
         mockedApi.get.mockResolvedValue({ data: { items: [], total: 0 } });
         mockedApi.post.mockResolvedValue({ data: {} });
+        mockedApi.put.mockResolvedValue({ data: { id: 7 } });
     });
 
     it('searches tracks with the term and pagination', async () => {
@@ -197,6 +203,47 @@ describe('service/music', () => {
         await getRecentlyPlayedTracks(1, 6);
         expect(mockedApi.get).toHaveBeenCalledWith('/music/library/recent-plays', {
             params: { page: 1, page_size: 6 },
+        });
+    });
+
+    describe('track metadata', () => {
+        const buildAxiosError = (status: number, data: unknown) =>
+            new AxiosError('failed', undefined, undefined, undefined, {
+                status,
+                statusText: '',
+                data,
+                headers: {},
+                config: { headers: new AxiosHeaders() },
+            });
+
+        it('puts only the given fields, keeping null as the revert-to-tag signal', async () => {
+            const savedTrack = await updateTrackMetadata(7, {
+                genres: ['Rock'],
+                year: null,
+            });
+
+            expect(mockedApi.put).toHaveBeenCalledWith('/music/tracks/7/metadata', {
+                genres: ['Rock'],
+                year: null,
+            });
+            expect(savedTrack).toEqual({ id: 7 });
+        });
+
+        it('reads the refused field from a 400 response', () => {
+            const error = buildAxiosError(400, { error: 'Ano inválido', field: 'year' });
+
+            expect(readRefusedMetadataField(error)).toBe('year');
+        });
+
+        it('ignores errors that do not name a known field', () => {
+            expect(readRefusedMetadataField(buildAxiosError(400, { error: 'x' }))).toBeUndefined();
+            expect(
+                readRefusedMetadataField(buildAxiosError(400, { error: 'x', field: 'bogus' }))
+            ).toBeUndefined();
+            expect(
+                readRefusedMetadataField(buildAxiosError(404, { error: 'x', field: 'year' }))
+            ).toBeUndefined();
+            expect(readRefusedMetadataField(new Error('offline'))).toBeUndefined();
         });
     });
 });

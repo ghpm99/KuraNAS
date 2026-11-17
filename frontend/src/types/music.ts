@@ -155,3 +155,16 @@ export interface PlayerQueue {
     items: MusicQueueEntry[];
     current_index: number;
 }
+
+export interface TrackMetadataFields {
+    title?: string | null;
+    artist?: string | null;
+    album?: string | null;
+    album_artist?: string | null;
+    genres?: string[] | null;
+    year?: number | null;
+    disc_number?: number | null;
+    track_number?: number | null;
+}
+
+export type TrackMetadataFieldName = keyof TrackMetadataFields;

@@ -1,8 +1,10 @@
-import { Disc, ListEnd, ListPlus, ListStart, User } from 'lucide-react';
+import { useState } from 'react';
+import { Disc, ListEnd, ListPlus, ListStart, Pencil, User } from 'lucide-react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import type { IMusicData } from '@/types/music';
 import { getMusicRoute } from '@/app/routes';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import TrackMetadataDialog from '../trackMetadata/TrackMetadataDialog';
 import MusicContextMenu, { type MusicContextMenuAction } from './MusicContextMenu';
 import { getTrackAlbumKey, getTrackArtistKey } from './musicGroupingKeys';
 import useOptionalNavigate from './useOptionalNavigate';
@@ -32,6 +34,7 @@ export default function TrackContextMenu({
     const { playNext, addToQueue } = useGlobalMusic();
     const { t } = useI18n();
     const navigate = useOptionalNavigate();
+    const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
     const albumKey = getTrackAlbumKey(track);
     const artistKey = getTrackArtistKey(track);
@@ -55,6 +58,12 @@ export default function TrackContextMenu({
             icon: <ListPlus size={ICON_SIZE} />,
             onSelect: onAddToPlaylist,
         },
+        {
+            key: 'edit-metadata',
+            label: t('MUSIC_EDIT_INFO'),
+            icon: <Pencil size={ICON_SIZE} />,
+            onSelect: () => setIsEditingMetadata(true),
+        },
     ];
     if (albumKey !== '') {
         actions.push({
@@ -73,5 +82,12 @@ export default function TrackContextMenu({
         });
     }
 
-    return <MusicContextMenu position={position} actions={actions} onClose={onClose} />;
+    return (
+        <>
+            <MusicContextMenu position={position} actions={actions} onClose={onClose} />
+            {isEditingMetadata && (
+                <TrackMetadataDialog track={track} onClose={() => setIsEditingMetadata(false)} />
+            )}
+        </>
+    );
 }
