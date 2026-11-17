@@ -11,7 +11,7 @@ import (
 )
 
 func TestUpdateFileRecordKeepsStarAndIdWhenSnapshotIsStale_Postgres(t *testing.T) {
-	dbContext := testutil.NewPostgresDB(t, "kuranas_worker_it")
+	dbContext := testutil.NewPostgresDB(t, "kuranas_scan_it")
 	repo := files.NewRepository(dbContext)
 	service := &files.Service{Repository: repo, Tasks: make(chan utils.Task, 4)}
 
