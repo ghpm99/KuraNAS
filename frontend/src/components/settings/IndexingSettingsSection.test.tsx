@@ -1,6 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import IndexingSettingsSection from './IndexingSettingsSection';
 
+const mockStartReindex = jest.fn();
+jest.mock('@/shared/hooks/useReindexJob', () => ({
+    __esModule: true,
+    default: () => ({ start: mockStartReindex, isRunning: false, progress: 0 }),
+}));
+
 const defaultIndexing = {
     scan_on_startup: true,
     extract_metadata: true,
@@ -109,5 +115,15 @@ describe('components/settings/IndexingSettingsSection', () => {
         renderSection({ isWorkersEnabled: false });
 
         expect(screen.getByText('SETTINGS_INDEXING_WORKERS_OFF')).toBeInTheDocument();
+    });
+
+    it('starts a full reindex only after the confirmation', () => {
+        renderSection();
+
+        fireEvent.click(screen.getByText('SETTINGS_REINDEX_ALL'));
+        expect(mockStartReindex).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByText('SETTINGS_REINDEX_CONFIRM'));
+
+        expect(mockStartReindex).toHaveBeenCalledWith({ scope: 'all' });
     });
 });

@@ -6,6 +6,7 @@ import {
     maxScanIntervalHours,
     minScanIntervalHours,
 } from './scanIntervalHours';
+import ReindexScopeAction from './ReindexScopeAction';
 import styles from './SettingsScreen.module.css';
 
 type IndexingDraft = UpdateSettingsConfigurationRequest['indexing'];
@@ -110,6 +111,12 @@ const IndexingSettingsSection = ({
                 slotProps={{
                     htmlInput: { min: minScanIntervalHours, max: maxScanIntervalHours },
                 }}
+            />
+            <ReindexScopeAction
+                scope={{ scope: 'all' }}
+                actionLabelKey="SETTINGS_REINDEX_ALL"
+                confirmTitleKey="SETTINGS_REINDEX_ALL_TITLE"
+                confirmMessageKey="SETTINGS_REINDEX_ALL_MESSAGE"
             />
             <Alert severity={isWorkersEnabled ? 'success' : 'warning'}>
                 {isWorkersEnabled

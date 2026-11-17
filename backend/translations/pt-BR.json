@@ -2110,5 +2110,13 @@
 	"REINDEX_ALREADY_RUNNING": "Já existe uma reindexação em andamento; acompanhando.",
 	"REINDEX_FINISHED": "Reindexação concluída.",
 	"REINDEX_FAILED": "A reindexação falhou.",
-	"REINDEX_ERROR_FAILED": "Não foi possível iniciar a reindexação."
+	"REINDEX_ERROR_FAILED": "Não foi possível iniciar a reindexação.",
+	"SETTINGS_REINDEX_ALL": "Reindexar tudo",
+	"SETTINGS_REINDEX_ALL_TITLE": "Reindexar tudo?",
+	"SETTINGS_REINDEX_ALL_MESSAGE": "Todos os arquivos de todas as raízes serão reverificados. Estrelas, playlists, álbuns e metadados corrigidos são mantidos.",
+	"SETTINGS_REINDEX_ROOT": "Reindexar esta raiz",
+	"SETTINGS_REINDEX_ROOT_TITLE": "Reindexar esta raiz?",
+	"SETTINGS_REINDEX_ROOT_MESSAGE": "Todos os arquivos desta raiz serão reverificados. Estrelas, playlists, álbuns e metadados corrigidos são mantidos.",
+	"SETTINGS_REINDEX_CONFIRM": "Reindexar",
+	"SETTINGS_REINDEX_RUNNING": "Reindexando…"
 }

@@ -4,6 +4,7 @@ import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
+import ReindexScopeAction from './ReindexScopeAction';
 import useStorageRootsSettings from './useStorageRootsSettings';
 import styles from './StorageRootsSettingsSection.module.css';
 
@@ -95,6 +96,12 @@ const StorageRootsSettingsSection = ({ className = '' }: StorageRootsSettingsSec
 								</span>
 								<span className={styles.path}>{root.path}</span>
 							</div>
+							<ReindexScopeAction
+								scope={{ scope: 'root', rootId: root.id }}
+								actionLabelKey="SETTINGS_REINDEX_ROOT"
+								confirmTitleKey="SETTINGS_REINDEX_ROOT_TITLE"
+								confirmMessageKey="SETTINGS_REINDEX_ROOT_MESSAGE"
+							/>
 							<Switch
 								checked={root.enabled}
 								onChange={(_, checked) => void handleToggle(root.id, checked)}

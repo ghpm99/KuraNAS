@@ -2110,5 +2110,13 @@
 	"REINDEX_ALREADY_RUNNING": "A reindex is already in progress; following it.",
 	"REINDEX_FINISHED": "Reindexing finished.",
 	"REINDEX_FAILED": "Reindexing failed.",
-	"REINDEX_ERROR_FAILED": "Could not start the reindex."
+	"REINDEX_ERROR_FAILED": "Could not start the reindex.",
+	"SETTINGS_REINDEX_ALL": "Reindex everything",
+	"SETTINGS_REINDEX_ALL_TITLE": "Reindex everything?",
+	"SETTINGS_REINDEX_ALL_MESSAGE": "Every file in every storage root will be checked again. Stars, playlists, albums and corrected metadata are kept.",
+	"SETTINGS_REINDEX_ROOT": "Reindex this root",
+	"SETTINGS_REINDEX_ROOT_TITLE": "Reindex this root?",
+	"SETTINGS_REINDEX_ROOT_MESSAGE": "Every file in this storage root will be checked again. Stars, playlists, albums and corrected metadata are kept.",
+	"SETTINGS_REINDEX_CONFIRM": "Reindex",
+	"SETTINGS_REINDEX_RUNNING": "Reindexing…"
 }
