@@ -7,6 +7,8 @@ export type SettingsConfiguration = {
         scan_on_startup: boolean;
         extract_metadata: boolean;
         generate_previews: boolean;
+        index_document_text: boolean;
+        scan_interval_hours: number;
     };
     captures: {
         save_path: string;
@@ -38,6 +40,8 @@ export type UpdateSettingsConfigurationRequest = {
         scan_on_startup: boolean;
         extract_metadata: boolean;
         generate_previews: boolean;
+        index_document_text: boolean;
+        scan_interval_hours: number;
     };
     captures: {
         save_path: string;

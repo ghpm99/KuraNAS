@@ -10,6 +10,8 @@ export const defaultSettingsConfiguration: SettingsConfiguration = {
         scan_on_startup: true,
         extract_metadata: true,
         generate_previews: true,
+        index_document_text: true,
+        scan_interval_hours: 24,
     },
     captures: {
         save_path: '',

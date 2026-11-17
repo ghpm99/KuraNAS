@@ -260,9 +260,15 @@
 	"SETTINGS_CAPTURES_SAVE_PATH": "Captures folder",
 	"SETTINGS_CAPTURES_DEFAULT_PATH": "Default: {{path}}",
 	"SETTINGS_CAPTURES_OUTSIDE_ROOTS_HELP": "The captures folder must be OUTSIDE the storage roots (it cannot be a root or a subfolder of one), so in-progress recordings are not indexed/watched.",
-	"SETTINGS_INDEXING_SCAN_ON_STARTUP": "Schedule a scan on startup",
 	"SETTINGS_INDEXING_EXTRACT_METADATA": "Extract metadata during processing",
 	"SETTINGS_INDEXING_GENERATE_PREVIEWS": "Generate thumbnails and previews",
+	"SETTINGS_INDEXING_EXTRACT_METADATA_EFFECT": "Off: new or changed files do not have their metadata read. When turned back on, files left without metadata are processed.",
+	"SETTINGS_INDEXING_GENERATE_PREVIEWS_EFFECT": "Off: new or changed files get no thumbnail or preview. Turning it back on does not reprocess what is already indexed — use Reindex.",
+	"SETTINGS_INDEXING_INDEX_DOCUMENT_TEXT": "Index document text",
+	"SETTINGS_INDEXING_INDEX_DOCUMENT_TEXT_EFFECT": "Off: the text of new or changed documents is not indexed and search will not find it. When turned back on, documents left without text are processed.",
+	"SETTINGS_INDEXING_SCAN_INTERVAL_HOURS": "Periodic scan interval (hours)",
+	"SETTINGS_INDEXING_SCAN_INTERVAL_HOURS_EFFECT": "How many hours between scans of the library for new or changed files. The change applies from the next scan.",
+	"SETTINGS_INDEXING_SCAN_INTERVAL_HOURS_INVALID": "Enter a whole number of hours between {{min}} and {{max}}.",
 	"SETTINGS_INDEXING_WORKERS_ON": "Background workers are available in this deployment.",
 	"SETTINGS_INDEXING_WORKERS_OFF": "Background workers are disabled in this deployment.",
 	"SETTINGS_SECTION_AI": "Artificial Intelligence",
@@ -417,6 +423,7 @@
 	"ERROR_CONFIGURATION_LOAD_FAILED": "Failed to load settings.",
 	"ERROR_DOCUMENT_SEARCH_FAILED": "Failed to search document contents.",
 	"ERROR_CONFIGURATION_UPDATE_FAILED": "Failed to update settings.",
+	"ERROR_SCAN_INTERVAL_OUT_OF_RANGE": "The scan interval must be between 1 and 168 hours.",
 	"ERROR_INVALID_THEME_MODE": "The theme mode must be dark, light or system.",
 	"ERROR_CAPTURES_PATH_INSIDE_ROOT": "The captures path must be outside the storage roots (it cannot be a root or a subfolder of one).",
 	"ERROR_ENV_LOAD_FAILED": "Failed to load environment variables.",
@@ -2097,6 +2104,5 @@
 	"VACUUM_SETTINGS_TEST_SUCCEEDED": "Connection to the robot is working.",
 	"VACUUM_SETTINGS_CONNECTION_SAVE_FIRST": "Save your changes before finding the robot or testing the connection: they use the stored values.",
 	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Save the device ID and the local key to find the robot or test the connection.",
-	"LIST_REFRESH_FAILED": "Could not refresh the list. Showing what was already loaded.",
-	"ERROR_SCAN_INTERVAL_OUT_OF_RANGE": "The scan interval must be between 1 and 168 hours."
+	"LIST_REFRESH_FAILED": "Could not refresh the list. Showing what was already loaded."
 }

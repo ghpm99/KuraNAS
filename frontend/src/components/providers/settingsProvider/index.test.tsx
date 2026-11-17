@@ -102,6 +102,8 @@ describe('components/providers/settingsProvider', () => {
                     scan_on_startup: false,
                     extract_metadata: true,
                     generate_previews: false,
+                    index_document_text: true,
+                    scan_interval_hours: 24,
                 },
                 captures: {
                     save_path: '/srv/capturas',
@@ -278,6 +280,8 @@ describe('components/providers/settingsProvider', () => {
                     scan_on_startup: true,
                     extract_metadata: true,
                     generate_previews: true,
+                    index_document_text: true,
+                    scan_interval_hours: 24,
                 },
                 captures: {
                     save_path: '/srv/capturas',

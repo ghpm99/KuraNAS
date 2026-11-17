@@ -15,7 +15,13 @@ jest.mock('@/service', () => ({
 const mockedApi = apiBase as unknown as { get: jest.Mock; put: jest.Mock };
 
 const request: UpdateSettingsConfigurationRequest = {
-	indexing: { scan_on_startup: true, extract_metadata: false, generate_previews: true },
+	indexing: {
+		scan_on_startup: true,
+		extract_metadata: false,
+		generate_previews: true,
+		index_document_text: true,
+		scan_interval_hours: 24,
+	},
 	captures: { save_path: '/data/Capturas' },
 	ai: { image_classification: true },
 	players: {
@@ -34,10 +40,22 @@ const Consumer = () => {
 };
 
 const serverConfig = {
-	indexing: { workers_enabled: false, scan_on_startup: true, extract_metadata: true, generate_previews: true },
+	indexing: {
+		workers_enabled: false,
+		scan_on_startup: true,
+		extract_metadata: true,
+		generate_previews: true,
+		index_document_text: true,
+		scan_interval_hours: 24,
+	},
 	captures: { save_path: '', default_path: '', storage_roots: [] },
 	ai: { image_classification: true },
-	players: { remember_music_queue: true, remember_video_progress: true, autoplay_next_video: true, image_slideshow_seconds: 4 },
+	players: {
+		remember_music_queue: true,
+		remember_video_progress: true,
+		autoplay_next_video: true,
+		image_slideshow_seconds: 4,
+	},
 	appearance: { accent_color: 'violet', reduce_motion: false, theme_mode: 'dark' },
 	language: { current: 'en-US', available: ['en-US'] },
 };

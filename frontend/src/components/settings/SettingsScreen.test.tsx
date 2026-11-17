@@ -18,55 +18,60 @@ jest.mock('./useSettingsScreen', () => ({
     default: () => mockUseSettingsScreen(),
 }));
 
+jest.mock('./IndexingSettingsSection', () => ({
+    __esModule: true,
+    default: () => <section>Indexing</section>,
+}));
+
 jest.mock('./LibrarySettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Library Paths Section</div>,
+    __esModule: true,
+    default: () => <div>Library Paths Section</div>,
 }));
 
 jest.mock('./AccessControlSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Access Control Section</div>,
+    __esModule: true,
+    default: () => <div>Access Control Section</div>,
 }));
 
 jest.mock('./AIProvidersSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>AI Providers Section</div>,
+    __esModule: true,
+    default: () => <div>AI Providers Section</div>,
 }));
 
 jest.mock('./StorageRootsSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Storage Roots Section</div>,
+    __esModule: true,
+    default: () => <div>Storage Roots Section</div>,
 }));
 
 jest.mock('./EmailSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Email Section</div>,
+    __esModule: true,
+    default: () => <div>Email Section</div>,
 }));
 
 jest.mock('./BackupSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Backup Section</div>,
+    __esModule: true,
+    default: () => <div>Backup Section</div>,
 }));
 
 jest.mock('./TieringSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Tiering Section</div>,
+    __esModule: true,
+    default: () => <div>Tiering Section</div>,
 }));
 jest.mock('./AutoShutdownSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Auto Shutdown Section</div>,
+    __esModule: true,
+    default: () => <div>Auto Shutdown Section</div>,
 }));
 jest.mock('./VacuumSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>Vacuum Section</div>,
+    __esModule: true,
+    default: () => <div>Vacuum Section</div>,
 }));
 jest.mock('./YtDlpSettingsSection', () => ({
-	__esModule: true,
-	default: () => <div>yt-dlp Section</div>,
+    __esModule: true,
+    default: () => <div>yt-dlp Section</div>,
 }));
 jest.mock('./ImageClassificationBackfill', () => ({
-	__esModule: true,
-	default: () => <div>Image Classification Backfill</div>,
+    __esModule: true,
+    default: () => <div>Image Classification Backfill</div>,
 }));
 
 const createScreenState = (overrides: Record<string, any> = {}) => ({
@@ -80,11 +85,6 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             LANGUAGE: 'Language',
             SETTINGS_SECTION_INDEXING: 'Indexing',
             SETTINGS_SECTION_INDEXING_DESCRIPTION: 'Indexing behavior.',
-            SETTINGS_INDEXING_SCAN_ON_STARTUP: 'Scan on startup',
-            SETTINGS_INDEXING_EXTRACT_METADATA: 'Extract metadata',
-            SETTINGS_INDEXING_GENERATE_PREVIEWS: 'Generate previews',
-            SETTINGS_INDEXING_WORKERS_ON: 'Workers are enabled.',
-            SETTINGS_INDEXING_WORKERS_OFF: 'Workers are disabled.',
             SETTINGS_SECTION_AI: 'Artificial Intelligence',
             SETTINGS_SECTION_AI_DESCRIPTION: 'AI usage controls.',
             SETTINGS_AI_IMAGE_CLASSIFICATION: 'Classify images with AI',
@@ -122,6 +122,8 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             scan_on_startup: true,
             extract_metadata: true,
             generate_previews: true,
+            index_document_text: true,
+            scan_interval_hours: 24,
         },
         captures: {
             save_path: '/srv/capturas',
@@ -134,6 +136,8 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
             scan_on_startup: true,
             extract_metadata: true,
             generate_previews: true,
+            index_document_text: true,
+            scan_interval_hours: 24,
         },
         captures: {
             save_path: '/srv/capturas',
@@ -154,6 +158,7 @@ const createScreenState = (overrides: Record<string, any> = {}) => ({
     isSaving: false,
     hasError: false,
     hasUnsavedChanges: true,
+    isDraftValid: true,
     languageOptions: [
         { value: 'en-US', label: 'English' },
         { value: 'pt-BR', label: 'Portuguese' },
@@ -243,6 +248,8 @@ describe('components/settings/SettingsScreen', () => {
                         scan_on_startup: false,
                         extract_metadata: false,
                         generate_previews: false,
+                        index_document_text: true,
+                        scan_interval_hours: 24,
                     },
                 },
                 draft: {
@@ -250,6 +257,8 @@ describe('components/settings/SettingsScreen', () => {
                         scan_on_startup: false,
                         extract_metadata: false,
                         generate_previews: false,
+                        index_document_text: true,
+                        scan_interval_hours: 24,
                     },
                     ai: {
                         image_classification: false,
@@ -275,7 +284,6 @@ describe('components/settings/SettingsScreen', () => {
         );
 
         expect(screen.getByText('Workers: Disabled')).toBeInTheDocument();
-        expect(screen.getByText('Workers are disabled.')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
     });
 
@@ -315,27 +323,9 @@ describe('components/settings/SettingsScreen', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByRole('switch', { name: 'Scan on startup' })).toBeDisabled();
         expect(screen.getByRole('switch', { name: 'Remember music queue' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-    });
-
-    it('fires indexing switch handlers with correct arguments', () => {
-        render(
-            <MemoryRouter>
-                <SettingsScreen />
-            </MemoryRouter>
-        );
-
-        fireEvent.click(screen.getByRole('switch', { name: 'Scan on startup' }));
-        expect(mockSetIndexingField).toHaveBeenCalledWith('scan_on_startup', false);
-
-        fireEvent.click(screen.getByRole('switch', { name: 'Extract metadata' }));
-        expect(mockSetIndexingField).toHaveBeenCalledWith('extract_metadata', false);
-
-        fireEvent.click(screen.getByRole('switch', { name: 'Generate previews' }));
-        expect(mockSetIndexingField).toHaveBeenCalledWith('generate_previews', false);
     });
 
     it('fires the AI image classification switch handler with correct arguments', () => {
@@ -396,50 +386,6 @@ describe('components/settings/SettingsScreen', () => {
         );
 
         expect(screen.queryByText('Unable to load settings.')).not.toBeInTheDocument();
-    });
-
-    it('renders workers enabled alert when workers are on', () => {
-        render(
-            <MemoryRouter>
-                <SettingsScreen />
-            </MemoryRouter>
-        );
-
-        expect(screen.getByText('Workers are enabled.')).toBeInTheDocument();
-    });
-
-    it('renders indexing chip variants based on draft boolean state', () => {
-        mockUseSettingsScreen.mockReturnValue(
-            createScreenState({
-                draft: {
-                    indexing: {
-                        scan_on_startup: false,
-                        extract_metadata: true,
-                        generate_previews: false,
-                    },
-                    ai: {
-                        image_classification: false,
-                    },
-                    players: {
-                        remember_music_queue: true,
-                        remember_video_progress: true,
-                        autoplay_next_video: true,
-                        image_slideshow_seconds: 8,
-                    },
-                    appearance: { accent_color: 'violet', reduce_motion: false, theme_mode: 'dark' },
-                    language: { current: 'en-US' },
-                },
-            })
-        );
-
-        render(
-            <MemoryRouter>
-                <SettingsScreen />
-            </MemoryRouter>
-        );
-
-        // Chips for indexing toggles are always rendered - just verify section is present
-        expect(screen.getByText('Indexing')).toBeInTheDocument();
     });
 
     it('triggers setPlayersField when slideshow select changes', () => {

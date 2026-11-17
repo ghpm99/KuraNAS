@@ -20,6 +20,7 @@ import ImageClassificationBackfill from './ImageClassificationBackfill';
 import AutoShutdownSettingsSection from './AutoShutdownSettingsSection';
 import BackupSettingsSection from './BackupSettingsSection';
 import EmailSettingsSection from './EmailSettingsSection';
+import IndexingSettingsSection from './IndexingSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import StorageRootsSettingsSection from './StorageRootsSettingsSection';
 import TieringSettingsSection from './TieringSettingsSection';
@@ -39,6 +40,7 @@ const SettingsScreen = () => {
         isSaving,
         hasError,
         hasUnsavedChanges,
+        isDraftValid,
         languageOptions,
         accentOptions,
         themeModeOptions,
@@ -120,69 +122,13 @@ const SettingsScreen = () => {
                 </SettingsSectionAnchor>
 
                 <SettingsSectionAnchor sectionId="indexing">
-                    <section className={styles.panel}>
-                        <div className={styles.panelHeader}>
-                            <h2 className={styles.panelTitle}>{t('SETTINGS_SECTION_INDEXING')}</h2>
-                            <p className={styles.panelDescription}>
-                                {t('SETTINGS_SECTION_INDEXING_DESCRIPTION')}
-                            </p>
-                        </div>
-                        <div className={styles.summary}>
-                            <Chip
-                                label={t('SETTINGS_INDEXING_SCAN_ON_STARTUP')}
-                                variant={draft.indexing.scan_on_startup ? 'filled' : 'outlined'}
-                            />
-                            <Chip
-                                label={t('SETTINGS_INDEXING_EXTRACT_METADATA')}
-                                variant={draft.indexing.extract_metadata ? 'filled' : 'outlined'}
-                            />
-                            <Chip
-                                label={t('SETTINGS_INDEXING_GENERATE_PREVIEWS')}
-                                variant={draft.indexing.generate_previews ? 'filled' : 'outlined'}
-                            />
-                        </div>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={draft.indexing.scan_on_startup}
-                                    onChange={(_, checked) =>
-                                        setIndexingField('scan_on_startup', checked)
-                                    }
-                                    disabled={disableActions}
-                                />
-                            }
-                            label={t('SETTINGS_INDEXING_SCAN_ON_STARTUP')}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={draft.indexing.extract_metadata}
-                                    onChange={(_, checked) =>
-                                        setIndexingField('extract_metadata', checked)
-                                    }
-                                    disabled={disableActions}
-                                />
-                            }
-                            label={t('SETTINGS_INDEXING_EXTRACT_METADATA')}
-                        />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={draft.indexing.generate_previews}
-                                    onChange={(_, checked) =>
-                                        setIndexingField('generate_previews', checked)
-                                    }
-                                    disabled={disableActions}
-                                />
-                            }
-                            label={t('SETTINGS_INDEXING_GENERATE_PREVIEWS')}
-                        />
-                        <Alert severity={settings.indexing.workers_enabled ? 'success' : 'warning'}>
-                            {settings.indexing.workers_enabled
-                                ? t('SETTINGS_INDEXING_WORKERS_ON')
-                                : t('SETTINGS_INDEXING_WORKERS_OFF')}
-                        </Alert>
-                    </section>
+                    <IndexingSettingsSection
+                        className={styles.panel}
+                        indexing={draft.indexing}
+                        isWorkersEnabled={settings.indexing.workers_enabled}
+                        isDisabled={disableActions}
+                        onChange={setIndexingField}
+                    />
                 </SettingsSectionAnchor>
 
                 <SettingsSectionAnchor sectionId="captures">
@@ -453,7 +399,7 @@ const SettingsScreen = () => {
                     <Button
                         variant="contained"
                         onClick={() => void handleSave()}
-                        disabled={disableActions || !hasUnsavedChanges}
+                        disabled={disableActions || !hasUnsavedChanges || !isDraftValid}
                     >
                         {isSaving ? t('SAVING') : t('SETTINGS_SAVE')}
                     </Button>

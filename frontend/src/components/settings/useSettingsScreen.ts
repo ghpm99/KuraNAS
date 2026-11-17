@@ -3,6 +3,7 @@ import { useSettings } from '@/components/providers/settingsProvider/settingsCon
 import type { UpdateSettingsConfigurationRequest } from '@/service/configuration';
 import { useSnackbar } from 'notistack';
 import { buildDraftFromSettings } from './buildSettingsDraft';
+import { isScanIntervalHoursValid } from './scanIntervalHours';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const accentOptionValues = ['violet', 'cyan', 'rose'] as const;
@@ -50,6 +51,8 @@ const useSettingsScreen = () => {
         () => !areSettingsEqual(draft, baselineDraft),
         [baselineDraft, draft]
     );
+
+    const isDraftValid = isScanIntervalHoursValid(draft.indexing.scan_interval_hours);
 
     const languageOptions = useMemo(
         () =>
@@ -200,6 +203,7 @@ const useSettingsScreen = () => {
         isSaving,
         hasError,
         hasUnsavedChanges,
+        isDraftValid,
         languageOptions,
         accentOptions,
         themeModeOptions,

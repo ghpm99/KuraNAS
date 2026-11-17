@@ -10,6 +10,8 @@ export const buildDraftFromSettings = (
         scan_on_startup: settings.indexing.scan_on_startup,
         extract_metadata: settings.indexing.extract_metadata,
         generate_previews: settings.indexing.generate_previews,
+        index_document_text: settings.indexing.index_document_text,
+        scan_interval_hours: settings.indexing.scan_interval_hours,
     },
     captures: {
         save_path: settings.captures.save_path,

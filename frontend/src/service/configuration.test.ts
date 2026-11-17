@@ -29,6 +29,8 @@ const settingsRequest = {
         scan_on_startup: true,
         extract_metadata: true,
         generate_previews: true,
+        index_document_text: true,
+        scan_interval_hours: 24,
     },
     captures: {
         save_path: '/srv/capturas',
@@ -42,7 +44,11 @@ const settingsRequest = {
         autoplay_next_video: true,
         image_slideshow_seconds: 8,
     },
-    appearance: { accent_color: 'cyan' as const, reduce_motion: true, theme_mode: 'light' as const },
+    appearance: {
+        accent_color: 'cyan' as const,
+        reduce_motion: true,
+        theme_mode: 'light' as const,
+    },
     language: { current: 'pt-BR' },
 };
 

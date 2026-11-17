@@ -260,9 +260,15 @@
 	"SETTINGS_CAPTURES_SAVE_PATH": "Pasta de capturas",
 	"SETTINGS_CAPTURES_DEFAULT_PATH": "Padrão: {{path}}",
 	"SETTINGS_CAPTURES_OUTSIDE_ROOTS_HELP": "A pasta de capturas precisa ficar FORA das raízes de armazenamento (não pode ser uma raiz nem subpasta de uma), para não ser indexada/observada enquanto a gravação está em andamento.",
-	"SETTINGS_INDEXING_SCAN_ON_STARTUP": "Agendar varredura ao iniciar",
 	"SETTINGS_INDEXING_EXTRACT_METADATA": "Extrair metadados durante o processamento",
 	"SETTINGS_INDEXING_GENERATE_PREVIEWS": "Gerar thumbs e previews",
+	"SETTINGS_INDEXING_EXTRACT_METADATA_EFFECT": "Desligado: arquivos novos ou alterados não têm os metadados lidos. Ao religar, os arquivos que ficaram sem metadados são processados.",
+	"SETTINGS_INDEXING_GENERATE_PREVIEWS_EFFECT": "Desligado: arquivos novos ou alterados ficam sem miniatura e prévia. Religar não reprocessa o que já foi indexado — use Reindexar.",
+	"SETTINGS_INDEXING_INDEX_DOCUMENT_TEXT": "Indexar texto de documentos",
+	"SETTINGS_INDEXING_INDEX_DOCUMENT_TEXT_EFFECT": "Desligado: o texto de documentos novos ou alterados não é indexado e a busca não o encontra. Ao religar, os documentos que ficaram sem texto são processados.",
+	"SETTINGS_INDEXING_SCAN_INTERVAL_HOURS": "Intervalo da varredura periódica (horas)",
+	"SETTINGS_INDEXING_SCAN_INTERVAL_HOURS_EFFECT": "A cada quantas horas a biblioteca é varrida em busca de arquivos novos ou alterados. A mudança vale a partir da próxima varredura.",
+	"SETTINGS_INDEXING_SCAN_INTERVAL_HOURS_INVALID": "Informe um número inteiro de horas entre {{min}} e {{max}}.",
 	"SETTINGS_INDEXING_WORKERS_ON": "Workers em background estão disponíveis nesta instalação.",
 	"SETTINGS_INDEXING_WORKERS_OFF": "Workers em background estão desativados nesta instalação.",
 	"SETTINGS_SECTION_AI": "Inteligência Artificial",
@@ -417,6 +423,7 @@
 	"ERROR_CONFIGURATION_LOAD_FAILED": "Falha ao carregar configurações.",
 	"ERROR_DOCUMENT_SEARCH_FAILED": "Falha ao buscar no conteúdo dos documentos.",
 	"ERROR_CONFIGURATION_UPDATE_FAILED": "Falha ao atualizar configurações.",
+	"ERROR_SCAN_INTERVAL_OUT_OF_RANGE": "O intervalo da varredura deve ficar entre 1 e 168 horas.",
 	"ERROR_INVALID_THEME_MODE": "O modo de tema deve ser escuro, claro ou sistema.",
 	"ERROR_CAPTURES_PATH_INSIDE_ROOT": "O caminho das capturas deve ficar fora das raízes de armazenamento (não pode ser uma raiz nem subpasta de uma).",
 	"ERROR_ENV_LOAD_FAILED": "Falha ao carregar as variáveis de ambiente.",
@@ -2097,6 +2104,5 @@
 	"VACUUM_SETTINGS_TEST_SUCCEEDED": "Conexão com o robô funcionando.",
 	"VACUUM_SETTINGS_CONNECTION_SAVE_FIRST": "Salve as alterações antes de procurar o robô ou testar a conexão: elas usam os valores gravados.",
 	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Grave o identificador do dispositivo e a chave local para procurar o robô ou testar a conexão.",
-	"LIST_REFRESH_FAILED": "Não foi possível atualizar a lista. Mostrando o que já estava carregado.",
-	"ERROR_SCAN_INTERVAL_OUT_OF_RANGE": "O intervalo da varredura deve ficar entre 1 e 168 horas."
+	"LIST_REFRESH_FAILED": "Não foi possível atualizar a lista. Mostrando o que já estava carregado."
 }
