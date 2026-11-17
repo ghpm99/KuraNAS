@@ -2,8 +2,7 @@ import { Box, CircularProgress } from '@mui/material';
 import type { ReactNode } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import EmptyState from '@/components/emptyState/emptyState';
-import ErrorState from '@/components/errorState/errorState';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 
 type MusicCollectionListFeedbackProps = {
     isLoading: boolean;
@@ -42,43 +41,23 @@ export default function MusicCollectionListFeedback({
         );
     }
 
-    if (isError && isEmpty) {
-        return (
-            <Box sx={{ p: 2 }}>
-                <ErrorState
-                    title={t(errorTitleKey)}
-                    backendMessage={errorMessage}
-                    onRetry={onRetry}
-                />
-            </Box>
-        );
-    }
-
-    if (isEmpty) {
-        return (
-            <Box sx={{ p: 2 }}>
-                <EmptyState title={t(emptyTitleKey)} />
-            </Box>
-        );
-    }
-
     return (
-        <>
-            {children}
-            {isError && (
+        <ListFeedback
+            isEmpty={isEmpty}
+            isError={isError}
+            errorTitle={t(errorTitleKey)}
+            errorMessage={errorMessage}
+            onRetry={onRetry}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+            emptyState={
                 <Box sx={{ p: 2 }}>
-                    <ErrorState
-                        title={t(errorTitleKey)}
-                        backendMessage={errorMessage}
-                        onRetry={onRetry}
-                    />
+                    <EmptyState title={t(emptyTitleKey)} />
                 </Box>
-            )}
-            <LoadMoreSentinel
-                hasNextPage={hasNextPage && !isError}
-                isFetchingNextPage={isFetchingNextPage}
-                fetchNextPage={fetchNextPage}
-            />
-        </>
+            }
+        >
+            {children}
+        </ListFeedback>
     );
 }
