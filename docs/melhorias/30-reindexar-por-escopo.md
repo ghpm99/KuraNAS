@@ -20,6 +20,15 @@ Reindexar uma pasta, uma raiz ou tudo inicia um job daquele escopo, mostra o and
 4. **Analytics — "Reindexar"** (`16/RF-11`): chama `scope: all`, mostra o job iniciado com link para Tarefas; o botão que só recarrega os números chama-se "Atualizar" (`16/RN-07`).
 5. **Configurações → Indexação** (`RF-02`): "Reindexar tudo" e reindexar por raiz, com confirmação e progresso.
 
+## Notas da execução (2026-11-17)
+
+- A web não tem nenhuma tela que liste jobs (o sino lista só notificações, e a reindexação não cria notificação), então o link "ver tarefa" do Analytics não foi colocado: o andamento aparece no próprio botão e nos avisos de início e fim. Volta quando a tela de Tarefas existir (item 13 do board de revisão).
+- Na raiz do explorer (sem pasta aberta) "Reindexar esta pasta" usa `scope: all`, porque a raiz do explorer mostra todas as raízes juntas.
+
+## Sub-itens levantados na execução (2026-11-17)
+
+- [ ] 30.1. Reindexar só reprocessa arquivo novo ou com tamanho/data alterados (o diff da varredura). Arquivo inalterado que ficou sem miniatura, sem metadados ou sem texto enquanto a etapa estava desligada não é recuperado — e a spec 21 §8 diz que "o que ficou sem processar entra pela reindexação". **Decisão do dono pendente**: forçar o reprocessamento de todos os arquivos do escopo regravaria metadados corrigidos à mão (`CA-08`); a alternativa é reindexar enfileirar só as etapas cujo resultado falta (miniatura ausente, linha de metadados ausente, texto não indexado). Recomendação: a segunda.
+
 ## Critérios de aceite
 
 - [ ] Teste de handler: os três escopos devolvem `job_id`; escopo inválido `400`; pasta inexistente `404`; segundo pedido do mesmo escopo em andamento `409`.
