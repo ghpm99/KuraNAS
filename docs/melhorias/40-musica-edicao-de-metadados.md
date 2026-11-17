@@ -40,12 +40,12 @@ Uma alteração por item, cada uma em commit próprio, nesta ordem.
 
 ## Critérios de aceite
 
-- [ ] Alterar o gênero de uma faixa sem tag a move de "Desconhecido" para o gênero novo em Faixas, Gêneros e busca, sem recarregar a página.
-- [ ] `05/CA-11` — alterar o gênero de 30 faixas em lote as move para o gênero novo; reindexar a biblioteca não desfaz.
-- [ ] `05/CA-12` — mesclar dois gêneros deixa um só, com a soma das faixas.
-- [ ] Limpar um campo corrigido faz a faixa voltar a mostrar o valor da tag.
-- [ ] Editar um álbum inteiro por `album_key` altera faixas que não estavam carregadas na tela.
-- [ ] O arquivo de áudio no disco não muda (mesmo checksum antes e depois).
+- [x] Alterar o gênero de uma faixa sem tag a move de "Desconhecido" para o gênero novo em Faixas, Gêneros e busca, sem recarregar a página. *Local 2026-11-17: `PUT /music/tracks/872/metadata {genres:[Jazz]}` → grupo `jazz` com 1 faixa, `/genres/jazz/tracks` e `/music/search` mostram Jazz; atualização sem recarregar coberta pelos seam tests de invalidação.*
+- [x] `05/CA-11` — alterar o gênero de 30 faixas em lote as move para o gênero novo; reindexar a biblioteca não desfaz. *Local: lote por `album_key` (dry_run 3/0, depois 3/3) → Blues 3; arquivo regravado com tag `Country` → tag reextraída `Country`, chave continua `{blues}`; 30 faixas no teste `_Postgres` do item 4.*
+- [x] `05/CA-12` — mesclar dois gêneros deixa um só, com a soma das faixas. *Local: `PUT /music/library/genres/rock%20n%20roll {name:Rock}` → `{key:rock, track_count:6, merged:true}`; `rock n roll` some da lista.*
+- [x] Limpar um campo corrigido faz a faixa voltar a mostrar o valor da tag. *Local: `{genres:null}` → linha do override apagada, chaves `{}` (tag sem gênero), Blues 3→2.*
+- [x] Editar um álbum inteiro por `album_key` altera faixas que não estavam carregadas na tela. *Local: o lote por `album_key` resolve as faixas no servidor (3 de 3 sem a tela listar nada).*
+- [x] O arquivo de áudio no disco não muda (mesmo checksum antes e depois). *Local: `sha256sum -c` da faixa1 OK depois de PUT, lote e limpeza.*
 - [ ] Testes: decodificação da resposta real de cada handler; seam test de cada mutação no frontend; render sem mock dos diálogos.
 - [ ] `make ci` verde.
 
