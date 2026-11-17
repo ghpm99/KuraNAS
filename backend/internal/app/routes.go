@@ -357,6 +357,7 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 	library.GET("/most-played", context.Music.Handler.GetMostPlayedTracksHandler)
 	library.GET("/recent-plays", context.Music.Handler.GetRecentlyPlayedTracksHandler)
 	router.POST("/music/plays", context.Music.Handler.RecordPlayHandler)
+	router.PUT("/music/tracks/:file_id/metadata", context.Music.Handler.UpdateTrackMetadataHandler)
 	library.GET("/artists", context.Music.Handler.GetLibraryArtistsHandler)
 	library.GET("/artists/:key", context.Music.Handler.GetLibraryArtistSummaryHandler)
 	library.GET("/artists/:key/albums", context.Music.Handler.GetLibraryAlbumsByArtistHandler)

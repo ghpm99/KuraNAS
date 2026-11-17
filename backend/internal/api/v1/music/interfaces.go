@@ -87,6 +87,11 @@ type AudioMetadataRepositoryInterface interface {
 	ReconcileAlbumGroupings(compilationArtistLabel string) (int64, error)
 }
 
+// TrackMetadataRepositoryInterface is the write-side for user corrections of track metadata.
+type TrackMetadataRepositoryInterface interface {
+	ApplyTrackMetadataPatch(tx *sql.Tx, fileIDs []int, patch TrackMetadataPatch, compilationArtistLabel string) error
+}
+
 type ServiceInterface interface {
 	GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistDto], error)
 	GetAutomaticPlaylists(clientID string) ([]PlaylistDto, error)
@@ -102,6 +107,7 @@ type ServiceInterface interface {
 	GetHomeCatalog(clientID string, limit int, sort CatalogSort) (MusicHomeCatalogDto, error)
 	GetLibraryTracks(page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetLibraryTrackByID(fileID int) (files.FileDto, error)
+	UpdateTrackMetadata(fileID int, patch TrackMetadataPatch) (files.FileDto, error)
 	SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error)
 	GetLibraryArtists(page int, pageSize int, sort CatalogSort) (utils.PaginationResponse[MusicArtistGroupDto], error)
 	GetLibraryAlbumSummary(albumKey string) (MusicAlbumSummaryDto, error)

@@ -524,7 +524,7 @@ func newImageContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 func newMusicContext(dbContext *database.DbContext, loggerSvc logger.LoggerServiceInterface, aiService ai.ServiceInterface, filesService files.ServiceInterface, recentFileService files.RecentFileServiceInterface) *MusicContext {
 	repository := music.NewRepository(dbContext)
 	audioMetadataRepository := music.NewAudioMetadataRepository(dbContext)
-	service := music.NewService(repository, aiService)
+	service := music.NewService(repository, audioMetadataRepository, aiService)
 	handler := music.NewHandler(service, filesService, recentFileService, loggerSvc)
 	summaryHandler := music.NewAudioSummaryHandler(music.NewAudioSummaryService(music.NewAudioSummaryRepository(dbContext)), loggerSvc)
 	coverHandler := music.NewCoverHandler(music.NewCoverService(filesService, repository, config.GetBuildConfig("ThumbnailPath")), loggerSvc)

@@ -228,3 +228,9 @@ var GetMostPlayedTracksQuery string
 
 //go:embed get_recently_played_tracks.sql
 var GetRecentlyPlayedTracksQuery string
+
+//go:embed upsert_audio_metadata_override.sql
+var UpsertAudioMetadataOverrideQuery string
+
+//go:embed delete_empty_audio_metadata_overrides.sql
+var DeleteEmptyAudioMetadataOverridesQuery string

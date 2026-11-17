@@ -11,14 +11,16 @@ import (
 )
 
 type Service struct {
-	Repository RepositoryInterface
-	AIService  ai.ServiceInterface
+	Repository         RepositoryInterface
+	TrackMetadataStore TrackMetadataRepositoryInterface
+	AIService          ai.ServiceInterface
 }
 
-func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
+func NewService(repository RepositoryInterface, trackMetadataStore TrackMetadataRepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
 	return &Service{
-		Repository: repository,
-		AIService:  aiService,
+		Repository:         repository,
+		TrackMetadataStore: trackMetadataStore,
+		AIService:          aiService,
 	}
 }
 

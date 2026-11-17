@@ -278,19 +278,23 @@ func (r *AudioMetadataRepository) ReconcileAlbumGroupings(compilationArtistLabel
 	var regroupedCount int64
 
 	err := r.Db.ExecTx(func(tx *sql.Tx) error {
-		reconcileResult, execErr := tx.Exec(queries.ReconcileAudioAlbumGroupingsQuery, compilationArtistLabel)
-		if execErr != nil {
-			return execErr
-		}
-		var rowsErr error
-		regroupedCount, rowsErr = reconcileResult.RowsAffected()
-		return rowsErr
+		var reconcileErr error
+		regroupedCount, reconcileErr = r.reconcileAlbumGroupingsInTx(tx, compilationArtistLabel)
+		return reconcileErr
 	})
 	if err != nil {
-		return 0, fmt.Errorf("falha ao reconciliar agrupamento de albuns: %w", err)
+		return 0, err
 	}
 
 	return regroupedCount, nil
+}
+
+func (r *AudioMetadataRepository) reconcileAlbumGroupingsInTx(tx *sql.Tx, compilationArtistLabel string) (int64, error) {
+	reconcileResult, err := tx.Exec(queries.ReconcileAudioAlbumGroupingsQuery, compilationArtistLabel)
+	if err != nil {
+		return 0, fmt.Errorf("falha ao reconciliar agrupamento de albuns: %w", err)
+	}
+	return reconcileResult.RowsAffected()
 }
 
 // RecomputeCatalogKeys rebuilds and persists the catalog grouping keys of every

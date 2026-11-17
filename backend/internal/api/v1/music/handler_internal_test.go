@@ -71,6 +71,9 @@ func (m *musicHandlerServiceMock) GetLibraryTracks(page int, pageSize int) (util
 func (m *musicHandlerServiceMock) GetLibraryTrackByID(fileID int) (files.FileDto, error) {
 	return files.FileDto{ID: fileID}, nil
 }
+func (m *musicHandlerServiceMock) UpdateTrackMetadata(fileID int, patch TrackMetadataPatch) (files.FileDto, error) {
+	return files.FileDto{ID: fileID}, nil
+}
 func (m *musicHandlerServiceMock) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
 }
