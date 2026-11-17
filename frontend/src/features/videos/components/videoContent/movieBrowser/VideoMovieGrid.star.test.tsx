@@ -31,9 +31,6 @@ function CachedMovieGrid({ onPlayVideo }: { onPlayVideo: jest.Mock }) {
     return (
         <VideoMovieGrid
             movies={movies}
-            hasNextPage={false}
-            isFetchingNextPage={false}
-            fetchNextPage={jest.fn()}
             onPlayVideo={onPlayVideo}
         />
     );

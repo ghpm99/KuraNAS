@@ -1,6 +1,6 @@
 import { Film } from 'lucide-react';
 import EmptyState from '@/components/emptyState/emptyState';
-import ErrorState from '@/components/errorState/errorState';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import VideoSectionSkeleton from '../components/VideoSectionSkeleton';
@@ -15,37 +15,31 @@ type VideoMovieBrowserProps = {
 
 export default function VideoMovieBrowser({ onPlayVideo }: VideoMovieBrowserProps) {
     const { t } = useI18n();
-    const { sort, setSort, movieQuery, movies } = useVideoMovieBrowser();
+    const { sort, setSort, movieQuery, movies, retryFailedPage } = useVideoMovieBrowser();
 
     const renderMovies = () => {
         if (movieQuery.status === 'pending') {
             return <VideoSectionSkeleton cardCount={6} />;
         }
-        if (movieQuery.status === 'error') {
-            return (
-                <ErrorState
-                    title={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_SECTION_MOVIES') })}
-                    backendMessage={extractBackendErrorMessage(movieQuery.error)}
-                    onRetry={() => void movieQuery.refetch()}
-                />
-            );
-        }
-        if (movies.length === 0) {
-            return (
-                <EmptyState
-                    icon={<Film size={28} aria-hidden="true" />}
-                    title={t('VIDEO_SECTION_MOVIES_EMPTY')}
-                />
-            );
-        }
         return (
-            <VideoMovieGrid
-                movies={movies}
+            <ListFeedback
+                isEmpty={movies.length === 0}
+                isError={movieQuery.status === 'error'}
+                errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_SECTION_MOVIES') })}
+                errorMessage={extractBackendErrorMessage(movieQuery.error)}
+                onRetry={retryFailedPage}
                 hasNextPage={movieQuery.hasNextPage}
                 isFetchingNextPage={movieQuery.isFetchingNextPage}
-                fetchNextPage={() => void movieQuery.fetchNextPage()}
-                onPlayVideo={onPlayVideo}
-            />
+                onLoadMore={() => void movieQuery.fetchNextPage()}
+                emptyState={
+                    <EmptyState
+                        icon={<Film size={28} aria-hidden="true" />}
+                        title={t('VIDEO_SECTION_MOVIES_EMPTY')}
+                    />
+                }
+            >
+                <VideoMovieGrid movies={movies} onPlayVideo={onPlayVideo} />
+            </ListFeedback>
         );
     };
 

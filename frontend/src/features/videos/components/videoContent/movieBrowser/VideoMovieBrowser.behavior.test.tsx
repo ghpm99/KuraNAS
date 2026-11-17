@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import VideoMovieBrowser from './VideoMovieBrowser';
 import { getVideoLibraryMovies } from '@/service/videoPlayback';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 import { resetFailedPosterUrls } from '../useLocalPoster';
 
 jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
@@ -41,10 +42,8 @@ const movie = (id: number, name: string) => ({
     size: 1,
 });
 
-const pageOf = (items: unknown[], hasNext = false) => ({
-    items,
-    pagination: { page: 1, page_size: 24, has_next: hasNext },
-});
+const pageOf = (items: unknown[], hasNext = false, page = 1) =>
+    buildServerPage(items, { page, pageSize: 24, hasNext });
 
 describe('VideoMovieBrowser', () => {
     beforeEach(() => {
@@ -106,5 +105,34 @@ describe('VideoMovieBrowser', () => {
 
         fireEvent.click(await screen.findByRole('button', { name: 'TRY_AGAIN' }));
         expect(await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA B.mkv' })).toBeInTheDocument();
+    });
+
+    it('keeps the loaded movies when the next page fails and retries only that page', async () => {
+        mockedMovies.mockResolvedValueOnce(pageOf([movie(1, 'A.mkv')], true, 1));
+        mockedMovies.mockRejectedValueOnce(new Error('down'));
+        mockedMovies.mockResolvedValueOnce(pageOf([movie(2, 'B.mkv')], false, 2));
+
+        renderBrowser();
+
+        fireEvent.click(await screen.findByRole('button', { name: 'LOAD_MORE' }));
+        const retryButton = await screen.findByRole('button', { name: 'TRY_AGAIN' });
+        expect(screen.getByRole('button', { name: 'VIDEO_PLAY_ARIA A.mkv' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+
+        fireEvent.click(retryButton);
+
+        expect(await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA B.mkv' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'VIDEO_PLAY_ARIA A.mkv' })).toBeInTheDocument();
+        expect(mockedMovies).toHaveBeenNthCalledWith(3, 'name', 2, 24);
+        expect(mockedMovies).toHaveBeenCalledTimes(3);
+    });
+
+    it('shows the error state instead of the empty state when the server is down from the start', async () => {
+        mockedMovies.mockRejectedValue(new Error('down'));
+
+        renderBrowser();
+
+        expect(await screen.findByRole('button', { name: 'TRY_AGAIN' })).toBeInTheDocument();
+        expect(screen.queryByText('VIDEO_SECTION_MOVIES_EMPTY')).not.toBeInTheDocument();
     });
 });

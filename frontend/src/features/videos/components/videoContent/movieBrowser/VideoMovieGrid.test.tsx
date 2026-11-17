@@ -21,9 +21,6 @@ const renderGrid = (movies: VideoFileDto[]) =>
     render(
         <VideoMovieGrid
             movies={movies}
-            hasNextPage={false}
-            isFetchingNextPage={false}
-            fetchNextPage={jest.fn()}
             onPlayVideo={jest.fn()}
         />
     );

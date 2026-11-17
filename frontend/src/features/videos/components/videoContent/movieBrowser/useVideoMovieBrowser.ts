@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 import { getVideoLibraryMovies, type VideoMovieSort } from '@/service/videoPlayback';
 
@@ -18,10 +19,13 @@ export const useVideoMovieBrowser = () => {
         refetchOnWindowFocus: false,
     });
 
+    const retryFailedPage = useRetryFailedPage(movieQuery);
+
     return {
         sort,
         setSort,
         movieQuery,
+        retryFailedPage,
         movies: movieQuery.data?.pages.flatMap((page) => page.items ?? []) ?? [],
     };
 };

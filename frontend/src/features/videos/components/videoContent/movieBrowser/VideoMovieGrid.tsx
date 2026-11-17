@@ -1,4 +1,3 @@
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { getVideoMoviePosterUrl, type VideoFileDto } from '@/service/videoPlayback';
@@ -9,9 +8,6 @@ import styles from './VideoMovieBrowser.module.css';
 
 type VideoMovieGridProps = {
     movies: VideoFileDto[];
-    hasNextPage: boolean;
-    isFetchingNextPage: boolean;
-    fetchNextPage: () => void;
     onPlayVideo: (videoId: number, playlistId?: number | null) => void;
 };
 
@@ -58,25 +54,12 @@ function VideoMovieCard({ movie, onPlayVideo }: VideoMovieCardProps) {
     );
 }
 
-export default function VideoMovieGrid({
-    movies,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    onPlayVideo,
-}: VideoMovieGridProps) {
+export default function VideoMovieGrid({ movies, onPlayVideo }: VideoMovieGridProps) {
     return (
-        <>
-            <div className={styles.movieGrid}>
-                {movies.map((movie) => (
-                    <VideoMovieCard key={movie.id} movie={movie} onPlayVideo={onPlayVideo} />
-                ))}
-            </div>
-            <LoadMoreSentinel
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                fetchNextPage={fetchNextPage}
-            />
-        </>
+        <div className={styles.movieGrid}>
+            {movies.map((movie) => (
+                <VideoMovieCard key={movie.id} movie={movie} onPlayVideo={onPlayVideo} />
+            ))}
+        </div>
     );
 }
