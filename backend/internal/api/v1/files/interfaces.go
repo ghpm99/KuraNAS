@@ -86,6 +86,7 @@ type ServiceInterface interface {
 	InitUpload(request UploadInitRequest) (UploadInitResult, error)
 	UploadChunk(uploadID string, offset int64, chunk *multipart.FileHeader) (int64, error)
 	GetUploadSessionStatus(uploadID string) (UploadSessionStatus, error)
+	CancelUpload(uploadID string) error
 	CreateFolder(parentID *int, name string) (string, error)
 	MoveFile(sourceID int, destinationFolderID *int, destinationPath string) (string, error)
 	DeleteFileFromDisk(id int, permanent bool) error
