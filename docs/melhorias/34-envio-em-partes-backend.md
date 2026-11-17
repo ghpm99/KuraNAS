@@ -25,15 +25,15 @@ No domínio `files` (envio é comportamento genérico de arquivo). Um endpoint p
 
 ## Critérios de aceite
 
-- [ ] Teste: enviar em partes, interromper, chamar `init` de novo e continuar do `received_size` produz arquivo com o mesmo SHA-256 do original.
-- [ ] Teste: `offset` errado responde `409` com `received_size`; nada é gravado.
-- [ ] Teste: `complete` com tamanho ou checksum divergente responde `400`, não publica e descarta a sessão.
-- [ ] Teste: `init` de conteúdo já existente (por checksum) responde `already_exists`.
-- [ ] Teste: espaço insuficiente responde `507` antes de qualquer parte.
-- [ ] Teste: durante o envio, o destino não contém o arquivo nem `.part` visível à listagem (`03/CA-05`).
-- [ ] Teste: `modified_at` informado é a data de modificação do arquivo publicado.
-- [ ] Teste contra Postgres: o arquivo aparece na listagem da pasta logo após o `complete`, com workers desligados.
-- [ ] `make ci-backend` verde (cobertura ≥ 80 %).
+- [x] Teste: enviar em partes, interromper, chamar `init` de novo e continuar do `received_size` produz arquivo com o mesmo SHA-256 do original.
+- [x] Teste: `offset` errado responde `409` com `received_size`; nada é gravado.
+- [x] Teste: `complete` com tamanho ou checksum divergente responde `400`, não publica e descarta a sessão.
+- [x] Teste: `init` de conteúdo já existente (por checksum) responde `already_exists`.
+- [x] Teste: espaço insuficiente responde `507` antes de qualquer parte.
+- [x] Teste: durante o envio, o destino não contém o arquivo nem `.part` visível à listagem (`03/CA-05`).
+- [x] Teste: `modified_at` informado é a data de modificação do arquivo publicado.
+- [x] Teste contra Postgres: o arquivo aparece na listagem da pasta logo após o `complete`, com workers desligados.
+- [x] `make ci-backend` verde (cobertura ≥ 80 %).
 
 ## Fora de escopo
 
