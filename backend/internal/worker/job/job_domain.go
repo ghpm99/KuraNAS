@@ -62,11 +62,12 @@ const (
 	StepTypeDocumentTextIndex      StepType = "document_text_index"
 	StepTypeVideoMetadataReconcile StepType = "video_metadata_reconcile"
 	StepTypeVideoPlaylistRebuild   StepType = "video_playlist_rebuild"
+	StepTypeFillMissingStages      StepType = "fill_missing_stages"
 )
 
 func (t StepType) IsValid() bool {
 	switch t {
-	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile, StepTypeAudioMetadataReconcile, StepTypeDocumentTextIndex, StepTypeVideoMetadataReconcile, StepTypeVideoPlaylistRebuild:
+	case StepTypeScanFilesystem, StepTypeDiffAgainstDB, StepTypeMetadata, StepTypeChecksum, StepTypePersist, StepTypeThumbnail, StepTypePlaylistIndex, StepTypeMarkDeleted, StepTypeTakeoutExtract, StepTypeOllamaPull, StepTypeAIPlaylistCluster, StepTypeBackupRun, StepTypeTierMigration, StepTypeEmailFetch, StepTypeEmailPrefilter, StepTypeEmailAnalyze, StepTypeRemoteFetch, StepTypeCapturePromote, StepTypeImageClassifyEnumerate, StepTypeImageClassifyBatch, StepTypeImageMetadataReconcile, StepTypeAudioMetadataReconcile, StepTypeDocumentTextIndex, StepTypeVideoMetadataReconcile, StepTypeVideoPlaylistRebuild, StepTypeFillMissingStages:
 		return true
 	default:
 		return false

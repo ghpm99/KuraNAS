@@ -19,6 +19,7 @@ type RepositoryInterface interface {
 	ListPendingAIClassification(confidenceThreshold float64, afterFileID int, limit int) ([]PendingImageClassification, error)
 	UpdateAIClassification(fileID int, classification ClassificationModel) error
 	ListImagesWithoutMetadata(afterFileID int, limit int) ([]ImageWithoutMetadata, error)
+	ListImagesWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]ImageWithoutMetadata, error)
 }
 
 // ServiceInterface is the business-logic contract for the image domain.

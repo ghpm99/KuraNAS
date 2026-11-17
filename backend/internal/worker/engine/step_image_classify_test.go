@@ -356,3 +356,7 @@ func TestExecuteMetadataStep_ImageNeverCallsAIAndSchedulesBacklogJob(t *testing.
 		t.Fatalf("expected one backlog classification job, got %d", len(jobsRepository.jobs))
 	}
 }
+
+func (f *fakeClassifyImageRepo) ListImagesWithoutMetadataInPath(pathPrefix string, after int, limit int) ([]imagedom.ImageWithoutMetadata, error) {
+	return nil, nil
+}

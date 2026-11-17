@@ -72,6 +72,7 @@ type VideoMetadataRepositoryInterface interface {
 	GetDbContext() *database.DbContext
 	UpsertVideoMetadata(tx *sql.Tx, metadata VideoMetadataModel) (VideoMetadataModel, error)
 	ListVideosWithoutMetadata(afterFileID int, limit int) ([]VideoWithoutMetadata, error)
+	ListVideosWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]VideoWithoutMetadata, error)
 	ListVideosPendingClassification(afterMetadataID int, limit int) ([]VideoPendingClassification, error)
 	UpdateVideoClassification(metadataID int, classification string) error
 }

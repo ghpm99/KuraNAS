@@ -12,7 +12,7 @@ import (
 var errReindexJobNotCreated = errors.New("reindex job was not created")
 
 // ReindexLauncher creates one job per reindex request. The job holds one
-// scan, diff and mark-deleted step chain per path, so GET /jobs/:id shows the
+// scan, diff, mark-deleted and fill-missing-stages step chain per path, so GET /jobs/:id shows the
 // progress of the whole request.
 type ReindexLauncher struct {
 	launchMutex  sync.Mutex
@@ -61,7 +61,7 @@ func buildReindexPlan(reindexKey string, paths []string) (PlannedJob, error) {
 		return PlannedJob{}, fmt.Errorf("reindex requires at least one path")
 	}
 
-	steps := make([]PlannedStep, 0, len(paths)*3)
+	steps := make([]PlannedStep, 0, len(paths)*4)
 	for pathIndex, path := range paths {
 		pathSteps, err := buildReindexPathSteps(pathIndex, path)
 		if err != nil {
@@ -87,9 +87,11 @@ func buildReindexPathSteps(pathIndex int, path string) ([]PlannedStep, error) {
 	scanKey := fmt.Sprintf("scan_filesystem_%d", pathIndex)
 	diffKey := fmt.Sprintf("diff_against_db_%d", pathIndex)
 	markDeletedKey := fmt.Sprintf("mark_deleted_%d", pathIndex)
+	fillMissingStagesKey := fmt.Sprintf("fill_missing_stages_%d", pathIndex)
 	return []PlannedStep{
 		{Key: scanKey, Type: job.StepTypeScanFilesystem, MaxAttempts: 1, Payload: payload},
 		{Key: diffKey, Type: job.StepTypeDiffAgainstDB, DependsOn: []string{scanKey}, MaxAttempts: 1, Payload: payload},
 		{Key: markDeletedKey, Type: job.StepTypeMarkDeleted, DependsOn: []string{diffKey}, MaxAttempts: 1, Payload: payload},
+		{Key: fillMissingStagesKey, Type: job.StepTypeFillMissingStages, DependsOn: []string{markDeletedKey}, MaxAttempts: 1, Payload: payload},
 	}, nil
 }

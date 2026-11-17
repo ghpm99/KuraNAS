@@ -303,3 +303,7 @@ func TestEnqueueVideoMetadataReconcileJob(t *testing.T) {
 		t.Fatalf("nil context must be a no-op, got %v", err)
 	}
 }
+
+func (f *fakeVideoMetadataRepository) ListVideosWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]videodom.VideoWithoutMetadata, error) {
+	return nil, nil
+}

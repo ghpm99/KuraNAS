@@ -183,6 +183,32 @@ func (r *AudioMetadataRepository) ListAudioWithoutMetadata(afterFileID int, limi
 	return missing, nil
 }
 
+// ListAudioWithoutMetadataInPath returns a keyset page (file_id > afterFileID) of
+// active audio files lacking an audio_metadata row, under pathPrefix, ordered by file_id.
+func (r *AudioMetadataRepository) ListAudioWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]AudioWithoutMetadata, error) {
+	missing := []AudioWithoutMetadata{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectAudioWithoutMetadataInPathQuery, pq.Array(utils.AudioFormats), afterFileID, limit, pathPrefix)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var audioFile AudioWithoutMetadata
+			if err := rows.Scan(&audioFile.FileID, &audioFile.Path); err != nil {
+				return err
+			}
+			missing = append(missing, audioFile)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar audios sem metadados: %w", err)
+	}
+	return missing, nil
+}
+
 // ListAudioWithStaleTags returns a keyset page (file_id > afterFileID) of
 // active audio files whose tags were extracted before
 // CurrentAudioTagsExtractedVersion and are still empty or lack a year.

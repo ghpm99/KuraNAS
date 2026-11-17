@@ -193,6 +193,9 @@ var SearchLibraryTracksQuery string
 //go:embed select_audio_without_metadata.sql
 var SelectAudioWithoutMetadataQuery string
 
+//go:embed select_audio_without_metadata_in_path.sql
+var SelectAudioWithoutMetadataInPathQuery string
+
 //go:embed select_audio_with_stale_tags.sql
 var SelectAudioWithStaleTagsQuery string
 

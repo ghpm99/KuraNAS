@@ -80,6 +80,7 @@ type AudioMetadataRepositoryInterface interface {
 	UpsertAudioMetadata(tx *sql.Tx, metadata AudioMetadataModel) (AudioMetadataModel, error)
 	DeleteAudioMetadata(id int) error
 	ListAudioWithoutMetadata(afterFileID int, limit int) ([]AudioWithoutMetadata, error)
+	ListAudioWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]AudioWithoutMetadata, error)
 	ListAudioWithStaleTags(afterFileID int, limit int) ([]AudioWithStaleTags, error)
 	ListAudioWithoutCatalogKeys(afterAudioMetadataID int, limit int) ([]AudioCatalogKeySource, error)
 	UpdateAudioCatalogKeys(tx *sql.Tx, audioMetadataID int, groupingKeys CatalogGroupingKeys) error

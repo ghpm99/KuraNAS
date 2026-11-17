@@ -133,3 +133,34 @@ func TestUpsertAudioMetadataPersistsNumberingAndListsStaleTags_Postgres(t *testi
 		t.Fatalf("re-extracted audio must leave the stale set, got %+v", remainingStale)
 	}
 }
+
+func TestListAudioWithoutMetadataInPath_Postgres(t *testing.T) {
+	dbContext := testutil.NewPostgresDB(t, "kuranas_music_it")
+	repository := NewAudioMetadataRepository(dbContext)
+
+	seedErr := dbContext.ExecTx(func(tx *sql.Tx) error {
+		if _, err := tx.Exec(`TRUNCATE playlist_track, playlist, audio_metadata, home_file RESTART IDENTITY CASCADE`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`INSERT INTO home_file (name, path, parent_path, format, size, updated_at, created_at, type, checksum, deleted_at)
+			VALUES ('inside.m4a', '/m/scoped/inside.m4a', '/m/scoped', '.m4a', 1, now(), now(), 2, '', NULL),
+			       ('indexed.mp3', '/m/scoped/indexed.mp3', '/m/scoped', '.mp3', 1, now(), now(), 2, '', NULL),
+			       ('sibling.m4a', '/m/sibling/sibling.m4a', '/m/sibling', '.m4a', 1, now(), now(), 2, '', NULL),
+			       ('lookalike.m4a', '/m/scoped-lookalike/lookalike.m4a', '/m/scoped-lookalike', '.m4a', 1, now(), now(), 2, '', NULL)`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(`INSERT INTO audio_metadata (file_id, path) SELECT id, path FROM home_file WHERE name = 'indexed.mp3'`)
+		return err
+	})
+	if seedErr != nil {
+		t.Fatalf("seed: %v", seedErr)
+	}
+
+	missingAudioFiles, err := repository.ListAudioWithoutMetadataInPath("/m/scoped/", 0, 10)
+	if err != nil {
+		t.Fatalf("ListAudioWithoutMetadataInPath returned error: %v", err)
+	}
+	if len(missingAudioFiles) != 1 || missingAudioFiles[0].Path != "/m/scoped/inside.m4a" {
+		t.Fatalf("expected only the scoped audio without metadata, got %+v", missingAudioFiles)
+	}
+}

@@ -60,6 +60,9 @@ func buildStepExecutors(context *WorkerContext) map[job.StepType]StepExecutor {
 	executors[job.StepTypeMarkDeleted] = func(step jobs.StepModel) error {
 		return executeMarkDeletedStep(context, step)
 	}
+	executors[job.StepTypeFillMissingStages] = func(step jobs.StepModel) error {
+		return executeFillMissingStagesStep(context, step)
+	}
 	executors[job.StepTypeTakeoutExtract] = func(step jobs.StepModel) error {
 		return executeTakeoutExtractStep(context, step)
 	}
@@ -659,9 +662,7 @@ func buildFileProcessingPlan(
 		})
 	}
 
-	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
-	isThumbnailable := formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo
-	if preferences.GeneratePreviews && isThumbnailable {
+	if preferences.GeneratePreviews && isThumbnailableFile(fileDto) {
 		steps = append(steps, PlannedStep{
 			Key:         "thumbnail",
 			Type:        job.StepTypeThumbnail,
@@ -677,6 +678,41 @@ func buildFileProcessingPlan(
 			Path: fileDto.Path,
 		},
 		Steps: steps,
+	}, nil
+}
+
+func isThumbnailableFile(fileDto files.FileDto) bool {
+	formatType := utils.GetFormatTypeByExtension(fileDto.Format)
+	return formatType.Type == utils.FormatTypeImage || formatType.Type == utils.FormatTypeVideo
+}
+
+func isVideoFile(fileDto files.FileDto) bool {
+	return utils.GetFormatTypeByExtension(fileDto.Format).Type == utils.FormatTypeVideo
+}
+
+func buildMissingStagesPlan(fileDto files.FileDto, missingStages []job.StepType) (PlannedJob, error) {
+	stagePayload, err := marshalPayload(StepFilePayload{
+		FileID: fileDto.ID,
+		Path:   fileDto.Path,
+	})
+	if err != nil {
+		return PlannedJob{}, fmt.Errorf("marshal missing stage payload: %w", err)
+	}
+
+	steps := make([]PlannedStep, 0, len(missingStages))
+	for _, missingStage := range missingStages {
+		steps = append(steps, PlannedStep{
+			Key:         string(missingStage),
+			Type:        missingStage,
+			MaxAttempts: 3,
+			Payload:     stagePayload,
+		})
+	}
+	return PlannedJob{
+		Type:     job.JobTypeFSEvent,
+		Priority: job.JobPriorityLow,
+		Scope:    job.JobScope{Path: fileDto.Path},
+		Steps:    steps,
 	}, nil
 }
 

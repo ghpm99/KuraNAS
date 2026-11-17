@@ -279,11 +279,37 @@ func (r *Repository) ListImagesWithoutMetadata(afterFileID int, limit int) ([]Im
 		defer rows.Close()
 
 		for rows.Next() {
-			var item ImageWithoutMetadata
-			if err := rows.Scan(&item.FileID, &item.Path); err != nil {
+			var missingImage ImageWithoutMetadata
+			if err := rows.Scan(&missingImage.FileID, &missingImage.Path); err != nil {
 				return err
 			}
-			missing = append(missing, item)
+			missing = append(missing, missingImage)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar imagens sem metadados: %w", err)
+	}
+	return missing, nil
+}
+
+// ListImagesWithoutMetadataInPath returns a keyset page (file_id > afterFileID) of
+// active image files lacking an image_metadata row, under pathPrefix, ordered by file_id.
+func (r *Repository) ListImagesWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]ImageWithoutMetadata, error) {
+	missing := []ImageWithoutMetadata{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectImagesWithoutMetadataInPathQuery, pq.Array(utils.ImageFormats), afterFileID, limit, pathPrefix)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var missingImage ImageWithoutMetadata
+			if err := rows.Scan(&missingImage.FileID, &missingImage.Path); err != nil {
+				return err
+			}
+			missing = append(missing, missingImage)
 		}
 		return rows.Err()
 	})

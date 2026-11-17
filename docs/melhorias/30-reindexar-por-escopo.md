@@ -27,7 +27,7 @@ Reindexar uma pasta, uma raiz ou tudo inicia um job daquele escopo, mostra o and
 
 ## Sub-itens levantados na execução (2026-11-17)
 
-- [ ] 30.1. Reindexar só reprocessa arquivo novo ou com tamanho/data alterados (o diff da varredura). Arquivo inalterado que ficou sem miniatura, sem metadados ou sem texto enquanto a etapa estava desligada não é recuperado — e a spec 21 §8 diz que "o que ficou sem processar entra pela reindexação". **Decidido pelo dono (2026-11-17)**: reindexar enfileira, para os arquivos do escopo que não mudaram, só as etapas cujo resultado falta — miniatura ausente, linha de metadados ausente, texto de documento não indexado —, respeitando as preferências de indexação. Nunca regrava metadados existentes (`CA-08`).
+- [x] 30.1. Reindexar só reprocessa arquivo novo ou com tamanho/data alterados (o diff da varredura). Arquivo inalterado que ficou sem miniatura, sem metadados ou sem texto enquanto a etapa estava desligada não é recuperado — e a spec 21 §8 diz que "o que ficou sem processar entra pela reindexação". **Decidido pelo dono (2026-11-17)**: reindexar enfileira, para os arquivos do escopo que não mudaram, só as etapas cujo resultado falta — miniatura ausente, linha de metadados ausente, texto de documento não indexado —, respeitando as preferências de indexação. Nunca regrava metadados existentes (`CA-08`).
 
 ## Critérios de aceite
 

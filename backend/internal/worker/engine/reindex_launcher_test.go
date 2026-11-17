@@ -26,8 +26,8 @@ func TestLaunchReindexCreatesOneJobWithStepChainPerPath(t *testing.T) {
 	}
 
 	steps, _ := repository.GetStepsByJobID(jobID)
-	if len(steps) != 6 {
-		t.Fatalf("expected 3 steps per path, got %d", len(steps))
+	if len(steps) != 8 {
+		t.Fatalf("expected 4 steps per path, got %d", len(steps))
 	}
 	scannedPaths := map[string]bool{}
 	for _, step := range steps {
@@ -36,6 +36,31 @@ func TestLaunchReindexCreatesOneJobWithStepChainPerPath(t *testing.T) {
 	}
 	if len(scannedPaths) != 2 || !scannedPaths["/data/first"] || !scannedPaths["/data/second"] {
 		t.Fatalf("steps must cover exactly the requested paths, got %v", scannedPaths)
+	}
+}
+
+func TestBuildReindexPathStepsRunsFillMissingStagesAfterMarkDeleted(t *testing.T) {
+	steps, err := buildReindexPathSteps(2, "/data/first")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedTypes := []job.StepType{job.StepTypeScanFilesystem, job.StepTypeDiffAgainstDB, job.StepTypeMarkDeleted, job.StepTypeFillMissingStages}
+	if len(steps) != len(expectedTypes) {
+		t.Fatalf("expected %d steps, got %d", len(expectedTypes), len(steps))
+	}
+	for stepIndex, expectedType := range expectedTypes {
+		if steps[stepIndex].Type != expectedType {
+			t.Fatalf("step %d: expected %s, got %s", stepIndex, expectedType, steps[stepIndex].Type)
+		}
+	}
+
+	fillMissingStages := steps[3]
+	if len(fillMissingStages.DependsOn) != 1 || fillMissingStages.DependsOn[0] != steps[2].Key {
+		t.Fatalf("fill_missing_stages must depend on mark_deleted, got %v", fillMissingStages.DependsOn)
+	}
+	if fillMissingStages.Key != "fill_missing_stages_2" {
+		t.Fatalf("unexpected key %q", fillMissingStages.Key)
 	}
 }
 

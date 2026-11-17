@@ -95,6 +95,32 @@ func (r *VideoMetadataRepository) ListVideosWithoutMetadata(afterFileID int, lim
 	return missingVideos, nil
 }
 
+// ListVideosWithoutMetadataInPath returns a keyset page (file_id > afterFileID) of
+// active video files lacking a video_metadata row, under pathPrefix, ordered by file_id.
+func (r *VideoMetadataRepository) ListVideosWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]VideoWithoutMetadata, error) {
+	missingVideos := []VideoWithoutMetadata{}
+	err := r.Db.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.SelectVideosWithoutMetadataInPathQuery, pq.Array(utils.VideoFormats), afterFileID, limit, pathPrefix)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var missingVideo VideoWithoutMetadata
+			if err := rows.Scan(&missingVideo.FileID, &missingVideo.Path); err != nil {
+				return err
+			}
+			missingVideos = append(missingVideos, missingVideo)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao listar videos sem metadados: %w", err)
+	}
+	return missingVideos, nil
+}
+
 func nullableClassification(classification string) any {
 	if classification == "" {
 		return nil

@@ -141,3 +141,7 @@ func TestEnqueueImageMetadataReconcileJob(t *testing.T) {
 		t.Fatalf("nil context must be a no-op, got %v", err)
 	}
 }
+
+func (r *reconcileImageRepository) ListImagesWithoutMetadataInPath(pathPrefix string, after int, limit int) ([]imagedom.ImageWithoutMetadata, error) {
+	return nil, nil
+}

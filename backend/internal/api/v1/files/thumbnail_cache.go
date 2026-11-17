@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"nas-go/api/internal/config"
 )
 
 const (
@@ -42,6 +44,19 @@ func thumbnailCacheFileName(fileDto FileDto, width, height int, extension string
 // modified file never revalidates against a stale thumbnail.
 func ThumbnailETag(fileDto FileDto, width, height int) string {
 	return fmt.Sprintf(`"%s"`, thumbnailCacheVersion(fileDto, width, height))
+}
+
+// HasCachedThumbnail reports whether the grid-size thumbnail of the current
+// version of fileDto is already in the thumbnail cache, without reading it.
+func HasCachedThumbnail(fileDto FileDto) bool {
+	cacheDir := config.GetBuildConfig("ThumbnailPath")
+	for _, extension := range thumbnailCacheExtensions {
+		cachedPath := filepath.Join(cacheDir, thumbnailCacheFileName(fileDto, GridThumbnailSize, GridThumbnailSize, extension))
+		if _, err := os.Stat(cachedPath); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 func readCachedThumbnail(cacheDir string, fileDto FileDto, width, height int) ([]byte, bool) {

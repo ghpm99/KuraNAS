@@ -144,3 +144,25 @@ func TestHeuristicReindexKeepsStoredAIClassification_Postgres(t *testing.T) {
 		t.Fatalf("heuristic re-index must not overwrite the AI classification, got %+v", stored.Classification)
 	}
 }
+
+func TestListImagesWithoutMetadataInPath_Postgres(t *testing.T) {
+	repository := seedImageFiles(t, func(tx *sql.Tx) error {
+		if _, err := tx.Exec(`INSERT INTO home_file (name, path, parent_path, format, size, updated_at, created_at, type, checksum, deleted_at)
+			VALUES ('inside.jpg', '/img/scoped/inside.jpg', '/img/scoped', '.jpg', 1, now(), now(), 2, '', NULL),
+			       ('indexed.jpg', '/img/scoped/indexed.jpg', '/img/scoped', '.jpg', 1, now(), now(), 2, '', NULL),
+			       ('sibling.jpg', '/img/sibling/sibling.jpg', '/img/sibling', '.jpg', 1, now(), now(), 2, '', NULL),
+			       ('lookalike.jpg', '/img/scoped-lookalike/lookalike.jpg', '/img/scoped-lookalike', '.jpg', 1, now(), now(), 2, '', NULL)`); err != nil {
+			return err
+		}
+		_, err := tx.Exec(`INSERT INTO image_metadata (file_id, path) SELECT id, path FROM home_file WHERE name = 'indexed.jpg'`)
+		return err
+	})
+
+	missingImages, err := repository.ListImagesWithoutMetadataInPath("/img/scoped/", 0, 10)
+	if err != nil {
+		t.Fatalf("ListImagesWithoutMetadataInPath returned error: %v", err)
+	}
+	if len(missingImages) != 1 || missingImages[0].Path != "/img/scoped/inside.jpg" {
+		t.Fatalf("expected only the scoped image without metadata, got %+v", missingImages)
+	}
+}

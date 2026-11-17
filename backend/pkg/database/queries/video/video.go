@@ -169,6 +169,9 @@ var GetVideoDurationSecondsByFileIDQuery string
 //go:embed select_videos_without_metadata.sql
 var SelectVideosWithoutMetadataQuery string
 
+//go:embed select_videos_without_metadata_in_path.sql
+var SelectVideosWithoutMetadataInPathQuery string
+
 //go:embed get_video_watch_progress.sql
 var GetVideoWatchProgressQuery string
 

@@ -32,8 +32,14 @@ func isFilePresent(path string) bool {
 	return err == nil
 }
 
+// HasVideoMasterFrame reports whether the poster or master frame of the video
+// is already generated.
+func HasVideoMasterFrame(fileID int) bool {
+	return isFilePresent(sourcePosterPath(fileID)) || isFilePresent(masterFramePath(fileID))
+}
+
 func (s *Service) EnsureVideoMasterFrame(fileDto files.FileDto) error {
-	if isFilePresent(sourcePosterPath(fileDto.ID)) || isFilePresent(masterFramePath(fileDto.ID)) {
+	if HasVideoMasterFrame(fileDto.ID) {
 		return nil
 	}
 

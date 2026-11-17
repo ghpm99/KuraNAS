@@ -231,3 +231,7 @@ func TestExecuteAudioMetadataReconcileStep_BackfillsCatalogKeysFromStoredTags(t 
 		t.Fatalf("a row without tags must still get non-null empty keys: %+v", emptyKeys)
 	}
 }
+
+func (f *fakeAudioMetadataRepository) ListAudioWithoutMetadataInPath(pathPrefix string, afterFileID int, limit int) ([]musicdom.AudioWithoutMetadata, error) {
+	return nil, nil
+}
