@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.R
 import com.kuranas.android.core.discovery.DiscoveredServer
-import com.kuranas.android.core.discovery.NsdDiscovery
+import com.kuranas.android.core.discovery.ServerSearch
 import com.kuranas.android.core.server.ServerStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,13 +21,14 @@ import javax.inject.Inject
 data class ConnectionUiState(
     val isDiscovering: Boolean = false,
     val discovered: List<DiscoveredServer> = emptyList(),
+    val hasSearchFinishedEmpty: Boolean = false,
     val manualUrl: String = "",
     val error: String? = null,
 )
 
 @HiltViewModel
 class ConnectionViewModel @Inject constructor(
-    private val nsdDiscovery: NsdDiscovery,
+    private val serverSearch: ServerSearch,
     private val serverStore: ServerStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
@@ -33,21 +36,34 @@ class ConnectionViewModel @Inject constructor(
     private val _state = MutableStateFlow(ConnectionUiState())
     val state: StateFlow<ConnectionUiState> = _state.asStateFlow()
 
+    private var discoveryJob: Job? = null
+
     init {
         startDiscovery()
     }
 
     fun startDiscovery() {
-        _state.update { it.copy(isDiscovering = true, discovered = emptyList(), error = null) }
-        viewModelScope.launch {
+        discoveryJob?.cancel()
+        _state.update {
+            it.copy(isDiscovering = true, discovered = emptyList(), hasSearchFinishedEmpty = false, error = null)
+        }
+        discoveryJob = viewModelScope.launch {
             try {
-                nsdDiscovery.discover().collect { server ->
+                serverSearch.search().collect { server ->
                     _state.update { it.copy(discovered = it.discovered + server) }
                 }
-            } catch (e: Exception) {
-                _state.update { it.copy(error = context.getString(R.string.connection_discovery_failed), isDiscovering = false) }
+                finishDiscovery()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                _state.update { it.copy(error = context.getString(R.string.connection_discovery_failed)) }
+                finishDiscovery()
             }
         }
+    }
+
+    private fun finishDiscovery() {
+        _state.update { it.copy(isDiscovering = false, hasSearchFinishedEmpty = it.discovered.isEmpty()) }
     }
 
     fun onManualUrlChange(url: String) {
