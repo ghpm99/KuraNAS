@@ -472,6 +472,10 @@ func executeDiffAgainstDBStep(context *WorkerContext, step jobs.StepModel) error
 			return nil
 		}
 
+		if files.IsUploadTemporaryFile(path) {
+			return nil
+		}
+
 		info, infoErr := d.Info()
 		if infoErr != nil {
 			return nil

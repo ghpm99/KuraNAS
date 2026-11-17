@@ -257,6 +257,7 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.POST("/upload", context.Files.Handler.UploadFilesHandler)
 	files.POST("/upload/init", context.Files.Handler.InitUploadHandler)
 	files.POST("/upload/chunk", context.Files.Handler.UploadChunkHandler)
+	files.POST("/upload/complete", context.Files.Handler.CompleteUploadHandler)
 	files.GET("/upload/:upload_id", context.Files.Handler.GetUploadStatusHandler)
 	files.DELETE("/upload/:upload_id", context.Files.Handler.CancelUploadHandler)
 	files.POST("/folder", context.Files.Handler.CreateFolderHandler)

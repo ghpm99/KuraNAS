@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/trash"
 
 	"github.com/fsnotify/fsnotify"
@@ -90,6 +91,9 @@ func (rw *recursiveWatcher) watchTree(dir string, emitPaths bool) error {
 }
 
 func (rw *recursiveWatcher) emit(path string) {
+	if files.IsUploadTemporaryFile(path) {
+		return
+	}
 	select {
 	case rw.events <- path:
 	case <-rw.done:

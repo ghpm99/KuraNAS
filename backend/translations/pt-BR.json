@@ -554,6 +554,8 @@
 	"ERROR_UPLOAD_OFFSET_MISMATCH": "A posição da parte difere do que o servidor já recebeu",
 	"ERROR_UPLOAD_CHUNK_REQUIRED": "A parte do arquivo é obrigatória",
 	"ERROR_UPLOAD_CHUNK_EXCEEDS_SIZE": "A parte ultrapassa o tamanho declarado do arquivo",
+	"ERROR_UPLOAD_INCOMPLETE": "Envio incompleto: o tamanho recebido difere do declarado",
+	"ERROR_UPLOAD_CHECKSUM_MISMATCH": "O checksum do arquivo recebido não confere com o declarado",
 	"ERROR_FOLDER_NAME_REQUIRED": "Nome da pasta é obrigatório",
 	"ERROR_FOLDER_NAME_INVALID": "Nome da pasta é inválido",
 	"ERROR_FOLDER_ALREADY_EXISTS": "A pasta já existe no destino",

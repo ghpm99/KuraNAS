@@ -55,6 +55,7 @@ type pendingUpload struct {
 	header            *multipart.FileHeader
 	fileName          string
 	directorySegments []string
+	publish           func(destinationPath string) error
 }
 
 type existingEntry struct {
@@ -286,7 +287,7 @@ func (s *Service) writeUploadUnderFreeName(pending pendingUpload, occupiedPath s
 }
 
 func (s *Service) writeUpload(pending pendingUpload, destinationPath string, status string) (UploadFileResult, error) {
-	if err := saveUploadedFile(pending.header, destinationPath); err != nil {
+	if err := pending.store(destinationPath); err != nil {
 		return UploadFileResult{}, newFileOperationError(http.StatusInternalServerError, "ERROR_UPLOAD_FAILED", err)
 	}
 
@@ -295,6 +296,13 @@ func (s *Service) writeUpload(pending pendingUpload, destinationPath string, sta
 	}
 
 	return UploadFileResult{Name: filepath.Base(destinationPath), Path: destinationPath, Status: status}, nil
+}
+
+func (pending pendingUpload) store(destinationPath string) error {
+	if pending.publish != nil {
+		return pending.publish(destinationPath)
+	}
+	return saveUploadedFile(pending.header, destinationPath)
 }
 
 func (s *Service) findExistingEntry(path string, shouldCheckTiered bool) existingEntry {

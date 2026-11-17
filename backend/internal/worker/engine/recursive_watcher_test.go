@@ -176,3 +176,29 @@ func TestRecursiveWatcherErrorReportsToFallback(t *testing.T) {
 		t.Fatalf("expected exactly the overflow error reported, got %v", reported)
 	}
 }
+
+func TestRecursiveWatcherIgnoresUploadStagingFile(t *testing.T) {
+	root := t.TempDir()
+	watcher, err := newRecursiveWatcher(root, nil)
+	if err != nil {
+		t.Fatalf("newRecursiveWatcher: %v", err)
+	}
+	defer watcher.Close()
+
+	stagingFile := filepath.Join(root, ".movie.mp4.kuranas-part")
+	if err := os.WriteFile(stagingFile, []byte("partial"), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	libraryFile := filepath.Join(root, "alive.txt")
+	if err := os.WriteFile(libraryFile, []byte("hi"), 0644); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+
+	seen := collectEventsUntil(t, watcher, map[string]bool{libraryFile: true}, 2*time.Second)
+	if !seen[libraryFile] {
+		t.Fatalf("event for library file not received, saw %v", seen)
+	}
+	if seen[stagingFile] {
+		t.Fatalf("upload staging file must not produce events, saw %v", seen)
+	}
+}

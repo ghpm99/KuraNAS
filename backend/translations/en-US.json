@@ -554,6 +554,8 @@
 	"ERROR_UPLOAD_OFFSET_MISMATCH": "The chunk offset differs from what the server already received",
 	"ERROR_UPLOAD_CHUNK_REQUIRED": "The file chunk is required",
 	"ERROR_UPLOAD_CHUNK_EXCEEDS_SIZE": "The chunk exceeds the declared file size",
+	"ERROR_UPLOAD_INCOMPLETE": "Incomplete upload: the received size differs from the declared one",
+	"ERROR_UPLOAD_CHECKSUM_MISMATCH": "The received file checksum does not match the declared one",
 	"ERROR_FOLDER_NAME_REQUIRED": "Folder name is required",
 	"ERROR_FOLDER_NAME_INVALID": "Folder name is invalid",
 	"ERROR_FOLDER_ALREADY_EXISTS": "Folder already exists in destination",

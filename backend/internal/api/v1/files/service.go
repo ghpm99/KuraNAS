@@ -29,7 +29,8 @@ type Service struct {
 	TrashBin       TrashBinInterface
 	StillConverter img.StillImageConverter
 
-	AvailableBytesAt func(path string) (int64, error)
+	AvailableBytesAt  func(path string) (int64, error)
+	RenamePartialFile func(partialPath string, destinationPath string) error
 
 	ProcessingStagesReader ProcessingStagesReader
 }
