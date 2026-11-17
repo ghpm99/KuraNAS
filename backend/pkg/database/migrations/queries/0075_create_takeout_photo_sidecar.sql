@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS takeout_photo_sidecar (
+    path TEXT PRIMARY KEY,
+    description TEXT NULL,
+    latitude DOUBLE PRECISION NULL,
+    longitude DOUBLE PRECISION NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

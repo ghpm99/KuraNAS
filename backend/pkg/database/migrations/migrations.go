@@ -233,6 +233,9 @@ var CreateAudioMetadataOverrideQuery string
 //go:embed queries/0074_add_audio_metadata_catalog_keys_version.sql
 var AddAudioMetadataCatalogKeysVersionQuery string
 
+//go:embed queries/0075_create_takeout_photo_sidecar.sql
+var CreateTakeoutPhotoSidecarQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -539,4 +542,7 @@ func takeoutMigrationList() {
 	addMigrationRequiring("0072_create_takeout_import_table",
 		[]string{"0016_create_worker_job_tables"},
 		defaultMigrationFunc(CreateTakeoutImportTableQuery))
+
+	addMigration("0075_create_takeout_photo_sidecar",
+		defaultMigrationFunc(CreateTakeoutPhotoSidecarQuery))
 }
