@@ -11,6 +11,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -106,5 +107,56 @@ class FilesRepositoryTest {
 
         assertEquals(listOf("4"), result.data.items.map { it.id })
         assertTrue(result.data.hasNext)
+    }
+
+    private val firstPageWithNextJson = """
+        {
+          "items": [
+            {"id": 11, "name": "docs", "path": "/data/docs", "parent_path": "/data", "type": 1, "format": "", "size": 0,
+             "starred": false, "directory_content_count": 3, "created_at": "2026-01-01T10:00:00Z", "updated_at": "2026-01-02T10:00:00Z"},
+            {"id": 12, "name": "a.txt", "path": "/data/a.txt", "parent_path": "/data", "type": 2, "format": ".txt", "size": 120,
+             "starred": true, "directory_content_count": 0, "created_at": "2026-01-01T10:00:00Z", "updated_at": "2026-01-02T10:00:00Z"}
+          ],
+          "pagination": {"page": 1, "page_size": 2, "has_next": true, "has_prev": false}
+        }
+    """.trimIndent()
+
+    private val lastPageJson = """
+        {"items":[{"id":13,"name":"b.txt","type":2}],"pagination":{"page":2,"page_size":50,"has_next":false,"has_prev":true}}
+    """.trimIndent()
+
+    @Test
+    fun `getRootFiles sends page and page size and maps the page with next`() = runTest {
+        server.enqueue(MockResponse().setBody(firstPageWithNextJson))
+
+        val result = repository.getRootFiles(1) as AppResult.Success
+
+        val request = server.takeRequest()
+        assertEquals("GET", request.method)
+        assertEquals("/api/v1/files/?page=1&page_size=50", request.path)
+        assertEquals(listOf("11", "12"), result.data.items.map { it.id })
+        assertTrue(result.data.items.first().isDir)
+        assertTrue(result.data.hasNext)
+    }
+
+    @Test
+    fun `getChildrenById sends id, page and page size and reports the last page`() = runTest {
+        server.enqueue(MockResponse().setBody(lastPageJson))
+
+        val result = repository.getChildrenById("11", 2) as AppResult.Success
+
+        assertEquals("/api/v1/files/11?page=2&page_size=50", server.takeRequest().path)
+        assertEquals(listOf("13"), result.data.items.map { it.id })
+        assertFalse(result.data.hasNext)
+    }
+
+    @Test
+    fun `getFileInfo asks for a single item page`() = runTest {
+        server.enqueue(MockResponse().setBody(firstPageWithNextJson))
+
+        val result = repository.getFileInfo("12") as AppResult.Success
+
+        assertEquals("/api/v1/files/12?page=1&page_size=1", server.takeRequest().path)
+        assertEquals("12", result.data.id)
     }
 }

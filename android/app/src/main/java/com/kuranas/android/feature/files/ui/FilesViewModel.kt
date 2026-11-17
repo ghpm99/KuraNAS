@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
+import com.kuranas.android.core.paging.FIRST_PAGE
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.FilesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,8 +52,8 @@ class FilesViewModel @Inject constructor(
     fun loadRoot() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, breadcrumb = emptyList()) }
-            when (val r = repository.getRootFiles()) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, files = r.data) }
+            when (val r = repository.getRootFiles(FIRST_PAGE)) {
+                is AppResult.Success -> _state.update { it.copy(isLoading = false, files = r.data.items) }
                 is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
             }
         }
@@ -61,11 +62,11 @@ class FilesViewModel @Inject constructor(
     fun openFolder(folder: FileItemDto) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            when (val r = repository.getChildrenById(folder.id)) {
+            when (val r = repository.getChildrenById(folder.id, FIRST_PAGE)) {
                 is AppResult.Success -> _state.update { state ->
                     state.copy(
                         isLoading = false,
-                        files = r.data,
+                        files = r.data.items,
                         breadcrumb = state.breadcrumb + (folder.name to folder.id),
                     )
                 }
@@ -85,8 +86,8 @@ class FilesViewModel @Inject constructor(
         val parentId = newCrumb.last().second
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, breadcrumb = newCrumb) }
-            when (val r = repository.getChildrenById(parentId)) {
-                is AppResult.Success -> _state.update { it.copy(isLoading = false, files = r.data) }
+            when (val r = repository.getChildrenById(parentId, FIRST_PAGE)) {
+                is AppResult.Success -> _state.update { it.copy(isLoading = false, files = r.data.items) }
                 is AppResult.Error -> _state.update { it.copy(isLoading = false, error = r.message) }
             }
         }
@@ -155,8 +156,8 @@ class FilesViewModel @Inject constructor(
         val crumb = _state.value.breadcrumb
         if (crumb.isEmpty()) loadRoot()
         else viewModelScope.launch {
-            when (val r = repository.getChildrenById(crumb.last().second)) {
-                is AppResult.Success -> _state.update { it.copy(files = r.data) }
+            when (val r = repository.getChildrenById(crumb.last().second, FIRST_PAGE)) {
+                is AppResult.Success -> _state.update { it.copy(files = r.data.items) }
                 is AppResult.Error -> _state.update { it.copy(error = r.message) }
             }
         }
@@ -170,10 +171,10 @@ class FilesViewModel @Inject constructor(
         val crumb = _state.value.breadcrumb
         viewModelScope.launch {
             _state.update { it.copy(isRefreshing = true, error = null) }
-            val result = if (crumb.isEmpty()) repository.getRootFiles()
-            else repository.getChildrenById(crumb.last().second)
+            val result = if (crumb.isEmpty()) repository.getRootFiles(FIRST_PAGE)
+            else repository.getChildrenById(crumb.last().second, FIRST_PAGE)
             when (result) {
-                is AppResult.Success -> _state.update { it.copy(isRefreshing = false, files = result.data) }
+                is AppResult.Success -> _state.update { it.copy(isRefreshing = false, files = result.data.items) }
                 is AppResult.Error -> _state.update { it.copy(isRefreshing = false, error = result.message) }
             }
         }

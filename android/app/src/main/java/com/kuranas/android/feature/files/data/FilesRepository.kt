@@ -4,6 +4,7 @@ import android.content.Context
 import com.kuranas.android.R
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
+import com.kuranas.android.core.paging.FIRST_PAGE
 import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.core.paging.toListPage
 import dagger.Module
@@ -19,12 +20,12 @@ class FilesRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
 
-    suspend fun getRootFiles(): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getRootFiles().items
+    suspend fun getRootFiles(page: Int): AppResult<ListPage<FileItemDto>> = safeApiCall {
+        api.getRootFiles(page, EXPLORER_PAGE_SIZE).toListPage()
     }
 
-    suspend fun getChildrenById(id: String): AppResult<List<FileItemDto>> = safeApiCall {
-        api.getChildrenById(id).items
+    suspend fun getChildrenById(id: String, page: Int): AppResult<ListPage<FileItemDto>> = safeApiCall {
+        api.getChildrenById(id, page, EXPLORER_PAGE_SIZE).toListPage()
     }
 
     suspend fun getStarredFiles(
@@ -52,11 +53,12 @@ class FilesRepository @Inject constructor(
     }
 
     /**
-     * Metadados de um único arquivo. O endpoint /files/{id} devolve os arquivos do
-     * mesmo caminho; pra um arquivo isso é ele próprio — então filtramos pelo id.
+     * Metadados de um único arquivo. O backend não tem endpoint de detalhe: /files/{id}
+     * lista os itens do caminho do arquivo, que para um arquivo é ele próprio na
+     * primeira posição, então pedimos uma página de um item.
      */
     suspend fun getFileInfo(id: String): AppResult<FileItemDto> = safeApiCall {
-        val items = api.getChildrenById(id).items
+        val items = api.getChildrenById(id, FIRST_PAGE, FILE_INFO_PAGE_SIZE).items
         items.firstOrNull { it.id == id }
             ?: items.firstOrNull()
             ?: throw NoSuchElementException(context.getString(R.string.file_not_found))
@@ -112,6 +114,8 @@ class FilesRepository @Inject constructor(
     private companion object {
         const val MAX_TEXT_BYTES = 256 * 1024
         const val STARRED_PAGE_SIZE = 50
+        const val EXPLORER_PAGE_SIZE = 50
+        const val FILE_INFO_PAGE_SIZE = 1
     }
 }
 

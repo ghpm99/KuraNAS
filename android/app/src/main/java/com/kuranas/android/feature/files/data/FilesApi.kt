@@ -20,10 +20,17 @@ import retrofit2.http.Query
 
 interface FilesApi {
     @GET("api/v1/files/")
-    suspend fun getRootFiles(): PageDto<FileItemDto>
+    suspend fun getRootFiles(
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int,
+    ): PageDto<FileItemDto>
 
     @GET("api/v1/files/{id}")
-    suspend fun getChildrenById(@Path("id") id: String): PageDto<FileItemDto>
+    suspend fun getChildrenById(
+        @Path("id") id: String,
+        @Query("page") page: Int,
+        @Query("page_size") pageSize: Int,
+    ): PageDto<FileItemDto>
 
     @GET("api/v1/files/path")
     suspend fun getFilesByPath(@Query("path") path: String): PageDto<FileItemDto>

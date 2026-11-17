@@ -5,6 +5,7 @@ import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.FilesRepository
 import com.kuranas.android.feature.files.data.StarredResponse
+import com.kuranas.android.core.paging.ListPage
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -39,8 +40,8 @@ class FilesViewModelTest {
     }
 
     private fun viewModelWithFile(isStarred: Boolean): FilesViewModel {
-        coEvery { repository.getRootFiles() } returns
-            AppResult.Success(listOf(FileItemDto(rawId = 7, name = "a.txt", starred = isStarred)))
+        coEvery { repository.getRootFiles(any()) } returns
+            AppResult.Success(ListPage(listOf(FileItemDto(rawId = 7, name = "a.txt", starred = isStarred)), false))
         return FilesViewModel(repository, SavedStateHandle())
     }
 
@@ -139,7 +140,7 @@ class FilesViewModelTest {
     fun `confirmed delete removes the file from the list`() {
         val viewModel = viewModelWithFile(isStarred = false)
         coEvery { repository.deleteFile("7") } returns AppResult.Success(Unit)
-        coEvery { repository.getRootFiles() } returns AppResult.Success(emptyList())
+        coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(emptyList(), false))
 
         viewModel.requestDelete(viewModel.state.value.files.single())
         viewModel.confirmDelete()
