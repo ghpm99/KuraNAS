@@ -5,5 +5,6 @@ export type InitTakeoutUploadResponse = {
 
 export type CompleteTakeoutUploadResponse = {
 	job_id: number;
+	import_id: number;
 	message: string;
 };
