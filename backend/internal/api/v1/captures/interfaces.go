@@ -47,5 +47,5 @@ type ServiceInterface interface {
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureDto], error)
 	GetCaptureByID(id int) (CaptureDto, error)
 	PromoteCapture(captureID int) error
-	DeleteCapture(id int) error
+	DeleteCapture(id int) (bool, error)
 }

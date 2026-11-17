@@ -251,7 +251,7 @@ func (h *Handler) DeleteCaptureHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.service.DeleteCapture(id)
+	libraryFileKept, err := h.service.DeleteCapture(id)
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_DELETE_FAILED")})
@@ -259,5 +259,5 @@ func (h *Handler) DeleteCaptureHandler(c *gin.Context) {
 	}
 
 	h.logService.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, gin.H{"deleted": true})
+	c.JSON(http.StatusOK, DeleteCaptureResponseDto{Deleted: true, LibraryFileKept: libraryFileKept})
 }

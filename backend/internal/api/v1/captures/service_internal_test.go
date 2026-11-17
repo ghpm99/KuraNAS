@@ -842,25 +842,102 @@ func TestServiceGetCaptureByIDError(t *testing.T) {
 	}
 }
 
-func TestServiceDeleteCapture(t *testing.T) {
-	dir := t.TempDir()
-	filePath := filepath.Join(dir, "video.ts")
-	os.WriteFile(filePath, []byte("data"), 0644)
+func writeCaptureFile(t *testing.T) string {
+	t.Helper()
+	filePath := filepath.Join(t.TempDir(), "video.ts")
+	if err := os.WriteFile(filePath, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return filePath
+}
 
+func TestServiceDeleteCaptureRemovesReceivedFileWhenNotPromoted(t *testing.T) {
+	statuses := []CaptureStatus{CaptureStatusUploaded, CaptureStatusPromoting, CaptureStatusFailed}
+	for _, status := range statuses {
+		filePath := writeCaptureFile(t)
+		rowDeleted := false
+		mock := &repoMock{
+			getByIDFn: func(id int) (CaptureModel, error) {
+				return CaptureModel{ID: id, FilePath: filePath, Status: status}, nil
+			},
+			deleteFn: func(tx *sql.Tx, id int) error {
+				rowDeleted = true
+				return nil
+			},
+		}
+		service := newServiceForTest(t, mock, nil, nil)
+
+		libraryFileKept, err := service.DeleteCapture(1)
+		if err != nil {
+			t.Fatalf("status %s: expected no error, got %v", status, err)
+		}
+		if libraryFileKept {
+			t.Fatalf("status %s: expected libraryFileKept false", status)
+		}
+		if !rowDeleted {
+			t.Fatalf("status %s: expected row deleted", status)
+		}
+		if _, err := os.Stat(filePath); !os.IsNotExist(err) {
+			t.Fatalf("status %s: expected file to be deleted", status)
+		}
+	}
+}
+
+func TestServiceDeleteCaptureKeepsLibraryFileWhenPromoted(t *testing.T) {
+	fileID := 7
+	models := map[string]CaptureModel{
+		"promoted status": {Status: CaptureStatusPromoted},
+		"linked file id":  {Status: CaptureStatusFailed, FileID: &fileID},
+	}
+	for name, model := range models {
+		filePath := writeCaptureFile(t)
+		model.FilePath = filePath
+		rowDeleted := false
+		mock := &repoMock{
+			getByIDFn: func(id int) (CaptureModel, error) {
+				model.ID = id
+				return model, nil
+			},
+			deleteFn: func(tx *sql.Tx, id int) error {
+				rowDeleted = true
+				return nil
+			},
+		}
+		service := newServiceForTest(t, mock, nil, nil)
+
+		libraryFileKept, err := service.DeleteCapture(1)
+		if err != nil {
+			t.Fatalf("%s: expected no error, got %v", name, err)
+		}
+		if !libraryFileKept {
+			t.Fatalf("%s: expected libraryFileKept true", name)
+		}
+		if !rowDeleted {
+			t.Fatalf("%s: expected row deleted", name)
+		}
+		if _, err := os.Stat(filePath); err != nil {
+			t.Fatalf("%s: expected library file to remain, got %v", name, err)
+		}
+	}
+}
+
+func TestServiceDeleteCaptureKeepsFileWhenRepositoryFails(t *testing.T) {
+	filePath := writeCaptureFile(t)
 	mock := &repoMock{
 		getByIDFn: func(id int) (CaptureModel, error) {
-			return CaptureModel{ID: id, FilePath: filePath}, nil
+			return CaptureModel{ID: id, FilePath: filePath, Status: CaptureStatusUploaded}, nil
+		},
+		deleteFn: func(tx *sql.Tx, id int) error {
+			return errors.New("db error")
 		},
 	}
 	service := newServiceForTest(t, mock, nil, nil)
 
-	err := service.DeleteCapture(1)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	if _, err := service.DeleteCapture(1); err == nil {
+		t.Fatal("expected error")
 	}
-
-	if _, err := os.Stat(filePath); !os.IsNotExist(err) {
-		t.Fatal("expected file to be deleted")
+	if _, err := os.Stat(filePath); err != nil {
+		t.Fatalf("expected file intact, got %v", err)
 	}
 }
 
@@ -872,7 +949,7 @@ func TestServiceDeleteCaptureGetError(t *testing.T) {
 	}
 	service := newServiceForTest(t, mock, nil, nil)
 
-	err := service.DeleteCapture(99)
+	_, err := service.DeleteCapture(99)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -889,7 +966,7 @@ func TestServiceDeleteCaptureRepoError(t *testing.T) {
 	}
 	service := newServiceForTest(t, mock, nil, nil)
 
-	err := service.DeleteCapture(1)
+	_, err := service.DeleteCapture(1)
 	if err == nil {
 		t.Fatal("expected error")
 	}

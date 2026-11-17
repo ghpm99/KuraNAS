@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/config"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
@@ -464,22 +465,40 @@ func (s *Service) GetCaptureByID(id int) (CaptureDto, error) {
 	return model.ToDto(), nil
 }
 
-func (s *Service) DeleteCapture(id int) error {
+// DeleteCapture removes the capture row and reports whether the library file
+// was kept. A promoted capture points at the library video, so only the row is
+// deleted; an unpromoted one also has its received file removed from disk.
+func (s *Service) DeleteCapture(id int) (bool, error) {
 	model, err := s.Repository.GetCaptureByID(id)
 	if err != nil {
-		return fmt.Errorf("DeleteCapture: %w", err)
+		return false, fmt.Errorf("DeleteCapture: %w", err)
 	}
 
 	err = s.withTransaction(func(tx *sql.Tx) error {
 		return s.Repository.DeleteCapture(tx, id)
 	})
-
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	os.Remove(model.FilePath)
-	return nil
+	if isCapturePromoted(model) {
+		return true, nil
+	}
+
+	removeReceivedCaptureFile(model)
+	return false, nil
+}
+
+func isCapturePromoted(model CaptureModel) bool {
+	return model.Status == CaptureStatusPromoted || model.FileID != nil
+}
+
+func removeReceivedCaptureFile(model CaptureModel) {
+	err := os.Remove(model.FilePath)
+	if err == nil || errors.Is(err, os.ErrNotExist) {
+		return
+	}
+	applog.Error("captures: remove received file failed", "capture_id", model.ID, "path", model.FilePath, "error", err)
 }
 
 func buildCaptureDir(name string) string {

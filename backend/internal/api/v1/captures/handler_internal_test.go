@@ -20,7 +20,9 @@ import (
 // Service mock — success
 // ---------------------------------------------------------------------------
 
-type capturesHandlerServiceMock struct{}
+type capturesHandlerServiceMock struct {
+	libraryFileKept bool
+}
 
 func (m *capturesHandlerServiceMock) UploadCapture(file *multipart.FileHeader, dto CreateCaptureDto) (CaptureDto, error) {
 	return CaptureDto{ID: 1, Name: dto.Name, FileName: file.Filename}, nil
@@ -50,8 +52,8 @@ func (m *capturesHandlerServiceMock) PromoteCapture(captureID int) error {
 	return nil
 }
 
-func (m *capturesHandlerServiceMock) DeleteCapture(id int) error {
-	return nil
+func (m *capturesHandlerServiceMock) DeleteCapture(id int) (bool, error) {
+	return m.libraryFileKept, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -86,8 +88,8 @@ func (m *capturesHandlerErrServiceMock) GetCaptureByID(id int) (CaptureDto, erro
 	return CaptureDto{}, errors.New("not found")
 }
 
-func (m *capturesHandlerErrServiceMock) DeleteCapture(id int) error {
-	return errors.New("delete failed")
+func (m *capturesHandlerErrServiceMock) DeleteCapture(id int) (bool, error) {
+	return false, errors.New("delete failed")
 }
 
 // ---------------------------------------------------------------------------
@@ -463,4 +465,27 @@ func (m *capturesSizeMock) UploadCapture(file *multipart.FileHeader, dto CreateC
 		return m.uploadFn(file, dto)
 	}
 	return CaptureDto{}, fmt.Errorf("not implemented")
+}
+
+func TestCapturesHandlerDeleteReportsLibraryFileKept(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, libraryFileKept := range []bool{true, false} {
+		handler := NewHandler(&capturesHandlerServiceMock{libraryFileKept: libraryFileKept}, &capturesLoggerMock{})
+		router := gin.New()
+		router.DELETE("/captures/:id", handler.DeleteCaptureHandler)
+
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodDelete, "/captures/1", nil))
+
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("expected %d, got %d", http.StatusOK, recorder.Code)
+		}
+		var body map[string]bool
+		if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		if !body["deleted"] || body["library_file_kept"] != libraryFileKept {
+			t.Fatalf("unexpected body %v for libraryFileKept=%v", body, libraryFileKept)
+		}
+	}
 }

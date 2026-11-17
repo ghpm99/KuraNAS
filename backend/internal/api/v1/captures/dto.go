@@ -137,3 +137,8 @@ func ParsePaginationToDto(pagination *utils.PaginationResponse[CaptureModel]) ut
 
 	return result
 }
+
+type DeleteCaptureResponseDto struct {
+	Deleted         bool `json:"deleted"`
+	LibraryFileKept bool `json:"library_file_kept"`
+}
