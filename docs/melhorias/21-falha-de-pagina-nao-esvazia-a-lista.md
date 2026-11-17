@@ -29,6 +29,11 @@ Em toda lista, uma falha depois da primeira carga mantém os itens na tela e mos
 4. **Revalidação em segundo plano que falha** (`RN-13`, `RN-14`): nas mesmas telas, mantém os itens e avisa por aviso curto, sem `ErrorState` em tela cheia.
 5. Os testes que hoje fixam o comportamento errado são reescritos: `fileContent.states.test.tsx`, `fileContent.test.tsx`, `fileContent.search.test.tsx`, `NotificationsScreen.integration.test.tsx`, `activityDiaryComponents.test.tsx`, `VideoFolderBrowser.behavior.test.tsx`, `VideoMovieBrowser.behavior.test.tsx`, `DocumentSearchResults*.test.tsx`.
 
+## Sub-itens levantados na execução (2026-11-16)
+
+- [ ] 21.1. `features/music/views/components/ArtistPage.tsx` tem um `LoadMoreSentinel` fora do `ListFeedback` com `!albumsQuery.isError`: uma revalidação em segundo plano que falha para o carregar mais dos álbuns. Passa a desligar só com `isFetchNextPageError` — `RN-09`, `RN-13`.
+- [ ] 21.2. O seletor de pasta mostra só o título do erro; a mensagem traduzida que o servidor devolve (`{"error": ...}`) não aparece. Guardar a mensagem da falha e passá-la como `errorMessage` — `RN-10`.
+
 ## Critérios de aceite
 
 Verificados no sistema rodando, em cada uma das telas da tabela, com pelo menos três páginas.
