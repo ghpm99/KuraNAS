@@ -66,7 +66,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
 
 - **RF-01** — Três formas: botão "Enviar" (arquivos ou pasta), arrastar e soltar sobre a listagem (a área de soltar fica destacada) e colar da área de transferência (imagem).
 - **RF-02** — Disponível em Arquivos (para a pasta aberta) e na galeria de Imagens, em Música e em Vídeos (para a pasta padrão do tipo, com opção de escolher outra).
-- **RF-03** — Painel de transferências, fixo no canto, que não bloqueia a navegação: um item por arquivo com nome, tamanho, barra de progresso, velocidade, tempo restante e estado (na fila, enviando, concluído, já existia, falhou, cancelado).
+- **RF-03** — Painel de transferências, fixo no canto, que não bloqueia a navegação: um item por arquivo com nome, tamanho, barra de progresso, velocidade, tempo restante e estado (na fila, conferindo — cálculo do checksum antes de um envio em partes —, enviando, aguardando conexão, concluído, já existia, falhou, cancelado).
 - **RF-04** — Ações: cancelar um arquivo, cancelar tudo, tentar de novo os que falharam, limpar concluídos. Clicar em um concluído leva ao arquivo.
 - **RF-05** — Progresso geral do lote (arquivos e bytes). Até 3 envios simultâneos.
 - **RF-06** — Diálogo de conflito com as opções de RN-04 e "aplicar a todos".
