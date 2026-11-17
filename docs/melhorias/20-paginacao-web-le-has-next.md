@@ -25,6 +25,8 @@ Toda listagem de arquivos da web carrega todas as páginas, e nenhum teste do fr
 
 Uma alteração por item, em commit próprio.
 
+Os itens 2, 3 e 4 saíram num commit só (2026-11-16): os três leem o mesmo tipo `PaginationResponse` de `fileContext.ts`, e trocá-lo num só quebra a compilação dos outros dois.
+
 1. **Fixture do envelope real**: um teste no backend grava (golden file versionado) o JSON que `utils.PaginationResponse` produz para uma página com próxima e para a última página; um construtor único de página para testes do frontend (`buildServerPage(items, {page, pageSize, hasNext})`) produz exatamente esse formato e é conferido contra o golden file. É a base de `CA-16`.
 2. **`fileProvider`**: `PaginationResponse` de `fileContext.ts` passa a ser o `Pagination<T>` compartilhado; `getNextPageParam` lê `has_next`. Todos os mocks dos testes de `fileProvider` e de `FilesExplorerScreen` passam a usar o construtor do item 1.
 3. **Busca na pasta** (`useFileSearchResults.ts`): mesma correção e mesmos mocks.

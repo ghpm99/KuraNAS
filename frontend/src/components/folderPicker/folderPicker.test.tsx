@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import FolderPicker from './folderPicker';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockGetFilesTree = jest.fn();
 
@@ -25,26 +26,30 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
-const makePaginationResponse = (items: Array<{ id: number; name: string; path: string; type: number }>) => ({
-    items: items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        path: item.path,
-        parent_path: '/',
-        type: item.type,
-        format: '',
-        size: 0,
-        updated_at: '',
-        created_at: '',
-        deleted_at: '',
-        last_interaction: '',
-        last_backup: '',
-        check_sum: '',
-        directory_content_count: 0,
-        starred: false,
-    })),
-    pagination: { hasNext: false, hasPrevious: false, page: 1, pageSize: 200 },
-});
+const makePaginationResponse = (
+    items: Array<{ id: number; name: string; path: string; type: number }>,
+    hasNext = false
+) =>
+    buildServerPage(
+        items.map((item) => ({
+            id: item.id,
+            name: item.name,
+            path: item.path,
+            parent_path: '/',
+            type: item.type,
+            format: '',
+            size: 0,
+            updated_at: '',
+            created_at: '',
+            deleted_at: '',
+            last_interaction: '',
+            last_backup: '',
+            check_sum: '',
+            directory_content_count: 0,
+            starred: false,
+        })),
+        { page: 1, pageSize: 200, hasNext }
+    );
 
 describe('FolderPicker', () => {
     const onClose = jest.fn();
@@ -272,8 +277,7 @@ describe('FolderPicker', () => {
     });
 
     it('loads the next page of folders and appends it to the list', async () => {
-        const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }]);
-        firstPage.pagination.hasNext = true;
+        const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }], true);
         mockGetFilesTree
             .mockResolvedValueOnce(firstPage)
             .mockResolvedValueOnce(
@@ -292,8 +296,7 @@ describe('FolderPicker', () => {
     });
 
     it('stops offering more pages when loading the next page fails', async () => {
-        const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }]);
-        firstPage.pagination.hasNext = true;
+        const firstPage = makePaginationResponse([{ id: 1, name: 'Alpha', path: '/Alpha', type: 1 }], true);
         mockGetFilesTree.mockResolvedValueOnce(firstPage).mockRejectedValueOnce(new Error('fail'));
 
         render(<FolderPicker open onClose={onClose} onSelect={onSelect} />);

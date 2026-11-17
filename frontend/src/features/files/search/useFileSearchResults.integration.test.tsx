@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useFileSearchResults from './useFileSearchResults';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockGet = jest.fn();
 
@@ -19,7 +20,7 @@ describe('file search seam', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('sends the exact query the backend decodes for a recursive folder search', async () => {
-        mockGet.mockResolvedValue({ data: { items: [], pagination: { page: 1, hasNext: false } } });
+        mockGet.mockResolvedValue({ data: buildServerPage([], { page: 1, pageSize: 100, hasNext: false }) });
 
         renderHook(
             () => useFileSearchResults({ query: 'relatorio', parentId: 7, isRecursive: true }),
@@ -40,7 +41,7 @@ describe('file search seam', () => {
     });
 
     it('sends a direct-children search with recursive=false', async () => {
-        mockGet.mockResolvedValue({ data: { items: [], pagination: { page: 1, hasNext: false } } });
+        mockGet.mockResolvedValue({ data: buildServerPage([], { page: 1, pageSize: 100, hasNext: false }) });
 
         renderHook(
             () => useFileSearchResults({ query: 'relatorio', parentId: 7, isRecursive: false }),
@@ -55,7 +56,7 @@ describe('file search seam', () => {
     });
 
     it('sends no parent_id for the global search', async () => {
-        mockGet.mockResolvedValue({ data: { items: [], pagination: { page: 1, hasNext: false } } });
+        mockGet.mockResolvedValue({ data: buildServerPage([], { page: 1, pageSize: 100, hasNext: false }) });
 
         renderHook(() => useFileSearchResults({ query: 'relatorio', isRecursive: true }), {
             wrapper,
@@ -66,7 +67,7 @@ describe('file search seam', () => {
     });
 
     it('sends every refinement with the exact names the backend decodes', async () => {
-        mockGet.mockResolvedValue({ data: { items: [], pagination: { page: 1, hasNext: false } } });
+        mockGet.mockResolvedValue({ data: buildServerPage([], { page: 1, pageSize: 100, hasNext: false }) });
 
         renderHook(
             () =>

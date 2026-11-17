@@ -38,7 +38,7 @@ const useFileSearchResults = ({ query, parentId, isRecursive, refinements }: Fil
             }),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
-            lastPage?.pagination?.hasNext ? lastPage.pagination.page + 1 : undefined,
+            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
         enabled: isSearchActive,
         staleTime: listingStaleTimeMs,
     });

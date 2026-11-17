@@ -71,7 +71,7 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
         const folderEntries = response.items
             .filter((file: FileData) => file.type === FileType.Directory)
             .map((file: FileData) => ({ id: file.id, name: file.name, path: file.path }));
-        return { folderEntries, hasNext: Boolean(response.pagination?.hasNext) };
+        return { folderEntries, hasNext: Boolean(response.pagination?.has_next) };
     }, []);
 
     const fetchFolders = useCallback(

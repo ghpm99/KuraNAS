@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import FileProvider from './index';
 import { useFile } from './fileContext';
 import { apiBase } from '@/service';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 jest.mock('@/service', () => ({
     apiBase: { get: jest.fn(), post: jest.fn(), delete: jest.fn() },
@@ -37,7 +38,7 @@ const folder = (id: number, name: string, path: string, parentPath: string) => (
     directory_content_count: 1,
 });
 
-const page = (items: unknown[]) => ({ items, pagination: { hasNext: false, page: 1 } });
+const page = (items: unknown[]) => buildServerPage(items, { page: 1, pageSize: 200, hasNext: false });
 
 const wrapper = ({ children }: { children: ReactNode }) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

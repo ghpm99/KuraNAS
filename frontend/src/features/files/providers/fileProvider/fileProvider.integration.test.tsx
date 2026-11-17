@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import FileProvider from './index';
 import { useFile } from './fileContext';
 import { apiBase } from '@/service';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 // Seam test: only apiBase is mocked; the real FileProvider + service/files.ts
 // run, so each file-manager command asserts the exact endpoint/payload the
@@ -190,11 +191,11 @@ describe('features/files/fileProvider (seam)', () => {
 			if (url.startsWith('/files/recent/')) return Promise.resolve({ data: [] });
 			if (config?.params?.page === 2) {
 				return Promise.resolve({
-					data: { items: [buildFile(3)], pagination: { hasNext: false, page: 2 } },
+					data: buildServerPage([buildFile(3)], { page: 2, pageSize: 200, hasNext: false }),
 				});
 			}
 			return Promise.resolve({
-				data: { items: [buildFile(1), buildFile(2)], pagination: { hasNext: true, page: 1 } },
+				data: buildServerPage([buildFile(1), buildFile(2)], { page: 1, pageSize: 200, hasNext: true }),
 			});
 		});
 		const { result } = renderHook(() => useFile(), { wrapper });
@@ -206,6 +207,7 @@ describe('features/files/fileProvider (seam)', () => {
 
 		await waitFor(() => expect(result.current.files).toHaveLength(3));
 		expect(result.current.files.map((file) => file.id)).toEqual([1, 2, 3]);
+		expect(mockedApi.get).toHaveBeenCalledWith('/files/tree', expect.objectContaining({ params: expect.objectContaining({ page: 2 }) }));
 		expect(result.current.hasNextPage).toBe(false);
 		expect(result.current.isFetchingNextPage).toBe(false);
 	});

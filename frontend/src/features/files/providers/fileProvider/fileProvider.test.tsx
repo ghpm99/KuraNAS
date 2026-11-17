@@ -8,6 +8,7 @@ import {
 } from './fileProviderUtils';
 import { buildFilesUrl } from '@/app/routes';
 import type { FileData, FileContextType, PaginationResponse } from './fileContext';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 // --- mocks ---
 
@@ -105,10 +106,7 @@ const makePaginationResponse = (
     items: FileData[],
     hasNext = false,
     page = 1
-): PaginationResponse => ({
-    items,
-    pagination: { hasNext, hasPrevious: false, page, pageSize: 200 },
-});
+) => buildServerPage(items, { page, pageSize: 200, hasNext });
 
 function createQueryClient() {
     return new QueryClient({

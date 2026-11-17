@@ -153,7 +153,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
                       }),
             initialPageParam: 1,
             getNextPageParam: (lastPage) => {
-                if (lastPage.pagination.hasNext) {
+                if (lastPage.pagination.has_next) {
                     return lastPage.pagination.page + 1;
                 }
                 return undefined;

@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import FilesExplorerScreen from './FilesExplorerScreen';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockUseFile = jest.fn();
 const mockSearchFiles = jest.fn();
@@ -94,10 +95,9 @@ describe('FilesExplorerScreen search', () => {
             ],
             pagination: { page: 1, page_size: 20, has_next: false, has_prev: false },
         });
-        mockSearchFiles.mockResolvedValue({
-            items: [{ id: 1, name: 'relatorio.txt' }],
-            pagination: { page: 1, pageSize: 100, hasNext: false },
-        });
+        mockSearchFiles.mockResolvedValue(
+            buildServerPage([{ id: 1, name: 'relatorio.txt' }], { page: 1, pageSize: 100, hasNext: false })
+        );
     });
 
     it('shows the normal listing and never searches without q', () => {
@@ -178,10 +178,7 @@ describe('FilesExplorerScreen search', () => {
     });
 
     it('shows the empty state when nothing matched', async () => {
-        mockSearchFiles.mockResolvedValue({
-            items: [],
-            pagination: { page: 1, pageSize: 100, hasNext: false },
-        });
+        mockSearchFiles.mockResolvedValue(buildServerPage([], { page: 1, pageSize: 100, hasNext: false }));
         renderScreen('/files/docs?q=zzz');
 
         expect(await screen.findByText('FILES_SEARCH_EMPTY')).toBeInTheDocument();

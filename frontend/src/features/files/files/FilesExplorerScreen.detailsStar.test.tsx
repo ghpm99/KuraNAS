@@ -6,6 +6,7 @@ import SettingsProvider from '@/components/providers/settingsProvider';
 import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvider';
 import FileProvider from '@/features/files/providers/fileProvider';
 import FilesExplorerScreen from './FilesExplorerScreen';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockGetFilesTree = jest.fn();
 const mockGetFileByPath = jest.fn();
@@ -65,10 +66,9 @@ describe('Starring from the details panel opened by the explicit action', () => 
     beforeEach(() => {
         jest.clearAllMocks();
         let isStarredOnServer = false;
-        mockGetFilesTree.mockImplementation(async () => ({
-            items: [{ ...folderToInspect, starred: isStarredOnServer }],
-            pagination: { hasNext: false, hasPrevious: false, page: 1, pageSize: 200 },
-        }));
+        mockGetFilesTree.mockImplementation(async () =>
+            buildServerPage([{ ...folderToInspect, starred: isStarredOnServer }], { page: 1, pageSize: 200, hasNext: false })
+        );
         mockGetFileByPath.mockResolvedValue(null);
         mockGetFileAncestors.mockResolvedValue([]);
         mockSetFileStarred.mockImplementation(async (fileId: number, isStarred: boolean) => {

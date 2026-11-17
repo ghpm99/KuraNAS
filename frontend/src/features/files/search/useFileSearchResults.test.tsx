@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useFileSearchResults from './useFileSearchResults';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockSearchFiles = jest.fn();
 
@@ -43,10 +44,9 @@ describe('useFileSearchResults', () => {
 
     it('exposes the backend error message and retries the search', async () => {
         mockSearchFiles.mockRejectedValueOnce({ response: { data: { error: 'Busca indisponível' } } });
-        mockSearchFiles.mockResolvedValue({
-            items: [{ id: 1, name: 'foto.png' }],
-            pagination: { page: 1, pageSize: 100, hasNext: false },
-        });
+        mockSearchFiles.mockResolvedValue(
+            buildServerPage([{ id: 1, name: 'foto.png' }], { page: 1, pageSize: 100, hasNext: false })
+        );
         const { result } = renderHook(
             () => useFileSearchResults({ query: 'foto', isRecursive: true }),
             { wrapper: createWrapper() }
@@ -72,14 +72,8 @@ describe('useFileSearchResults', () => {
 
     it('searches the folder scope and walks the next pages', async () => {
         mockSearchFiles
-            .mockResolvedValueOnce({
-                items: [{ id: 1 }],
-                pagination: { page: 1, hasNext: true },
-            })
-            .mockResolvedValueOnce({
-                items: [{ id: 2 }],
-                pagination: { page: 2, hasNext: false },
-            });
+            .mockResolvedValueOnce(buildServerPage([{ id: 1 }], { page: 1, pageSize: 100, hasNext: true }))
+            .mockResolvedValueOnce(buildServerPage([{ id: 2 }], { page: 2, pageSize: 100, hasNext: false }));
         const { result } = renderHook(
             () => useFileSearchResults({ query: 'foto', parentId: 7, isRecursive: false }),
             { wrapper: createWrapper() }

@@ -93,7 +93,7 @@ describe('providers/fileProvider/index', () => {
                                 file_children: [{ id: 2, type: 2, name: 'file' }],
                             },
                         ],
-                        pagination: { hasNext: false, page: 1 },
+                        pagination: { page: 1, page_size: 200, has_next: false, has_prev: false },
                     },
                 ],
             },
@@ -187,12 +187,12 @@ describe('providers/fileProvider/index', () => {
         });
         expect(
             infiniteOptions.getNextPageParam({
-                pagination: { hasNext: true, page: 5 },
+                pagination: { page: 5, page_size: 200, has_next: true, has_prev: true },
             })
         ).toBe(6);
         expect(
             infiniteOptions.getNextPageParam({
-                pagination: { hasNext: false, page: 5 },
+                pagination: { page: 5, page_size: 200, has_next: false, has_prev: true },
             })
         ).toBeUndefined();
     });

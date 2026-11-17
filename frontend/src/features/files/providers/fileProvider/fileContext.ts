@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { Pagination } from '@/types/pagination';
 import type { StarredKind, StarredSort } from '@/service/files';
 
 export type FileData = {
@@ -70,17 +71,7 @@ export type FileContextType = {
     setStarredSort: (sort: StarredSort) => void;
 };
 
-export type Pagination = {
-    hasNext: boolean;
-    hasPrevious: boolean;
-    page: number;
-    pageSize: number;
-};
-
-export type PaginationResponse = {
-    items: FileData[];
-    pagination: Pagination;
-};
+export type PaginationResponse = Pagination<FileData>;
 
 export type FileListCategoryType = 'all' | 'recent' | 'starred';
 

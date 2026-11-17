@@ -7,6 +7,7 @@ import { GlobalMusicProvider } from '@/features/music/providers/GlobalMusicProvi
 import FileProvider from '@/features/files/providers/fileProvider';
 import FileListFilterSync from '@/features/files/files/FileListFilterSync';
 import FavoritesScreen from './FavoritesScreen';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 
 const mockGetStarredFiles = jest.fn();
 const mockGetFilesTree = jest.fn();
@@ -60,10 +61,7 @@ const starredFolder = buildEntry(10, 'Projects', '/Projects', {
 const plainFile = buildEntry(11, 'plain-notes.txt', '/Projects/plain-notes.txt');
 const plainFolder = buildEntry(12, 'plain-folder', '/Projects/plain-folder', { type: 1 });
 
-const toPage = (items: FileData[]) => ({
-    items,
-    pagination: { hasNext: false, hasPrevious: false, page: 1, pageSize: 200 },
-});
+const toPage = (items: FileData[]) => buildServerPage(items, { page: 1, pageSize: 200, hasNext: false });
 
 const LocationProbe = () => <div data-testid="location">{useLocation().pathname}</div>;
 
