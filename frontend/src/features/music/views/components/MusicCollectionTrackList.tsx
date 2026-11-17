@@ -15,6 +15,7 @@ type MusicCollectionTrackListProps = {
     errorMessage?: string;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isNextPageError: boolean;
     showArtist?: boolean;
     albumDiscCount?: number | null;
     isAlbumLayout?: boolean;
@@ -30,6 +31,7 @@ export default function MusicCollectionTrackList({
     errorMessage,
     hasNextPage,
     isFetchingNextPage,
+    isNextPageError,
     showArtist = true,
     albumDiscCount = null,
     isAlbumLayout = false,
@@ -59,6 +61,7 @@ export default function MusicCollectionTrackList({
                 errorTitleKey="MUSIC_TRACKS_ERROR_TITLE"
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
+                isNextPageError={isNextPageError}
                 onRetry={onRetry}
                 fetchNextPage={fetchNextPage}
             >

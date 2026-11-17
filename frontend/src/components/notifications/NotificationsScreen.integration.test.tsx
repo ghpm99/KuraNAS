@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import NotificationsScreen from './NotificationsScreen';
@@ -30,7 +30,7 @@ const LocationProbe = () => <span data-testid="location">{useLocation().pathname
 
 const renderScreen = () => {
 	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-	return render(
+	const rendered = render(
 		<QueryClientProvider client={client}>
 			<MemoryRouter>
 				<NotificationsScreen />
@@ -38,6 +38,7 @@ const renderScreen = () => {
 			</MemoryRouter>
 		</QueryClientProvider>
 	);
+	return { ...rendered, queryClient: client };
 };
 
 describe('components/notifications/NotificationsScreen (seam)', () => {
@@ -183,5 +184,19 @@ describe('components/notifications/NotificationsScreen (seam)', () => {
 
 		expect(await screen.findByText('servidor fora')).toBeInTheDocument();
 		expect(screen.queryByText('NO_NOTIFICATIONS')).not.toBeInTheDocument();
+	});
+
+	it('keeps the notifications without an error when a background revalidation fails', async () => {
+		const { queryClient } = renderScreen();
+		await screen.findByText('Backup terminou');
+
+		mockedApi.get.mockClear();
+		mockedApi.get.mockRejectedValue({ response: { data: { error: 'servidor fora' } } });
+		await act(() => queryClient.refetchQueries());
+
+		expect(mockedApi.get).toHaveBeenCalled();
+		expect(screen.getByText('Backup terminou')).toBeInTheDocument();
+		expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+		expect(screen.queryByText('servidor fora')).not.toBeInTheDocument();
 	});
 });

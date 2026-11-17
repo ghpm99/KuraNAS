@@ -80,6 +80,7 @@ describe('fileContent', () => {
         mockUseFile.mockReturnValue({
             status: 'error',
             selectedItem: null,
+            isFetchNextPageError: true,
             files: [createFile({ id: 1, name: 'carregado' })],
             retryListing: jest.fn(),
         });

@@ -28,6 +28,7 @@ const renderContent = (
         fileListFilter: 'all',
         hasNextPage: false,
         isFetchingNextPage: false,
+        isFetchNextPageError: false,
         fetchNextPage: jest.fn(),
         retryListing: jest.fn(),
         ...contextOverrides,
@@ -81,6 +82,7 @@ describe('FileContent states', () => {
             status: 'error',
             hasNextPage: false,
             isFetchingNextPage: false,
+            isFetchNextPageError: false,
             fetchNextPage: jest.fn(),
             errorMessage: 'Busca falhou',
             retry,
@@ -96,6 +98,7 @@ describe('FileContent states', () => {
         const retryListing = jest.fn();
         renderContent({
             status: 'error',
+            isFetchNextPageError: true,
             listingErrorMessage: 'Disco indisponível',
             retryListing,
             files: [createTestFile(11, { name: 'ja-carregado.txt' })],
@@ -114,6 +117,7 @@ describe('FileContent states', () => {
             status: 'error',
             hasNextPage: true,
             isFetchingNextPage: false,
+            isFetchNextPageError: true,
             fetchNextPage: jest.fn(),
             errorMessage: 'Busca falhou',
             retry,

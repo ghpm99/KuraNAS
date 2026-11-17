@@ -114,6 +114,7 @@ export default function ArtistPage({ artistKey, onBack }: ArtistPageProps) {
                 errorMessage={tracksQuery.errorMessage}
                 hasNextPage={tracksQuery.hasNextPage}
                 isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                isNextPageError={tracksQuery.isNextPageError}
                 showArtist={false}
                 onPlayTrack={(track) => void queueArtistTracks(track.id)}
                 onRetry={tracksQuery.retry}

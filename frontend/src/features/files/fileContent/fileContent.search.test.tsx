@@ -30,6 +30,7 @@ const buildListing = (overrides: Partial<FileSearchListing> = {}): FileSearchLis
     status: 'success',
     hasNextPage: true,
     isFetchingNextPage: false,
+    isFetchNextPageError: false,
     fetchNextPage: jest.fn(),
     ...overrides,
 });
@@ -48,6 +49,7 @@ const renderSearch = (
         fileListFilter: 'all',
         hasNextPage: false,
         isFetchingNextPage: false,
+        isFetchNextPageError: false,
         fetchNextPage: jest.fn(),
         ...contextOverrides,
     });
@@ -130,7 +132,7 @@ describe('FileContent search listing', () => {
 
         render(
             <SelectionTestHarness fileContext={createFileContextStub({ status: 'success' })} seedFiles={[]}>
-                <FileContent searchListing={buildListing({ status: 'error' })} />
+                <FileContent searchListing={buildListing({ status: 'error', items: [] })} />
             </SelectionTestHarness>
         );
         expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();
@@ -138,7 +140,7 @@ describe('FileContent search listing', () => {
 
     it('keeps the results and shows the error below them when a later page of the search fails', () => {
         const retry = jest.fn();
-        renderSearch(buildListing({ status: 'error', retry }));
+        renderSearch(buildListing({ status: 'error', isFetchNextPageError: true, retry }));
 
         expect(screen.getByText('relatorio.txt')).toBeInTheDocument();
         expect(screen.getByText('FILES_LISTING_ERROR_TITLE')).toBeInTheDocument();

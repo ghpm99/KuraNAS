@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import FileContent from './fileContent';
 import FileProvider from '../providers/fileProvider';
@@ -68,11 +68,12 @@ const SearchedFiles = () => {
 
 const renderInProvider = (content: React.ReactNode) => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(
+    const rendered = render(
         <QueryClientProvider client={queryClient}>
             <FileProvider>{content}</FileProvider>
         </QueryClientProvider>
     );
+    return { ...rendered, queryClient };
 };
 
 const failSecondPageLoad = async () => {
@@ -114,6 +115,21 @@ describe('FileContent when a later page fails', () => {
 
         await expectBothPagesWithoutError();
         expect(requestedPages('/files/search')).toEqual([1, 2, 2]);
+    });
+
+    it('keeps the first page without an error when a background revalidation fails', async () => {
+        respondWithSecondPageFailingOnce('/files/tree');
+        const { queryClient } = renderInProvider(<FileContent />);
+        await screen.findByText('primeira.txt');
+
+        mockedGet.mockClear();
+        mockedGet.mockRejectedValue(new Error('servidor fora'));
+        await act(() => queryClient.refetchQueries());
+
+        expect(mockedGet).toHaveBeenCalled();
+        expect(screen.getByText('primeira.txt')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'load-more' })).toBeInTheDocument();
     });
 
     it('shows the error state, not the empty one, when the server is down from the start', async () => {

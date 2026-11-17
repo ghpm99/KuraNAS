@@ -214,6 +214,7 @@ describe('activity diary components', () => {
         useActivityDiary.mockReturnValueOnce({
             ...defaultCtx,
             hasEntriesError: true,
+            isEntriesNextPageError: true,
             hasMoreEntries: true,
             entriesErrorMessage: 'falha do servidor',
             reloadEntries,

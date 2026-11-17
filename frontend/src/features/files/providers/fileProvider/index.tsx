@@ -506,6 +506,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             },
             hasNextPage: Boolean(hasNextPage),
             isFetchingNextPage: Boolean(isFetchingNextPage),
+            isFetchNextPageError: Boolean(isFetchNextPageError),
         }),
         [
             fileTree,
@@ -536,6 +537,7 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             fetchNextPage,
             hasNextPage,
             isFetchingNextPage,
+            isFetchNextPageError,
         ]
     );
     const selectionScopeKey = `${selectedItemId ?? 'root'}:${fileListFilter}`;

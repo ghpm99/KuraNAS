@@ -70,6 +70,7 @@ describe('DocumentSearchResults', () => {
         const fetchNextPage = jest.fn();
         renderResults({
             status: 'error',
+            isFetchNextPageError: true,
             items: [documentResult],
             hasNextPage: true,
             fetchNextPage,

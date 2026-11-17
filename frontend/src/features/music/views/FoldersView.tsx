@@ -85,6 +85,7 @@ export default function FoldersView() {
                 fetchNextPage={foldersQuery.fetchNextPage}
                 hasNextPage={foldersQuery.hasNextPage}
                 isFetchingNextPage={foldersQuery.isFetchingNextPage}
+                isNextPageError={foldersQuery.isNextPageError}
                 onSelect={handleSelectFolder}
             />
         </>
@@ -100,6 +101,7 @@ type FolderListViewProps = {
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isNextPageError: boolean;
     onSelect: (folder: string) => void;
 };
 
@@ -112,6 +114,7 @@ function FolderListView({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isNextPageError,
     onSelect,
 }: FolderListViewProps) {
     const { t } = useI18n();
@@ -135,6 +138,7 @@ function FolderListView({
             errorTitleKey="MUSIC_LIST_ERROR_TITLE"
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
+            isNextPageError={isNextPageError}
             onRetry={onRetry}
             fetchNextPage={fetchNextPage}
         >
@@ -261,6 +265,7 @@ function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => vo
                 errorMessage={tracksQuery.errorMessage}
                 hasNextPage={tracksQuery.hasNextPage}
                 isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                isNextPageError={tracksQuery.isNextPageError}
                 onPlayTrack={(track) => void queueFolderTracks(track.id)}
                 onRetry={tracksQuery.retry}
                 fetchNextPage={tracksQuery.fetchNextPage}

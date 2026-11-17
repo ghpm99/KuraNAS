@@ -54,6 +54,7 @@ const useFileSearchResults = ({ query, parentId, isRecursive, refinements }: Fil
         status,
         hasNextPage: Boolean(hasNextPage),
         isFetchingNextPage,
+        isFetchNextPageError,
         fetchNextPage: () => {
             fetchNextPage();
         },

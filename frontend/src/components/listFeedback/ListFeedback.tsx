@@ -6,6 +6,7 @@ import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 type ListFeedbackProps = {
     isEmpty: boolean;
     isError: boolean;
+    isNextPageError: boolean;
     errorTitle: string;
     errorMessage?: string;
     onRetry: () => void;
@@ -18,12 +19,14 @@ type ListFeedbackProps = {
 
 /**
  * Feedback de uma lista paginada já carregada: erro em tela cheia só quando não há itens;
- * com itens, a falha de uma página seguinte aparece abaixo da lista sem esvaziá-la.
+ * com itens, só a falha da página seguinte (`isNextPageError`) aparece abaixo da lista sem esvaziá-la;
+ * uma revalidação em segundo plano que falha (`isError` sem `isNextPageError`) mantém os itens sem erro.
  * Não trata o carregamento inicial. Os textos chegam prontos do chamador.
  */
 export default function ListFeedback({
     isEmpty,
     isError,
+    isNextPageError,
     errorTitle,
     errorMessage,
     onRetry,
@@ -50,9 +53,9 @@ export default function ListFeedback({
     return (
         <>
             {children}
-            {isError && errorState}
+            {isNextPageError && errorState}
             <LoadMoreSentinel
-                hasNextPage={hasNextPage && !isError}
+                hasNextPage={hasNextPage && !isNextPageError}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={onLoadMore}
             />

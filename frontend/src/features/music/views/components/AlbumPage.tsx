@@ -101,6 +101,7 @@ export default function AlbumPage({ albumKey, onBack }: AlbumPageProps) {
                 errorMessage={tracksQuery.errorMessage}
                 hasNextPage={tracksQuery.hasNextPage}
                 isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                isNextPageError={tracksQuery.isNextPageError}
                 onPlayTrack={(track) => void queueAlbumTracks(track.id)}
                 onRetry={tracksQuery.retry}
                 fetchNextPage={tracksQuery.fetchNextPage}

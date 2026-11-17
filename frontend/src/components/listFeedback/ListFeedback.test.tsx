@@ -4,6 +4,7 @@ import ListFeedback from './ListFeedback';
 const baseProps = {
     isEmpty: false,
     isError: false,
+    isNextPageError: false,
     errorTitle: 'Load failed',
     onRetry: jest.fn(),
     hasNextPage: false,
@@ -41,7 +42,7 @@ describe('ListFeedback', () => {
     it('keeps the items and shows the error below them, retrying on click', () => {
         const onRetry = jest.fn();
         render(
-            <ListFeedback {...baseProps} isError onRetry={onRetry}>
+            <ListFeedback {...baseProps} isError isNextPageError onRetry={onRetry}>
                 <div>items</div>
             </ListFeedback>
         );
@@ -67,7 +68,7 @@ describe('ListFeedback', () => {
     it('does not offer the next page while in error', () => {
         const onLoadMore = jest.fn();
         render(
-            <ListFeedback {...baseProps} isError hasNextPage onLoadMore={onLoadMore}>
+            <ListFeedback {...baseProps} isError isNextPageError hasNextPage onLoadMore={onLoadMore}>
                 <div>items</div>
             </ListFeedback>
         );
@@ -75,5 +76,17 @@ describe('ListFeedback', () => {
         expect(screen.getAllByRole('button')).toHaveLength(1);
         fireEvent.click(screen.getByRole('button'));
         expect(onLoadMore).not.toHaveBeenCalled();
+    });
+
+    it('keeps the items without an error and keeps the sentinel active when a background refetch fails', () => {
+        render(
+            <ListFeedback {...baseProps} isError hasNextPage>
+                <div>items</div>
+            </ListFeedback>
+        );
+
+        expect(screen.getByText('items')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByRole('button')).toBeInTheDocument();
     });
 });

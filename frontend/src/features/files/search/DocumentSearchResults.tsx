@@ -16,6 +16,7 @@ interface DocumentSearchResultsProps {
     status?: string;
     hasNextPage?: boolean;
     isFetchingNextPage?: boolean;
+    isFetchNextPageError?: boolean;
     fetchNextPage?: () => void;
     errorMessage?: string;
     retry?: () => void;
@@ -27,6 +28,7 @@ const DocumentSearchResults = ({
     status = 'pending',
     hasNextPage = false,
     isFetchingNextPage = false,
+    isFetchNextPageError = false,
     fetchNextPage,
     errorMessage,
     retry,
@@ -45,6 +47,7 @@ const DocumentSearchResults = ({
         <ListFeedback
             isEmpty={items.length === 0}
             isError={status === 'error'}
+            isNextPageError={isFetchNextPageError}
             errorTitle={t('FILES_LISTING_ERROR_TITLE')}
             errorMessage={errorMessage}
             onRetry={() => retry?.()}

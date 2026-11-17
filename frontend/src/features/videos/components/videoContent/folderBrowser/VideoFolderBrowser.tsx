@@ -38,6 +38,7 @@ export default function VideoFolderBrowser({ onPlayVideo }: VideoFolderBrowserPr
             <ListFeedback
                 isEmpty={folders.length === 0}
                 isError={folderQuery.isError}
+                isNextPageError={folderQuery.isFetchNextPageError}
                 errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_SECTION_FOLDERS') })}
                 errorMessage={extractBackendErrorMessage(folderQuery.error)}
                 onRetry={retryFolders}
@@ -59,6 +60,7 @@ export default function VideoFolderBrowser({ onPlayVideo }: VideoFolderBrowserPr
             <ListFeedback
                 isEmpty={videos.length === 0}
                 isError={videoQuery.isError}
+                isNextPageError={videoQuery.isFetchNextPageError}
                 errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_ALL') })}
                 errorMessage={extractBackendErrorMessage(videoQuery.error)}
                 onRetry={retryVideos}

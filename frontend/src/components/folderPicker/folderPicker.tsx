@@ -225,6 +225,7 @@ const FolderPicker = ({ open, mode = 'move', onClose, onSelect }: FolderPickerPr
                         <ListFeedback
                             isEmpty={folders.length === 0}
                             isError={failedPage !== null}
+                            isNextPageError={failedPage !== null && failedPage > 1}
                             errorTitle={t('FOLDER_PICKER_LOAD_ERROR')}
                             onRetry={retryFailedPage}
                             hasNextPage={hasNextPage}

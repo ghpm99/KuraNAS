@@ -60,6 +60,7 @@ export default function AllTracksView() {
                 errorMessage={tracksQuery.errorMessage}
                 hasNextPage={tracksQuery.hasNextPage}
                 isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                isNextPageError={tracksQuery.isNextPageError}
                 onPlayTrack={(track) => playLoadedTracks(track.id)}
                 onRetry={tracksQuery.retry}
                 fetchNextPage={tracksQuery.fetchNextPage}

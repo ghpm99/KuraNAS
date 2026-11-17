@@ -28,7 +28,8 @@ const useDocumentSearchResults = ({ query, isEnabled }: DocumentSearchScope) => 
         enabled: isEnabled && query !== '',
         staleTime: listingStaleTimeMs,
     });
-    const { data, status, error, fetchNextPage, hasNextPage, isFetchingNextPage } = documentsQuery;
+    const { data, status, error, fetchNextPage, hasNextPage, isFetchingNextPage, isFetchNextPageError } =
+        documentsQuery;
     const retry = useRetryFailedPage(documentsQuery);
 
     const items: DocumentSearchResult[] = data?.pages.flatMap((page) => page?.items ?? []) ?? [];
@@ -38,6 +39,7 @@ const useDocumentSearchResults = ({ query, isEnabled }: DocumentSearchScope) => 
         status,
         hasNextPage: Boolean(hasNextPage),
         isFetchingNextPage,
+        isFetchNextPageError,
         fetchNextPage: () => {
             fetchNextPage();
         },

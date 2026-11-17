@@ -102,6 +102,7 @@ export default function NotificationsScreen() {
             <ListFeedback
                 isEmpty={allNotifications.length === 0}
                 isError={isError}
+                isNextPageError={isFetchNextPageError}
                 errorTitle={t('NOTIFICATIONS_LOAD_ERROR')}
                 errorMessage={extractBackendErrorMessage(error)}
                 onRetry={retryFailedPage}

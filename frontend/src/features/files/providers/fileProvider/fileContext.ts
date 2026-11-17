@@ -60,6 +60,7 @@ export type FileContextType = {
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isFetchNextPageError: boolean;
     expandedItems: number[];
     fileListFilter: FileListCategoryType;
     setFileListFilter: (filter: FileListCategoryType) => void;

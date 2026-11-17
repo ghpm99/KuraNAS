@@ -53,6 +53,7 @@ export type ActivityDiaryType = {
     entriesErrorMessage?: string;
     hasMoreEntries?: boolean;
     isFetchingMoreEntries?: boolean;
+    isEntriesNextPageError?: boolean;
     loadMoreEntries?: () => void;
     reloadEntries?: () => void;
 };

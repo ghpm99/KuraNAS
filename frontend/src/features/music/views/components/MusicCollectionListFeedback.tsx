@@ -13,6 +13,7 @@ type MusicCollectionListFeedbackProps = {
     errorTitleKey: string;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isNextPageError: boolean;
     onRetry: () => void;
     fetchNextPage: () => void;
     children: ReactNode;
@@ -27,6 +28,7 @@ export default function MusicCollectionListFeedback({
     errorTitleKey,
     hasNextPage,
     isFetchingNextPage,
+    isNextPageError,
     onRetry,
     fetchNextPage,
     children,
@@ -45,6 +47,7 @@ export default function MusicCollectionListFeedback({
         <ListFeedback
             isEmpty={isEmpty}
             isError={isError}
+            isNextPageError={isNextPageError}
             errorTitle={t(errorTitleKey)}
             errorMessage={errorMessage}
             onRetry={onRetry}

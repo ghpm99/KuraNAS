@@ -109,6 +109,7 @@ export default function GenresView() {
                 fetchNextPage={genresQuery.fetchNextPage}
                 hasNextPage={genresQuery.hasNextPage}
                 isFetchingNextPage={genresQuery.isFetchingNextPage}
+                isNextPageError={genresQuery.isNextPageError}
                 onSelect={handleSelectGenre}
             />
         </>
@@ -124,6 +125,7 @@ type GenreListViewProps = {
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isNextPageError: boolean;
     onSelect: (genre: MusicGenre) => void;
 };
 
@@ -136,6 +138,7 @@ function GenreListView({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isNextPageError,
     onSelect,
 }: GenreListViewProps) {
     const { t } = useI18n();
@@ -159,6 +162,7 @@ function GenreListView({
             errorTitleKey="MUSIC_LIST_ERROR_TITLE"
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
+            isNextPageError={isNextPageError}
             onRetry={onRetry}
             fetchNextPage={fetchNextPage}
         >
@@ -315,6 +319,7 @@ function GenreTracksView({ genreKey, onBack }: { genreKey: string; onBack: () =>
                 errorMessage={tracksQuery.errorMessage}
                 hasNextPage={tracksQuery.hasNextPage}
                 isFetchingNextPage={tracksQuery.isFetchingNextPage}
+                isNextPageError={tracksQuery.isNextPageError}
                 onPlayTrack={(track) => void queueGenreTracks(track.id)}
                 onRetry={tracksQuery.retry}
                 fetchNextPage={tracksQuery.fetchNextPage}

@@ -60,6 +60,7 @@ export default function AlbumsView() {
                 fetchNextPage={albumsQuery.fetchNextPage}
                 hasNextPage={albumsQuery.hasNextPage}
                 isFetchingNextPage={albumsQuery.isFetchingNextPage}
+                isNextPageError={albumsQuery.isNextPageError}
                 onSelect={handleSelectAlbum}
             />
         </>
@@ -75,6 +76,7 @@ type AlbumListViewProps = {
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isNextPageError: boolean;
     onSelect: (album: MusicAlbum) => void;
 };
 
@@ -87,6 +89,7 @@ function AlbumListView({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isNextPageError,
     onSelect,
 }: AlbumListViewProps) {
     return (
@@ -99,6 +102,7 @@ function AlbumListView({
             errorTitleKey="MUSIC_LIST_ERROR_TITLE"
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
+            isNextPageError={isNextPageError}
             onRetry={onRetry}
             fetchNextPage={fetchNextPage}
         >

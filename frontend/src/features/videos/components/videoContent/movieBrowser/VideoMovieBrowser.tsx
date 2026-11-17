@@ -25,6 +25,7 @@ export default function VideoMovieBrowser({ onPlayVideo }: VideoMovieBrowserProp
             <ListFeedback
                 isEmpty={movies.length === 0}
                 isError={movieQuery.status === 'error'}
+                isNextPageError={movieQuery.isFetchNextPageError}
                 errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_SECTION_MOVIES') })}
                 errorMessage={extractBackendErrorMessage(movieQuery.error)}
                 onRetry={retryFailedPage}

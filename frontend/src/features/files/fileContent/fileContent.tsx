@@ -33,6 +33,7 @@ export type FileSearchListing = {
     status: string;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isFetchNextPageError: boolean;
     fetchNextPage: () => void;
     errorMessage?: string;
     retry?: () => void;
@@ -74,6 +75,7 @@ const FileContent = ({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
+        isFetchNextPageError,
         filesSort,
         setFilesSort,
     } = useFile();
@@ -83,7 +85,7 @@ const FileContent = ({
     const fileSelection = useFileSelectionContext();
     const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
     const listingStatus = searchListing?.status ?? status;
-    const pagination = searchListing ?? { hasNextPage, isFetchingNextPage, fetchNextPage };
+    const pagination = searchListing ?? { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage };
     const currentListTitle =
         fileListFilter === 'starred'
             ? t('STARRED_FILES')
@@ -274,6 +276,7 @@ const FileContent = ({
             <ListFeedback
                 isEmpty={collectionItems.length === 0}
                 isError={listingStatus === 'error'}
+                isNextPageError={pagination.isFetchNextPageError}
                 errorTitle={t('FILES_LISTING_ERROR_TITLE')}
                 errorMessage={searchListing ? searchListing.errorMessage : listingErrorMessage}
                 onRetry={searchListing?.retry ?? retryListing}

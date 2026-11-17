@@ -74,6 +74,7 @@ export default function ArtistsView() {
                 fetchNextPage={artistsQuery.fetchNextPage}
                 hasNextPage={artistsQuery.hasNextPage}
                 isFetchingNextPage={artistsQuery.isFetchingNextPage}
+                isNextPageError={artistsQuery.isNextPageError}
                 onSelect={handleSelectArtist}
             />
         </>
@@ -89,6 +90,7 @@ type ArtistListViewProps = {
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;
+    isNextPageError: boolean;
     onSelect: (artist: MusicArtist) => void;
 };
 
@@ -101,6 +103,7 @@ function ArtistListView({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isNextPageError,
     onSelect,
 }: ArtistListViewProps) {
     const { t } = useI18n();
@@ -124,6 +127,7 @@ function ArtistListView({
             errorTitleKey="MUSIC_LIST_ERROR_TITLE"
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
+            isNextPageError={isNextPageError}
             onRetry={onRetry}
             fetchNextPage={fetchNextPage}
         >

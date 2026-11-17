@@ -25,6 +25,7 @@ export function useMusicInfinitePages<ItemType>(
         items,
         isLoading: query.isLoading,
         isError: query.isError,
+        isNextPageError: query.isFetchNextPageError,
         errorMessage: query.isError ? extractBackendErrorMessage(query.error) : undefined,
         retry,
         fetchNextPage: () => void fetchNextPage(),

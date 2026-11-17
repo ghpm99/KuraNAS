@@ -28,6 +28,7 @@ const ActivityList = () => {
         entriesErrorMessage,
         hasMoreEntries,
         isFetchingMoreEntries,
+        isEntriesNextPageError,
         loadMoreEntries,
         reloadEntries,
     } = useActivityDiary();
@@ -41,6 +42,7 @@ const ActivityList = () => {
             <ListFeedback
                 isEmpty={!data?.entries?.items?.length}
                 isError={Boolean(hasEntriesError)}
+                isNextPageError={Boolean(isEntriesNextPageError)}
                 errorTitle={t('ACTIVITY_DIARY_LOAD_ERROR')}
                 errorMessage={entriesErrorMessage}
                 onRetry={reloadEntries ?? noop}
