@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { useOptionalGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { invalidateMusicMetadataViews } from '@/features/music/queryKeys/invalidateMusicMetadataViews';
 import { readRefusedMetadataField, updateTrackMetadata } from '@/service/music';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
@@ -18,6 +19,7 @@ export default function useTrackMetadataForm({ track, onSaved }: UseTrackMetadat
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
+    const refreshQueuedTracks = useOptionalGlobalMusic()?.refreshQueuedTracks;
     const initialValues = useMemo(() => readInitialFormValues(track), [track]);
     const { values, fieldErrors, setFieldErrors, setTextualValue, setGenres } =
         useTrackMetadataFieldState(initialValues);
@@ -34,8 +36,9 @@ export default function useTrackMetadataForm({ track, onSaved }: UseTrackMetadat
             setFieldErrors({});
             setTopError(undefined);
         },
-        onSuccess: () => {
+        onSuccess: (updatedTrack) => {
             void invalidateMusicMetadataViews(queryClient);
+            refreshQueuedTracks?.([updatedTrack]);
             enqueueSnackbar(t('MUSIC_METADATA_SAVED'), { variant: 'success' });
             onSaved();
         },

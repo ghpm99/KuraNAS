@@ -1179,4 +1179,31 @@ describe('GlobalMusicProvider', () => {
             expect([...playedTrackIds].sort()).toEqual([7, 8, 9]);
         });
     });
+
+    describe('refreshQueuedTracks', () => {
+        it('swaps the current track data without changing the index or pausing playback', () => {
+            const { result } = renderHook(() => useGlobalMusic(), { wrapper });
+            act(() => {
+                result.current.replaceQueue([createTrack(1), createTrack(2)], 1);
+            });
+            engineMock.loadAndPlayUrl.mockClear();
+            engineMock.stop.mockClear();
+            const previousEntryId = result.current.queue[1]!.queueEntryId;
+
+            act(() => {
+                result.current.refreshQueuedTracks([
+                    {
+                        ...createTrack(2),
+                        metadata: { title: 'New title' } as IMusicData['metadata'],
+                    },
+                ]);
+            });
+
+            expect(result.current.currentTrack?.metadata?.title).toBe('New title');
+            expect(result.current.queue[1]?.queueEntryId).toBe(previousEntryId);
+            expect(result.current.currentIndex).toBe(1);
+            expect(engineMock.loadAndPlayUrl).not.toHaveBeenCalled();
+            expect(engineMock.stop).not.toHaveBeenCalled();
+        });
+    });
 });

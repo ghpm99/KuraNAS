@@ -11,6 +11,7 @@ jest.mock('@/service', () => ({
 }));
 
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
+    useOptionalGlobalMusic: () => undefined,
     useGlobalMusic: () => ({ replaceQueue: jest.fn(), currentTrack: null, isPlaying: false }),
 }));
 

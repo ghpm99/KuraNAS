@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import useRefreshCurrentTrackMetadata from '@/features/music/hooks/useRefreshCurrentTrackMetadata';
 import { invalidateMusicMetadataViews } from '@/features/music/queryKeys/invalidateMusicMetadataViews';
 import { isGenreNameRefused, renameMusicGenre } from '@/service/music';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
@@ -34,6 +35,7 @@ export default function useRenameGenre({
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
+    const refreshCurrentTrackMetadata = useRefreshCurrentTrackMetadata();
     const [newName, setNewName] = useState(genreName);
     const [hasTypedName, setHasTypedName] = useState(false);
     const [pickedGenre, setPickedGenre] = useState<MusicGenre | null>(null);
@@ -58,6 +60,7 @@ export default function useRenameGenre({
             onRenamed(renamedGenre.key);
             onClose();
             void invalidateMusicMetadataViews(queryClient);
+            void refreshCurrentTrackMetadata();
         },
         onError: (error) => {
             const message = extractBackendErrorMessage(error) ?? t('MUSIC_GENRE_RENAME_FAILED');

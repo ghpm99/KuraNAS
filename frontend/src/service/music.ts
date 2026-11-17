@@ -180,6 +180,11 @@ export const getRecentlyPlayedTracks = async (page: number, pageSize: number) =>
     return response.data;
 };
 
+export const getMusicTrack = async (fileId: number): Promise<IMusicData> => {
+    const response = await apiBase.get<IMusicData>(`/music/library/tracks/${fileId}`);
+    return response.data;
+};
+
 export const updateTrackMetadata = async (
     fileId: number,
     fields: TrackMetadataFields

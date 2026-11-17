@@ -10,6 +10,7 @@ jest.mock('@/service', () => ({
 }));
 
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
+    useOptionalGlobalMusic: () => undefined,
     useGlobalMusic: () => ({ playNext: jest.fn(), addToQueue: jest.fn() }),
 }));
 

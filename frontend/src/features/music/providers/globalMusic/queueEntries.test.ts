@@ -1,5 +1,10 @@
 import type { IMusicData } from '@/types/music';
-import { createQueueEntries, insertAfterIndex, moveQueueEntry } from './queueEntries';
+import {
+    createQueueEntries,
+    insertAfterIndex,
+    moveQueueEntry,
+    replaceTrackDataInQueue,
+} from './queueEntries';
 
 const createTrack = (id: number) => ({ id, name: `track-${id}` }) as IMusicData;
 
@@ -25,5 +30,34 @@ describe('queueEntries', () => {
         expect(moveQueueEntry(queue, 0, 0)).toBe(queue);
         expect(moveQueueEntry(queue, -1, 1)).toBe(queue);
         expect(moveQueueEntry(queue, 0, 3)).toBe(queue);
+    });
+
+    describe('replaceTrackDataInQueue', () => {
+        const renamedTrack = (id: number, newName: string) => ({ id, name: newName }) as IMusicData;
+
+        it('replaces the data of every entry with the same track id keeping each queueEntryId', () => {
+            const queue = createQueueEntries([createTrack(1), createTrack(2), createTrack(1)]);
+
+            const refreshed = replaceTrackDataInQueue(queue, [renamedTrack(1, 'renamed')]);
+
+            expect(refreshed.map((entry) => entry.name)).toEqual(['renamed', 'track-2', 'renamed']);
+            expect(refreshed.map((entry) => entry.queueEntryId)).toEqual(
+                queue.map((entry) => entry.queueEntryId)
+            );
+        });
+
+        it('leaves entries of other tracks untouched', () => {
+            const queue = createQueueEntries([createTrack(1), createTrack(2)]);
+
+            const refreshed = replaceTrackDataInQueue(queue, [renamedTrack(1, 'renamed')]);
+
+            expect(refreshed[1]).toBe(queue[1]);
+        });
+
+        it('returns an equal queue when no updated track matches', () => {
+            const queue = createQueueEntries([createTrack(1)]);
+
+            expect(replaceTrackDataInQueue(queue, [renamedTrack(9, 'other')])).toEqual(queue);
+        });
     });
 });

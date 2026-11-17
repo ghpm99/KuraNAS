@@ -7,6 +7,7 @@ import GenresView from './GenresView';
 
 jest.mock('@/service/music');
 jest.mock('@/features/music/providers/GlobalMusicProvider', () => ({
+    useOptionalGlobalMusic: () => undefined,
     useGlobalMusic: () => ({ replaceQueue: jest.fn(), currentTrack: null, isPlaying: false }),
 }));
 

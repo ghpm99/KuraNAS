@@ -29,3 +29,14 @@ export const moveQueueEntry = (
     reorderedQueue.splice(toIndex, 0, movedEntry!);
     return reorderedQueue;
 };
+
+export const replaceTrackDataInQueue = (
+    queue: QueueTrack[],
+    updatedTracks: IMusicData[]
+): QueueTrack[] => {
+    const updatedTracksById = new Map(updatedTracks.map((track) => [track.id, track]));
+    return queue.map((entry) => {
+        const updatedTrack = updatedTracksById.get(entry.id);
+        return updatedTrack ? { ...updatedTrack, queueEntryId: entry.queueEntryId } : entry;
+    });
+};

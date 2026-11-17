@@ -29,6 +29,7 @@ import {
     createQueueEntries,
     insertAfterIndex,
     moveQueueEntry,
+    replaceTrackDataInQueue,
     type QueueTrack,
 } from './globalMusic/queueEntries';
 import {
@@ -58,6 +59,7 @@ export interface IGlobalMusicContext {
     playTrackFromQueue: (index: number) => void;
     clearQueue: () => void;
     removeFromQueue: (queueEntryId: string) => void;
+    refreshQueuedTracks: (updatedTracks: IMusicData[]) => void;
     queueOpen: boolean;
     setQueueOpen: (open: boolean) => void;
     toggleQueue: () => void;
@@ -415,6 +417,13 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
         [engine, playTrack, commitQueue, commitCurrentIndex]
     );
 
+    const refreshQueuedTracks = useCallback(
+        (updatedTracks: IMusicData[]) => {
+            commitQueue(replaceTrackDataInQueue(queueRef.current, updatedTracks));
+        },
+        [commitQueue]
+    );
+
     const next = useCallback(() => {
         if (queue.length === 0 || currentIndex === undefined) return;
         if (shuffle) {
@@ -521,6 +530,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             playTrackFromQueue: loadAndPlay,
             clearQueue,
             removeFromQueue,
+            refreshQueuedTracks,
             queueOpen,
             setQueueOpen,
             toggleQueue,
@@ -551,6 +561,7 @@ export const GlobalMusicProvider = ({ children }: { children: React.ReactNode })
             loadAndPlay,
             clearQueue,
             removeFromQueue,
+            refreshQueuedTracks,
             queueOpen,
             toggleQueue,
             playbackContext,

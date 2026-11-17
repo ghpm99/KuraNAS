@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import useRefreshCurrentTrackMetadata from '@/features/music/hooks/useRefreshCurrentTrackMetadata';
 import { invalidateMusicMetadataViews } from '@/features/music/queryKeys/invalidateMusicMetadataViews';
 import { readRefusedMetadataField, updateTracksMetadata } from '@/service/music';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
@@ -30,6 +31,7 @@ export default function useBatchTrackMetadataForm({
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
     const queryClient = useQueryClient();
+    const refreshCurrentTrackMetadata = useRefreshCurrentTrackMetadata();
     const { values, fieldErrors, setFieldErrors, setTextualValue, setGenres } =
         useTrackMetadataFieldState(emptyFormValues);
     const [topError, setTopError] = useState<string | undefined>(undefined);
@@ -53,6 +55,7 @@ export default function useBatchTrackMetadataForm({
                 return;
             }
             void invalidateMusicMetadataViews(queryClient);
+            void refreshCurrentTrackMetadata();
             onUpdated?.();
             if (result.failed.length > 0) {
                 setStep({ kind: 'done', result });
