@@ -107,7 +107,7 @@ func TestCompleteUploadResumedAfterInterruptionPublishesIdenticalContent(t *test
 	}
 	response := decodeCompleteResponse(t, recorder)
 	publishedPath := filepath.Join(environment.entryPoint, "movie.bin")
-	if response.File.Name != "movie.bin" || response.File.Path != publishedPath || response.File.Status != UploadStatusUploaded || response.JobID <= 0 {
+	if response.File.Name != "movie.bin" || response.File.Path != "/movie.bin" || response.File.Status != UploadStatusUploaded || response.JobID <= 0 {
 		t.Fatalf("unexpected response: %+v", response)
 	}
 	publishedChecksum, err := sha256HexOfFile(publishedPath)

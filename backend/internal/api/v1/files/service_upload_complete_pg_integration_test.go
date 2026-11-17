@@ -32,13 +32,13 @@ func TestPostgres_CompleteUploadAppearsInListingWithoutWorkers(t *testing.T) {
 	}
 	response := decodeCompleteResponse(t, recorder)
 	albumsPath := filepath.Join(entryPoint, "albums")
-	if response.JobID <= 0 || response.File.Path != filepath.Join(albumsPath, "song.mp3") {
+	if response.JobID <= 0 || response.File.Path != "/albums/song.mp3" {
 		t.Fatalf("unexpected response: %+v", response)
 	}
 	if _, found := activeRowByPath(t, repo, albumsPath); !found {
 		t.Fatalf("created folder missing from index")
 	}
-	fileRow, found := activeRowByPath(t, repo, response.File.Path)
+	fileRow, found := activeRowByPath(t, repo, filepath.Join(albumsPath, "song.mp3"))
 	if !found || fileRow.ParentPath != albumsPath || fileRow.Size != 5 {
 		t.Fatalf("published file missing from listing: found=%v row=%+v", found, fileRow)
 	}

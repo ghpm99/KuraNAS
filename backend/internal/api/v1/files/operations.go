@@ -94,9 +94,9 @@ func (handler *Handler) UploadFilesHandler(c *gin.Context) {
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusAccepted, gin.H{
 		"message":  i18n.GetMessage("ACTION_UPLOAD_SUCCESS"),
-		"uploaded": result.Uploaded,
+		"uploaded": toClientPaths(result.Uploaded),
 		"job_id":   result.JobID,
-		"files":    result.Files,
+		"files":    toClientUploadFileResults(result.Files),
 	})
 }
 

@@ -40,5 +40,5 @@ func (handler *Handler) CompleteUploadHandler(c *gin.Context) {
 	}
 
 	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusCreated, completeUploadResponse{File: completeResult.File, JobID: completeResult.JobID})
+	c.JSON(http.StatusCreated, completeUploadResponse{File: toClientUploadFileResult(completeResult.File), JobID: completeResult.JobID})
 }
