@@ -10,6 +10,8 @@ import (
 // out-of-range grace period.
 var ErrInvalidSettingsRequest = errors.New("autoshutdown: invalid settings request")
 
+var ErrGracePeriodOutOfRange = errors.New("autoshutdown: grace period out of range")
+
 type Service struct {
 	repository RepositoryInterface
 }
@@ -42,8 +44,8 @@ func (s *Service) UpdateSettings(dto SettingsDto) (SettingsDto, error) {
 	if err != nil {
 		return SettingsDto{}, fmt.Errorf("%w: time", ErrInvalidSettingsRequest)
 	}
-	if dto.GracePeriodSeconds < 0 || dto.GracePeriodSeconds > maxGracePeriodSeconds {
-		return SettingsDto{}, fmt.Errorf("%w: grace_period_seconds", ErrInvalidSettingsRequest)
+	if !isGracePeriodInRange(dto.GracePeriodSeconds) {
+		return SettingsDto{}, ErrGracePeriodOutOfRange
 	}
 
 	settings := dto.toState()

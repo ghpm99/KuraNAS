@@ -38,6 +38,10 @@ func (h *Handler) UpdateSettingsHandler(c *gin.Context) {
 
 	settings, err := h.service.UpdateSettings(request)
 	if err != nil {
+		if errors.Is(err, ErrGracePeriodOutOfRange) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_AUTO_SHUTDOWN_GRACE_OUT_OF_RANGE")})
+			return
+		}
 		if errors.Is(err, ErrInvalidSettingsRequest) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 			return

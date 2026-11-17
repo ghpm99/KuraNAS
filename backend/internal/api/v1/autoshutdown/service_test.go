@@ -2,6 +2,7 @@ package autoshutdown
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -68,12 +69,49 @@ func TestUpdateSettingsInvalid(t *testing.T) {
 		{Time: "25:00", GracePeriodSeconds: 10},
 		{Time: "12:60", GracePeriodSeconds: 10},
 		{Time: "noon", GracePeriodSeconds: 10},
-		{Time: "12:00", GracePeriodSeconds: -1},
-		{Time: "12:00", GracePeriodSeconds: maxGracePeriodSeconds + 1},
 	}
 	for _, dto := range cases {
 		if _, err := svc.UpdateSettings(dto); !errors.Is(err, ErrInvalidSettingsRequest) {
 			t.Fatalf("dto %+v: expected ErrInvalidSettingsRequest, got %v", dto, err)
+		}
+	}
+}
+
+func TestUpdateSettingsRejectsGracePeriodOutsideRange(t *testing.T) {
+	svc := NewService(&stubRepository{})
+
+	for _, seconds := range []int{-1, 0, 29, 601, 86400} {
+		_, err := svc.UpdateSettings(SettingsDto{Time: "12:00", GracePeriodSeconds: seconds})
+		if !errors.Is(err, ErrGracePeriodOutOfRange) {
+			t.Fatalf("grace %d: expected ErrGracePeriodOutOfRange, got %v", seconds, err)
+		}
+	}
+}
+
+func TestUpdateSettingsAcceptsGracePeriodBoundaries(t *testing.T) {
+	for _, seconds := range []int{30, 600} {
+		svc := NewService(&stubRepository{})
+		out, err := svc.UpdateSettings(SettingsDto{Time: "12:00", GracePeriodSeconds: seconds})
+		if err != nil || out.GracePeriodSeconds != seconds {
+			t.Fatalf("grace %d: got %+v err=%v", seconds, out, err)
+		}
+	}
+}
+
+func TestStoredGracePeriodOutsideRangeIsClampedOnRead(t *testing.T) {
+	cases := map[int]int{0: 30, 5: 30, 86400: 600, 601: 600}
+	for stored, expected := range cases {
+		document := fmt.Sprintf(`{"enabled":true,"time":"03:00","grace_period_seconds":%d}`, stored)
+		svc := NewService(&stubRepository{document: document, found: true})
+
+		settings, err := svc.GetSettings()
+		if err != nil || settings.GracePeriodSeconds != expected {
+			t.Fatalf("stored %d: expected %d, got %+v err=%v", stored, expected, settings, err)
+		}
+
+		due, grace, err := svc.DueNow(time.Date(2026, 6, 15, 3, 0, 0, 0, time.UTC))
+		if err != nil || !due || grace != expected {
+			t.Fatalf("stored %d: scheduler expected grace %d, got due=%v grace=%d err=%v", stored, expected, due, grace, err)
 		}
 	}
 }

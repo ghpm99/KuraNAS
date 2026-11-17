@@ -210,3 +210,25 @@ func TestCancelHandlerOutsideWarningReturnsTranslatedConflict(t *testing.T) {
 		t.Fatalf("expected translated message, got %v", decoded["error"])
 	}
 }
+
+func TestUpdateSettingsHandlerGracePeriodOutOfRangeReturnsTranslatedMessage(t *testing.T) {
+	originalLang := config.AppConfig.Lang
+	t.Cleanup(func() { config.AppConfig.Lang = originalLang })
+	config.AppConfig.Lang = "pt-BR"
+	if err := i18n.LoadTranslations(); err != nil {
+		t.Fatalf("LoadTranslations failed: %v", err)
+	}
+	router := newTestRouter(&mockService{
+		updateFn: func(dto SettingsDto) (SettingsDto, error) { return SettingsDto{}, ErrGracePeriodOutOfRange },
+	})
+
+	response := performRequest(router, http.MethodPut, "/auto-shutdown/settings", `{"enabled":true,"time":"03:00","grace_period_seconds":29}`)
+
+	decoded := decodeStatus(t, response.Body.String())
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", response.Code)
+	}
+	if decoded["error"] != "O período de aviso deve ficar entre 30 e 600 segundos." {
+		t.Fatalf("expected translated message, got %v", decoded["error"])
+	}
+}

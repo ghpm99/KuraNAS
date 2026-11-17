@@ -522,6 +522,7 @@
 	"ERROR_AUTO_SHUTDOWN_LOAD_FAILED": "Falha ao carregar as configurações de desligamento automático.",
 	"ERROR_AUTO_SHUTDOWN_UPDATE_FAILED": "Falha ao salvar as configurações de desligamento automático.",
 	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "Não há desligamento em contagem para cancelar.",
+	"ERROR_AUTO_SHUTDOWN_GRACE_OUT_OF_RANGE": "O período de aviso deve ficar entre 30 e 600 segundos.",
 	"NOTIFICATION_AUTO_SHUTDOWN_TITLE": "Desligamento automático",
 	"NOTIFICATION_AUTO_SHUTDOWN_BODY": "O servidor será desligado em %d segundo(s).",
 	"SETTINGS_AUTO_SHUTDOWN_TITLE": "Desligamento automático",

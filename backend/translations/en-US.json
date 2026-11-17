@@ -522,6 +522,7 @@
 	"ERROR_AUTO_SHUTDOWN_LOAD_FAILED": "Failed to load the auto-shutdown settings.",
 	"ERROR_AUTO_SHUTDOWN_UPDATE_FAILED": "Failed to save the auto-shutdown settings.",
 	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "There is no shutdown countdown to cancel.",
+	"ERROR_AUTO_SHUTDOWN_GRACE_OUT_OF_RANGE": "The warning period must be between 30 and 600 seconds.",
 	"NOTIFICATION_AUTO_SHUTDOWN_TITLE": "Auto-shutdown",
 	"NOTIFICATION_AUTO_SHUTDOWN_BODY": "The server will shut down in %d second(s).",
 	"SETTINGS_AUTO_SHUTDOWN_TITLE": "Auto-shutdown",
