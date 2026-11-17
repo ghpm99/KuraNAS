@@ -12,6 +12,17 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
+jest.mock('@/shared/hooks/useReindexJob', () => ({
+    __esModule: true,
+    default: () => ({
+        start: jest.fn(),
+        isRunning: false,
+        progress: 0,
+        job: null,
+        errorMessage: null,
+    }),
+}));
+
 jest.mock('@/components/providers/analyticsProvider/analyticsContext', () => ({
     useAnalyticsOverview: () => mockUseAnalyticsOverview(),
 }));

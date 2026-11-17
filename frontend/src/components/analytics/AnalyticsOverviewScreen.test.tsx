@@ -9,6 +9,19 @@ jest.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
 }));
 
+const mockStartReindex = jest.fn();
+
+jest.mock('@/shared/hooks/useReindexJob', () => ({
+    __esModule: true,
+    default: () => ({
+        start: mockStartReindex,
+        isRunning: false,
+        progress: 0,
+        job: null,
+        errorMessage: null,
+    }),
+}));
+
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
     __esModule: true,
     default: () => ({ t: (key: string) => key }),
@@ -136,6 +149,7 @@ const createState = (overrides: Partial<AnalyticsScreenState> = {}): AnalyticsSc
 describe('AnalyticsOverviewScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset();
+        mockStartReindex.mockReset();
     });
 
     it('hides the images-only chip when no duplicates filter is active', () => {
@@ -298,12 +312,22 @@ describe('AnalyticsOverviewScreen', () => {
         expect(mockNavigate).toHaveBeenCalledTimes(3);
     });
 
-    it('calls refresh on reindex button click', () => {
+    it('refresh button only reloads the numbers and does not start a reindex', () => {
+        const state = createState();
+        render(<AnalyticsOverviewScreen state={state} />);
+
+        fireEvent.click(screen.getByText('ANALYTICS_REFRESH'));
+        expect(state.refresh).toHaveBeenCalled();
+        expect(mockStartReindex).not.toHaveBeenCalled();
+    });
+
+    it('reindex button starts a reindex of all scopes without refreshing', () => {
         const state = createState();
         render(<AnalyticsOverviewScreen state={state} />);
 
         fireEvent.click(screen.getByText('ANALYTICS_ACTION_REINDEX'));
-        expect(state.refresh).toHaveBeenCalled();
+        expect(mockStartReindex).toHaveBeenCalledWith({ scope: 'all' });
+        expect(state.refresh).not.toHaveBeenCalled();
     });
 
     it('handles null data gracefully', () => {

@@ -1,6 +1,7 @@
 import { appRoutes } from '@/app/routes';
 import Button from '@/components/ui/Button/Button';
 import AnalyticsChartCard from '@/components/analytics/AnalyticsChartCard';
+import AnalyticsReindexAction from '@/components/analytics/AnalyticsReindexAction';
 import AnalyticsKpiCard from '@/components/analytics/AnalyticsKpiCard';
 import AnalyticsSection from '@/components/analytics/AnalyticsSection';
 import { type AnalyticsScreenState } from '@/components/analytics/useAnalyticsScreenState';
@@ -58,8 +59,9 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
                     {t('ANALYTICS_ACTION_VIEW_LARGEST')}
                 </Button>
                 <Button variant="secondary" onClick={() => void refresh()}>
-                    {t('ANALYTICS_ACTION_REINDEX')}
+                    {t('ANALYTICS_REFRESH')}
                 </Button>
+                <AnalyticsReindexAction onFinished={() => void refresh()} />
             </div>
 
             <div className={styles.grid}>
