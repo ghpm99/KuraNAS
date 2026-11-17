@@ -30,11 +30,11 @@ const buildEntries = (count: number, size = 1) =>
 describe('useUploadQueue', () => {
     beforeEach(() => window.localStorage.clear());
 
-    it('mounts with an empty queue and the default rename policy', () => {
+    it('mounts with an empty queue and the default ask policy', () => {
         const { result } = renderHook(() => useUploadQueue());
 
         expect(result.current.items).toEqual([]);
-        expect(result.current.conflictPolicy).toBe('rename');
+        expect(result.current.conflictPolicy).toBe('ask');
     });
 
     it('runs at most three uploads at a time and starts the next as one finishes', async () => {
@@ -373,6 +373,189 @@ describe('useUploadQueue', () => {
             act(() => params.onSentBytes(1000));
 
             expect(result.current.items[0]!.bytesPerSecond).toBeUndefined();
+        });
+    });
+
+    describe('name conflicts', () => {
+        const enqueueAndConflict = async (count: number) => {
+            const uploader = createControlledUploader();
+            const hook = renderHook(() => useUploadQueue({ ...uploader, maxConcurrent: 3 }));
+            act(() => hook.result.current.enqueue(buildEntries(count)));
+            return { ...uploader, ...hook };
+        };
+
+        const conflict: FileTransferOutcome = {
+            status: 'conflict',
+            error: 'Já existe um arquivo com esse nome',
+        };
+
+        const statuses = (items: { status: string }[]) => items.map((item) => item.status);
+
+        it('sends ask to the server as fail', () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+
+            act(() => result.current.enqueue(buildEntries(1)));
+
+            expect(pendingUploads[0]!.params.onConflict).toBe('fail');
+            expect(result.current.items[0]!.onConflict).toBe('ask');
+        });
+
+        it('holds a conflicting item as awaiting decision keeping the server message', async () => {
+            const { result, pendingUploads } = await enqueueAndConflict(1);
+
+            await act(async () => pendingUploads[0]!.resolve(conflict));
+
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({
+                    status: 'awaitingDecision',
+                    error: 'Já existe um arquivo com esse nome',
+                })
+            );
+        });
+
+        it('does not occupy a concurrency slot while awaiting a decision', async () => {
+            const { result, pendingUploads, transferFile } = await enqueueAndConflict(4);
+
+            await act(async () => pendingUploads[0]!.resolve(conflict));
+
+            expect(statuses(result.current.items)).toEqual([
+                'awaitingDecision',
+                'uploading',
+                'uploading',
+                'uploading',
+            ]);
+            expect(transferFile).toHaveBeenCalledTimes(4);
+        });
+
+        it('keeps the awaiting item on clearFinished and out of the finished count', async () => {
+            const { result, pendingUploads } = await enqueueAndConflict(2);
+            await act(async () => {
+                pendingUploads[0]!.resolve(conflict);
+                pendingUploads[1]!.resolve({ status: 'uploaded' });
+            });
+
+            act(() => result.current.clearFinished());
+
+            expect(statuses(result.current.items)).toEqual(['awaitingDecision']);
+        });
+
+        it('leaves the progress empty while awaiting the decision', async () => {
+            const { result, pendingUploads } = await enqueueAndConflict(1);
+            await act(async () => pendingUploads[0]!.resolve(conflict));
+
+            expect(result.current.items[0]).toMatchObject({
+                status: 'awaitingDecision',
+                progress: 0,
+                sentBytes: 0,
+            });
+        });
+
+        it('is not retryable through the retry actions', async () => {
+            const { result, pendingUploads, transferFile } = await enqueueAndConflict(1);
+            await act(async () => pendingUploads[0]!.resolve(conflict));
+
+            act(() => result.current.retry(result.current.items[0]!.id));
+            act(() => result.current.retryFailed());
+
+            expect(result.current.items[0]!.status).toBe('awaitingDecision');
+            expect(transferFile).toHaveBeenCalledTimes(1);
+        });
+
+        it('resolves one conflict by requeueing it with the choice and the known checksum', async () => {
+            const { result, pendingUploads, transferFile } = await enqueueAndConflict(1);
+            act(() => pendingUploads[0]!.params.onChecksumComputed('abc123'));
+            await act(async () => pendingUploads[0]!.resolve(conflict));
+
+            act(() =>
+                result.current.resolveConflict(result.current.items[0]!.id, 'replace', false)
+            );
+
+            expect(transferFile).toHaveBeenCalledTimes(2);
+            expect(transferFile.mock.calls[1]![0]).toEqual(
+                expect.objectContaining({ onConflict: 'replace', knownChecksum: 'abc123' })
+            );
+            expect(result.current.items[0]!.status).toBe('uploading');
+            expect(result.current.items[0]!.error).toBeUndefined();
+        });
+
+        it('resolves only the chosen conflict without applyToAll', async () => {
+            const { result, pendingUploads, transferFile } = await enqueueAndConflict(2);
+            await act(async () => {
+                pendingUploads[0]!.resolve(conflict);
+                pendingUploads[1]!.resolve(conflict);
+            });
+
+            act(() => result.current.resolveConflict(result.current.items[0]!.id, 'skip', false));
+
+            expect(statuses(result.current.items)).toEqual(['uploading', 'awaitingDecision']);
+            expect(transferFile).toHaveBeenCalledTimes(3);
+        });
+
+        it('switches queued items still asking to the choice with applyToAll', async () => {
+            const uploader = createControlledUploader();
+            const { result } = renderHook(() =>
+                useUploadQueue({ transferFile: uploader.transferFile, maxConcurrent: 1 })
+            );
+            act(() => result.current.enqueue(buildEntries(3)));
+            await act(async () => uploader.pendingUploads[0]!.resolve(conflict));
+            expect(statuses(result.current.items)).toEqual([
+                'awaitingDecision',
+                'uploading',
+                'queued',
+            ]);
+
+            act(() => result.current.resolveConflict(result.current.items[0]!.id, 'rename', true));
+
+            expect(result.current.items.map((item) => item.onConflict)).toEqual([
+                'rename',
+                'ask',
+                'rename',
+            ]);
+            expect(result.current.items[0]!.status).toBe('queued');
+        });
+
+        it('resolves every awaiting conflict with applyToAll', async () => {
+            const { result, pendingUploads, transferFile } = await enqueueAndConflict(3);
+            await act(async () => {
+                pendingUploads[0]!.resolve(conflict);
+                pendingUploads[1]!.resolve(conflict);
+            });
+
+            act(() => result.current.resolveConflict(result.current.items[0]!.id, 'replace', true));
+
+            expect(statuses(result.current.items)).toEqual(['uploading', 'uploading', 'uploading']);
+            expect(transferFile.mock.calls.slice(3).map(([params]) => params.onConflict)).toEqual([
+                'replace',
+                'replace',
+            ]);
+        });
+
+        it('does not touch items already done or running when applying to all', async () => {
+            const { result, pendingUploads } = await enqueueAndConflict(3);
+            await act(async () => {
+                pendingUploads[0]!.resolve(conflict);
+                pendingUploads[1]!.resolve({ status: 'uploaded' });
+            });
+
+            act(() => result.current.resolveConflict(result.current.items[0]!.id, 'skip', true));
+
+            expect(result.current.items[1]).toEqual(
+                expect.objectContaining({ status: 'done', onConflict: 'ask' })
+            );
+            expect(result.current.items[2]).toEqual(
+                expect.objectContaining({ status: 'uploading', onConflict: 'ask' })
+            );
+        });
+
+        it('cancels a dismissed conflict and ignores dismissing anything else', async () => {
+            const { result, pendingUploads } = await enqueueAndConflict(2);
+            await act(async () => pendingUploads[0]!.resolve(conflict));
+
+            act(() => result.current.dismissConflict(result.current.items[0]!.id));
+            act(() => result.current.dismissConflict(result.current.items[1]!.id));
+
+            expect(statuses(result.current.items)).toEqual(['canceled', 'uploading']);
         });
     });
 });

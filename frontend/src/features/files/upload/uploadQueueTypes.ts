@@ -1,4 +1,4 @@
-import type { UploadConflictPolicy } from '@/service/files';
+import type { UploadConflictChoice } from './conflictPolicyPreference';
 
 export type UploadEntry = {
     file: File;
@@ -15,8 +15,11 @@ export type UploadItemStatus =
     | 'replaced'
     | 'skipped'
     | 'alreadyExisted'
+    | 'awaitingDecision'
     | 'failed'
     | 'canceled';
+
+export type ResolvedConflictChoice = Exclude<UploadConflictChoice, 'ask'>;
 
 export type UploadItem = {
     id: string;
@@ -24,7 +27,7 @@ export type UploadItem = {
     displayName: string;
     relativePath?: string;
     targetFolderId?: number;
-    onConflict: UploadConflictPolicy;
+    onConflict: UploadConflictChoice;
     status: UploadItemStatus;
     size: number;
     sentBytes: number;
@@ -39,19 +42,26 @@ export type UploadItem = {
 
 export type UploadQueue = {
     items: UploadItem[];
-    conflictPolicy: UploadConflictPolicy;
-    setConflictPolicy: (policy: UploadConflictPolicy) => void;
+    conflictPolicy: UploadConflictChoice;
+    setConflictPolicy: (policy: UploadConflictChoice) => void;
     enqueue: (entries: UploadEntry[], targetFolderId?: number) => void;
     cancel: (itemId: string) => void;
     cancelAll: () => void;
     retry: (itemId: string) => void;
     retryFailed: () => void;
     clearFinished: () => void;
+    resolveConflict: (itemId: string, choice: ResolvedConflictChoice, applyToAll: boolean) => void;
+    dismissConflict: (itemId: string) => void;
 };
 
 const activeStatuses: UploadItemStatus[] = ['queued', 'checking', 'uploading', 'waitingConnection'];
 
 export const isActiveItem = (item: UploadItem): boolean => activeStatuses.includes(item.status);
+
+export const isFinishedItem = (item: UploadItem): boolean =>
+    !isActiveItem(item) && item.status !== 'awaitingDecision';
+
+export const isAwaitingDecision = (item: UploadItem): boolean => item.status === 'awaitingDecision';
 
 export const isRetryableItem = (item: UploadItem): boolean =>
     item.status === 'failed' || item.status === 'canceled';

@@ -179,6 +179,30 @@ describe('uploadFileInChunks', () => {
         }
     );
 
+    it('reports a name conflict with the server message when init answers 409 under fail', async () => {
+        const harness = buildHarness({ onConflict: 'fail' });
+        jest.mocked(initFileUpload).mockRejectedValue(
+            httpError(409, { error: 'mensagem do servidor' })
+        );
+
+        await expect(harness.run()).resolves.toEqual({
+            status: 'conflict',
+            error: 'mensagem do servidor',
+        });
+
+        expect(sendFileUploadChunk).not.toHaveBeenCalled();
+        expect(completeFileUpload).not.toHaveBeenCalled();
+        expect(harness.params.onChecksumComputed).toHaveBeenCalledWith(checksum);
+    });
+
+    it('does not report a conflict for init errors other than 409 under fail', async () => {
+        const harness = buildHarness({ onConflict: 'fail' });
+        const initError = httpError(507, { error: 'sem espaço' });
+        jest.mocked(initFileUpload).mockRejectedValue(initError);
+
+        await expect(harness.run()).rejects.toBe(initError);
+    });
+
     it('fails when init answers without an upload id and without an existing file', async () => {
         const harness = buildHarness();
         jest.mocked(initFileUpload).mockResolvedValue({

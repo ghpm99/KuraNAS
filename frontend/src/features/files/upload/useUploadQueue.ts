@@ -1,13 +1,20 @@
 import { useCallback, useRef, useState } from 'react';
-import type { UploadConflictPolicy } from '@/service/files';
-import { loadConflictPolicy, saveConflictPolicy } from './conflictPolicyPreference';
+import { extractBackendMessage } from './backendErrorMessage';
+import {
+    loadConflictPolicy,
+    saveConflictPolicy,
+    toWireConflictPolicy,
+    type UploadConflictChoice,
+} from './conflictPolicyPreference';
 import type { FileTransferOutcome, FileTransferPhase, TransferFileFn } from './fileTransferTypes';
 import { transferFile as transferFileByChunkingWhenLarge } from './transferFile';
 import { createTransferRateTracker } from './transferRateTracker';
 import { connectionLostErrorKey, UploadConnectionLostError } from './uploadConnectionLostError';
 import {
-    isActiveItem,
+    isAwaitingDecision,
+    isFinishedItem,
     isRetryableItem,
+    type ResolvedConflictChoice,
     type UploadEntry,
     type UploadItem,
     type UploadItemStatus,
@@ -30,20 +37,28 @@ const statusByOutcome: Record<FileTransferOutcome['status'], UploadItemStatus> =
     replaced: 'replaced',
     skipped: 'skipped',
     alreadyExisted: 'alreadyExisted',
+    conflict: 'awaitingDecision',
     failed: 'failed',
 };
 
-const extractBackendMessage = (error: unknown): string | undefined => {
-    const backendMessage = (error as { response?: { data?: { error?: unknown } } })?.response?.data
-        ?.error;
-    return typeof backendMessage === 'string' && backendMessage !== '' ? backendMessage : undefined;
+const buildOutcomePatch = (outcome: FileTransferOutcome, size: number): Partial<UploadItem> => {
+    const isAwaitingConflictDecision = outcome.status === 'conflict';
+    return {
+        status: statusByOutcome[outcome.status] ?? 'done',
+        sentBytes: isAwaitingConflictDecision ? 0 : size,
+        progress: isAwaitingConflictDecision ? 0 : 100,
+        bytesPerSecond: undefined,
+        remainingSeconds: undefined,
+        error: outcome.error,
+        savedName: outcome.name,
+    };
 };
 
 const buildItem = (
     entry: UploadEntry,
     itemId: string,
     targetFolderId: number | undefined,
-    onConflict: UploadConflictPolicy
+    onConflict: UploadConflictChoice
 ): UploadItem => ({
     id: itemId,
     file: entry.file,
@@ -78,7 +93,7 @@ export const useUploadQueue = ({
 }: UseUploadQueueOptions = {}): UploadQueue => {
     const [items, setItems] = useState<UploadItem[]>([]);
     const [conflictPolicy, setConflictPolicyState] =
-        useState<UploadConflictPolicy>(loadConflictPolicy);
+        useState<UploadConflictChoice>(loadConflictPolicy);
     const itemsRef = useRef<UploadItem[]>([]);
     const controllersRef = useRef(new Map<string, AbortController>());
     const runningCountRef = useRef(0);
@@ -151,22 +166,14 @@ export const useUploadQueue = ({
                     file: item.file,
                     targetFolderId: item.targetFolderId,
                     relativePath: item.relativePath,
-                    onConflict: item.onConflict,
+                    onConflict: toWireConflictPolicy(item.onConflict),
                     signal: controller.signal,
                     knownChecksum: item.checksum,
                     onPhaseChange: handlePhaseChange,
                     onChecksumComputed: (checksum) => patchItem(item.id, { checksum }),
                     onSentBytes: handleSentBytes,
                 });
-                patchItem(item.id, {
-                    status: statusByOutcome[outcome.status] ?? 'done',
-                    sentBytes: item.size,
-                    progress: 100,
-                    bytesPerSecond: undefined,
-                    remainingSeconds: undefined,
-                    error: outcome.error,
-                    savedName: outcome.name,
-                });
+                patchItem(item.id, buildOutcomePatch(outcome, item.size));
                 onFileFinishedRef.current?.();
             } catch (error) {
                 if (controller.signal.aborted) {
@@ -273,14 +280,52 @@ export const useUploadQueue = ({
     const retryFailed = useCallback(() => requeue((item) => item.status === 'failed'), [requeue]);
 
     const clearFinished = useCallback(() => {
-        commitItems(itemsRef.current.filter(isActiveItem));
+        commitItems(itemsRef.current.filter((item) => !isFinishedItem(item)));
     }, [commitItems]);
 
-    const setConflictPolicy = useCallback((policy: UploadConflictPolicy) => {
+    const setConflictPolicy = useCallback((policy: UploadConflictChoice) => {
         conflictPolicyRef.current = policy;
         saveConflictPolicy(policy);
         setConflictPolicyState(policy);
     }, []);
+
+    const resolveConflict = useCallback(
+        (itemId: string, choice: ResolvedConflictChoice, applyToAll: boolean) => {
+            const isResolvedTarget = (item: UploadItem): boolean =>
+                item.id === itemId && isAwaitingDecision(item);
+            const isCoveredByApplyToAll = (item: UploadItem): boolean =>
+                applyToAll &&
+                item.id !== itemId &&
+                (isAwaitingDecision(item) ||
+                    (item.status === 'queued' && item.onConflict === 'ask'));
+            commitItems(
+                itemsRef.current.map((item) =>
+                    isResolvedTarget(item) || isCoveredByApplyToAll(item)
+                        ? {
+                              ...item,
+                              onConflict: choice,
+                              status: 'queued',
+                              sentBytes: 0,
+                              progress: 0,
+                              error: undefined,
+                              errorKey: undefined,
+                          }
+                        : item
+                )
+            );
+            pump();
+        },
+        [commitItems, pump]
+    );
+
+    const dismissConflict = useCallback(
+        (itemId: string) => {
+            const item = itemsRef.current.find((candidate) => candidate.id === itemId);
+            if (!item || !isAwaitingDecision(item)) return;
+            patchItem(itemId, { status: 'canceled', error: undefined });
+        },
+        [patchItem]
+    );
 
     return {
         items,
@@ -292,6 +337,8 @@ export const useUploadQueue = ({
         retry,
         retryFailed,
         clearFinished,
+        resolveConflict,
+        dismissConflict,
     };
 };
 

@@ -8,6 +8,7 @@ import {
     sendFileUploadChunk,
 } from '@/service/fileUpload';
 import type { FileUploadSessionStart } from '@/types/fileUpload';
+import { extractBackendMessage } from './backendErrorMessage';
 import { computeFileSha256 } from './computeFileSha256';
 import type { FileTransferOutcome, FileTransferParams } from './fileTransferTypes';
 import { UploadConnectionLostError } from './uploadConnectionLostError';
@@ -124,6 +125,21 @@ const startUploadSession = async (
     );
 };
 
+const isNameConflictOnInit = (error: unknown, params: FileTransferParams): boolean =>
+    params.onConflict === 'fail' && isAxiosError(error) && error.response?.status === 409;
+
+const startUploadSessionOrReportConflict = async (
+    checksum: string,
+    context: ChunkedUploadContext
+): Promise<FileUploadSessionStart | FileTransferOutcome> => {
+    try {
+        return await startUploadSession(checksum, context);
+    } catch (error) {
+        if (!isNameConflictOnInit(error, context.params)) throw error;
+        return { status: 'conflict', error: extractBackendMessage(error) };
+    }
+};
+
 const sendNextChunk = async (
     session: StartedUploadSession,
     offset: number,
@@ -199,7 +215,8 @@ const transferSession = async (
 
 /**
  * Uploads a file in chunks through the resumable upload session endpoints.
- * Resolves with `alreadyExisted` without sending bytes when the server already holds the file.
+ * Resolves with `alreadyExisted` without sending bytes when the server already holds the file, and
+ * with `conflict` when `init` answers 409 under the `fail` policy.
  * Rejects with the HTTP error of `init`/`chunk`/`complete`, with `UploadConnectionLostError` after
  * `connectionLossLimitMs` without connection, or with the abort reason (also cancelling the session).
  */
@@ -212,7 +229,8 @@ export const uploadFileInChunks = async (
         dependencies: { ...defaultDependencies, ...dependencyOverrides },
     };
     const checksum = await resolveChecksum(params);
-    const startedSession = await startUploadSession(checksum, context);
+    const startedSession = await startUploadSessionOrReportConflict(checksum, context);
+    if ('status' in startedSession) return startedSession;
     if (startedSession.alreadyExists) return { status: 'alreadyExisted' };
     return transferSession(requireUploadId(startedSession), context);
 };

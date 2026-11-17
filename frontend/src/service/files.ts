@@ -215,9 +215,9 @@ export const setFilesStarred = async (
     return mergedResult;
 };
 
-export type UploadConflictPolicy = 'rename' | 'replace' | 'skip';
+export type UploadConflictPolicy = 'fail' | 'rename' | 'replace' | 'skip';
 
-type UploadOutcomeStatus = 'uploaded' | 'skipped' | 'replaced' | 'renamed' | 'failed';
+type UploadOutcomeStatus = 'uploaded' | 'skipped' | 'replaced' | 'renamed' | 'conflict' | 'failed';
 
 export type UploadOutcome = {
     status: UploadOutcomeStatus;

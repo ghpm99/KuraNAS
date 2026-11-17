@@ -387,6 +387,22 @@ describe('service/files', () => {
             });
         });
 
+        it('passes the conflict status and the server message through', async () => {
+            mockedApi.post.mockResolvedValue({
+                data: {
+                    files: [{ name: 'photo.jpg', status: 'conflict', error: 'Já existe' }],
+                },
+            });
+
+            await expect(uploadSingleFile({ file, onConflict: 'fail' })).resolves.toEqual({
+                status: 'conflict',
+                name: 'photo.jpg',
+                error: 'Já existe',
+            });
+            const formData: FormData = mockedApi.post.mock.calls[0][1];
+            expect(formData.get('on_conflict')).toBe('fail');
+        });
+
         it('treats a response without per-file results as uploaded', async () => {
             mockedApi.post.mockResolvedValue({ data: {} });
 

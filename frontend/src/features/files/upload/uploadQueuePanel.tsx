@@ -6,7 +6,7 @@ import { formatSize } from '@/shared/utils/formatSize';
 import ConflictPolicySelect from './conflictPolicySelect';
 import { formatRemainingTime } from './formatRemainingTime';
 import useUploadQueueContext from './uploadQueueContext';
-import { isActiveItem, isRetryableItem, type UploadItem } from './uploadQueueTypes';
+import { isActiveItem, isFinishedItem, isRetryableItem, type UploadItem } from './uploadQueueTypes';
 import styles from './uploadQueuePanel.module.css';
 
 const statusLabelKeys: Record<UploadItem['status'], string> = {
@@ -19,6 +19,7 @@ const statusLabelKeys: Record<UploadItem['status'], string> = {
     replaced: 'FILES_UPLOAD_STATUS_REPLACED',
     skipped: 'FILES_UPLOAD_STATUS_SKIPPED',
     alreadyExisted: 'FILES_UPLOAD_STATUS_ALREADY_EXISTED',
+    awaitingDecision: 'FILES_UPLOAD_STATUS_AWAITING_DECISION',
     failed: 'FILES_UPLOAD_STATUS_FAILED',
     canceled: 'FILES_UPLOAD_STATUS_CANCELED',
 };
@@ -36,7 +37,7 @@ const UploadQueuePanel = () => {
     if (items.length === 0) return null;
 
     const activeCount = items.filter(isActiveItem).length;
-    const finishedCount = items.length - activeCount;
+    const finishedCount = items.filter(isFinishedItem).length;
     const hasFailed = items.some((item) => item.status === 'failed');
     const toggleLabel = t(isCollapsed ? 'FILES_UPLOAD_EXPAND' : 'FILES_UPLOAD_COLLAPSE');
 

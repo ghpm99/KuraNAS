@@ -12,6 +12,8 @@ const emptyUploadQueue: UploadQueue = {
     retry: () => undefined,
     retryFailed: () => undefined,
     clearFinished: () => undefined,
+    resolveConflict: () => undefined,
+    dismissConflict: () => undefined,
 };
 
 const UploadQueueContext = createContext<UploadQueue>(emptyUploadQueue);

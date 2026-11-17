@@ -33,6 +33,8 @@ const renderPanelWith = (item: UploadItem) => {
         retry: jest.fn(),
         retryFailed: jest.fn(),
         clearFinished: jest.fn(),
+        resolveConflict: jest.fn(),
+        dismissConflict: jest.fn(),
     };
     render(
         <UploadQueueContextProvider value={queue}>

@@ -1,25 +1,31 @@
 import type { UploadConflictPolicy } from '@/service/files';
 
-export const defaultConflictPolicy: UploadConflictPolicy = 'rename';
+export type UploadConflictChoice = 'ask' | 'rename' | 'replace' | 'skip';
+
+export const defaultConflictPolicy: UploadConflictChoice = 'ask';
 
 export const conflictPolicyStorageKey = 'kuranas.files.upload.conflictPolicy';
 
-const validPolicies: UploadConflictPolicy[] = ['rename', 'replace', 'skip'];
+const validChoices: UploadConflictChoice[] = ['ask', 'rename', 'replace', 'skip'];
 
-export const loadConflictPolicy = (): UploadConflictPolicy => {
+const isConflictChoice = (storedValue: string | null): storedValue is UploadConflictChoice =>
+    validChoices.includes(storedValue as UploadConflictChoice);
+
+export const toWireConflictPolicy = (choice: UploadConflictChoice): UploadConflictPolicy =>
+    choice === 'ask' ? 'fail' : choice;
+
+export const loadConflictPolicy = (): UploadConflictChoice => {
     try {
-        const storedPolicy = window.localStorage.getItem(conflictPolicyStorageKey);
-        return validPolicies.includes(storedPolicy as UploadConflictPolicy)
-            ? (storedPolicy as UploadConflictPolicy)
-            : defaultConflictPolicy;
+        const storedChoice = window.localStorage.getItem(conflictPolicyStorageKey);
+        return isConflictChoice(storedChoice) ? storedChoice : defaultConflictPolicy;
     } catch {
         return defaultConflictPolicy;
     }
 };
 
-export const saveConflictPolicy = (policy: UploadConflictPolicy): void => {
+export const saveConflictPolicy = (choice: UploadConflictChoice): void => {
     try {
-        window.localStorage.setItem(conflictPolicyStorageKey, policy);
+        window.localStorage.setItem(conflictPolicyStorageKey, choice);
     } catch {
         return;
     }

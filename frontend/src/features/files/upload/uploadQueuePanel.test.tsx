@@ -25,6 +25,8 @@ const buildQueue = (items: UploadItem[]): UploadQueue => ({
     retry: jest.fn(),
     retryFailed: jest.fn(),
     clearFinished: jest.fn(),
+    resolveConflict: jest.fn(),
+    dismissConflict: jest.fn(),
 });
 
 const renderPanel = (queue: UploadQueue) =>
@@ -125,6 +127,24 @@ describe('UploadQueuePanel', () => {
         expect(queue.cancelAll).toHaveBeenCalled();
         expect(queue.retryFailed).toHaveBeenCalled();
         expect(queue.clearFinished).toHaveBeenCalled();
+    });
+
+    it('shows an item awaiting a decision as not finished and without retry', () => {
+        renderPanel(
+            buildQueue([
+                buildItem({ id: 'u1', displayName: 'a.txt', status: 'awaitingDecision' }),
+                buildItem({ id: 'u2', displayName: 'b.txt', status: 'done' }),
+            ])
+        );
+
+        expect(screen.getByText('FILES_UPLOAD_STATUS_AWAITING_DECISION')).toBeInTheDocument();
+        expect(screen.getByText('FILES_UPLOAD_PANEL_TITLE 1/2')).toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'FILES_UPLOAD_RETRY a.txt' })
+        ).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'FILES_UPLOAD_CANCEL a.txt' })
+        ).not.toBeInTheDocument();
     });
 
     it('hides bulk actions that do not apply', () => {

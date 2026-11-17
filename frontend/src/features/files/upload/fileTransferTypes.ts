@@ -15,7 +15,14 @@ export type FileTransferParams = {
 };
 
 export type FileTransferOutcome = {
-    status: 'uploaded' | 'renamed' | 'replaced' | 'skipped' | 'alreadyExisted' | 'failed';
+    status:
+        | 'uploaded'
+        | 'renamed'
+        | 'replaced'
+        | 'skipped'
+        | 'alreadyExisted'
+        | 'conflict'
+        | 'failed';
     name?: string;
     error?: string;
 };
