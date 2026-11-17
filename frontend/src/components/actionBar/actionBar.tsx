@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import useI18n from '../i18n/provider/i18nContext';
 import useFile from '@/features/files/providers/fileProvider/fileContext';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, CircularProgress, IconButton, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ConflictPolicySelect from '@/features/files/upload/conflictPolicySelect';
 import useUploadPickers from '@/features/files/upload/useUploadPickers';
@@ -27,7 +27,7 @@ import ActionBarMoreMenu, { type ActionBarMenuEntry } from './actionBarMoreMenu'
 import useActionBarLayout from './useActionBarLayout';
 
 export const ActionBar = () => {
-    const { selectedItem, rescanFiles, fileListFilter } = useFile();
+    const { selectedItem, reindexOpenedFolder, isReindexing, fileListFilter } = useFile();
     const { t } = useI18n();
     const navigate = useNavigate();
     const { openFilePicker, openFolderPicker, pickerInputs } = useUploadPickers();
@@ -103,10 +103,11 @@ export const ActionBar = () => {
         : [];
 
     const rescanEntry: ActionBarMenuEntry = {
-        key: 'rescan',
-        label: t('FILES_RESCAN_FOLDER'),
-        icon: <RefreshCcw size={16} />,
-        onSelect: rescanFiles,
+        key: 'reindex',
+        label: t(isReindexing ? 'FILES_REINDEX_FOLDER_RUNNING' : 'FILES_REINDEX_FOLDER'),
+        icon: isReindexing ? <CircularProgress size={16} /> : <RefreshCcw size={16} />,
+        onSelect: reindexOpenedFolder,
+        isDisabled: isReindexing,
     };
 
     const moreMenuEntries = isSecondaryCollapsed

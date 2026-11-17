@@ -171,18 +171,15 @@ describe('features/files/fileProvider (seam)', () => {
 		expect(updatedIds).toEqual([4, 5]);
 	});
 
-	it('rescanFiles POSTs the manual rescan to /files/update', async () => {
+	it('reindexOpenedFolder POSTs scope all when no folder is open', async () => {
+		mockedApi.post.mockResolvedValue({ data: { job_id: 4 } });
 		const { result } = renderHook(() => useFile(), { wrapper });
 
 		await act(async () => {
-			await result.current.rescanFiles();
+			result.current.reindexOpenedFolder();
 		});
 
-		expect(mockedApi.post).toHaveBeenCalledWith(
-			'/files/update',
-			expect.any(FormData),
-			expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
-		);
+		expect(mockedApi.post).toHaveBeenCalledWith('/indexing/reindex', { scope: 'all' });
 	});
 
 	it('exposes the items of every loaded page after fetchNextPage', async () => {

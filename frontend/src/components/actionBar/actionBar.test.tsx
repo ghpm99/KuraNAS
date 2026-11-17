@@ -45,7 +45,8 @@ const createFileContext = (overrides = {}) => ({
     copyFile: jest.fn().mockResolvedValue(undefined),
     renameFile: jest.fn().mockResolvedValue(undefined),
     deleteFile: jest.fn().mockResolvedValue(undefined),
-    rescanFiles: jest.fn(),
+    reindexOpenedFolder: jest.fn(),
+    isReindexing: false,
     fileListFilter: 'recent',
     ...overrides,
 });
@@ -63,7 +64,7 @@ jest.mock('../i18n/provider/i18nContext', () => ({
                 FILES: 'FILES',
                 RECENT_FILES: 'RECENT_FILES',
                 STARRED_FILES: 'STARRED_FILES',
-                FILES_RESCAN_FOLDER: 'FILES_RESCAN_FOLDER',
+                FILES_REINDEX_FOLDER: 'FILES_REINDEX_FOLDER',
                 FILES_MORE_ACTIONS: 'FILES_MORE_ACTIONS',
                 FILES_UPLOAD_FOLDER: 'FILES_UPLOAD_FOLDER',
                 UPLOAD_FILE: 'UPLOAD_FILE',
@@ -779,17 +780,28 @@ describe('components/actionBar', () => {
         expect(screen.queryByRole('button', { name: 'DOWNLOAD' })).not.toBeInTheDocument();
     });
 
-    it('rescans from the more actions menu instead of a primary button', () => {
-        const rescanFiles = jest.fn();
-        mockUseFile.mockReturnValue(createFileContext({ rescanFiles }));
+    it('reindexes from the more actions menu instead of a primary button', () => {
+        const reindexOpenedFolder = jest.fn();
+        mockUseFile.mockReturnValue(createFileContext({ reindexOpenedFolder }));
 
         render(<ActionBar />);
 
-        expect(screen.queryByRole('button', { name: 'FILES_RESCAN_FOLDER' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'FILES_REINDEX_FOLDER' })).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'FILES_MORE_ACTIONS' }));
-        fireEvent.click(screen.getByRole('menuitem', { name: 'FILES_RESCAN_FOLDER' }));
+        fireEvent.click(screen.getByRole('menuitem', { name: 'FILES_REINDEX_FOLDER' }));
 
-        expect(rescanFiles).toHaveBeenCalledTimes(1);
+        expect(reindexOpenedFolder).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables the reindex entry while the job runs', () => {
+        mockUseFile.mockReturnValue(createFileContext({ isReindexing: true }));
+
+        render(<ActionBar />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_MORE_ACTIONS' }));
+        const runningEntry = screen.getByRole('menuitem', { name: 'FILES_REINDEX_FOLDER_RUNNING' });
+
+        expect(runningEntry).toHaveAttribute('aria-disabled', 'true');
     });
 
     describe('responsive layout', () => {
@@ -860,7 +872,7 @@ describe('components/actionBar', () => {
 
             fireEvent.click(screen.getByRole('button', { name: 'FILES_MORE_ACTIONS' }));
 
-            ['MOVE', 'COPY', 'RENAME', 'DELETE', 'DOWNLOAD', 'FILES_RESCAN_FOLDER'].forEach(
+            ['MOVE', 'COPY', 'RENAME', 'DELETE', 'DOWNLOAD', 'FILES_REINDEX_FOLDER'].forEach(
                 (menuLabel) => {
                     expect(screen.getByRole('menuitem', { name: menuLabel })).toBeInTheDocument();
                 }

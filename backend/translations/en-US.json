@@ -32,7 +32,6 @@
 	"FILES_SORT_CREATED_AT": "Created",
 	"FILES_SORT_ORDER_ASCENDING": "Ascending",
 	"FILES_SORT_ORDER_DESCENDING": "Descending",
-	"FILES_RESCAN_FOLDER": "Rescan folder",
 	"FILES_MORE_ACTIONS": "More actions",
 	"FOLDER_PICKER_MOVE_HERE": "Move here",
 	"FOLDER_PICKER_COPY_HERE": "Copy here",
@@ -2103,5 +2102,12 @@
 	"VACUUM_SETTINGS_TEST_SUCCEEDED": "Connection to the robot is working.",
 	"VACUUM_SETTINGS_CONNECTION_SAVE_FIRST": "Save your changes before finding the robot or testing the connection: they use the stored values.",
 	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Save the device ID and the local key to find the robot or test the connection.",
-	"LIST_REFRESH_FAILED": "Could not refresh the list. Showing what was already loaded."
+	"LIST_REFRESH_FAILED": "Could not refresh the list. Showing what was already loaded.",
+	"FILES_REINDEX_FOLDER": "Reindex this folder",
+	"FILES_REINDEX_FOLDER_RUNNING": "Reindexing…",
+	"REINDEX_STARTED": "Reindexing started.",
+	"REINDEX_ALREADY_RUNNING": "A reindex is already in progress; following it.",
+	"REINDEX_FINISHED": "Reindexing finished.",
+	"REINDEX_FAILED": "Reindexing failed.",
+	"REINDEX_ERROR_FAILED": "Could not start the reindex."
 }

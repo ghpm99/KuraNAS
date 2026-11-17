@@ -9,6 +9,7 @@ export type ActionBarMenuEntry = {
     icon: ReactNode;
     onSelect: () => void;
     isDestructive?: boolean;
+    isDisabled?: boolean;
 };
 
 type ActionBarMoreMenuProps = {
@@ -48,6 +49,7 @@ const ActionBarMoreMenu = ({ entries }: ActionBarMoreMenuProps) => {
                 {entries.map((entry) => (
                     <MenuItem
                         key={entry.key}
+                        disabled={entry.isDisabled}
                         onClick={() => selectEntry(entry)}
                         sx={entry.isDestructive ? { color: 'error.main' } : undefined}
                     >

@@ -56,7 +56,8 @@ export type FileContextType = {
     renameFile: (id: number, newName: string) => Promise<void>;
     deleteFile: (id: number, permanent?: boolean) => Promise<void>;
     promoteFileToHot: (id: number) => Promise<void>;
-    rescanFiles: () => Promise<void>;
+    reindexOpenedFolder: () => void;
+    isReindexing: boolean;
     fetchNextPage: () => void;
     hasNextPage: boolean;
     isFetchingNextPage: boolean;

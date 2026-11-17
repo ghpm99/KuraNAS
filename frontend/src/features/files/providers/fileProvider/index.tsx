@@ -13,7 +13,6 @@ import {
     getStarredFiles,
     moveFile as moveFileService,
     renameFile as renameFileService,
-    rescanFiles as requestFilesRescan,
     setFileStarred,
     setFilesStarred as setFilesStarredService,
     type StarredKind,
@@ -44,6 +43,7 @@ import { allFileQueryKeys, searchQueryKey } from '@/shared/queryKeys/fileQueryKe
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 import { invalidateStarredViews } from '@/shared/queryKeys/invalidateStarredViews';
 import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
+import useReindexJob from '@/shared/hooks/useReindexJob';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useSnackbar } from 'notistack';
 import {
@@ -305,10 +305,19 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
         [invalidateFileQueries]
     );
 
-    const rescanFiles = useCallback(async () => {
-        await requestFilesRescan();
-        await refetch();
-    }, [refetch]);
+    const { start: startReindex, isRunning: isReindexing } = useReindexJob({
+        onFinished: () => {
+            void refetch();
+        },
+    });
+
+    const reindexOpenedFolder = useCallback(() => {
+        if (selectedItemSnapshot?.type === FileType.Directory) {
+            void startReindex({ scope: 'folder', folderId: selectedItemSnapshot.id });
+            return;
+        }
+        void startReindex({ scope: 'all' });
+    }, [selectedItemSnapshot, startReindex]);
 
     const createFolder = useCallback(
         async (name: string, parentId?: number) => {
@@ -500,7 +509,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             renameFile,
             deleteFile,
             promoteFileToHot,
-            rescanFiles,
+            reindexOpenedFolder,
+            isReindexing,
             fetchNextPage: () => {
                 fetchNextPage();
             },
@@ -533,7 +543,8 @@ const FileProvider = ({ children }: { children: React.ReactNode }) => {
             renameFile,
             deleteFile,
             promoteFileToHot,
-            rescanFiles,
+            reindexOpenedFolder,
+            isReindexing,
             fetchNextPage,
             hasNextPage,
             isFetchingNextPage,

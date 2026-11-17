@@ -41,7 +41,8 @@ const mockSetFilesStarred = jest.fn<
     [number[], boolean]
 >();
 const mockEnqueueSnackbar = jest.fn();
-const mockRescanFiles = jest.fn<Promise<void>, []>();
+const mockStartReindex = jest.fn();
+let mockOnReindexFinished: (() => void) | undefined;
 const mockCreateFolder = jest.fn<Promise<void>, [string, number?]>();
 const mockMoveFile = jest.fn<Promise<string | void>, [number, number?, string?]>();
 const mockCopyFile = jest.fn<Promise<void>, [number, number?, string?, string?]>();
@@ -56,12 +57,19 @@ jest.mock('@/service/files', () => ({
     getRecentAccessByFileId: mockGetRecentAccessByFileId,
     setFileStarred: mockSetFileStarred,
     setFilesStarred: mockSetFilesStarred,
-    rescanFiles: mockRescanFiles,
     createFolder: mockCreateFolder,
     moveFile: mockMoveFile,
     copyFile: mockCopyFile,
     renameFile: mockRenameFile,
     deleteFile: mockDeleteFile,
+}));
+
+jest.mock('@/shared/hooks/useReindexJob', () => ({
+    __esModule: true,
+    default: ({ onFinished }: { onFinished: () => void }) => {
+        mockOnReindexFinished = onFinished;
+        return { start: mockStartReindex, isRunning: false };
+    },
 }));
 
 jest.mock('notistack', () => ({
@@ -253,7 +261,6 @@ describe('FileProvider', () => {
         mockGetRecentlyAccessedFiles.mockResolvedValue(makePaginationResponse([]));
         mockGetRecentAccessByFileId.mockResolvedValue([]);
         mockGetFileByPath.mockResolvedValue(null);
-        mockRescanFiles.mockResolvedValue(undefined);
         mockCreateFolder.mockResolvedValue(undefined);
         mockMoveFile.mockResolvedValue(undefined);
         mockCopyFile.mockResolvedValue(undefined);
@@ -779,14 +786,29 @@ describe('FileProvider', () => {
         });
     });
 
-    it('rescanFiles calls service and refetches', async () => {
+    it('reindexOpenedFolder reindexes everything when no folder is open', async () => {
         renderProvider();
         await waitFor(() => expect(capturedContext).not.toBeNull());
 
-        await act(async () => {
-            await capturedContext!.rescanFiles();
+        act(() => {
+            capturedContext!.reindexOpenedFolder();
         });
-        expect(mockRescanFiles).toHaveBeenCalled();
+
+        expect(mockStartReindex).toHaveBeenCalledWith({ scope: 'all' });
+    });
+
+    it('reloads the listing only when the reindex job finishes', async () => {
+        renderProvider();
+        await waitFor(() => expect(capturedContext).not.toBeNull());
+        const listingCallsBeforeFinish = mockGetFilesTree.mock.calls.length;
+
+        await act(async () => {
+            mockOnReindexFinished?.();
+        });
+
+        await waitFor(() =>
+            expect(mockGetFilesTree.mock.calls.length).toBeGreaterThan(listingCallsBeforeFinish)
+        );
     });
 
     it('setFileListFilter updates the filter state', async () => {

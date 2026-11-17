@@ -32,7 +32,6 @@
 	"FILES_SORT_CREATED_AT": "Criado",
 	"FILES_SORT_ORDER_ASCENDING": "Crescente",
 	"FILES_SORT_ORDER_DESCENDING": "Decrescente",
-	"FILES_RESCAN_FOLDER": "Reescanear pasta",
 	"FILES_MORE_ACTIONS": "Mais ações",
 	"FOLDER_PICKER_MOVE_HERE": "Mover para cá",
 	"FOLDER_PICKER_COPY_HERE": "Copiar para cá",
@@ -2103,5 +2102,12 @@
 	"VACUUM_SETTINGS_TEST_SUCCEEDED": "Conexão com o robô funcionando.",
 	"VACUUM_SETTINGS_CONNECTION_SAVE_FIRST": "Salve as alterações antes de procurar o robô ou testar a conexão: elas usam os valores gravados.",
 	"VACUUM_SETTINGS_CONNECTION_NEEDS_SAVED_CREDENTIALS": "Grave o identificador do dispositivo e a chave local para procurar o robô ou testar a conexão.",
-	"LIST_REFRESH_FAILED": "Não foi possível atualizar a lista. Mostrando o que já estava carregado."
+	"LIST_REFRESH_FAILED": "Não foi possível atualizar a lista. Mostrando o que já estava carregado.",
+	"FILES_REINDEX_FOLDER": "Reindexar esta pasta",
+	"FILES_REINDEX_FOLDER_RUNNING": "Reindexando…",
+	"REINDEX_STARTED": "Reindexação iniciada.",
+	"REINDEX_ALREADY_RUNNING": "Já existe uma reindexação em andamento; acompanhando.",
+	"REINDEX_FINISHED": "Reindexação concluída.",
+	"REINDEX_FAILED": "A reindexação falhou.",
+	"REINDEX_ERROR_FAILED": "Não foi possível iniciar a reindexação."
 }

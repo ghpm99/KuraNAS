@@ -215,17 +215,6 @@ export const setFilesStarred = async (
     return mergedResult;
 };
 
-export const rescanFiles = async (): Promise<void> => {
-    const formData = new FormData();
-    formData.append('data', 'manual-rescan');
-
-    await apiBase.post('/files/update', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
-};
-
 export type UploadConflictPolicy = 'rename' | 'replace' | 'skip';
 
 type UploadOutcomeStatus = 'uploaded' | 'skipped' | 'replaced' | 'renamed' | 'failed';

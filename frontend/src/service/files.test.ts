@@ -28,7 +28,6 @@ import {
     setFileStarred,
     setFilesStarred,
     maxStarredBatchSize,
-    rescanFiles,
     uploadSingleFile,
     createFolder,
     moveFile,
@@ -317,16 +316,6 @@ describe('service/files', () => {
         const batchResult = await setFilesStarred([1], true);
 
         expect(batchResult).toEqual({ starred: true, updated_ids: [], not_found_ids: [] });
-    });
-
-    it('rescans files', async () => {
-        mockedApi.post.mockResolvedValue({});
-
-        await rescanFiles();
-
-        expect(mockedApi.post).toHaveBeenCalledWith('/files/update', expect.any(FormData), {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
     });
 
     describe('uploadSingleFile', () => {
