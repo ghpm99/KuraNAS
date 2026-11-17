@@ -22,8 +22,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.kuranas.android.core.server.ServerState
 import com.kuranas.android.core.ui.components.KNFrame
+import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.feature.connection.ui.ConnectionScreen
 import com.kuranas.android.feature.diary.ui.DiaryScreen
 import com.kuranas.android.feature.files.ui.FavoritesScreen
@@ -58,12 +58,13 @@ fun KuranasRoot(
     modifier: Modifier = Modifier,
     rootViewModel: RootViewModel = hiltViewModel(),
 ) {
-    val serverState by rootViewModel.serverState.collectAsStateWithLifecycle()
+    val destination by rootViewModel.destination.collectAsStateWithLifecycle()
 
     KNFrame(modifier = modifier) {
-        when (serverState) {
-            is ServerState.NotConfigured, is ServerState.Discovering -> ConnectionScreen()
-            else -> AuthenticatedApp()
+        when (destination) {
+            RootDestination.Checking -> LoadingView()
+            RootDestination.Connection -> ConnectionScreen()
+            RootDestination.App -> AuthenticatedApp()
         }
     }
 }
@@ -195,7 +196,6 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val serverStore = hiltViewModel<RootViewModel>()
 
     fun goToPage(page: SwipePage) {
         scope.launch { pagerState.animateScrollToPage(page.ordinal) }
