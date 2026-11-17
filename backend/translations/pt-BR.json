@@ -633,6 +633,7 @@
 	"ERROR_INVALID_ID": "Identificador de arquivo inválido",
 	"ERROR_ANALYTICS_INVALID_PERIOD": "Período de analytics inválido. Use 24h, 7d, 30d ou 90d.",
 	"ERROR_ANALYTICS_INVALID_DUPLICATES_TYPE": "Tipo de duplicadas inválido. Use image ou omita o parâmetro.",
+	"ERROR_ANALYTICS_INVALID_DUPLICATE_GROUPS_TYPE": "Tipo de duplicadas inválido. Use image, audio, video, document ou other, ou omita o parâmetro.",
 	"UPDATE_APPLIED": "Atualização aplicada com sucesso. Reiniciando...",
 	"ANALYTICS_PAGE_TITLE": "Analytics de Arquivos",
 	"ANALYTICS_PAGE_DESCRIPTION": "Análise detalhada do uso de armazenamento e distribuição de arquivos",

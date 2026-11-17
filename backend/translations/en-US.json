@@ -633,6 +633,7 @@
 	"ERROR_INVALID_ID": "Invalid file identifier",
 	"ERROR_ANALYTICS_INVALID_PERIOD": "Invalid analytics period. Use 24h, 7d, 30d or 90d.",
 	"ERROR_ANALYTICS_INVALID_DUPLICATES_TYPE": "Invalid duplicates type. Use image or omit it.",
+	"ERROR_ANALYTICS_INVALID_DUPLICATE_GROUPS_TYPE": "Invalid duplicates type. Use image, audio, video, document or other, or omit it.",
 	"UPDATE_APPLIED": "Update applied successfully. Restarting...",
 	"ANALYTICS_PAGE_TITLE": "File Analytics",
 	"ANALYTICS_PAGE_DESCRIPTION": "Detailed analysis of storage usage and file distribution",
