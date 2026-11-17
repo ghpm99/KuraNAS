@@ -28,12 +28,14 @@ Uma alteração por item, cada uma em commit próprio, nesta ordem.
 4. **`PUT /music/tracks/metadata`** (lote) com `file_ids` | `album_key` | `folder_key`, `fields` e `?dry_run=true`, respondendo `matched`/`updated`/`failed`.
 5. **`PUT /music/library/genres/:key`** — renomear e mesclar gênero.
 6. **Web — "Editar informações"** no menu da faixa (`RF-14`): diálogo com os oito campos, sugestão de gêneros e artistas existentes, erro do servidor no campo. Ao salvar, as listas de música abertas refletem a mudança sem recarregar (`00/RN-35`).
-7. **Web — edição em lote** (`RF-15`) a partir de seleção, álbum e pasta: só campos preenchidos são enviados; antes de confirmar, mostra a quantidade vinda de `dry_run`; ao fim, mostra o resultado por item (`00/RN-27`).
+7. **Web — edição em lote** (`RF-15`) a partir do álbum e da pasta (a seleção de faixas vira o 40.2 — as listas de música não têm seleção múltipla hoje): só campos preenchidos são enviados; antes de confirmar, mostra a quantidade vinda de `dry_run`; ao fim, mostra o resultado por item (`00/RN-27`).
 8. **Web — renomear/mesclar gênero** na tela do gênero (`RF-16`), com confirmação que diz quantas faixas mudam.
 
 ### Sub-itens
 
 - [ ] 40.1. `RN-04` completa nas chaves de gênero: `/` também separa (decidir o caso `r&b/soul`) e acentos não diferenciam; recalcula as chaves de todas as faixas. O diálogo web (item 6) já separa os gêneros iniciais por `;`, `/` e `,` (`trackMetadataFormValues.ts`) — alinhar com a regra final do backend. A faixa tocando agora no player não atualiza título/artista após a edição (fila em memória do `GlobalMusicProvider`) — fica para depois.
+
+- [ ] 40.2. Seleção múltipla de faixas nas listas de música e "Editar informações" em lote a partir da seleção (seletor `file_ids`, até 500).
 
 ## Critérios de aceite
 
