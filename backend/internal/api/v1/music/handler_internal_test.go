@@ -77,6 +77,9 @@ func (m *musicHandlerServiceMock) UpdateTrackMetadata(fileID int, patch TrackMet
 func (m *musicHandlerServiceMock) UpdateTracksMetadata(request BatchTracksMetadataRequest, isDryRun bool) (BatchMetadataResultDto, error) {
 	return BatchMetadataResultDto{Failed: []BatchMetadataFailureDto{}}, nil
 }
+func (m *musicHandlerServiceMock) RenameGenre(genreKey string, name string) (GenreRenameResultDto, error) {
+	return GenreRenameResultDto{Key: genreKey, Name: name}, nil
+}
 func (m *musicHandlerServiceMock) SearchLibraryTracks(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileDto], error) {
 	return utils.PaginationResponse[files.FileDto]{Items: []files.FileDto{{ID: 1}}}, nil
 }

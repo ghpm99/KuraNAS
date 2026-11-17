@@ -22,6 +22,27 @@ type trackMetadataStoreMock struct {
 	filteredFileIDs     []int
 	requestedAlbumKey   string
 	requestedFolderPath string
+
+	genreSources           []GenreTrackSource
+	trackCountByGenreKey   map[string]int
+	appliedGroups          []TrackMetadataPatchGroup
+	applyGroupsCallCount   int
+	requestedGenreSourceOf string
+}
+
+func (mock *trackMetadataStoreMock) ApplyTrackMetadataPatchGroups(tx *sql.Tx, groups []TrackMetadataPatchGroup, compilationArtistLabel string) error {
+	mock.applyGroupsCallCount++
+	mock.appliedGroups = groups
+	return mock.applyError
+}
+
+func (mock *trackMetadataStoreMock) ListGenreTrackSources(genreKey string) ([]GenreTrackSource, error) {
+	mock.requestedGenreSourceOf = genreKey
+	return mock.genreSources, mock.selectionError
+}
+
+func (mock *trackMetadataStoreMock) CountActiveTracksByGenreKey(genreKey string) (int, error) {
+	return mock.trackCountByGenreKey[genreKey], mock.selectionError
 }
 
 func (mock *trackMetadataStoreMock) FilterIndexedTrackFileIDs(fileIDs []int) ([]int, error) {

@@ -243,3 +243,9 @@ var GetTrackFileIDsByAlbumKeyQuery string
 
 //go:embed get_track_file_ids_by_folder.sql
 var GetTrackFileIDsByFolderQuery string
+
+//go:embed get_genre_track_sources.sql
+var GetGenreTrackSourcesQuery string
+
+//go:embed count_active_tracks_by_genre_key.sql
+var CountActiveTracksByGenreKeyQuery string

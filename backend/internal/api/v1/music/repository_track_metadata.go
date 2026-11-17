@@ -10,19 +10,37 @@ import (
 	"github.com/lib/pq"
 )
 
+// TrackMetadataPatchGroup is one patch applied to every track in FileIDs.
+type TrackMetadataPatchGroup struct {
+	FileIDs []int
+	Patch   TrackMetadataPatch
+}
+
 // ApplyTrackMetadataPatch writes the patch as the user correction of every
 // active indexed track in fileIDs, inside tx. Fields absent from the patch keep
 // their current correction; fields present but empty are cleared back to the
 // tag. It then drops corrections left with no field, recomputes the catalog
 // grouping keys and reconciles album groupings with compilationArtistLabel.
 func (r *AudioMetadataRepository) ApplyTrackMetadataPatch(tx *sql.Tx, fileIDs []int, patch TrackMetadataPatch, compilationArtistLabel string) error {
-	if _, err := tx.Exec(queries.UpsertAudioMetadataOverrideQuery, buildOverrideUpsertArgs(fileIDs, patch)...); err != nil {
-		return fmt.Errorf("falha ao gravar correcao de metadados: %w", err)
+	return r.ApplyTrackMetadataPatchGroups(tx, []TrackMetadataPatchGroup{{FileIDs: fileIDs, Patch: patch}}, compilationArtistLabel)
+}
+
+// ApplyTrackMetadataPatchGroups writes each group's patch as the user
+// correction of its tracks, then drops empty corrections, recomputes the
+// catalog keys of every touched track and reconciles album groupings once,
+// all inside tx.
+func (r *AudioMetadataRepository) ApplyTrackMetadataPatchGroups(tx *sql.Tx, groups []TrackMetadataPatchGroup, compilationArtistLabel string) error {
+	touchedFileIDs := []int{}
+	for _, group := range groups {
+		if _, err := tx.Exec(queries.UpsertAudioMetadataOverrideQuery, buildOverrideUpsertArgs(group.FileIDs, group.Patch)...); err != nil {
+			return fmt.Errorf("falha ao gravar correcao de metadados: %w", err)
+		}
+		touchedFileIDs = append(touchedFileIDs, group.FileIDs...)
 	}
-	if _, err := tx.Exec(queries.DeleteEmptyAudioMetadataOverridesQuery, pq.Array(fileIDs)); err != nil {
+	if _, err := tx.Exec(queries.DeleteEmptyAudioMetadataOverridesQuery, pq.Array(touchedFileIDs)); err != nil {
 		return fmt.Errorf("falha ao remover correcoes vazias: %w", err)
 	}
-	if err := r.RecomputeCatalogKeys(tx, fileIDs); err != nil {
+	if err := r.RecomputeCatalogKeys(tx, touchedFileIDs); err != nil {
 		return err
 	}
 	_, err := r.reconcileAlbumGroupingsInTx(tx, compilationArtistLabel)

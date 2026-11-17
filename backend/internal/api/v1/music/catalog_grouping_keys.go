@@ -106,15 +106,17 @@ func capitalizeFirstRune(word string) string {
 	return string(unicode.ToUpper(firstRune)) + word[firstRuneSize:]
 }
 
+func isGenreSeparator(character rune) bool {
+	return character == ';' || character == ',' || character == '|'
+}
+
 func normalizeGenreLabels(rawGenres string) []string {
 	normalized := normalizeText(rawGenres)
 	if normalized == "" {
 		return nil
 	}
 
-	genreParts := strings.FieldsFunc(normalized, func(separator rune) bool {
-		return separator == ';' || separator == ',' || separator == '|'
-	})
+	genreParts := strings.FieldsFunc(normalized, isGenreSeparator)
 
 	if len(genreParts) == 0 {
 		genreParts = []string{normalized}
