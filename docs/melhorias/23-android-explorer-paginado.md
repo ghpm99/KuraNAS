@@ -41,3 +41,7 @@ Verificados em aparelho real.
 - Ordenação e busca na pasta no app.
 - Notificações, Diário e Jobs no app (anexo `A11`), que ficam com os itens do board de revisão.
 - Mudar o padrão de 15 no backend.
+
+## Defeito achado na verificação local (2026-11-17)
+
+O explorer listava a raiz por `GET /files/` (todos os arquivos ativos, achatados, de qualquer nível) e as pastas por `GET /files/:id` (que devolve **o próprio item**, não os filhos — spec 02 §7). Os testes do repositório afirmavam essas URLs, então passavam. Corrigido para `GET /files/tree?file_parent=<id>` (raiz = `0`), a mesma listagem paginada da web; `/files/:id` fica só para o detalhe de um item. Verificado pela API local: `file_parent=884` devolve as duas fotos da pasta; `file_parent=0` devolve só as pastas da raiz.
