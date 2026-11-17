@@ -227,6 +227,9 @@ var AddTrashItemIsDirectoryQuery string
 //go:embed queries/0072_create_takeout_import_table.sql
 var CreateTakeoutImportTableQuery string
 
+//go:embed queries/0073_create_audio_metadata_override.sql
+var CreateAudioMetadataOverrideQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -400,6 +403,14 @@ func musicMigrationList() {
 
 	addMigration("0030_create_music_artist_clusters_table",
 		defaultMigrationFunc(CreateMusicArtistClustersTableQuery))
+
+	addMigrationRequiring("0073_create_audio_metadata_override",
+		[]string{
+			"0001_create_home_file_table",
+			"0056_create_search_fold_function_and_indexes",
+			"0062_add_audio_metadata_album_grouping",
+		},
+		defaultMigrationFunc(CreateAudioMetadataOverrideQuery))
 }
 
 func videoMigrationList() {
