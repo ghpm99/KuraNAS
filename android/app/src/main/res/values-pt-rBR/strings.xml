@@ -192,4 +192,29 @@
 
     <!-- Notifications -->
     <string name="notifications_empty">Nenhuma notificação</string>
+
+    <!-- Upload -->
+    <string name="action_close">Fechar</string>
+    <string name="upload_action">Enviar arquivos</string>
+    <string name="upload_unnamed_file">arquivo</string>
+    <string name="upload_progress_count">Enviando %1$d de %2$d</string>
+    <string name="upload_summary_title">Envio concluído</string>
+    <string name="upload_summary_uploaded">Enviados: %1$d</string>
+    <string name="upload_summary_renamed">Mantidos os dois (renomeados): %1$d</string>
+    <string name="upload_summary_skipped">Ignorados: %1$d</string>
+    <string name="upload_summary_failed">Com falha: %1$d</string>
+    <string name="upload_failure_line">%1$s: %2$s</string>
+    <string name="upload_failure_no_server">Não foi possível alcançar o servidor. Verifique a conexão e tente de novo.</string>
+    <string name="upload_retry_failed">Tentar de novo</string>
+    <string name="upload_share_title">Enviar para o KuraNAS</string>
+    <plurals name="upload_share_selected_count">
+        <item quantity="one">%1$d arquivo selecionado</item>
+        <item quantity="other">%1$d arquivos selecionados</item>
+    </plurals>
+    <string name="upload_share_no_subfolders">Nenhuma pasta aqui</string>
+    <string name="upload_share_send_to">Enviar para %1$s</string>
+    <string name="upload_always_send_here">Sempre enviar para esta pasta</string>
+    <string name="settings_direct_upload_title">Envio direto</string>
+    <string name="settings_direct_upload_folder">Os arquivos compartilhados vão direto para: %1$s</string>
+    <string name="settings_direct_upload_stop">Parar de enviar direto</string>
 </resources>

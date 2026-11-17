@@ -7,6 +7,12 @@ import com.kuranas.android.core.network.safeApiCall
 import com.kuranas.android.core.paging.FIRST_PAGE
 import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.core.paging.toListPage
+import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -34,6 +40,21 @@ class FilesRepository @Inject constructor(
         sort: StarredSort? = null,
     ): AppResult<ListPage<FileItemDto>> = safeApiCall {
         api.getStarredFiles(page, STARRED_PAGE_SIZE, kind?.queryValue, sort?.queryValue).toListPage()
+    }
+
+    suspend fun describeSelection(uris: List<Uri>): List<SelectedFile> = withContext(Dispatchers.IO) {
+        uris.map { describeSelectedFile(context, context.contentResolver, it) }
+    }
+
+    suspend fun uploadFile(file: SelectedFile, targetFolderId: String?): AppResult<UploadResponseDto> = safeApiCall {
+        val contentResolver = context.contentResolver
+        val mediaType = contentResolver.getType(file.uri)?.toMediaTypeOrNull()
+        val content = UriRequestBody(contentResolver, file.uri, mediaType, file.sizeBytes)
+        api.uploadFile(
+            files = MultipartBody.Part.createFormData(UPLOAD_FILES_PART, file.name, content),
+            targetFolderId = (targetFolderId ?: ROOT_FOLDER_ID).toRequestBody(),
+            onConflict = UPLOAD_CONFLICT_POLICY.toRequestBody(),
+        )
     }
 
     suspend fun createFolder(name: String, parentId: String?): AppResult<Unit> = safeApiCall {
@@ -116,6 +137,9 @@ class FilesRepository @Inject constructor(
         const val STARRED_PAGE_SIZE = 50
         const val EXPLORER_PAGE_SIZE = 50
         const val FILE_INFO_PAGE_SIZE = 1
+        const val UPLOAD_FILES_PART = "files"
+        const val UPLOAD_CONFLICT_POLICY = "rename"
+        const val ROOT_FOLDER_ID = "0"
     }
 }
 

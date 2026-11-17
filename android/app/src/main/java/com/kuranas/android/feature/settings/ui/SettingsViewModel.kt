@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
 import com.kuranas.android.core.server.ServerStore
+import com.kuranas.android.feature.files.data.UploadDestination
+import com.kuranas.android.feature.files.data.UploadDestinationStore
 import com.kuranas.android.feature.settings.data.AboutDto
 import com.kuranas.android.feature.settings.data.ConfigApi
 import com.kuranas.android.feature.settings.data.ServerSettingsDto
@@ -28,6 +30,7 @@ data class SettingsUiState(
     val settings: ServerSettingsDto? = null,
     val updateStatus: UpdateStatusDto? = null,
     val currentServerUrl: String = "",
+    val directUploadDestination: UploadDestination? = null,
     val error: String? = null,
 )
 
@@ -35,12 +38,28 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val api: ConfigApi,
     private val serverStore: ServerStore,
+    private val uploadDestinationStore: UploadDestinationStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
 
-    init { load() }
+    init {
+        load()
+        observeDirectUploadDestination()
+    }
+
+    private fun observeDirectUploadDestination() {
+        viewModelScope.launch {
+            uploadDestinationStore.alwaysSendDestination.collect { destination ->
+                _state.update { it.copy(directUploadDestination = destination) }
+            }
+        }
+    }
+
+    fun stopDirectUpload() {
+        viewModelScope.launch { uploadDestinationStore.clearAlwaysSendDestination() }
+    }
 
     fun load() {
         viewModelScope.launch {

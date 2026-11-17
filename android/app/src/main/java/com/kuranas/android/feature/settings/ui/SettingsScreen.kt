@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,6 +41,7 @@ import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.core.ui.components.glass
+import com.kuranas.android.feature.files.ui.destinationLabel
 import com.kuranas.android.ui.theme.StatusNegative
 import com.kuranas.android.ui.theme.StatusPositive
 
@@ -84,6 +86,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         Text(stringResource(R.string.settings_version, about.version), style = MaterialTheme.typography.bodyMedium)
                         Text(stringResource(R.string.settings_platform, about.platform), style = MaterialTheme.typography.bodySmall)
                         Text(stringResource(R.string.settings_uptime, about.uptime), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+
+            state.directUploadDestination?.let { destination ->
+                item {
+                    Column(modifier = Modifier.fillMaxWidth().glass(GlassLevel.Flat).padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Upload, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                            Text(stringResource(R.string.settings_direct_upload_title), style = MaterialTheme.typography.titleMedium)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(stringResource(R.string.settings_direct_upload_folder, destinationLabel(destination)), style = MaterialTheme.typography.bodyMedium)
+                        TextButton(onClick = viewModel::stopDirectUpload) {
+                            Text(stringResource(R.string.settings_direct_upload_stop))
+                        }
                     }
                 }
             }

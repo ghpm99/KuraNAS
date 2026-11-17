@@ -52,14 +52,13 @@ interface FilesApi {
     @GET("api/v1/files/duplicate-files")
     suspend fun getDuplicateFiles(): DuplicateFilesDto
 
-    // O part do arquivo deve se chamar `files` e o id da pasta destino é
-    // `target_folder_id`; o handler responde 202 com { message, uploaded, job_id }.
     @Multipart
     @POST("api/v1/files/upload")
     suspend fun uploadFile(
-        @Part file: MultipartBody.Part,
+        @Part files: MultipartBody.Part,
         @Part("target_folder_id") targetFolderId: RequestBody,
-    )
+        @Part("on_conflict") onConflict: RequestBody,
+    ): UploadResponseDto
 
     @POST("api/v1/files/folder")
     suspend fun createFolder(@Body body: CreateFolderRequest)
@@ -128,6 +127,22 @@ data class DuplicateFileDto(
     val size: Long = 0,
     val copies: Int = 0,
     val paths: List<String> = emptyList(),
+)
+
+@Serializable
+data class UploadResponseDto(
+    val message: String = "",
+    val uploaded: List<String> = emptyList(),
+    @SerialName("job_id") val jobId: Int = 0,
+    val files: List<UploadedFileDto> = emptyList(),
+)
+
+@Serializable
+data class UploadedFileDto(
+    val name: String = "",
+    val path: String = "",
+    val status: String = "",
+    val error: String = "",
 )
 
 @Serializable

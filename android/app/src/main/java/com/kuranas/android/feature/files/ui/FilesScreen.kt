@@ -1,5 +1,7 @@
 package com.kuranas.android.feature.files.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +76,9 @@ import com.kuranas.android.core.ui.components.PagedListFooter
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.files.data.FileItemDto
+import com.kuranas.android.feature.files.data.UploadDestination
+
+private const val ANY_MIME_TYPE = "*/*"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,8 +88,19 @@ fun FilesScreen(
     onPlayAudio: (String) -> Unit,
     onOpenFile: (String, String) -> Unit,
     viewModel: FilesViewModel = hiltViewModel(),
+    uploadViewModel: UploadViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uploadState by uploadViewModel.state.collectAsStateWithLifecycle()
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { pickedUris ->
+        if (pickedUris.isEmpty()) return@rememberLauncherForActivityResult
+        val openFolder = state.breadcrumb.lastOrNull()
+        uploadViewModel.sendPicked(pickedUris, UploadDestination(openFolder?.second, openFolder?.first.orEmpty()))
+    }
+    val finishedUpload = uploadState.phase as? UploadPhase.Finished
+    LaunchedEffect(finishedUpload) {
+        if (finishedUpload != null) viewModel.refresh()
+    }
     var newFolderName by remember { mutableStateOf("") }
     val listState = rememberSaveable(state.breadcrumb.lastOrNull()?.second, saver = LazyListState.Saver) { LazyListState() }
     LoadMoreOnNearEnd(listState, state.files.size, state.hasMore, viewModel::loadMore)
@@ -108,11 +126,19 @@ fun FilesScreen(
         containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.toggleCreateFolderDialog(true) },
-                containerColor = MaterialTheme.colorScheme.primary,
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.files_new_folder))
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SmallFloatingActionButton(
+                    onClick = { filePicker.launch(arrayOf(ANY_MIME_TYPE)) },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                ) {
+                    Icon(Icons.Default.Upload, contentDescription = stringResource(R.string.upload_action))
+                }
+                FloatingActionButton(
+                    onClick = { viewModel.toggleCreateFolderDialog(true) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.files_new_folder))
+                }
             }
         },
     ) { innerPadding ->
@@ -169,6 +195,12 @@ fun FilesScreen(
             }
         }
     }
+
+    UploadDialog(
+        phase = uploadState.phase,
+        onRetryFailed = uploadViewModel::retryFailed,
+        onDismiss = uploadViewModel::dismissResult,
+    )
 
     state.fileAwaitingDeleteConfirmation?.let { fileToDelete ->
         MoveToTrashDialog(
