@@ -2170,5 +2170,19 @@
 	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancel this time",
 	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "At this time the computer will be shut down; a countdown notice appears on every screen and lets you cancel.",
 	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Next run: {{dateTime}}",
-	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Next run: none (automatic shutdown is off)."
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Next run: none (automatic shutdown is off).",
+	"MUSIC_EDIT_INFO": "Edit info",
+	"MUSIC_METADATA_DIALOG_TITLE": "Edit track info",
+	"MUSIC_METADATA_FIELD_TITLE": "Title",
+	"MUSIC_METADATA_FIELD_ARTIST": "Artist",
+	"MUSIC_METADATA_FIELD_ALBUM": "Album",
+	"MUSIC_METADATA_FIELD_ALBUM_ARTIST": "Album artist",
+	"MUSIC_METADATA_FIELD_GENRES": "Genres",
+	"MUSIC_METADATA_FIELD_YEAR": "Year",
+	"MUSIC_METADATA_FIELD_DISC_NUMBER": "Disc",
+	"MUSIC_METADATA_FIELD_TRACK_NUMBER": "Track number",
+	"MUSIC_METADATA_SAVE": "Save",
+	"MUSIC_METADATA_SAVED": "Track info saved.",
+	"MUSIC_METADATA_SAVE_FAILED": "Could not save the track info.",
+	"MUSIC_METADATA_NUMBER_INVALID": "Enter whole numbers only."
 }

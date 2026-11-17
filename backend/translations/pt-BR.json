@@ -2170,5 +2170,19 @@
 	"AUTO_SHUTDOWN_BANNER_CANCEL": "Cancelar desta vez",
 	"SETTINGS_AUTO_SHUTDOWN_WARNING_NOTICE": "Neste horário o computador será desligado; um aviso com contagem aparece em todas as telas e permite cancelar.",
 	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN": "Próxima execução: {{dateTime}}",
-	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado)."
+	"SETTINGS_AUTO_SHUTDOWN_NEXT_RUN_NONE": "Próxima execução: nenhuma (desligamento automático desativado).",
+	"MUSIC_EDIT_INFO": "Editar informações",
+	"MUSIC_METADATA_DIALOG_TITLE": "Editar informações da faixa",
+	"MUSIC_METADATA_FIELD_TITLE": "Título",
+	"MUSIC_METADATA_FIELD_ARTIST": "Artista",
+	"MUSIC_METADATA_FIELD_ALBUM": "Álbum",
+	"MUSIC_METADATA_FIELD_ALBUM_ARTIST": "Artista do álbum",
+	"MUSIC_METADATA_FIELD_GENRES": "Gêneros",
+	"MUSIC_METADATA_FIELD_YEAR": "Ano",
+	"MUSIC_METADATA_FIELD_DISC_NUMBER": "Disco",
+	"MUSIC_METADATA_FIELD_TRACK_NUMBER": "Número da faixa",
+	"MUSIC_METADATA_SAVE": "Salvar",
+	"MUSIC_METADATA_SAVED": "Informações da faixa salvas.",
+	"MUSIC_METADATA_SAVE_FAILED": "Não foi possível salvar as informações da faixa.",
+	"MUSIC_METADATA_NUMBER_INVALID": "Informe apenas números inteiros."
 }
