@@ -122,7 +122,7 @@ Envio pela web (arquivos e pastas), envio pelo Android (manual, por "Compartilha
   - Com `checksum` informado e arquivo de mesmo conteúdo já no destino: `already_exists: true`, sem `upload_id` — nada é enviado (RN-05).
   - Erros: nome já existe e `on_conflict=fail` → `409`; espaço livre menor que `size` → `507` (RN-07); nome inválido ou destino fora de raiz habilitada → `400`.
 - **`chunk`** — multipart: `chunk` (arquivo), `upload_id`, `offset`. `chunk_size` é 2 MiB. Resposta `200`: `{"received_size"}`. `offset` diferente do já recebido → `409` com `{"error", "received_size"}`, para o cliente se realinhar. Sessão inexistente ou expirada → `404`.
-- **`complete`** — corpo `{"upload_id"}`. Resposta `201`: `{"file": {"name", "path", "status"}, "job_id"}`, com `status` em `uploaded`, `replaced`, `renamed`. Tamanho recebido diferente do declarado, ou `checksum` informado que não confere → `400`, e a sessão é descartada.
+- **`complete`** — corpo `{"upload_id"}`. Resposta `201`: `{"file": {"name", "path", "status"}, "job_id"}`, com `status` em `uploaded`, `replaced`, `renamed` ou `skipped` (com `on_conflict: skip` e destino já existente: nada é publicado, a sessão é descartada e `job_id` é `0`). Tamanho recebido diferente do declarado, ou `checksum` informado que não confere → `400`, e a sessão é descartada.
 - As partes ficam em área própria, fora das raízes indexadas; o arquivo só aparece no destino no `complete`, por renomeação (ou cópia para nome provisório `.part` seguida de renomeação, entre volumes) — RN-02. `modified_at` é aplicado ao arquivo publicado (RN-10).
 - Sessão sem nenhuma parte nova por 24 h expira e é apagada.
 - `GET /files/upload/:upload_id` → `{"upload_id", "size", "received_size"}`.
