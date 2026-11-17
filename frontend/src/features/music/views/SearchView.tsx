@@ -4,6 +4,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import AddToPlaylistMenu from '@/features/music/components/AddToPlaylistMenu';
 import TrackListItem from '@/features/music/components/TrackListItem';
+import TrackSelectionControls from '@/features/music/selection/TrackSelectionControls';
+import useTrackSelection from '@/features/music/selection/useTrackSelection';
 import { createSearchPlaybackContext } from '@/features/music/components/playbackContext';
 import { useOptionalGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
 import { useIntersectionObserver } from '@/components/hooks/IntersectionObserver/useIntersectionObserver';
@@ -15,6 +17,7 @@ export default function SearchView() {
     const { t } = useI18n();
     const [searchParams] = useSearchParams();
     const searchText = (searchParams.get('q') ?? '').trim();
+    const selection = useTrackSelection(`search:${searchText}`);
     const replaceQueue = useOptionalGlobalMusic()?.replaceQueue;
     const [playlistMenuTarget, setPlaylistMenuTarget] = useState<{
         anchorElement: HTMLElement;
@@ -67,6 +70,8 @@ export default function SearchView() {
                 {t('MUSIC_SEARCH_TITLE', { query: searchText })}
             </Typography>
 
+            <TrackSelectionControls selection={selection} loadedTracks={tracks} />
+
             {tracks.length === 0 && (
                 <Typography color="text.secondary" sx={{ py: 2 }}>
                     {t('MUSIC_SEARCH_EMPTY')}
@@ -88,6 +93,7 @@ export default function SearchView() {
                                     fileId,
                                 })
                             }
+                            selectionMode={selection.resolveRowSelectionMode(track, tracks)}
                         />
                     </Box>
                 ))}

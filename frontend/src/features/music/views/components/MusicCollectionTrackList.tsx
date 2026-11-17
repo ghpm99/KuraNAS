@@ -5,6 +5,8 @@ import TrackListItem from '@/features/music/components/TrackListItem';
 import { IMusicData } from '@/types/music';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { parseTrackNumber } from '@/utils/music';
+import TrackSelectionControls from '@/features/music/selection/TrackSelectionControls';
+import useTrackSelection from '@/features/music/selection/useTrackSelection';
 import { groupTracksByDisc } from '../groupTracksByDisc';
 import MusicCollectionListFeedback from './MusicCollectionListFeedback';
 
@@ -19,6 +21,7 @@ type MusicCollectionTrackListProps = {
     showArtist?: boolean;
     albumDiscCount?: number | null;
     isAlbumLayout?: boolean;
+    selectionScopeKey: string;
     onPlayTrack: (track: IMusicData) => void;
     onRetry: () => void;
     fetchNextPage: () => void;
@@ -35,6 +38,7 @@ export default function MusicCollectionTrackList({
     showArtist = true,
     albumDiscCount = null,
     isAlbumLayout = false,
+    selectionScopeKey,
     onPlayTrack,
     onRetry,
     fetchNextPage,
@@ -45,13 +49,19 @@ export default function MusicCollectionTrackList({
         fileId: number;
     } | null>(null);
 
+    const selection = useTrackSelection(selectionScopeKey);
+
     const discGroups = isAlbumLayout
         ? groupTracksByDisc(tracks)
         : [{ discNumber: 1, tracks: tracks.map((track, position) => ({ track, position })) }];
+    const displayedTracks = discGroups.flatMap((discGroup) =>
+        discGroup.tracks.map(({ track }) => track)
+    );
     const hasMultipleDiscs = isAlbumLayout && (albumDiscCount ?? discGroups.length) > 1;
 
     return (
         <>
+            <TrackSelectionControls selection={selection} loadedTracks={tracks} />
             <MusicCollectionListFeedback
                 isLoading={isLoading}
                 isError={isError}
@@ -100,6 +110,10 @@ export default function MusicCollectionTrackList({
                                     })
                                 }
                                 showArtist={showArtist}
+                                selectionMode={selection.resolveRowSelectionMode(
+                                    track,
+                                    displayedTracks
+                                )}
                             />
                         ))}
                     </List>

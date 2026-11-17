@@ -17,6 +17,7 @@ export type BatchTrackMetadataStep =
 interface UseBatchTrackMetadataFormOptions {
     selector: BatchTrackMetadataSelector;
     onClose: () => void;
+    onUpdated?: () => void;
 }
 
 const editingStep: BatchTrackMetadataStep = { kind: 'editing' };
@@ -24,6 +25,7 @@ const editingStep: BatchTrackMetadataStep = { kind: 'editing' };
 export default function useBatchTrackMetadataForm({
     selector,
     onClose,
+    onUpdated,
 }: UseBatchTrackMetadataFormOptions) {
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
@@ -51,6 +53,7 @@ export default function useBatchTrackMetadataForm({
                 return;
             }
             void invalidateMusicMetadataViews(queryClient);
+            onUpdated?.();
             if (result.failed.length > 0) {
                 setStep({ kind: 'done', result });
                 return;

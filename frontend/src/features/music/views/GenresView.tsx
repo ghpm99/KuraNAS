@@ -347,6 +347,7 @@ function GenreTracksView({ genreKey, onBack, onRenamed }: GenreTracksViewProps) 
             />
 
             <MusicCollectionTrackList
+                selectionScopeKey={`genre:${genreKey}`}
                 tracks={tracks}
                 isLoading={tracksQuery.isLoading}
                 isError={tracksQuery.isError}

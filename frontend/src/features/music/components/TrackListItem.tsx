@@ -1,4 +1,4 @@
-import { Box, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
+import { Box, Checkbox, IconButton, ListItem, ListItemButton, Typography } from '@mui/material';
 import { ListPlus, MoreVertical, Music, Pause, Play } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useGlobalMusic } from '@/features/music/providers/GlobalMusicProvider';
@@ -10,6 +10,7 @@ import {
 } from '@/utils/music';
 import { IMusicData } from '@/types/music';
 import { getTrackCoverUrl } from '@/service/musicCover';
+import type { TrackRowSelectionMode } from '@/features/music/selection/useTrackSelection';
 import CoverArt from './CoverArt';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import AddToPlaylistMenu from './AddToPlaylistMenu';
@@ -24,6 +25,7 @@ interface TrackListItemProps {
     onPlay: (track: IMusicData, index: number) => void;
     onAddToPlaylist?: (e: React.MouseEvent<HTMLElement>, fileId: number) => void;
     showArtist?: boolean;
+    selectionMode?: TrackRowSelectionMode;
 }
 
 const TrackListItem = ({
@@ -33,6 +35,7 @@ const TrackListItem = ({
     onPlay,
     onAddToPlaylist,
     showArtist = true,
+    selectionMode,
 }: TrackListItemProps) => {
     const { currentTrack, isPlaying } = useGlobalMusic();
     const isCurrentTrack = currentTrack?.id === track.id;
@@ -44,6 +47,11 @@ const TrackListItem = ({
     const { position, openFromButton, openFromContextMenuEvent, close } = useMenuPosition();
     const [hasOpenedPlaylistMenu, setHasOpenedPlaylistMenu] = useState(false);
     const [playlistMenuAnchor, setPlaylistMenuAnchor] = useState<HTMLElement | null>(null);
+
+    const handleRowClick = (event: React.MouseEvent) =>
+        selectionMode
+            ? selectionMode.onSelect(track, { isRangeClick: event.shiftKey })
+            : onPlay(track, index);
 
     const openPlaylistMenu = () => {
         setHasOpenedPlaylistMenu(true);
@@ -61,7 +69,7 @@ const TrackListItem = ({
             }}
         >
             <ListItemButton
-                onClick={() => onPlay(track, index)}
+                onClick={handleRowClick}
                 onContextMenu={openFromContextMenuEvent}
                 aria-label={`play ${trackTitle}`}
                 sx={{
@@ -81,6 +89,21 @@ const TrackListItem = ({
                     '&:hover .track-play-icon': { display: 'flex' },
                 }}
             >
+                {selectionMode && (
+                    <Checkbox
+                        size="small"
+                        edge="start"
+                        checked={selectionMode.isSelected}
+                        onChange={() => selectionMode.onToggle(track)}
+                        onClick={(event) => event.stopPropagation()}
+                        slotProps={{
+                            input: {
+                                'aria-label': t('MUSIC_SELECT_TRACK', { name: trackTitle }),
+                            },
+                        }}
+                        sx={{ p: 0.5 }}
+                    />
+                )}
                 <Box
                     sx={{
                         width: 32,

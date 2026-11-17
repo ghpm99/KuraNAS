@@ -325,6 +325,30 @@ describe('service/music', () => {
                 });
             });
 
+            it('sends the selected file ids as the batch selector', async () => {
+                await updateTracksMetadata(
+                    { fileIds: [4, 8] },
+                    { genres: ['Rock'] },
+                    { isDryRun: true }
+                );
+                await updateTracksMetadata(
+                    { fileIds: [4, 8] },
+                    { year: 1999 },
+                    { isDryRun: false }
+                );
+
+                expect(mockedApi.put).toHaveBeenNthCalledWith(
+                    1,
+                    '/music/tracks/metadata',
+                    { fields: { genres: ['Rock'] }, file_ids: [4, 8] },
+                    { params: { dry_run: true } }
+                );
+                expect(mockedApi.put).toHaveBeenNthCalledWith(2, '/music/tracks/metadata', {
+                    fields: { year: 1999 },
+                    file_ids: [4, 8],
+                });
+            });
+
             it('treats a null failed list as no failures', async () => {
                 mockedApi.put.mockResolvedValue({ data: { matched: 1, updated: 1, failed: null } });
 

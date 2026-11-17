@@ -176,7 +176,9 @@ export interface TrackMetadataFields {
 
 export type TrackMetadataFieldName = keyof TrackMetadataFields;
 
-export type BatchTrackMetadataSelector = { albumKey: string } | { folderKey: string };
+export type CollectionTrackMetadataSelector = { albumKey: string } | { folderKey: string };
+
+export type BatchTrackMetadataSelector = CollectionTrackMetadataSelector | { fileIds: number[] };
 
 export interface BatchTrackMetadataFailure {
     fileId: number;

@@ -54,6 +54,7 @@ export default function AllTracksView() {
                 </Box>
             )}
             <MusicCollectionTrackList
+                selectionScopeKey="all-tracks"
                 tracks={loadedTracks}
                 isLoading={tracksQuery.isLoading}
                 isError={tracksQuery.isError}

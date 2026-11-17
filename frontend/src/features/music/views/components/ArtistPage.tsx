@@ -108,6 +108,7 @@ export default function ArtistPage({ artistKey, onBack }: ArtistPageProps) {
                 {t('MUSIC_ARTIST_ALL_TRACKS')}
             </Typography>
             <MusicCollectionTrackList
+                selectionScopeKey={`artist:${artistKey}`}
                 tracks={tracks}
                 isLoading={tracksQuery.isLoading}
                 isError={tracksQuery.isError}

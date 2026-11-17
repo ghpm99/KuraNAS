@@ -2,11 +2,11 @@ import { Button } from '@mui/material';
 import { Pencil } from 'lucide-react';
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import type { BatchTrackMetadataSelector } from '@/types/music';
+import type { CollectionTrackMetadataSelector } from '@/types/music';
 import BatchTrackMetadataDialog from './BatchTrackMetadataDialog';
 
 interface EditCollectionMetadataButtonProps {
-    selector: BatchTrackMetadataSelector;
+    selector: CollectionTrackMetadataSelector;
 }
 
 export default function EditCollectionMetadataButton({

@@ -95,6 +95,7 @@ export default function AlbumPage({ albumKey, onBack }: AlbumPageProps) {
             />
 
             <MusicCollectionTrackList
+                selectionScopeKey={`album:${albumKey}`}
                 tracks={tracks}
                 isAlbumLayout
                 albumDiscCount={summary?.disc_count}

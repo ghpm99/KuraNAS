@@ -103,4 +103,89 @@ describe('TrackListItem', () => {
         expect(screen.getByText('artist-9')).toBeInTheDocument();
         expect(screen.queryByText(/dur-/)).not.toBeInTheDocument();
     });
+
+    describe('selection mode', () => {
+        it('shows a checkbox named after the track and toggles instead of playing on row click', () => {
+            const mockOnSelect = jest.fn();
+            render(
+                <TrackListItem
+                    track={baseTrack}
+                    index={0}
+                    onPlay={mockOnPlay}
+                    selectionMode={{
+                        isSelected: false,
+                        onSelect: mockOnSelect,
+                        onToggle: jest.fn(),
+                    }}
+                />
+            );
+
+            expect(screen.getByRole('checkbox', { name: 'MUSIC_SELECT_TRACK' })).not.toBeChecked();
+
+            fireEvent.click(screen.getByRole('button', { name: 'play track-9' }));
+            fireEvent.click(screen.getByRole('button', { name: 'play track-9' }), {
+                ctrlKey: true,
+            });
+
+            expect(mockOnSelect).toHaveBeenCalledTimes(2);
+            expect(mockOnSelect).toHaveBeenNthCalledWith(1, baseTrack, { isRangeClick: false });
+            expect(mockOnSelect).toHaveBeenNthCalledWith(2, baseTrack, { isRangeClick: false });
+            expect(mockOnPlay).not.toHaveBeenCalled();
+        });
+
+        it('reports a range click when the row is clicked with shift', () => {
+            const mockOnSelect = jest.fn();
+            render(
+                <TrackListItem
+                    track={baseTrack}
+                    index={0}
+                    onPlay={mockOnPlay}
+                    selectionMode={{
+                        isSelected: false,
+                        onSelect: mockOnSelect,
+                        onToggle: jest.fn(),
+                    }}
+                />
+            );
+
+            fireEvent.click(screen.getByRole('button', { name: 'play track-9' }), {
+                shiftKey: true,
+            });
+
+            expect(mockOnSelect).toHaveBeenCalledWith(baseTrack, { isRangeClick: true });
+            expect(mockOnPlay).not.toHaveBeenCalled();
+        });
+
+        it('toggles once when the checkbox itself is clicked', () => {
+            const mockOnToggle = jest.fn();
+            render(
+                <TrackListItem
+                    track={baseTrack}
+                    index={0}
+                    onPlay={mockOnPlay}
+                    selectionMode={{
+                        isSelected: true,
+                        onSelect: jest.fn(),
+                        onToggle: mockOnToggle,
+                    }}
+                />
+            );
+
+            const checkbox = screen.getByRole('checkbox', { name: 'MUSIC_SELECT_TRACK' });
+            expect(checkbox).toBeChecked();
+            fireEvent.click(checkbox);
+
+            expect(mockOnToggle).toHaveBeenCalledTimes(1);
+            expect(mockOnPlay).not.toHaveBeenCalled();
+        });
+
+        it('has no checkbox and still plays outside the selection mode', () => {
+            render(<TrackListItem track={baseTrack} index={2} onPlay={mockOnPlay} />);
+
+            expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+            fireEvent.click(screen.getByRole('button', { name: 'play track-9' }));
+
+            expect(mockOnPlay).toHaveBeenCalledWith(baseTrack, 2);
+        });
+    });
 });

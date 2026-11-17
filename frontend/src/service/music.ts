@@ -194,10 +194,15 @@ interface BatchTrackMetadataResponse {
     failed: { file_id: number; error: string }[] | null;
 }
 
-const toBatchRequestBody = (selector: BatchTrackMetadataSelector, fields: TrackMetadataFields) =>
-    'albumKey' in selector
-        ? { fields, album_key: selector.albumKey }
-        : { fields, folder_key: selector.folderKey };
+const toBatchRequestBody = (selector: BatchTrackMetadataSelector, fields: TrackMetadataFields) => {
+    if ('albumKey' in selector) {
+        return { fields, album_key: selector.albumKey };
+    }
+    if ('folderKey' in selector) {
+        return { fields, folder_key: selector.folderKey };
+    }
+    return { fields, file_ids: selector.fileIds };
+};
 
 export const updateTracksMetadata = async (
     selector: BatchTrackMetadataSelector,

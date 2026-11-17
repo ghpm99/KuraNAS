@@ -261,6 +261,7 @@ function FolderTracksView({ folder, onBack }: { folder: string; onBack: () => vo
             />
 
             <MusicCollectionTrackList
+                selectionScopeKey={`folder:${folder}`}
                 tracks={tracks}
                 isLoading={tracksQuery.isLoading}
                 isError={tracksQuery.isError}

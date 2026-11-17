@@ -21,7 +21,18 @@ import useTrackMetadataSuggestions from './useTrackMetadataSuggestions';
 interface BatchTrackMetadataDialogProps {
     selector: BatchTrackMetadataSelector;
     onClose: () => void;
+    onUpdated?: () => void;
 }
+
+const resolveDialogTitle = (
+    selector: BatchTrackMetadataSelector,
+    t: (key: string, params?: Record<string, string>) => string
+) => {
+    if ('fileIds' in selector) {
+        return t('MUSIC_EDIT_SELECTION', { count: String(selector.fileIds.length) });
+    }
+    return t('albumKey' in selector ? 'MUSIC_EDIT_ALBUM' : 'MUSIC_EDIT_FOLDER');
+};
 
 function BatchFailureList({ failures }: { failures: BatchTrackMetadataResult['failed'] }) {
     const { t } = useI18n();
@@ -48,16 +59,16 @@ function BatchFailureList({ failures }: { failures: BatchTrackMetadataResult['fa
 export default function BatchTrackMetadataDialog({
     selector,
     onClose,
+    onUpdated,
 }: BatchTrackMetadataDialogProps) {
     const { t } = useI18n();
-    const form = useBatchTrackMetadataForm({ selector, onClose });
+    const form = useBatchTrackMetadataForm({ selector, onClose, onUpdated });
     const { artistNames, genreNames } = useTrackMetadataSuggestions();
-    const titleKey = 'albumKey' in selector ? 'MUSIC_EDIT_ALBUM' : 'MUSIC_EDIT_FOLDER';
     const { step } = form;
 
     return (
         <Dialog open onClose={form.isSubmitting ? undefined : onClose} fullWidth maxWidth="sm">
-            <DialogTitle>{t(titleKey)}</DialogTitle>
+            <DialogTitle>{resolveDialogTitle(selector, t)}</DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ pt: 1 }}>
                     {form.topError && <Alert severity="error">{form.topError}</Alert>}
