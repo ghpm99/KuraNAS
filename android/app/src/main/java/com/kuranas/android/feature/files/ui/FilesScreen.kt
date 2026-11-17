@@ -2,7 +2,9 @@ package com.kuranas.android.feature.files.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,7 +27,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
@@ -57,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -115,6 +122,16 @@ fun FilesScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val queuedDownloadsMessage = if (state.queuedDownloadsCount > 0) {
+        pluralStringResource(R.plurals.files_downloads_queued, state.queuedDownloadsCount, state.queuedDownloadsCount)
+    } else {
+        null
+    }
+    LaunchedEffect(queuedDownloadsMessage) {
+        val message = queuedDownloadsMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.dismissQueuedDownloadsNotice()
+    }
     LaunchedEffect(state.actionErrorMessage) {
         val message = state.actionErrorMessage ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(message)
@@ -149,6 +166,14 @@ fun FilesScreen(
                 onLeadingClick = viewModel::navigateUp,
             )
 
+            if (state.isSelecting) {
+                SelectionBar(
+                    selectedCount = state.selectedFileIds.size,
+                    onDownload = viewModel::downloadSelected,
+                    onClear = viewModel::clearSelection,
+                )
+            }
+
             if (state.breadcrumb.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(bottom = 8.dp)) {
                     item { Text(stringResource(R.string.files_root), style = MaterialTheme.typography.bodySmall, modifier = Modifier.clickable { viewModel.loadRoot() }) }
@@ -176,11 +201,19 @@ fun FilesScreen(
                         FileListItem(
                             file = file,
                             onClick = {
-                                if (file.isDir) viewModel.openFolder(file)
-                                else openFileByType(file, onOpenImage, onOpenVideo, onPlayAudio, onOpenFile)
+                                when {
+                                    state.isSelecting -> viewModel.toggleSelection(file)
+                                    file.isDir -> viewModel.openFolder(file)
+                                    else -> openFileByType(file, onOpenImage, onOpenVideo, onPlayAudio, onOpenFile)
+                                }
                             },
                             onStar = { viewModel.toggleFileStarred(file) },
                             onDelete = { viewModel.requestDelete(file) },
+                            selection = FileSelection(
+                                isSelecting = state.isSelecting,
+                                isSelected = file.id in state.selectedFileIds,
+                                onLongClick = { viewModel.toggleSelection(file) },
+                            ),
                         )
                     }
                     item(key = "paged-list-footer") {
@@ -236,6 +269,29 @@ fun FilesScreen(
 }
 
 @Composable
+private fun SelectionBar(selectedCount: Int, onDownload: () -> Unit, onClear: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            stringResource(R.string.files_selection_count, selectedCount),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onDownload) {
+            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.files_selection_download))
+        }
+        IconButton(onClick = onClear) {
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.files_selection_clear))
+        }
+    }
+}
+
+@Composable
 private fun MoveToTrashDialog(fileName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -250,22 +306,34 @@ private fun MoveToTrashDialog(fileName: String, onConfirm: () -> Unit, onDismiss
     )
 }
 
+internal data class FileSelection(val isSelecting: Boolean, val isSelected: Boolean, val onLongClick: () -> Unit)
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun FileListItem(
     file: FileItemDto,
     onClick: () -> Unit,
     onStar: () -> Unit,
     onDelete: (() -> Unit)? = null,
+    selection: FileSelection? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .glass(GlassLevel.Light, radius = 12.dp)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = selection?.onLongClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (selection?.isSelecting == true && !file.isDir) {
+            Icon(
+                imageVector = if (selection.isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
         Icon(
             imageVector = fileIcon(file),
             contentDescription = null,

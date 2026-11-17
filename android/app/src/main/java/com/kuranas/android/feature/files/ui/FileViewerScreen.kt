@@ -10,12 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +48,9 @@ import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.files.data.FileContent
 import com.kuranas.android.feature.files.data.FileItemDto
+import com.kuranas.android.feature.files.data.INLINE_PREVIEW_LIMIT_MEGABYTES
+import com.kuranas.android.feature.files.data.download.DownloadState
+import com.kuranas.android.feature.files.data.download.toMessage
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
@@ -56,12 +62,19 @@ fun FileViewerScreen(
     viewModel: FileViewerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val downloading by viewModel.downloading.collectAsStateWithLifecycle()
+    val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
+    val externalPreparation by viewModel.externalPreparation.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(fileId) { viewModel.load(fileId) }
     LaunchedEffect(Unit) {
-        viewModel.messages.collect { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+        viewModel.deliveries.collect { delivery ->
+            when (delivery) {
+                is ExternalDelivery.Ready -> context.startActivity(buildExternalFileIntent(context, delivery))
+                is ExternalDelivery.Failed ->
+                    Toast.makeText(context, delivery.failure.toMessage(context), Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
@@ -74,41 +87,69 @@ fun FileViewerScreen(
         when (val s = state) {
             is FileViewerState.Loading -> LoadingView()
             is FileViewerState.Failed -> ErrorView(s.message, onRetry = { viewModel.load(fileId) })
-            is FileViewerState.Content -> {
-                var showInfo by remember { mutableStateOf(false) }
-
-                ActionsRow(
-                    downloading = downloading,
-                    showInfo = showInfo,
-                    onToggleInfo = { showInfo = !showInfo },
-                    onDownload = { viewModel.download(fileId, fileName) },
-                )
-
-                if (showInfo) {
-                    Spacer(Modifier.height(8.dp))
-                    InfoCard(info = s.info, content = s.content)
-                }
-
-                Spacer(Modifier.height(8.dp))
-
+            is FileViewerState.Content -> LoadedFile(
+                info = s.info,
+                downloadState = downloadState,
+                isPreparingExternal = externalPreparation != null,
+                viewModel = viewModel,
+            ) {
                 when (val content = s.content) {
                     is FileContent.Text -> TextContent(content)
-                    is FileContent.Unsupported -> UnsupportedContent(content)
+                    is FileContent.Unsupported -> UnsupportedContent()
                 }
             }
+            is FileViewerState.TooLargeToPreview -> LoadedFile(
+                info = s.info,
+                downloadState = downloadState,
+                isPreparingExternal = externalPreparation != null,
+                viewModel = viewModel,
+            ) { TooLargeContent() }
         }
     }
 }
 
 @Composable
+private fun LoadedFile(
+    info: FileItemDto,
+    downloadState: DownloadState?,
+    isPreparingExternal: Boolean,
+    viewModel: FileViewerViewModel,
+    body: @Composable () -> Unit,
+) {
+    var showInfo by remember { mutableStateOf(false) }
+
+    ActionsRow(
+        isDownloading = downloadState is DownloadState.Queued || downloadState is DownloadState.Running,
+        isPreparingExternal = isPreparingExternal,
+        showInfo = showInfo,
+        onToggleInfo = { showInfo = !showInfo },
+        onDownload = viewModel::download,
+        onOpenWith = viewModel::openWith,
+        onShare = viewModel::share,
+    )
+    DownloadStatusView(downloadState, Modifier.fillMaxWidth().padding(top = 8.dp))
+
+    if (showInfo) {
+        Spacer(Modifier.height(8.dp))
+        InfoCard(info = info)
+    }
+
+    Spacer(Modifier.height(8.dp))
+    body()
+}
+
+@Composable
 private fun ActionsRow(
-    downloading: Boolean,
+    isDownloading: Boolean,
+    isPreparingExternal: Boolean,
     showInfo: Boolean,
     onToggleInfo: () -> Unit,
     onDownload: () -> Unit,
+    onOpenWith: () -> Unit,
+    onShare: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         TextButton(onClick = onToggleInfo) {
@@ -116,20 +157,30 @@ private fun ActionsRow(
             Spacer(Modifier.size(6.dp))
             Text(if (showInfo) stringResource(R.string.file_hide_details) else stringResource(R.string.file_details))
         }
-        OutlinedButton(onClick = onDownload, enabled = !downloading) {
-            if (downloading) {
+        OutlinedButton(onClick = onDownload, enabled = !isDownloading) {
+            if (isDownloading) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             } else {
                 Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
             }
             Spacer(Modifier.size(6.dp))
-            Text(if (downloading) stringResource(R.string.file_downloading) else stringResource(R.string.file_download))
+            Text(if (isDownloading) stringResource(R.string.file_downloading) else stringResource(R.string.file_download))
+        }
+        OutlinedButton(onClick = onOpenWith, enabled = !isPreparingExternal) {
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(6.dp))
+            Text(stringResource(R.string.file_open_with))
+        }
+        OutlinedButton(onClick = onShare, enabled = !isPreparingExternal) {
+            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.size(6.dp))
+            Text(stringResource(R.string.file_share))
         }
     }
 }
 
 @Composable
-private fun InfoCard(info: FileItemDto?, content: FileContent) {
+private fun InfoCard(info: FileItemDto) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,24 +189,13 @@ private fun InfoCard(info: FileItemDto?, content: FileContent) {
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Text(stringResource(R.string.file_info), style = MaterialTheme.typography.titleSmall)
-        if (info != null) {
-            InfoRow(stringResource(R.string.file_field_name), info.name)
-            InfoRow(stringResource(R.string.file_field_path), info.path.ifBlank { info.parentPath })
-            InfoRow(stringResource(R.string.file_field_format), info.format.ifBlank { "—" })
-            InfoRow(stringResource(R.string.file_field_type), if (info.isDir) stringResource(R.string.file_type_folder) else stringResource(R.string.file_type_file))
-            InfoLine(stringResource(R.string.file_field_size)) { FileSizeText(info.size) }
-            if (info.createdAt.isNotBlank()) InfoRow(stringResource(R.string.file_field_created), formatDate(info.createdAt))
-            if (info.updatedAt.isNotBlank()) InfoRow(stringResource(R.string.file_field_updated), formatDate(info.updatedAt))
-        } else {
-            // Sem metadados — mostra o que dá pra inferir do conteúdo baixado.
-            when (content) {
-                is FileContent.Unsupported -> {
-                    InfoRow(stringResource(R.string.file_field_content_type), content.contentType)
-                    InfoLine(stringResource(R.string.file_field_size)) { FileSizeText(content.size) }
-                }
-                is FileContent.Text -> InfoRow(stringResource(R.string.file_field_content_type), stringResource(R.string.file_content_type_text))
-            }
-        }
+        InfoRow(stringResource(R.string.file_field_name), info.name)
+        InfoRow(stringResource(R.string.file_field_path), info.path.ifBlank { info.parentPath })
+        InfoRow(stringResource(R.string.file_field_format), info.format.ifBlank { "—" })
+        InfoRow(stringResource(R.string.file_field_type), if (info.isDir) stringResource(R.string.file_type_folder) else stringResource(R.string.file_type_file))
+        InfoLine(stringResource(R.string.file_field_size)) { FileSizeText(info.size) }
+        if (info.createdAt.isNotBlank()) InfoRow(stringResource(R.string.file_field_created), formatDate(info.createdAt))
+        if (info.updatedAt.isNotBlank()) InfoRow(stringResource(R.string.file_field_updated), formatDate(info.updatedAt))
     }
 }
 
@@ -207,7 +247,23 @@ private fun TextContent(content: FileContent.Text) {
 }
 
 @Composable
-private fun UnsupportedContent(content: FileContent.Unsupported) {
+private fun UnsupportedContent() {
+    CenteredHint(
+        message = stringResource(R.string.file_preview_unavailable),
+        hint = stringResource(R.string.file_save_hint),
+    )
+}
+
+@Composable
+private fun TooLargeContent() {
+    CenteredHint(
+        message = stringResource(R.string.file_too_large_for_preview, INLINE_PREVIEW_LIMIT_MEGABYTES),
+        hint = stringResource(R.string.file_save_hint),
+    )
+}
+
+@Composable
+private fun CenteredHint(message: String, hint: String) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -220,11 +276,8 @@ private fun UnsupportedContent(content: FileContent.Unsupported) {
             tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(12.dp))
-        Text(
-            stringResource(R.string.file_preview_unavailable),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(message, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(4.dp))
-        Text(stringResource(R.string.file_save_hint), style = MaterialTheme.typography.bodySmall)
+        Text(hint, style = MaterialTheme.typography.bodySmall)
     }
 }

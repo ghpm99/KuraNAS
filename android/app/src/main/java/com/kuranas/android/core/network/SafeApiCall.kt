@@ -25,8 +25,11 @@ suspend fun <T> safeApiCall(call: suspend () -> T): AppResult<T> =
         }
     }
 
-private fun serverErrorMessage(exception: HttpException): String? {
-    val body = exception.response()?.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: return null
+private fun serverErrorMessage(exception: HttpException): String? =
+    parseServerErrorMessage(exception.response()?.errorBody()?.string())
+
+internal fun parseServerErrorMessage(rawBody: String?): String? {
+    val body = rawBody?.takeIf { it.isNotBlank() } ?: return null
     val serverMessage = runCatching {
         Json.parseToJsonElement(body).jsonObject["error"]?.jsonPrimitive?.contentOrNull
     }.getOrNull()

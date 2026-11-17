@@ -107,9 +107,28 @@
     <string name="file_large_preview">Large file — showing only the beginning.</string>
     <string name="file_preview_unavailable">Preview not available for this file type.</string>
     <string name="file_save_hint">Use \"Download\" to save to the device.</string>
-    <string name="file_saved_to_downloads">Saved to Downloads/%1$s</string>
-    <string name="file_save_failed">Failed to save the file</string>
-    <string name="file_download_failed">Download failed: %1$s</string>
+
+    <string name="file_open_with">Open with…</string>
+    <string name="file_share">Share</string>
+    <string name="file_too_large_for_preview">This file is larger than %1$d MB, so it is not previewed. Download it to open.</string>
+    <string name="download_channel_name">Downloads</string>
+    <string name="download_channel_description">Progress of files downloaded from the server</string>
+    <string name="download_notification_completed_title">Download complete</string>
+    <string name="download_notification_failed_title">Download failed</string>
+    <string name="download_open_action">Open</string>
+    <string name="download_failed_http">Download failed (HTTP %1$d)</string>
+    <string name="download_failed_connection">The connection was lost and the download could not be completed.</string>
+    <string name="download_failed_storage">Could not save the file on this device.</string>
+    <string name="download_status_queued">Waiting to download…</string>
+    <string name="download_status_progress">%1$s of %2$s</string>
+    <string name="download_status_completed">Download complete</string>
+    <string name="files_selection_count">%1$d selected</string>
+    <string name="files_selection_clear">Clear selection</string>
+    <string name="files_selection_download">Download</string>
+    <plurals name="files_downloads_queued">
+        <item quantity="one">%1$d download added to the queue</item>
+        <item quantity="other">%1$d downloads added to the queue</item>
+    </plurals>
 
     <!-- Home -->
     <string name="home_recently_accessed">Recently accessed</string>

@@ -105,9 +105,28 @@
     <string name="file_large_preview">Arquivo grande — exibindo apenas o início.</string>
     <string name="file_preview_unavailable">Pré-visualização não disponível para este tipo de arquivo.</string>
     <string name="file_save_hint">Use \"Baixar\" para salvar no dispositivo.</string>
-    <string name="file_saved_to_downloads">Salvo em Downloads/%1$s</string>
-    <string name="file_save_failed">Falha ao salvar o arquivo</string>
-    <string name="file_download_failed">Falha no download: %1$s</string>
+
+    <string name="file_open_with">Abrir com…</string>
+    <string name="file_share">Compartilhar</string>
+    <string name="file_too_large_for_preview">Este arquivo tem mais de %1$d MB e não é pré-visualizado. Baixe para abri-lo.</string>
+    <string name="download_channel_name">Downloads</string>
+    <string name="download_channel_description">Progresso dos arquivos baixados do servidor</string>
+    <string name="download_notification_completed_title">Download concluído</string>
+    <string name="download_notification_failed_title">Falha no download</string>
+    <string name="download_open_action">Abrir</string>
+    <string name="download_failed_http">Falha no download (HTTP %1$d)</string>
+    <string name="download_failed_connection">A conexão caiu e o download não pôde ser concluído.</string>
+    <string name="download_failed_storage">Não foi possível salvar o arquivo neste aparelho.</string>
+    <string name="download_status_queued">Aguardando para baixar…</string>
+    <string name="download_status_progress">%1$s de %2$s</string>
+    <string name="download_status_completed">Download concluído</string>
+    <string name="files_selection_count">%1$d selecionados</string>
+    <string name="files_selection_clear">Limpar seleção</string>
+    <string name="files_selection_download">Baixar</string>
+    <plurals name="files_downloads_queued">
+        <item quantity="one">%1$d download adicionado à fila</item>
+        <item quantity="other">%1$d downloads adicionados à fila</item>
+    </plurals>
 
     <!-- Home -->
     <string name="home_recently_accessed">Acessados recentemente</string>

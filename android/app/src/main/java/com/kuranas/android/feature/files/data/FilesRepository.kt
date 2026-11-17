@@ -85,12 +85,6 @@ class FilesRepository @Inject constructor(
             ?: throw NoSuchElementException(context.getString(R.string.file_not_found))
     }
 
-    /** Baixa os bytes brutos do arquivo (pra salvar no dispositivo). */
-    suspend fun getFileBytes(id: String): AppResult<FileBytes> = safeApiCall {
-        val body = api.getBlob(id)
-        FileBytes(bytes = body.bytes(), contentType = body.contentType()?.toString())
-    }
-
     /**
      * Baixa o conteúdo do arquivo (endpoint /blob) e decide se é texto exibível
      * ou binário. O backend marca o Content-Type pela extensão, mas isso não
@@ -159,8 +153,6 @@ sealed interface FileContent {
     data class Text(val content: String, val truncated: Boolean) : FileContent
     data class Unsupported(val contentType: String, val size: Long) : FileContent
 }
-
-data class FileBytes(val bytes: ByteArray, val contentType: String?)
 
 @Module
 @dagger.hilt.InstallIn(SingletonComponent::class)

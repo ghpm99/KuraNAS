@@ -7,6 +7,8 @@ import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.paging.PagedListLoader
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.FilesRepository
+import com.kuranas.android.feature.files.data.download.DownloadQueue
+import com.kuranas.android.feature.files.data.download.toDownloadRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,11 +34,16 @@ data class FilesUiState(
     val showCreateFolderDialog: Boolean = false,
     val actionErrorMessage: String? = null,
     val fileAwaitingDeleteConfirmation: FileItemDto? = null,
-)
+    val selectedFileIds: Set<String> = emptySet(),
+    val queuedDownloadsCount: Int = 0,
+) {
+    val isSelecting: Boolean get() = selectedFileIds.isNotEmpty()
+}
 
 @HiltViewModel
 class FilesViewModel @Inject constructor(
     private val repository: FilesRepository,
+    private val downloadQueue: DownloadQueue,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -92,7 +99,32 @@ class FilesViewModel @Inject constructor(
     /** Reloads the current folder from the first page keeping the visible list (pull-to-refresh and resume). */
     fun refresh() = filesLoader.refresh()
 
+    fun toggleSelection(file: FileItemDto) {
+        if (file.isDir) return
+        navigationState.update {
+            val toggled = if (file.id in it.selectedFileIds) it.selectedFileIds - file.id else it.selectedFileIds + file.id
+            it.copy(selectedFileIds = toggled)
+        }
+    }
+
+    fun clearSelection() {
+        navigationState.update { it.copy(selectedFileIds = emptySet()) }
+    }
+
+    fun downloadSelected() {
+        val selectedIds = navigationState.value.selectedFileIds
+        val selectedFiles = state.value.files.filter { it.id in selectedIds && !it.isDir }
+        if (selectedFiles.isEmpty()) return
+        downloadQueue.enqueue(selectedFiles.map { it.toDownloadRequest() })
+        navigationState.update { it.copy(selectedFileIds = emptySet(), queuedDownloadsCount = selectedFiles.size) }
+    }
+
+    fun dismissQueuedDownloadsNotice() {
+        navigationState.update { it.copy(queuedDownloadsCount = 0) }
+    }
+
     private fun loadCurrentFolder() {
+        navigationState.update { it.copy(selectedFileIds = emptySet()) }
         val currentFolderId = navigationState.value.breadcrumb.lastOrNull()?.second
         filesLoader.load { page ->
             if (currentFolderId == null) repository.getRootFiles(page) else repository.getChildrenById(currentFolderId, page)
