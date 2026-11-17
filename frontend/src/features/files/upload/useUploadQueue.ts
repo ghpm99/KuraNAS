@@ -1,11 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
-import {
-    uploadSingleFile,
-    type UploadConflictPolicy,
-    type UploadOutcome,
-    type UploadSingleFileParams,
-} from '@/service/files';
+import type { UploadConflictPolicy } from '@/service/files';
 import { loadConflictPolicy, saveConflictPolicy } from './conflictPolicyPreference';
+import type { FileTransferOutcome, FileTransferPhase, TransferFileFn } from './fileTransferTypes';
+import { transferFile as transferFileByChunkingWhenLarge } from './transferFile';
+import { createTransferRateTracker } from './transferRateTracker';
+import { connectionLostErrorKey, UploadConnectionLostError } from './uploadConnectionLostError';
 import {
     isActiveItem,
     isRetryableItem,
@@ -17,19 +16,20 @@ import {
 
 const maxConcurrentUploads = 3;
 
-type UploadFileFn = (params: UploadSingleFileParams) => Promise<UploadOutcome>;
+const progressPatchIntervalMs = 250;
 
 type UseUploadQueueOptions = {
-    uploadFile?: UploadFileFn;
+    transferFile?: TransferFileFn;
     maxConcurrent?: number;
     onFileFinished?: () => void;
 };
 
-const statusByOutcome: Record<UploadOutcome['status'], UploadItemStatus> = {
+const statusByOutcome: Record<FileTransferOutcome['status'], UploadItemStatus> = {
     uploaded: 'done',
     renamed: 'renamed',
     replaced: 'replaced',
     skipped: 'skipped',
+    alreadyExisted: 'alreadyExisted',
     failed: 'failed',
 };
 
@@ -52,16 +52,33 @@ const buildItem = (
     targetFolderId,
     onConflict,
     status: 'queued',
+    size: entry.file.size,
+    sentBytes: 0,
     progress: 0,
 });
 
+const toProgressPercent = (sentBytes: number, size: number): number =>
+    size > 0 ? Math.min(100, Math.floor((sentBytes / size) * 100)) : 0;
+
+const phaseToStatus: Record<FileTransferPhase, UploadItemStatus> = {
+    checking: 'checking',
+    uploading: 'uploading',
+    waitingConnection: 'waitingConnection',
+};
+
+const buildFailurePatch = (error: unknown): Partial<UploadItem> =>
+    error instanceof UploadConnectionLostError
+        ? { status: 'failed', errorKey: connectionLostErrorKey }
+        : { status: 'failed', error: extractBackendMessage(error) };
+
 export const useUploadQueue = ({
-    uploadFile = uploadSingleFile,
+    transferFile = transferFileByChunkingWhenLarge,
     maxConcurrent = maxConcurrentUploads,
     onFileFinished,
 }: UseUploadQueueOptions = {}): UploadQueue => {
     const [items, setItems] = useState<UploadItem[]>([]);
-    const [conflictPolicy, setConflictPolicyState] = useState<UploadConflictPolicy>(loadConflictPolicy);
+    const [conflictPolicy, setConflictPolicyState] =
+        useState<UploadConflictPolicy>(loadConflictPolicy);
     const itemsRef = useRef<UploadItem[]>([]);
     const controllersRef = useRef(new Map<string, AbortController>());
     const runningCountRef = useRef(0);
@@ -91,34 +108,81 @@ export const useUploadQueue = ({
             const controller = new AbortController();
             controllersRef.current.set(item.id, controller);
             runningCountRef.current += 1;
-            patchItem(item.id, { status: 'uploading', progress: 0, error: undefined });
+            const rateTracker = createTransferRateTracker();
+            let lastPatchAt = 0;
+            let lastPercent = -1;
+            patchItem(item.id, {
+                status: 'uploading',
+                sentBytes: 0,
+                progress: 0,
+                error: undefined,
+                errorKey: undefined,
+            });
+
+            const handlePhaseChange = (phase: FileTransferPhase) => {
+                rateTracker.reset();
+                patchItem(item.id, {
+                    status: phaseToStatus[phase],
+                    bytesPerSecond: undefined,
+                    remainingSeconds: undefined,
+                });
+            };
+
+            const handleSentBytes = (sentBytes: number) => {
+                const estimate = rateTracker.record(sentBytes, item.size);
+                const current = itemsRef.current.find((candidate) => candidate.id === item.id);
+                if (current?.status !== 'uploading') return;
+                const percent = toProgressPercent(sentBytes, item.size);
+                const patchedAt = Date.now();
+                const isPatchDue = patchedAt - lastPatchAt >= progressPatchIntervalMs;
+                if (!isPatchDue && percent === lastPercent) return;
+                lastPatchAt = patchedAt;
+                lastPercent = percent;
+                patchItem(item.id, {
+                    sentBytes,
+                    progress: percent,
+                    bytesPerSecond: estimate.bytesPerSecond,
+                    remainingSeconds: estimate.remainingSeconds,
+                });
+            };
 
             try {
-                const outcome = await uploadFile({
+                const outcome = await transferFile({
                     file: item.file,
                     targetFolderId: item.targetFolderId,
                     relativePath: item.relativePath,
                     onConflict: item.onConflict,
                     signal: controller.signal,
-                    onProgress: (percent) => {
-                        const current = itemsRef.current.find((candidate) => candidate.id === item.id);
-                        if (current && current.status === 'uploading' && current.progress !== percent) {
-                            patchItem(item.id, { progress: percent });
-                        }
-                    },
+                    knownChecksum: item.checksum,
+                    onPhaseChange: handlePhaseChange,
+                    onChecksumComputed: (checksum) => patchItem(item.id, { checksum }),
+                    onSentBytes: handleSentBytes,
                 });
                 patchItem(item.id, {
                     status: statusByOutcome[outcome.status] ?? 'done',
+                    sentBytes: item.size,
                     progress: 100,
+                    bytesPerSecond: undefined,
+                    remainingSeconds: undefined,
                     error: outcome.error,
                     savedName: outcome.name,
                 });
                 onFileFinishedRef.current?.();
             } catch (error) {
                 if (controller.signal.aborted) {
-                    patchItem(item.id, { status: 'canceled', progress: 0 });
+                    patchItem(item.id, {
+                        status: 'canceled',
+                        sentBytes: 0,
+                        progress: 0,
+                        bytesPerSecond: undefined,
+                        remainingSeconds: undefined,
+                    });
                 } else {
-                    patchItem(item.id, { status: 'failed', error: extractBackendMessage(error) });
+                    patchItem(item.id, {
+                        ...buildFailurePatch(error),
+                        bytesPerSecond: undefined,
+                        remainingSeconds: undefined,
+                    });
                 }
             } finally {
                 controllersRef.current.delete(item.id);
@@ -126,7 +190,7 @@ export const useUploadQueue = ({
                 pumpRef.current();
             }
         },
-        [patchItem, uploadFile]
+        [patchItem, transferFile]
     );
 
     const pump = useCallback(() => {
@@ -183,7 +247,16 @@ export const useUploadQueue = ({
             commitItems(
                 itemsRef.current.map((item) =>
                     shouldRequeue(item)
-                        ? { ...item, status: 'queued', progress: 0, error: undefined }
+                        ? {
+                              ...item,
+                              status: 'queued',
+                              sentBytes: 0,
+                              progress: 0,
+                              bytesPerSecond: undefined,
+                              remainingSeconds: undefined,
+                              error: undefined,
+                              errorKey: undefined,
+                          }
                         : item
                 )
             );
@@ -197,10 +270,7 @@ export const useUploadQueue = ({
         [requeue]
     );
 
-    const retryFailed = useCallback(
-        () => requeue((item) => item.status === 'failed'),
-        [requeue]
-    );
+    const retryFailed = useCallback(() => requeue((item) => item.status === 'failed'), [requeue]);
 
     const clearFinished = useCallback(() => {
         commitItems(itemsRef.current.filter(isActiveItem));

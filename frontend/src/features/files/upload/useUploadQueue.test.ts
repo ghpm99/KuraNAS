@@ -1,28 +1,31 @@
 import { act, renderHook } from '@testing-library/react';
-import type { UploadOutcome, UploadSingleFileParams } from '@/service/files';
 import { conflictPolicyStorageKey } from './conflictPolicyPreference';
+import type { FileTransferOutcome, FileTransferParams } from './fileTransferTypes';
+import { UploadConnectionLostError } from './uploadConnectionLostError';
 import useUploadQueue from './useUploadQueue';
 
 type PendingUpload = {
-    params: UploadSingleFileParams;
-    resolve: (outcome: UploadOutcome) => void;
+    params: FileTransferParams;
+    resolve: (outcome: FileTransferOutcome) => void;
     reject: (error: unknown) => void;
 };
 
 const createControlledUploader = () => {
     const pendingUploads: PendingUpload[] = [];
-    const uploadFile = jest.fn(
-        (params: UploadSingleFileParams) =>
-            new Promise<UploadOutcome>((resolve, reject) => {
+    const transferFile = jest.fn(
+        (params: FileTransferParams) =>
+            new Promise<FileTransferOutcome>((resolve, reject) => {
                 params.signal?.addEventListener('abort', () => reject(new Error('aborted')));
                 pendingUploads.push({ params, resolve, reject });
             })
     );
-    return { uploadFile, pendingUploads };
+    return { transferFile, pendingUploads };
 };
 
-const buildEntries = (count: number) =>
-    Array.from({ length: count }, (_, index) => ({ file: new File(['x'], `f${index}.txt`) }));
+const buildEntries = (count: number, size = 1) =>
+    Array.from({ length: count }, (_, index) => ({
+        file: new File(['x'.repeat(size)], `f${index}.txt`),
+    }));
 
 describe('useUploadQueue', () => {
     beforeEach(() => window.localStorage.clear());
@@ -35,12 +38,12 @@ describe('useUploadQueue', () => {
     });
 
     it('runs at most three uploads at a time and starts the next as one finishes', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile }));
 
         act(() => result.current.enqueue(buildEntries(5), 9));
 
-        expect(uploadFile).toHaveBeenCalledTimes(3);
+        expect(transferFile).toHaveBeenCalledTimes(3);
         expect(result.current.items.map((item) => item.status)).toEqual([
             'uploading',
             'uploading',
@@ -51,33 +54,37 @@ describe('useUploadQueue', () => {
 
         await act(async () => pendingUploads[0]!.resolve({ status: 'uploaded' }));
 
-        expect(uploadFile).toHaveBeenCalledTimes(4);
+        expect(transferFile).toHaveBeenCalledTimes(4);
         expect(result.current.items[0]!.status).toBe('done');
         expect(result.current.items[0]!.progress).toBe(100);
-        expect(uploadFile.mock.calls[0]![0].targetFolderId).toBe(9);
+        expect(transferFile.mock.calls[0]![0].targetFolderId).toBe(9);
     });
 
     it('forwards progress, relative path and the chosen conflict policy', () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile }));
 
         act(() => result.current.setConflictPolicy('skip'));
         act(() =>
-            result.current.enqueue([{ file: new File(['x'], 'a.mp3'), relativePath: 'Album/a.mp3' }])
+            result.current.enqueue([
+                { file: new File(['x'.repeat(200)], 'a.mp3'), relativePath: 'Album/a.mp3' },
+            ])
         );
-        act(() => pendingUploads[0]!.params.onProgress?.(42));
+        act(() => pendingUploads[0]!.params.onSentBytes(84));
 
-        expect(uploadFile.mock.calls[0]![0]).toEqual(
+        expect(transferFile.mock.calls[0]![0]).toEqual(
             expect.objectContaining({ relativePath: 'Album/a.mp3', onConflict: 'skip' })
         );
         expect(result.current.items[0]!.progress).toBe(42);
+        expect(result.current.items[0]!.sentBytes).toBe(84);
+        expect(result.current.items[0]!.size).toBe(200);
         expect(result.current.items[0]!.displayName).toBe('Album/a.mp3');
         expect(window.localStorage.getItem(conflictPolicyStorageKey)).toBe('skip');
     });
 
     it('maps backend outcomes to item statuses and keeps the backend error verbatim', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile }));
 
         act(() => result.current.enqueue(buildEntries(3)));
         await act(async () => {
@@ -96,8 +103,8 @@ describe('useUploadQueue', () => {
     });
 
     it('marks a rejected request as failed using the backend error message', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile }));
 
         act(() => result.current.enqueue(buildEntries(1)));
         await act(async () =>
@@ -114,8 +121,8 @@ describe('useUploadQueue', () => {
     });
 
     it('cancels a running upload through its abort signal and a queued one directly', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile, maxConcurrent: 1 }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile, maxConcurrent: 1 }));
 
         act(() => result.current.enqueue(buildEntries(2)));
         const [runningItem, queuedItem] = result.current.items;
@@ -126,12 +133,12 @@ describe('useUploadQueue', () => {
         await act(async () => result.current.cancel(runningItem!.id));
         expect(pendingUploads[0]!.params.signal?.aborted).toBe(true);
         expect(result.current.items[0]!.status).toBe('canceled');
-        expect(uploadFile).toHaveBeenCalledTimes(1);
+        expect(transferFile).toHaveBeenCalledTimes(1);
     });
 
     it('cancels everything with cancelAll', async () => {
-        const { uploadFile } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile, maxConcurrent: 1 }));
+        const { transferFile } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile, maxConcurrent: 1 }));
 
         act(() => result.current.enqueue(buildEntries(3)));
         await act(async () => result.current.cancelAll());
@@ -149,8 +156,8 @@ describe('useUploadQueue', () => {
     });
 
     it('retries a failed item and only failed ones with retryFailed', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile }));
 
         act(() => result.current.enqueue(buildEntries(3)));
         await act(async () => {
@@ -160,21 +167,21 @@ describe('useUploadQueue', () => {
         });
 
         act(() => result.current.retry(result.current.items[0]!.id));
-        expect(uploadFile).toHaveBeenCalledTimes(4);
+        expect(transferFile).toHaveBeenCalledTimes(4);
         expect(result.current.items[0]!.status).toBe('uploading');
         expect(result.current.items[0]!.error).toBeUndefined();
 
         act(() => result.current.retry(result.current.items[2]!.id));
-        expect(uploadFile).toHaveBeenCalledTimes(4);
+        expect(transferFile).toHaveBeenCalledTimes(4);
 
         act(() => result.current.retryFailed());
-        expect(uploadFile).toHaveBeenCalledTimes(5);
+        expect(transferFile).toHaveBeenCalledTimes(5);
         expect(result.current.items[1]!.status).toBe('uploading');
     });
 
     it('clears only finished items', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile, maxConcurrent: 1 }));
+        const { transferFile, pendingUploads } = createControlledUploader();
+        const { result } = renderHook(() => useUploadQueue({ transferFile, maxConcurrent: 1 }));
 
         act(() => result.current.enqueue(buildEntries(2)));
         await act(async () => pendingUploads[0]!.resolve({ status: 'uploaded' }));
@@ -185,16 +192,187 @@ describe('useUploadQueue', () => {
     });
 
     it('notifies each completed file and ignores empty enqueue', async () => {
-        const { uploadFile, pendingUploads } = createControlledUploader();
+        const { transferFile, pendingUploads } = createControlledUploader();
         const onFileFinished = jest.fn();
-        const { result } = renderHook(() => useUploadQueue({ uploadFile, onFileFinished }));
+        const { result } = renderHook(() => useUploadQueue({ transferFile, onFileFinished }));
 
         act(() => result.current.enqueue([]));
-        expect(uploadFile).not.toHaveBeenCalled();
+        expect(transferFile).not.toHaveBeenCalled();
 
         act(() => result.current.enqueue(buildEntries(1)));
         await act(async () => pendingUploads[0]!.resolve({ status: 'uploaded' }));
 
         expect(onFileFinished).toHaveBeenCalledTimes(1);
+    });
+
+    describe('large file transfer states', () => {
+        afterEach(() => jest.restoreAllMocks());
+
+        it('follows the transfer phases and stores the computed checksum', () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1)));
+            const { params } = pendingUploads[0]!;
+
+            act(() => params.onPhaseChange('checking'));
+            expect(result.current.items[0]!.status).toBe('checking');
+
+            act(() => params.onChecksumComputed('abc123'));
+            act(() => params.onPhaseChange('uploading'));
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({ status: 'uploading', checksum: 'abc123' })
+            );
+
+            act(() => params.onPhaseChange('waitingConnection'));
+            expect(result.current.items[0]!.status).toBe('waitingConnection');
+        });
+
+        it('maps the already existed outcome and treats it as finished and not retryable', async () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1)));
+
+            await act(async () => pendingUploads[0]!.resolve({ status: 'alreadyExisted' }));
+            act(() => result.current.retry(result.current.items[0]!.id));
+
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({ status: 'alreadyExisted', progress: 100, sentBytes: 1 })
+            );
+            expect(transferFile).toHaveBeenCalledTimes(1);
+        });
+
+        it('keeps the checksum on retry, reuses it and zeroes the transfer measures', async () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1, 1000)));
+            act(() => pendingUploads[0]!.params.onChecksumComputed('abc123'));
+            act(() => pendingUploads[0]!.params.onSentBytes(500));
+            await act(async () => pendingUploads[0]!.reject(new Error('boom')));
+
+            expect(transferFile.mock.calls[0]![0].knownChecksum).toBeUndefined();
+            expect(result.current.items[0]!.checksum).toBe('abc123');
+
+            act(() => result.current.retry(result.current.items[0]!.id));
+
+            expect(transferFile.mock.calls[1]![0].knownChecksum).toBe('abc123');
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({
+                    status: 'uploading',
+                    sentBytes: 0,
+                    progress: 0,
+                    checksum: 'abc123',
+                })
+            );
+        });
+
+        it('counts items checking or waiting for connection against the concurrency limit', () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(4)));
+
+            act(() => pendingUploads[0]!.params.onPhaseChange('checking'));
+            act(() => pendingUploads[1]!.params.onPhaseChange('waitingConnection'));
+
+            expect(transferFile).toHaveBeenCalledTimes(3);
+            expect(result.current.items.map((item) => item.status)).toEqual([
+                'checking',
+                'waitingConnection',
+                'uploading',
+                'queued',
+            ]);
+        });
+
+        it('shows connection lost with a translation key instead of backend text', async () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1)));
+
+            await act(async () => pendingUploads[0]!.reject(new UploadConnectionLostError()));
+
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({
+                    status: 'failed',
+                    errorKey: 'ERROR_UPLOAD_CONNECTION_LOST',
+                    error: undefined,
+                })
+            );
+
+            act(() => result.current.retry(result.current.items[0]!.id));
+            expect(result.current.items[0]!.errorKey).toBeUndefined();
+        });
+
+        it('ignores sent bytes reported outside the uploading phase', () => {
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1, 100)));
+            act(() => pendingUploads[0]!.params.onPhaseChange('waitingConnection'));
+
+            act(() => pendingUploads[0]!.params.onSentBytes(50));
+
+            expect(result.current.items[0]!.sentBytes).toBe(0);
+        });
+
+        it('patches progress at most every 250 ms unless the whole percentage changes', () => {
+            let currentTime = 10_000;
+            jest.spyOn(Date, 'now').mockImplementation(() => currentTime);
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1, 10_000)));
+            const { onSentBytes } = pendingUploads[0]!.params;
+
+            act(() => onSentBytes(10));
+            const itemsAfterFirstPatch = result.current.items;
+            currentTime += 100;
+            act(() => onSentBytes(20));
+            expect(result.current.items).toBe(itemsAfterFirstPatch);
+
+            currentTime += 150;
+            act(() => onSentBytes(30));
+            expect(result.current.items[0]!.sentBytes).toBe(30);
+
+            currentTime += 10;
+            act(() => onSentBytes(200));
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({ sentBytes: 200, progress: 2 })
+            );
+        });
+
+        it('publishes speed and remaining time and clears them when waiting for connection', () => {
+            let currentTime = 10_000;
+            jest.spyOn(Date, 'now').mockImplementation(() => currentTime);
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1, 10_000)));
+            const { params } = pendingUploads[0]!;
+
+            act(() => params.onSentBytes(0));
+            currentTime += 2000;
+            act(() => params.onSentBytes(2000));
+
+            expect(result.current.items[0]).toEqual(
+                expect.objectContaining({ bytesPerSecond: 1000, remainingSeconds: 8 })
+            );
+
+            act(() => params.onPhaseChange('waitingConnection'));
+            expect(result.current.items[0]!.bytesPerSecond).toBeUndefined();
+            expect(result.current.items[0]!.remainingSeconds).toBeUndefined();
+        });
+
+        it('does not estimate a negative speed after the transfer realigns backwards', () => {
+            let currentTime = 10_000;
+            jest.spyOn(Date, 'now').mockImplementation(() => currentTime);
+            const { transferFile, pendingUploads } = createControlledUploader();
+            const { result } = renderHook(() => useUploadQueue({ transferFile }));
+            act(() => result.current.enqueue(buildEntries(1, 10_000)));
+            const { params } = pendingUploads[0]!;
+
+            act(() => params.onSentBytes(0));
+            currentTime += 2000;
+            act(() => params.onSentBytes(4000));
+            currentTime += 2000;
+            act(() => params.onSentBytes(1000));
+
+            expect(result.current.items[0]!.bytesPerSecond).toBeUndefined();
+        });
     });
 });

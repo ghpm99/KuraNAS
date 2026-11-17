@@ -2,20 +2,30 @@ import { useState } from 'react';
 import { Button, IconButton, LinearProgress, Tooltip } from '@mui/material';
 import { ChevronDown, ChevronUp, RotateCcw, X } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { formatSize } from '@/shared/utils/formatSize';
 import ConflictPolicySelect from './conflictPolicySelect';
+import { formatRemainingTime } from './formatRemainingTime';
 import useUploadQueueContext from './uploadQueueContext';
 import { isActiveItem, isRetryableItem, type UploadItem } from './uploadQueueTypes';
 import styles from './uploadQueuePanel.module.css';
 
 const statusLabelKeys: Record<UploadItem['status'], string> = {
     queued: 'FILES_UPLOAD_STATUS_QUEUED',
+    checking: 'FILES_UPLOAD_STATUS_CHECKING',
     uploading: 'FILES_UPLOAD_STATUS_UPLOADING',
+    waitingConnection: 'FILES_UPLOAD_STATUS_WAITING_CONNECTION',
     done: 'FILES_UPLOAD_STATUS_DONE',
     renamed: 'FILES_UPLOAD_STATUS_RENAMED',
     replaced: 'FILES_UPLOAD_STATUS_REPLACED',
     skipped: 'FILES_UPLOAD_STATUS_SKIPPED',
+    alreadyExisted: 'FILES_UPLOAD_STATUS_ALREADY_EXISTED',
     failed: 'FILES_UPLOAD_STATUS_FAILED',
     canceled: 'FILES_UPLOAD_STATUS_CANCELED',
+};
+
+const describeFailure = (item: UploadItem, t: (key: string) => string): string => {
+    if (item.errorKey) return t(item.errorKey);
+    return item.error || t('ERROR_UPLOAD_FAILED');
 };
 
 const UploadQueuePanel = () => {
@@ -37,7 +47,11 @@ const UploadQueuePanel = () => {
                     {`${t('FILES_UPLOAD_PANEL_TITLE')} ${finishedCount}/${items.length}`}
                 </strong>
                 <Tooltip title={toggleLabel}>
-                    <IconButton size="small" aria-label={toggleLabel} onClick={() => setIsCollapsed(!isCollapsed)}>
+                    <IconButton
+                        size="small"
+                        aria-label={toggleLabel}
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                    >
                         {isCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </IconButton>
                 </Tooltip>
@@ -73,8 +87,13 @@ const UploadQueuePanel = () => {
                                     <span className={styles.fileName} title={item.displayName}>
                                         {item.displayName}
                                     </span>
+                                    <span className={styles.fileSize}>{formatSize(item.size)}</span>
                                     <LinearProgress
-                                        variant="determinate"
+                                        variant={
+                                            item.status === 'checking'
+                                                ? 'indeterminate'
+                                                : 'determinate'
+                                        }
                                         value={item.progress}
                                         aria-label={item.displayName}
                                     />
@@ -87,12 +106,27 @@ const UploadQueuePanel = () => {
                                     >
                                         {t(statusLabelKeys[item.status])}
                                         {item.status === 'failed'
-                                            ? `: ${item.error || t('ERROR_UPLOAD_FAILED')}`
+                                            ? `: ${describeFailure(item, t)}`
                                             : ''}
                                         {item.status === 'renamed' && item.savedName
                                             ? `: ${item.savedName}`
                                             : ''}
                                     </span>
+                                    {item.status === 'uploading' && item.bytesPerSecond ? (
+                                        <span className={styles.status}>
+                                            {t('FILES_UPLOAD_SPEED', {
+                                                speed: formatSize(item.bytesPerSecond),
+                                            })}
+                                            {item.remainingSeconds === undefined
+                                                ? ''
+                                                : ` · ${t('FILES_UPLOAD_REMAINING', {
+                                                      time: formatRemainingTime(
+                                                          item.remainingSeconds,
+                                                          t
+                                                      ),
+                                                  })}`}
+                                        </span>
+                                    ) : null}
                                 </div>
                                 {isActiveItem(item) ? (
                                     <Tooltip title={t('FILES_UPLOAD_CANCEL')}>

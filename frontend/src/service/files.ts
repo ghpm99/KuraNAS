@@ -231,11 +231,8 @@ export type UploadSingleFileParams = {
     relativePath?: string;
     onConflict: UploadConflictPolicy;
     signal?: AbortSignal;
-    onProgress?: (percent: number) => void;
+    onProgress?: (sentBytes: number) => void;
 };
-
-const toProgressPercent = (loaded: number, total?: number): number =>
-    total && total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
 
 export const uploadSingleFile = async ({
     file,
@@ -261,8 +258,7 @@ export const uploadSingleFile = async ({
             'Content-Type': 'multipart/form-data',
         },
         signal,
-        onUploadProgress: (event: { loaded: number; total?: number }) =>
-            onProgress?.(toProgressPercent(event.loaded, event.total)),
+        onUploadProgress: (event: { loaded: number }) => onProgress?.(event.loaded),
     });
 
     const fileResult = response?.data?.files?.[0];

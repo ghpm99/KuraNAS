@@ -7,11 +7,14 @@ export type UploadEntry = {
 
 export type UploadItemStatus =
     | 'queued'
+    | 'checking'
     | 'uploading'
+    | 'waitingConnection'
     | 'done'
     | 'renamed'
     | 'replaced'
     | 'skipped'
+    | 'alreadyExisted'
     | 'failed'
     | 'canceled';
 
@@ -23,8 +26,14 @@ export type UploadItem = {
     targetFolderId?: number;
     onConflict: UploadConflictPolicy;
     status: UploadItemStatus;
+    size: number;
+    sentBytes: number;
     progress: number;
+    bytesPerSecond?: number;
+    remainingSeconds?: number;
+    checksum?: string;
     error?: string;
+    errorKey?: string;
     savedName?: string;
 };
 
@@ -40,7 +49,7 @@ export type UploadQueue = {
     clearFinished: () => void;
 };
 
-const activeStatuses: UploadItemStatus[] = ['queued', 'uploading'];
+const activeStatuses: UploadItemStatus[] = ['queued', 'checking', 'uploading', 'waitingConnection'];
 
 export const isActiveItem = (item: UploadItem): boolean => activeStatuses.includes(item.status);
 

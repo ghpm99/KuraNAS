@@ -361,10 +361,10 @@ describe('service/files', () => {
             expect(formData.get('on_conflict')).toBe('rename');
         });
 
-        it('reports progress as a percentage', async () => {
+        it('reports progress as sent bytes', async () => {
             mockedApi.post.mockImplementation(async (_url, _body, config) => {
                 config.onUploadProgress({ loaded: 25, total: 100 });
-                config.onUploadProgress({ loaded: 10 });
+                config.onUploadProgress({ loaded: 70 });
                 return {};
             });
             const onProgress = jest.fn();
@@ -372,7 +372,7 @@ describe('service/files', () => {
             await uploadSingleFile({ file, onConflict: 'skip', onProgress });
 
             expect(onProgress).toHaveBeenNthCalledWith(1, 25);
-            expect(onProgress).toHaveBeenNthCalledWith(2, 0);
+            expect(onProgress).toHaveBeenNthCalledWith(2, 70);
         });
 
         it('returns the per-file outcome from the response', async () => {
