@@ -29,7 +29,7 @@ type settingsState struct {
 	Enabled bool `json:"enabled"`
 	// Time is the local time-of-day to shut down, formatted "HH:MM" (24h).
 	Time string `json:"time"`
-	// GracePeriodSeconds is the OS countdown before the machine powers off.
+	// GracePeriodSeconds is the warning period, counted by the server, before the machine powers off.
 	GracePeriodSeconds int `json:"grace_period_seconds"`
 }
 

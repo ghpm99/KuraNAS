@@ -123,6 +123,7 @@ type AutoShutdownContext struct {
 	Handler    *autoshutdown.Handler
 	Service    autoshutdown.ServiceInterface
 	Repository autoshutdown.RepositoryInterface
+	Countdown  *autoshutdown.Countdown
 }
 
 type VacuumContext struct {
@@ -728,12 +729,14 @@ func newTieringContext(dbContext *database.DbContext) *TieringContext {
 func newAutoShutdownContext(dbContext *database.DbContext) *AutoShutdownContext {
 	repository := autoshutdown.NewRepository(dbContext)
 	service := autoshutdown.NewService(repository)
-	handler := autoshutdown.NewHandler(service)
+	countdown := autoshutdown.NewCountdown()
+	handler := autoshutdown.NewHandler(service, countdown)
 
 	return &AutoShutdownContext{
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
+		Countdown:  countdown,
 	}
 }
 

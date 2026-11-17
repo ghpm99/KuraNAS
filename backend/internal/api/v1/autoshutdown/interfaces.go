@@ -30,3 +30,9 @@ type SchedulerInterface interface {
 	// the feature is disabled or the current minute is not the configured one.
 	DueNow(now time.Time) (due bool, graceSeconds int, err error)
 }
+
+// CountdownInterface is what the handlers need from the shutdown warning state.
+type CountdownInterface interface {
+	Status() StatusDto
+	CancelToday() (StatusDto, error)
+}

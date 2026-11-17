@@ -183,6 +183,8 @@ func RegisterAutoShutdownRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.GET("/settings", context.AutoShutdown.Handler.GetSettingsHandler)
 	group.PUT("/settings", context.AutoShutdown.Handler.UpdateSettingsHandler)
 	group.GET("/suggested-time", context.AutoShutdown.Handler.GetSuggestedTimeHandler)
+	group.GET("/status", context.AutoShutdown.Handler.GetStatusHandler)
+	group.POST("/cancel", context.AutoShutdown.Handler.CancelHandler)
 }
 
 func RegisterVacuumRoutes(router *gin.RouterGroup, context *AppContext) {

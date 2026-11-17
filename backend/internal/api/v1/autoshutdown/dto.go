@@ -1,5 +1,7 @@
 package autoshutdown
 
+import "time"
+
 // SettingsDto is both the response of GET /auto-shutdown/settings and the body
 // of PUT /auto-shutdown/settings.
 type SettingsDto struct {
@@ -14,6 +16,15 @@ type SuggestedTimeDto struct {
 	Available  bool   `json:"available"`
 	Time       string `json:"time"`
 	SampleSize int    `json:"sample_size"`
+}
+
+// StatusDto is the response of GET /auto-shutdown/status. ShutdownAt and
+// SecondsRemaining are null unless State is "warning".
+type StatusDto struct {
+	State            string     `json:"state"`
+	ShutdownAt       *time.Time `json:"shutdown_at"`
+	SecondsRemaining *int       `json:"seconds_remaining"`
+	PostponedReason  string     `json:"postponed_reason"`
 }
 
 func (s settingsState) toDto() SettingsDto {

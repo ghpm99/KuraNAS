@@ -2127,5 +2127,6 @@
 	"SETTINGS_REINDEX_ROOT_TITLE": "Reindex this root?",
 	"SETTINGS_REINDEX_ROOT_MESSAGE": "Every file in this storage root will be checked again. Stars, playlists, albums and corrected metadata are kept.",
 	"SETTINGS_REINDEX_CONFIRM": "Reindex",
-	"SETTINGS_REINDEX_RUNNING": "Reindexing…"
+	"SETTINGS_REINDEX_RUNNING": "Reindexing…",
+	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "There is no shutdown countdown to cancel."
 }

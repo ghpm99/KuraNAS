@@ -11,11 +11,12 @@ import (
 )
 
 type Handler struct {
-	service ServiceInterface
+	service   ServiceInterface
+	countdown CountdownInterface
 }
 
-func NewHandler(service ServiceInterface) *Handler {
-	return &Handler{service: service}
+func NewHandler(service ServiceInterface, countdown CountdownInterface) *Handler {
+	return &Handler{service: service, countdown: countdown}
 }
 
 func (h *Handler) GetSettingsHandler(c *gin.Context) {
@@ -57,4 +58,18 @@ func (h *Handler) GetSuggestedTimeHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, suggestion)
+}
+
+func (h *Handler) GetStatusHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, h.countdown.Status())
+}
+
+func (h *Handler) CancelHandler(c *gin.Context) {
+	status, err := h.countdown.CancelToday()
+	if errors.Is(err, ErrNotInWarningPeriod) {
+		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING")})
+		return
+	}
+	applog.Info("autoshutdown: today's shutdown cancelled", "ip", c.ClientIP())
+	c.JSON(http.StatusOK, status)
 }

@@ -2127,5 +2127,6 @@
 	"SETTINGS_REINDEX_ROOT_TITLE": "Reindexar esta raiz?",
 	"SETTINGS_REINDEX_ROOT_MESSAGE": "Todos os arquivos desta raiz serão reverificados. Estrelas, playlists, álbuns e metadados corrigidos são mantidos.",
 	"SETTINGS_REINDEX_CONFIRM": "Reindexar",
-	"SETTINGS_REINDEX_RUNNING": "Reindexando…"
+	"SETTINGS_REINDEX_RUNNING": "Reindexando…",
+	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "Não há desligamento em contagem para cancelar."
 }

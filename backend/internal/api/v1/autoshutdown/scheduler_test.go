@@ -27,71 +27,145 @@ func mustTime(t *testing.T, value string) time.Time {
 	return parsed
 }
 
-func newTestScheduler(service SchedulerInterface) (*Scheduler, *int, *int) {
-	shutdownCalls := 0
-	notifyCalls := 0
-	scheduler := NewScheduler(service,
-		func(graceSeconds int) error { shutdownCalls++; return nil },
-		func(graceSeconds int) { notifyCalls++ },
-		time.Minute,
-	)
-	return scheduler, &shutdownCalls, &notifyCalls
+type schedulerHarness struct {
+	scheduler     *Scheduler
+	countdown     *Countdown
+	now           time.Time
+	shutdownCalls int
+	notifyCalls   int
 }
 
-func TestSchedulerFiresOncePerDay(t *testing.T) {
-	service := &stubScheduleService{due: true, grace: 30}
-	scheduler, shutdownCalls, notifyCalls := newTestScheduler(service)
+func newHarness(t *testing.T, service SchedulerInterface, startAt string) *schedulerHarness {
+	t.Helper()
+	harness := &schedulerHarness{countdown: NewCountdown(), now: mustTime(t, startAt)}
+	harness.scheduler = NewScheduler(service, harness.countdown,
+		func() error { harness.shutdownCalls++; return nil },
+		func(graceSeconds int) { harness.notifyCalls++ },
+		time.Minute,
+	)
+	clock := func() time.Time { return harness.now }
+	harness.scheduler.nowFn = clock
+	harness.countdown.nowFn = clock
+	return harness
+}
 
-	scheduler.nowFn = func() time.Time { return mustTime(t, "2026-06-15 03:00") }
-	scheduler.tick()
-	scheduler.tick() // same minute / day: must not fire again
+func (h *schedulerHarness) advance(duration time.Duration) {
+	h.now = h.now.Add(duration)
+	h.scheduler.tick()
+}
 
-	if *shutdownCalls != 1 || *notifyCalls != 1 {
-		t.Fatalf("expected exactly one shutdown+notify, got shutdown=%d notify=%d", *shutdownCalls, *notifyCalls)
+func TestSchedulerEntersWarningAtScheduledTimeWithoutShuttingDown(t *testing.T) {
+	harness := newHarness(t, &stubScheduleService{due: true, grace: 60}, "2026-06-15 03:00")
+
+	harness.scheduler.tick()
+
+	status := harness.countdown.Status()
+	if status.State != "warning" || status.SecondsRemaining == nil || *status.SecondsRemaining != 60 {
+		t.Fatalf("expected warning with 60s remaining, got %+v", status)
+	}
+	if harness.shutdownCalls != 0 || harness.notifyCalls != 1 {
+		t.Fatalf("expected notify only, got shutdown=%d notify=%d", harness.shutdownCalls, harness.notifyCalls)
 	}
 }
 
-func TestSchedulerFiresAgainNextDay(t *testing.T) {
-	service := &stubScheduleService{due: true, grace: 30}
-	scheduler, shutdownCalls, _ := newTestScheduler(service)
+func TestSchedulerDoesNotShutDownBeforeWarningEnds(t *testing.T) {
+	harness := newHarness(t, &stubScheduleService{due: true, grace: 60}, "2026-06-15 03:00")
+	harness.scheduler.tick()
 
-	scheduler.nowFn = func() time.Time { return mustTime(t, "2026-06-15 03:00") }
-	scheduler.tick()
-	scheduler.nowFn = func() time.Time { return mustTime(t, "2026-06-16 03:00") }
-	scheduler.tick()
+	harness.advance(59 * time.Second)
 
-	if *shutdownCalls != 2 {
-		t.Fatalf("expected two shutdowns across two days, got %d", *shutdownCalls)
+	if harness.shutdownCalls != 0 || harness.countdown.Status().State != "warning" {
+		t.Fatalf("expected still warning without shutdown, got shutdown=%d", harness.shutdownCalls)
+	}
+}
+
+func TestSchedulerShutsDownOnceWhenWarningEnds(t *testing.T) {
+	harness := newHarness(t, &stubScheduleService{due: true, grace: 60}, "2026-06-15 03:00")
+	harness.scheduler.tick()
+
+	harness.advance(60 * time.Second)
+	harness.advance(time.Second)
+
+	if harness.shutdownCalls != 1 || harness.countdown.Status().State != "idle" {
+		t.Fatalf("expected one shutdown and idle, got shutdown=%d", harness.shutdownCalls)
+	}
+}
+
+func TestSchedulerDoesNotShutDownWhenCancelledDuringWarning(t *testing.T) {
+	harness := newHarness(t, &stubScheduleService{due: true, grace: 60}, "2026-06-15 03:00")
+	harness.scheduler.tick()
+
+	status, err := harness.countdown.CancelToday()
+	harness.advance(2 * time.Minute)
+
+	if err != nil || status.State != "idle" {
+		t.Fatalf("expected cancel to succeed and go idle, got %+v %v", status, err)
+	}
+	if harness.shutdownCalls != 0 || harness.notifyCalls != 1 {
+		t.Fatalf("expected no shutdown and no new warning, got shutdown=%d notify=%d", harness.shutdownCalls, harness.notifyCalls)
+	}
+}
+
+func TestSchedulerShutsDownNextDayAfterCancellation(t *testing.T) {
+	harness := newHarness(t, &stubScheduleService{due: true, grace: 60}, "2026-06-15 03:00")
+	harness.scheduler.tick()
+	if _, err := harness.countdown.CancelToday(); err != nil {
+		t.Fatalf("cancel failed: %v", err)
+	}
+
+	harness.now = mustTime(t, "2026-06-16 03:00")
+	harness.scheduler.tick()
+	if harness.countdown.Status().State != "warning" {
+		t.Fatalf("expected warning on the next day, got %+v", harness.countdown.Status())
+	}
+	harness.advance(61 * time.Second)
+
+	if harness.shutdownCalls != 1 {
+		t.Fatalf("expected the next day to shut down, got %d", harness.shutdownCalls)
+	}
+}
+
+func TestCancelTodayWhenIdleReturnsNotInWarningPeriod(t *testing.T) {
+	_, err := NewCountdown().CancelToday()
+	if !errors.Is(err, ErrNotInWarningPeriod) {
+		t.Fatalf("expected ErrNotInWarningPeriod, got %v", err)
+	}
+}
+
+func TestSchedulerWarnsOncePerDay(t *testing.T) {
+	harness := newHarness(t, &stubScheduleService{due: true, grace: 30}, "2026-06-15 03:00")
+
+	harness.scheduler.tick()
+	harness.scheduler.tick()
+
+	if harness.notifyCalls != 1 {
+		t.Fatalf("expected one warning, got %d", harness.notifyCalls)
 	}
 }
 
 func TestSchedulerSkipsWhenNotDue(t *testing.T) {
-	service := &stubScheduleService{due: false}
-	scheduler, shutdownCalls, _ := newTestScheduler(service)
+	harness := newHarness(t, &stubScheduleService{due: false}, "2026-06-15 12:00")
 
-	scheduler.nowFn = func() time.Time { return mustTime(t, "2026-06-15 12:00") }
-	scheduler.tick()
+	harness.scheduler.tick()
 
-	if *shutdownCalls != 0 {
-		t.Fatalf("expected no shutdown when not due, got %d", *shutdownCalls)
+	if harness.shutdownCalls != 0 || harness.countdown.Status().State != "idle" {
+		t.Fatalf("expected idle when not due, got shutdown=%d", harness.shutdownCalls)
 	}
 }
 
 func TestSchedulerHandlesServiceError(t *testing.T) {
-	service := &stubScheduleService{err: errors.New("boom")}
-	scheduler, shutdownCalls, _ := newTestScheduler(service)
+	harness := newHarness(t, &stubScheduleService{err: errors.New("boom")}, "2026-06-15 03:00")
 
-	scheduler.nowFn = func() time.Time { return mustTime(t, "2026-06-15 03:00") }
-	scheduler.tick()
+	harness.scheduler.tick()
 
-	if *shutdownCalls != 0 {
-		t.Fatalf("expected no shutdown on service error, got %d", *shutdownCalls)
+	if harness.shutdownCalls != 0 || harness.countdown.Status().State != "idle" {
+		t.Fatalf("expected idle on service error, got shutdown=%d", harness.shutdownCalls)
 	}
 }
 
 func TestSchedulerStartStop(t *testing.T) {
 	service := &stubScheduleService{due: false}
-	scheduler := NewScheduler(service, func(int) error { return nil }, nil, 10*time.Millisecond)
+	scheduler := NewScheduler(service, NewCountdown(), func() error { return nil }, nil, 10*time.Millisecond)
 	scheduler.Start()
 	time.Sleep(25 * time.Millisecond)
 	scheduler.Stop()
@@ -102,11 +176,26 @@ func TestSchedulerStartStop(t *testing.T) {
 }
 
 func TestNewSchedulerDefaults(t *testing.T) {
-	scheduler := NewScheduler(&stubScheduleService{}, nil, nil, 0)
+	scheduler := NewScheduler(&stubScheduleService{}, NewCountdown(), nil, nil, 0)
 	if scheduler.shutdownFn == nil {
 		t.Fatal("expected a default shutdownFn")
 	}
 	if scheduler.interval != DefaultCheckInterval {
 		t.Fatalf("expected default interval, got %v", scheduler.interval)
+	}
+}
+
+func TestSchedulerRunShutsDownWhenWarningTimerEnds(t *testing.T) {
+	shutdownDone := make(chan struct{})
+	countdown := NewCountdown()
+	scheduler := NewScheduler(&stubScheduleService{due: true, grace: 1}, countdown,
+		func() error { close(shutdownDone); return nil }, nil, 10*time.Millisecond)
+	scheduler.Start()
+	defer scheduler.Stop()
+
+	select {
+	case <-shutdownDone:
+	case <-time.After(3 * time.Second):
+		t.Fatal("expected the dedicated warning timer to trigger the shutdown")
 	}
 }

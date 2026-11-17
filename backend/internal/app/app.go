@@ -220,7 +220,7 @@ func InitializeApp() (*Application, error) {
 // other boot helpers: a missing auto-shutdown context is a no-op. The pre-shutdown
 // warning is emitted as a notification (best-effort).
 func startAutoShutdownScheduler(appContext *AppContext) *autoshutdown.Scheduler {
-	if appContext == nil || appContext.AutoShutdown == nil || appContext.AutoShutdown.Service == nil {
+	if appContext == nil || appContext.AutoShutdown == nil || appContext.AutoShutdown.Service == nil || appContext.AutoShutdown.Countdown == nil {
 		return nil
 	}
 
@@ -239,7 +239,7 @@ func startAutoShutdownScheduler(appContext *AppContext) *autoshutdown.Scheduler 
 		}
 	}
 
-	scheduler := autoshutdown.NewScheduler(appContext.AutoShutdown.Service, nil, notifyFn, autoshutdown.DefaultCheckInterval)
+	scheduler := autoshutdown.NewScheduler(appContext.AutoShutdown.Service, appContext.AutoShutdown.Countdown, nil, notifyFn, autoshutdown.DefaultCheckInterval)
 	scheduler.Start()
 	return scheduler
 }
