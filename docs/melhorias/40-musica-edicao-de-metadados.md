@@ -46,8 +46,8 @@ Uma alteração por item, cada uma em commit próprio, nesta ordem.
 - [x] Limpar um campo corrigido faz a faixa voltar a mostrar o valor da tag. *Local: `{genres:null}` → linha do override apagada, chaves `{}` (tag sem gênero), Blues 3→2.*
 - [x] Editar um álbum inteiro por `album_key` altera faixas que não estavam carregadas na tela. *Local: o lote por `album_key` resolve as faixas no servidor (3 de 3 sem a tela listar nada).*
 - [x] O arquivo de áudio no disco não muda (mesmo checksum antes e depois). *Local: `sha256sum -c` da faixa1 OK depois de PUT, lote e limpeza.*
-- [ ] Testes: decodificação da resposta real de cada handler; seam test de cada mutação no frontend; render sem mock dos diálogos.
-- [ ] `make ci` verde.
+- [x] Testes: decodificação da resposta real de cada handler; seam test de cada mutação no frontend; render sem mock dos diálogos.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
