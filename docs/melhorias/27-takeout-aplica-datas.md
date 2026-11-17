@@ -21,12 +21,12 @@ Cada foto importada aparece na galeria no dia em que foi tirada.
 
 ## Critérios de aceite
 
-- [ ] Teste do extrator: mídia sem EXIF com JSON ao lado termina com data de modificação igual a `photoTakenTime`.
-- [ ] Teste do extrator: dois `IMG_0001.JPG` em pastas diferentes recebem cada um a data do seu próprio JSON.
-- [ ] Teste do extrator: os três formatos de nome de JSON são reconhecidos.
-- [ ] Mídia com EXIF mantém a data do EXIF na galeria.
-- [ ] `13/CA-02` — no sistema rodando: uma foto sem EXIF, cuja data está só no JSON, aparece na galeria na data correta.
-- [ ] `make ci-backend` verde.
+- [x] Teste do extrator: mídia sem EXIF com JSON ao lado termina com data de modificação igual a `photoTakenTime`.
+- [x] Teste do extrator: dois `IMG_0001.JPG` em pastas diferentes recebem cada um a data do seu próprio JSON.
+- [x] Teste do extrator: os três formatos de nome de JSON são reconhecidos.
+- [x] Mídia com EXIF mantém a data do EXIF na galeria. *`image.ResolveTakenAt` usa EXIF `DateTimeOriginal`/`DateTime` antes da data de modificação (que é o que o `Chtimes` ajusta); EXIF de descrição/GPS prevalece no teste `_Postgres` do passo de metadados.*
+- [x] `13/CA-02` — no sistema rodando: uma foto sem EXIF, cuja data está só no JSON, aparece na galeria na data correta. *Local 2026-11-17: zip com dois `IMG_0001.png` sem EXIF em `Viagem 2015` (`.supplemental-metadata.json`, 2015-06-01) e `Natal 2018` (`.json`, 2018-12-25) importado por `/takeout/upload/*` → `image_metadata.taken_at` 2015-06-01 e 2018-12-25; a da Viagem com descrição "Praia em Floripa" e GPS -27.59/-48.55; a de Natal sem GPS (0,0 ignorado).*
+- [x] `make ci-backend` verde.
 
 ## Fora de escopo
 
