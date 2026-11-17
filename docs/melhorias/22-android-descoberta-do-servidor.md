@@ -28,6 +28,10 @@ Em `android/app/src/main/java/com/kuranas/android/`. Uma alteração por item.
 6. **Tela** (`ConnectionScreen`): "Procurar de novo", motivo do erro, e o texto do que conferir (mesmo Wi-Fi, servidor ligado) — tudo em `strings.xml`.
 7. **Reconexão** (`RN-05`): ao abrir com servidor lembrado que não confirma, o app roda a descoberta antes de pedir ação; se achar um servidor KuraNAS, passa a usá-lo.
 
+## Sub-itens levantados na execução (2026-11-16)
+
+- [ ] 22.1. Depois que a reconexão termina em `Unreachable`/`AccessDenied`, o `RootViewModel` mantém a tela de conexão enquanto o servidor salvo for igual ao que falhou. Escolher de novo **o mesmo** servidor (ele voltou e apareceu em "Procurar de novo") não emite valor novo no DataStore e o app não entra. A escolha na tela de conexão precisa sinalizar a raiz explicitamente (não por comparação de estado) — `24/RN-05`, `CA-05`.
+
 ## Critérios de aceite
 
 Verificados em aparelho real, na rede do servidor.
