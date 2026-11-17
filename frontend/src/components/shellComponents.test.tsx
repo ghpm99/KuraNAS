@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Header from '@/components/layout/Header/Header';
 import { AppShell } from '@/components/layout/AppShell/AppShell';
 import Sidebar from '@/components/layout/Sidebar/Sidebar';
@@ -330,7 +331,11 @@ describe('shell components and pages', () => {
         expect(screen.getByTestId('about-layout')).toBeInTheDocument();
         expect(screen.getByText('AboutScreenMock')).toBeInTheDocument();
 
-        render(<AnalyticsPage />);
+        render(
+            <QueryClientProvider client={new QueryClient()}>
+                <AnalyticsPage />
+            </QueryClientProvider>
+        );
         expect(
             screen.getByRole('heading', { name: 'ANALYTICS_SECTION_OVERVIEW' })
         ).toBeInTheDocument();
