@@ -2196,5 +2196,15 @@
 	"MUSIC_BATCH_METADATA_UPDATED": "{{count}} tracks changed",
 	"MUSIC_BATCH_METADATA_FAILED_TITLE": "These tracks could not be changed:",
 	"MUSIC_BATCH_METADATA_FAILED_FILE": "File {{id}}",
-	"MUSIC_BATCH_METADATA_FAILED": "Could not change the tracks."
+	"MUSIC_BATCH_METADATA_FAILED": "Could not change the tracks.",
+	"MUSIC_GENRE_RENAME": "Rename genre",
+	"MUSIC_GENRE_RENAME_FIELD_NAME": "New name",
+	"MUSIC_GENRE_RENAME_REVIEW": "Continue",
+	"MUSIC_GENRE_RENAME_BACK": "Back",
+	"MUSIC_GENRE_RENAME_CONFIRM": "Confirm",
+	"MUSIC_GENRE_RENAME_WILL_RENAME": "{{count}} tracks from {{from}} will move to {{to}}",
+	"MUSIC_GENRE_RENAME_WILL_MERGE": "{{from}} and {{to}} will be merged: {{count}} tracks from {{from}} will move to {{to}}, which will end up with {{total}} tracks",
+	"MUSIC_GENRE_RENAME_DONE": "Genre renamed",
+	"MUSIC_GENRE_RENAME_MERGED_DONE": "Genres merged: {{count}} tracks in {{to}}",
+	"MUSIC_GENRE_RENAME_FAILED": "Could not rename the genre."
 }

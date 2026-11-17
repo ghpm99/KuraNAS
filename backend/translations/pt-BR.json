@@ -2196,5 +2196,15 @@
 	"MUSIC_BATCH_METADATA_UPDATED": "{{count}} faixas alteradas",
 	"MUSIC_BATCH_METADATA_FAILED_TITLE": "Não foi possível alterar estas faixas:",
 	"MUSIC_BATCH_METADATA_FAILED_FILE": "Arquivo {{id}}",
-	"MUSIC_BATCH_METADATA_FAILED": "Não foi possível alterar as faixas."
+	"MUSIC_BATCH_METADATA_FAILED": "Não foi possível alterar as faixas.",
+	"MUSIC_GENRE_RENAME": "Renomear gênero",
+	"MUSIC_GENRE_RENAME_FIELD_NAME": "Novo nome",
+	"MUSIC_GENRE_RENAME_REVIEW": "Continuar",
+	"MUSIC_GENRE_RENAME_BACK": "Voltar",
+	"MUSIC_GENRE_RENAME_CONFIRM": "Confirmar",
+	"MUSIC_GENRE_RENAME_WILL_RENAME": "{{count}} faixas de {{from}} passarão para {{to}}",
+	"MUSIC_GENRE_RENAME_WILL_MERGE": "{{from}} e {{to}} serão mesclados: {{count}} faixas de {{from}} passarão para {{to}}, que ficará com {{total}} faixas",
+	"MUSIC_GENRE_RENAME_DONE": "Gênero renomeado",
+	"MUSIC_GENRE_RENAME_MERGED_DONE": "Gêneros mesclados: {{count}} faixas em {{to}}",
+	"MUSIC_GENRE_RENAME_FAILED": "Não foi possível renomear o gênero."
 }
