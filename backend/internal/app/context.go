@@ -23,6 +23,7 @@ import (
 	"nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
+	"nas-go/api/internal/api/v1/indexing"
 	"nas-go/api/internal/api/v1/ingest"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
@@ -39,6 +40,7 @@ import (
 	"nas-go/api/internal/api/v1/video"
 	"nas-go/api/internal/api/v1/watchfolders"
 	"nas-go/api/internal/config"
+	"nas-go/api/internal/worker/engine"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/agent"
 	"nas-go/api/pkg/ai/providers/anthropic"
@@ -79,6 +81,7 @@ type AppContext struct {
 	Libraries     *LibrariesContext
 	WatchFolders  *WatchFoldersContext
 	StorageRoots  *StorageRootsContext
+	Indexing      *IndexingContext
 	Email         *EmailContext
 	Takeout       *TakeoutContext
 	Trash         *TrashContext
@@ -126,6 +129,11 @@ type VacuumContext struct {
 	Handler    *vacuum.Handler
 	Service    vacuum.ServiceInterface
 	Repository vacuum.RepositoryInterface
+}
+
+type IndexingContext struct {
+	Handler *indexing.Handler
+	Service indexing.ServiceInterface
 }
 
 type StorageRootsContext struct {
@@ -325,6 +333,7 @@ func NewContext(db *sql.DB) *AppContext {
 	if err := storageRootsContext.Service.ReloadRegistry(); err != nil {
 		log.Printf("storageroots: registry load failed (falling back to ENTRY_POINT): %v", err)
 	}
+	indexingContext := newIndexingContext(loggerService, jobsContext.Repository, storageRootsContext.Service, fileContext.Service)
 	backupContext := newBackupContext(dbContext)
 	tieringContext := newTieringContext(dbContext)
 	autoShutdownContext := newAutoShutdownContext(dbContext)
@@ -362,6 +371,7 @@ func NewContext(db *sql.DB) *AppContext {
 		Libraries:     librariesContext,
 		WatchFolders:  watchFoldersContext,
 		StorageRoots:  storageRootsContext,
+		Indexing:      indexingContext,
 		Email:         emailContext,
 		Takeout:       takeoutContext,
 		Trash:         trashContext,
@@ -640,6 +650,22 @@ func newLibrariesContext(
 		Handler:    handler,
 		Service:    service,
 		Repository: repository,
+	}
+}
+
+func newIndexingContext(
+	loggerService logger.LoggerServiceInterface,
+	jobsRepository jobs.RepositoryInterface,
+	rootsService storageroots.ServiceInterface,
+	filesService files.ServiceInterface,
+) *IndexingContext {
+	launcher := engine.NewReindexLauncher(jobsRepository)
+	service := indexing.NewService(launcher, rootsService, filesService)
+	handler := indexing.NewHandler(service, loggerService)
+
+	return &IndexingContext{
+		Handler: handler,
+		Service: service,
 	}
 }
 

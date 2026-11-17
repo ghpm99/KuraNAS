@@ -65,7 +65,6 @@ type ServiceInterface interface {
 	ToggleFileStarred(id int) (bool, error)
 	SetFileStarred(id int, isStarred bool) (bool, error)
 	SetFilesStarred(ids []int, isStarred bool) ([]int, error)
-	ScanFilesTask(data string)
 	ScanDirTask(data string)
 	UpdateCheckSum(fileId int) error
 	CreateUploadProcessJob(paths []string) (int, error)

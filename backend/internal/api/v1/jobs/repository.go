@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -84,6 +85,22 @@ func (r *Repository) HasPendingJobForPath(path string) (bool, error) {
 		return false, fmt.Errorf("HasPendingJobForPath: %w", err)
 	}
 	return exists, nil
+}
+
+// FindPendingReindexJobID returns the id of the queued/running reindex job
+// registered under reindexKey, and whether one exists.
+func (r *Repository) FindPendingReindexJobID(reindexKey string) (int, bool, error) {
+	var pendingJobID int
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.FindPendingReindexJobQuery, reindexKey).Scan(&pendingJobID)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, nil
+	}
+	if err != nil {
+		return 0, false, fmt.Errorf("FindPendingReindexJobID: %w", err)
+	}
+	return pendingJobID, true, nil
 }
 
 func (r *Repository) CreateStep(tx *sql.Tx, step StepModel) (StepModel, error) {

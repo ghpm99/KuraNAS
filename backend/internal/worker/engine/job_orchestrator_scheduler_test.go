@@ -329,6 +329,23 @@ func (r *fakeJobsRepository) DeferStepForTimeout(tx *sql.Tx, stepID int, attempt
 	return true, nil
 }
 
+func (r *fakeJobsRepository) FindPendingReindexJobID(reindexKey string) (int, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for jobID, storedJob := range r.jobs {
+		isPending := storedJob.Status == string(jobdomain.JobStatusQueued) || storedJob.Status == string(jobdomain.JobStatusRunning)
+		if !isPending {
+			continue
+		}
+		var storedScope jobdomain.JobScope
+		if err := json.Unmarshal(storedJob.Scope, &storedScope); err == nil && storedScope.ReindexKey == reindexKey {
+			return jobID, true, nil
+		}
+	}
+	return 0, false, nil
+}
+
 func (r *fakeJobsRepository) HasPendingJobForPath(path string) (bool, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -297,14 +297,6 @@ func (service *Service) UpdateFile(fileDto FileDto) (result bool, err error) {
 	return
 }
 
-func (s *Service) ScanFilesTask(data string) {
-	task := utils.Task{
-		Type: utils.ScanFiles,
-		Data: "File scan",
-	}
-	s.Tasks <- task
-}
-
 func (s *Service) ScanDirTask(data string) {
 	task := utils.Task{
 		Type: utils.ScanDir,

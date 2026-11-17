@@ -563,6 +563,9 @@ func executeMarkDeletedStep(context *WorkerContext, step jobs.StepModel) error {
 		}
 
 		for _, file := range result.Items {
+			if !isSameOrDescendantPath(root, file.Path) {
+				continue
+			}
 			// A tiered file legitimately has no bytes at its logical path —
 			// existence is checked where the bytes actually live, otherwise
 			// every cold file would be flagged deleted on the next scan.

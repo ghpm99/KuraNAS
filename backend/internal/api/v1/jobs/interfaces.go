@@ -21,6 +21,7 @@ type RepositoryInterface interface {
 	RequeueJob(tx *sql.Tx, jobID int) (bool, error)
 	RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error)
 	HasPendingJobForPath(path string) (bool, error)
+	FindPendingReindexJobID(reindexKey string) (int, bool, error)
 }
 
 type ServiceInterface interface {

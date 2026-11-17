@@ -130,29 +130,6 @@ func (handler *Handler) GetChildrenByIdHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, ParsePaginationToResponse(pagination))
 }
 
-func (handler *Handler) UpdateFilesHandler(c *gin.Context) {
-
-	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "UpdateFiles",
-		Description: "Updating files with data",
-		Level:       logger.LogLevelInfo,
-		Status:      logger.LogStatusPending,
-		IPAddress:   c.ClientIP(),
-	}, nil)
-
-	data := c.PostForm("data")
-	if data == "" {
-		handler.Logger.CompleteWithErrorLog(loggerModel, fmt.Errorf("data is required"))
-		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DATA_REQUIRED")})
-		return
-	}
-	loggerModel.SetExtraData(logger.LogExtraData{
-		Data: data,
-	})
-	handler.service.ScanFilesTask(data)
-	handler.Logger.CompleteWithSuccessLog(loggerModel)
-}
-
 func (handler *Handler) GetFilesTreeHandler(c *gin.Context) {
 
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{

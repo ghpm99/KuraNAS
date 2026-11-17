@@ -99,7 +99,6 @@ func (m *filesHandlerServiceMock) SetFilesStarred(ids []int, isStarred bool) ([]
 func (m *filesHandlerServiceMock) CountStarredFilesByKind() (StarredCountsDto, error) {
 	return StarredCountsDto{}, nil
 }
-func (m *filesHandlerServiceMock) ScanFilesTask(data string)       {}
 func (m *filesHandlerServiceMock) ScanDirTask(data string)         {}
 func (m *filesHandlerServiceMock) UpdateCheckSum(fileId int) error { return nil }
 func (m *filesHandlerServiceMock) CreateUploadProcessJob(paths []string) (int, error) {
@@ -333,7 +332,6 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files", handler.GetFilesHandler)
 	router.GET("/files/path", handler.GetFilesByPathHandler)
 	router.GET("/files/children/:id", handler.GetChildrenByIdHandler)
-	router.POST("/files/update", handler.UpdateFilesHandler)
 	router.GET("/files/tree", handler.GetFilesTreeHandler)
 	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
 	router.GET("/files/blob/:id", handler.GetBlobFileHandler)
@@ -365,7 +363,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodGet, path: "/files", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/path?path=/tmp", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/children/1", code: http.StatusOK},
-		{method: http.MethodPost, path: "/files/update", body: "data=/tmp", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/tree", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent", code: http.StatusOK},
@@ -391,20 +388,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 				t.Fatalf("expected status %d, got %d. body=%s", tc.code, w.Code, w.Body.String())
 			}
 		})
-	}
-}
-
-func TestFilesHandlerUpdateRequiresData(t *testing.T) {
-	handler := NewHandler(&filesHandlerServiceMock{}, &filesRecentServiceMock{}, &filesLoggerMock{})
-	router := gin.New()
-	router.POST("/files/update", handler.UpdateFilesHandler)
-
-	req := httptest.NewRequest(http.MethodPost, "/files/update", nil)
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400 on missing data, got %d", w.Code)
 	}
 }
 

@@ -147,10 +147,12 @@ type JobScope struct {
 	FileID *int   `json:"file_id,omitempty"`
 	Path   string `json:"path,omitempty"`
 	Root   string `json:"root,omitempty"`
+
+	ReindexKey string `json:"reindex_key,omitempty"`
 }
 
 func (s JobScope) IsEmpty() bool {
-	return s.FileID == nil && s.Path == "" && s.Root == ""
+	return s.FileID == nil && s.Path == "" && s.Root == "" && s.ReindexKey == ""
 }
 
 type Job struct {

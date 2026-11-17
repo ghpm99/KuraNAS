@@ -39,3 +39,6 @@ var RecoverInterruptedJobsQuery string
 
 //go:embed has_pending_job_for_path.sql
 var HasPendingJobForPathQuery string
+
+//go:embed find_pending_reindex_job.sql
+var FindPendingReindexJobQuery string

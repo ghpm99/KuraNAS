@@ -48,6 +48,9 @@ func (r *fakeJobsRepo) RecoverInterruptedWork(tx *sql.Tx) (int64, int64, error) 
 	return 0, 0, nil
 }
 func (r *fakeJobsRepo) HasPendingJobForPath(path string) (bool, error) { return false, nil }
+func (r *fakeJobsRepo) FindPendingReindexJobID(reindexKey string) (int, bool, error) {
+	return 0, false, nil
+}
 
 func staticBaseURL(url string) func() string {
 	return func() string { return url }

@@ -56,6 +56,7 @@ func RegisterRoutes(router *gin.Engine, context *AppContext) {
 	RegisterAutoShutdownRoutes(routesV1, context)
 	RegisterVacuumRoutes(routesV1, context)
 	RegisterStorageRootsRoutes(routesV1, context)
+	RegisterIndexingRoutes(routesV1, context)
 	RegisterEmailRoutes(routesV1, context)
 	registerReactRoutes(router)
 }
@@ -76,6 +77,15 @@ func registerWebDAVRoutes(router *gin.Engine, context *AppContext) {
 	router.Any(dav.Prefix+"/*path", gin.WrapH(handler))
 	// Mount-point requests arrive without the trailing slash.
 	router.Any(dav.Prefix, gin.WrapH(handler))
+}
+
+func RegisterIndexingRoutes(router *gin.RouterGroup, context *AppContext) {
+	if context == nil || context.Indexing == nil || context.Indexing.Handler == nil {
+		return
+	}
+
+	router.POST("/indexing/reindex", context.Indexing.Handler.ReindexHandler)
+	router.POST("/files/update", context.Indexing.Handler.UpdateFilesHandler)
 }
 
 func RegisterStorageRootsRoutes(router *gin.RouterGroup, context *AppContext) {
@@ -242,7 +252,6 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/blob/:id", context.Files.Handler.GetBlobFileHandler)
 	files.GET("/download/:id", context.Files.Handler.DownloadFileHandler)
 	files.GET("/download-zip", context.Files.Handler.DownloadZipHandler)
-	files.POST("/update", context.Files.Handler.UpdateFilesHandler)
 	files.POST("/upload", context.Files.Handler.UploadFilesHandler)
 	files.POST("/folder", context.Files.Handler.CreateFolderHandler)
 	files.POST("/move", context.Files.Handler.MoveFileHandler)
