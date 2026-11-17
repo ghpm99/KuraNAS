@@ -20,6 +20,10 @@ Qualquer pasta rola até o último item no explorer do app.
 4. **Erro de página seguinte** (`00/RN-09`): `PagedListState` ganha o erro de "carregar mais" (hoje `PagedListLoader.kt:90` só zera `isLoadingMore`); a tela mostra a mensagem do servidor com "Tentar de novo" no fim da lista, mantendo os itens.
 5. **Rotação** (`24/CA-11`): itens carregados e posição de rolagem sobrevivem a girar o aparelho.
 
+## Sub-itens levantados na execução (2026-11-16)
+
+- [ ] 23.1. Com o item 4, `PagedListLoader.loadMore()` deixa de repetir sozinho depois de uma falha de página seguinte (só `retryLoadMore()` repete). As outras telas que usam o carregador — Favoritos, Lixeira, Vídeos e Música (lista de faixas, artista, álbum, playlist, pasta) — ainda não mostram o `PagedListFooter`; nelas a lista para até recarregar. Cada uma adota o rodapé com o "Tentar de novo" ligado a `retryLoadMore()` — `00/RN-09`.
+
 ## Critérios de aceite
 
 Verificados em aparelho real.
