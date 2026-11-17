@@ -31,7 +31,7 @@ Em toda lista, uma falha depois da primeira carga mantém os itens na tela e mos
 
 ## Sub-itens levantados na execução (2026-11-16)
 
-- [ ] 21.1. `features/music/views/components/ArtistPage.tsx` tem um `LoadMoreSentinel` fora do `ListFeedback` com `!albumsQuery.isError`: uma revalidação em segundo plano que falha para o carregar mais dos álbuns. Passa a desligar só com `isFetchNextPageError` — `RN-09`, `RN-13`.
+- [x] 21.1. `features/music/views/components/ArtistPage.tsx` tem um `LoadMoreSentinel` fora do `ListFeedback` com `!albumsQuery.isError`: uma revalidação em segundo plano que falha para o carregar mais dos álbuns. Passa a desligar só com `isFetchNextPageError` — `RN-09`, `RN-13`.
 - [x] 21.2. O seletor de pasta mostra só o título do erro; a mensagem traduzida que o servidor devolve (`{"error": ...}`) não aparece. Guardar a mensagem da falha e passá-la como `errorMessage` — `RN-10`.
 
 ## Critérios de aceite

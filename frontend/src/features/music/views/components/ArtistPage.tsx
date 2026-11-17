@@ -2,9 +2,8 @@ import { Box, Grid, Typography } from '@mui/material';
 import { User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getMusicRoute } from '@/app/routes';
-import ErrorState from '@/components/errorState/errorState';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createArtistPlaybackContext } from '@/features/music/components/playbackContext';
 import { findStartIndex } from '@/features/music/components/musicQueueTracks';
@@ -82,25 +81,26 @@ export default function ArtistPage({ artistKey, onBack }: ArtistPageProps) {
                     <Typography component="h2" variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
                         {t('MUSIC_ALBUMS')}
                     </Typography>
-                    <Grid container spacing={2}>
-                        {albums.map((album) => (
-                            <Grid key={album.key} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
-                                <AlbumCard album={album} onSelect={openAlbum} />
-                            </Grid>
-                        ))}
-                    </Grid>
-                    {albumsQuery.isError && (
-                        <ErrorState
-                            title={t('MUSIC_LIST_ERROR_TITLE')}
-                            backendMessage={albumsQuery.errorMessage}
-                            onRetry={albumsQuery.retry}
-                        />
-                    )}
-                    <LoadMoreSentinel
-                        hasNextPage={albumsQuery.hasNextPage && !albumsQuery.isError}
+                    <ListFeedback
+                        isEmpty={false}
+                        isError={albumsQuery.isError}
+                        isNextPageError={albumsQuery.isNextPageError}
+                        errorTitle={t('MUSIC_LIST_ERROR_TITLE')}
+                        errorMessage={albumsQuery.errorMessage}
+                        onRetry={albumsQuery.retry}
+                        hasNextPage={albumsQuery.hasNextPage}
                         isFetchingNextPage={albumsQuery.isFetchingNextPage}
-                        fetchNextPage={albumsQuery.fetchNextPage}
-                    />
+                        onLoadMore={albumsQuery.fetchNextPage}
+                        emptyState={null}
+                    >
+                        <Grid container spacing={2}>
+                            {albums.map((album) => (
+                                <Grid key={album.key} size={{ xs: 6, sm: 4, md: 3, lg: 2.4 }}>
+                                    <AlbumCard album={album} onSelect={openAlbum} />
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </ListFeedback>
                 </Box>
             )}
 
