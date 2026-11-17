@@ -43,7 +43,7 @@ Verificados no sistema rodando, em cada uma das telas da tabela, com pelo menos 
 - [ ] `00/CA-05` — com o servidor desligado desde o início, a tela mostra o estado de erro (não o vazio).
 - [ ] No seletor de pasta, com o servidor desligado, aparece erro com "Tentar de novo".
 - [ ] Música e Imagens continuam passando em `00/CA-04` (o componente compartilhado não as regrediu).
-- [ ] `make ci` verde.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
