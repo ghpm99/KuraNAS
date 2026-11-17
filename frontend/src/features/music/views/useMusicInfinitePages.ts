@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { Pagination } from '@/types/pagination';
 
 export function useMusicInfinitePages<ItemType>(
@@ -16,16 +17,9 @@ export function useMusicInfinitePages<ItemType>(
             lastPage.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
         enabled: isEnabled,
     });
-    const { data, isFetchNextPageError, fetchNextPage, refetch } = query;
+    const { data, fetchNextPage } = query;
     const items = useMemo(() => data?.pages.flatMap((page) => page.items ?? []) ?? [], [data]);
-
-    const retry = () => {
-        if (isFetchNextPageError) {
-            void fetchNextPage();
-            return;
-        }
-        void refetch();
-    };
+    const retry = useRetryFailedPage(query);
 
     return {
         items,

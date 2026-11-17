@@ -9,6 +9,7 @@ import {
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { useImage } from '@/components/providers/imageProvider/imageProvider';
 import { useSettings } from '@/components/providers/settingsProvider/settingsContext';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { getFileByPath } from '@/service/files';
 import type { ImageLibraryItem } from '@/types/imageLibrary';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
@@ -255,30 +256,16 @@ export const useImageContent = () => {
     const loadErrorMessage = hasLoadError
         ? extractBackendErrorMessage(hasFolderLoadError ? folders.error : error)
         : undefined;
-    const { fetchNextPage: fetchNextFolderPage, refetch: refetchFolders } = folders;
+    const { fetchNextPage: fetchNextFolderPage } = folders;
+    const retryFolderPage = useRetryFailedPage(folders);
+    const retryImagePage = useRetryFailedPage({ isFetchNextPageError, fetchNextPage, refetch });
     const retryLoading = useCallback(() => {
         if (hasFolderLoadError) {
-            if (folders.isFetchNextPageError) {
-                fetchNextFolderPage();
-                return;
-            }
-            refetchFolders();
+            retryFolderPage();
             return;
         }
-        if (isFetchNextPageError) {
-            fetchNextPage();
-            return;
-        }
-        refetch();
-    }, [
-        hasFolderLoadError,
-        folders.isFetchNextPageError,
-        fetchNextFolderPage,
-        refetchFolders,
-        isFetchNextPageError,
-        fetchNextPage,
-        refetch,
-    ]);
+        retryImagePage();
+    }, [hasFolderLoadError, retryFolderPage, retryImagePage]);
 
     const loadNextPage = useCallback(() => {
         fetchNextPage();
