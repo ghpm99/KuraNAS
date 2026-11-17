@@ -2,6 +2,7 @@ package takeout
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"nas-go/api/pkg/logger"
@@ -55,7 +56,7 @@ func (m *handlerServiceMock) CompleteUpload(dto CompleteTakeoutUploadDto) (Takeo
 	if m.completeFn != nil {
 		return m.completeFn(dto)
 	}
-	return TakeoutImportResultDto{JobID: 12, Message: "ok"}, nil
+	return TakeoutImportResultDto{JobID: 12, ImportID: 5, Message: "ok"}, nil
 }
 
 func buildJSONRequest(method string, url string, body string) *http.Request {
@@ -145,6 +146,16 @@ func TestTakeoutHandler(t *testing.T) {
 		if rec.Code != http.StatusAccepted {
 			t.Fatalf("expected 202, got %d", rec.Code)
 		}
+		var response struct {
+			JobID    int `json:"job_id"`
+			ImportID int `json:"import_id"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+		if response.JobID != 12 || response.ImportID != 5 {
+			t.Fatalf("unexpected response: %+v", response)
+		}
 	})
 
 	t.Run("CompleteUploadHandler bad request", func(t *testing.T) {
@@ -193,7 +204,7 @@ func TestTakeoutHandler(t *testing.T) {
 			},
 			completeFn: func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error) {
 				completeDto = dto
-				return TakeoutImportResultDto{JobID: 12, Message: "ok"}, nil
+				return TakeoutImportResultDto{JobID: 12, ImportID: 5, Message: "ok"}, nil
 			},
 		}, nil)
 

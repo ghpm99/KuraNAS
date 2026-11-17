@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"log"
+	"nas-go/api/internal/api/v1/takeout"
 	"nas-go/api/internal/worker/job"
 	"time"
 
@@ -61,6 +62,7 @@ type WorkerContext struct {
 	TieringService          tieringapi.WorkerInterface
 	EmailService            emailapi.WorkerInterface
 	CapturesService         CapturePromoter
+	TakeoutImports          takeout.ImportRecorderInterface
 	JobScheduler            *JobScheduler
 	JobOrchestrator         *JobOrchestrator
 	VideoPlaylistRebuild    *VideoPlaylistRebuildCoordinator

@@ -76,9 +76,27 @@ func setEntryPoint(t *testing.T, path string) {
 	})
 }
 
+type importCreatorMock struct {
+	createdJobID    int
+	createdFileName string
+	createdSize     int64
+	createdImportID int
+	createErr       error
+}
+
+func (m *importCreatorMock) CreateQueuedImport(tx *sql.Tx, jobID int, fileName string, size int64) (int, error) {
+	if m.createErr != nil {
+		return 0, m.createErr
+	}
+	m.createdJobID = jobID
+	m.createdFileName = fileName
+	m.createdSize = size
+	return m.createdImportID, nil
+}
+
 func newTakeoutServiceForTest(dispatcher *uploadDispatcherMock) *Service {
 	dispatcher.db = database.NewDbContext(nil)
-	return &Service{UploadJobDispatcher: dispatcher}
+	return &Service{UploadJobDispatcher: dispatcher, ImportCreator: &importCreatorMock{createdImportID: 7}}
 }
 
 func TestInitUploadSuccess(t *testing.T) {
@@ -99,7 +117,7 @@ func TestInitUploadSuccess(t *testing.T) {
 }
 
 func TestNewService(t *testing.T) {
-	result := NewService(&uploadDispatcherMock{db: database.NewDbContext(nil)}, nil, nil)
+	result := NewService(&uploadDispatcherMock{db: database.NewDbContext(nil)}, nil, nil, &importCreatorMock{})
 	if result == nil {
 		t.Fatalf("expected non-nil service")
 	}
@@ -187,6 +205,51 @@ func TestCompleteUploadSuccess(t *testing.T) {
 	}
 	if result.JobID <= 0 {
 		t.Fatalf("expected created job id")
+	}
+}
+
+func TestCompleteUploadCreatesQueuedImportAndReturnsImportID(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	importCreator := &importCreatorMock{createdImportID: 42}
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.ImportCreator = importCreator
+
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	chunk := buildChunkHeader(t, "chunk.bin", "hello")
+	if err := service.UploadChunk(chunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+
+	completeResult, err := service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: initResult.UploadID})
+	if err != nil {
+		t.Fatalf("CompleteUpload returned error: %v", err)
+	}
+	if completeResult.ImportID != 42 {
+		t.Fatalf("expected import id 42, got %d", completeResult.ImportID)
+	}
+	if importCreator.createdJobID != completeResult.JobID || importCreator.createdFileName != "takeout.zip" || importCreator.createdSize != 5 {
+		t.Fatalf("unexpected queued import: %+v", importCreator)
+	}
+}
+
+func TestCompleteUploadFailsWhenImportRecordCannotBeCreated(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.ImportCreator = &importCreatorMock{createErr: errors.New("insert failed")}
+
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	chunk := buildChunkHeader(t, "chunk.bin", "hello")
+	if err := service.UploadChunk(chunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+	if _, err := service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: initResult.UploadID}); err == nil {
+		t.Fatalf("expected complete upload to fail")
 	}
 }
 

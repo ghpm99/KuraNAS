@@ -20,6 +20,7 @@ type CompleteTakeoutUploadDto struct {
 }
 
 type TakeoutImportResultDto struct {
-	JobID   int    `json:"job_id"`
-	Message string `json:"message"`
+	JobID    int    `json:"job_id"`
+	ImportID int    `json:"import_id"`
+	Message  string `json:"message"`
 }

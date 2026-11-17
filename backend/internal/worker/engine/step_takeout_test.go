@@ -207,3 +207,114 @@ func assertFailureNotificationIsSafe(t *testing.T, notifier *fakeWorkerNotifSvc,
 		}
 	}
 }
+
+type takeoutImportRecorderMock struct {
+	events           []string
+	completedSummary takeout.ImportSummary
+	failureMessage   string
+	recordedJobID    int
+	closeErr         error
+}
+
+func (m *takeoutImportRecorderMock) MarkImportRunning(jobID int) error {
+	m.events = append(m.events, "running")
+	m.recordedJobID = jobID
+	return nil
+}
+
+func (m *takeoutImportRecorderMock) CloseImportCompleted(jobID int, summary takeout.ImportSummary) error {
+	m.events = append(m.events, "completed")
+	m.completedSummary = summary
+	return m.closeErr
+}
+
+func (m *takeoutImportRecorderMock) CloseImportFailed(jobID int, failureMessage string) error {
+	m.events = append(m.events, "failed")
+	m.failureMessage = failureMessage
+	return m.closeErr
+}
+
+func runTakeoutStepWithRecorder(t *testing.T, zipPath string, librariesService libraries.ServiceInterface, recorder *takeoutImportRecorderMock) error {
+	t.Helper()
+	payload, err := json.Marshal(TakeoutStepPayload{ZipPath: zipPath, UploadID: "u1"})
+	if err != nil {
+		t.Fatalf("failed to marshal payload: %v", err)
+	}
+	return executeTakeoutExtractStep(&WorkerContext{
+		LibrariesService: librariesService,
+		TakeoutImports:   recorder,
+	}, jobs.StepModel{JobID: 9, Payload: payload})
+}
+
+func TestExecuteTakeoutExtractStepRecordsRunningThenCompletedWithCounts(t *testing.T) {
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "upload", "takeout.zip")
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	createWorkerZip(t, zipPath)
+	imageLib := filepath.Join(tempDir, "Imagens")
+	if err := os.MkdirAll(imageLib, 0755); err != nil {
+		t.Fatalf("failed to create image lib: %v", err)
+	}
+
+	recorder := &takeoutImportRecorderMock{}
+	err := runTakeoutStepWithRecorder(t, zipPath, &librariesServiceMock{
+		paths: map[libraries.LibraryCategory]string{libraries.LibraryCategoryImages: imageLib},
+	}, recorder)
+	if err != nil {
+		t.Fatalf("executeTakeoutExtractStep returned error: %v", err)
+	}
+	if strings.Join(recorder.events, ",") != "running,completed" || recorder.recordedJobID != 9 {
+		t.Fatalf("unexpected events %v for job %d", recorder.events, recorder.recordedJobID)
+	}
+	expectedSummary := takeout.ImportSummary{TotalEntries: 1, Imported: 1}
+	if recorder.completedSummary != expectedSummary {
+		t.Fatalf("expected summary %+v, got %+v", expectedSummary, recorder.completedSummary)
+	}
+}
+
+func TestExecuteTakeoutExtractStepRecordsFailedWithTranslatedMessage(t *testing.T) {
+	loadTranslationsForTest(t)
+	zipPath := filepath.Join(t.TempDir(), "upload", "takeout.zip")
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	createWorkerZip(t, zipPath)
+
+	recorder := &takeoutImportRecorderMock{}
+	if err := runTakeoutStepWithRecorder(t, zipPath, &failingLibrariesServiceMock{}, recorder); err == nil {
+		t.Fatalf("expected extraction error")
+	}
+	if strings.Join(recorder.events, ",") != "running,failed" {
+		t.Fatalf("unexpected events %v", recorder.events)
+	}
+	expectedMessage := i18n.GetMessage("NOTIFICATION_TAKEOUT_IMPORT_FAILED_MESSAGE")
+	if recorder.failureMessage != expectedMessage {
+		t.Fatalf("expected %q, got %q", expectedMessage, recorder.failureMessage)
+	}
+	if strings.Contains(recorder.failureMessage, "secret") || strings.Contains(recorder.failureMessage, zipPath) {
+		t.Fatalf("failure message leaks internals: %q", recorder.failureMessage)
+	}
+}
+
+func TestExecuteTakeoutExtractStepIgnoresRecordFailures(t *testing.T) {
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "upload", "takeout.zip")
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	createWorkerZip(t, zipPath)
+	imageLib := filepath.Join(tempDir, "Imagens")
+	if err := os.MkdirAll(imageLib, 0755); err != nil {
+		t.Fatalf("failed to create image lib: %v", err)
+	}
+
+	recorder := &takeoutImportRecorderMock{closeErr: errors.New("db down")}
+	err := runTakeoutStepWithRecorder(t, zipPath, &librariesServiceMock{
+		paths: map[libraries.LibraryCategory]string{libraries.LibraryCategoryImages: imageLib},
+	}, recorder)
+	if err != nil {
+		t.Fatalf("record failure must not fail the import, got %v", err)
+	}
+}

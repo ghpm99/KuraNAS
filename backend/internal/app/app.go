@@ -163,6 +163,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Email != nil {
 		workerFileContext.EmailService = appContext.Email.Service
 	}
+	if appContext.Takeout != nil && appContext.Takeout.ImportRepository != nil {
+		workerFileContext.TakeoutImports = appContext.Takeout.ImportRepository
+	}
 	if appContext.Captures != nil {
 		workerFileContext.CapturesService = appContext.Captures.Service
 	}

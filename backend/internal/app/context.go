@@ -245,8 +245,9 @@ type WatchFoldersContext struct {
 }
 
 type TakeoutContext struct {
-	Handler *takeout.Handler
-	Service takeout.ServiceInterface
+	Handler          *takeout.Handler
+	Service          takeout.ServiceInterface
+	ImportRepository *takeout.ImportRepository
 }
 
 type AIProvidersContext struct {
@@ -1013,11 +1014,13 @@ func newTakeoutContext(
 	jobsRepository jobs.RepositoryInterface,
 	notificationService notifications.ServiceInterface,
 ) *TakeoutContext {
-	service := takeout.NewService(jobsRepository, libraryResolver, notificationService)
+	importRepository := takeout.NewImportRepository(dbContext)
+	service := takeout.NewService(jobsRepository, libraryResolver, notificationService, importRepository)
 	handler := takeout.NewHandler(service, loggerService)
 	return &TakeoutContext{
-		Handler: handler,
-		Service: service,
+		Handler:          handler,
+		Service:          service,
+		ImportRepository: importRepository,
 	}
 }
 

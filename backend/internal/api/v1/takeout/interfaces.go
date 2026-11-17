@@ -23,3 +23,13 @@ type UploadJobDispatcherInterface interface {
 type LibraryResolverInterface interface {
 	GetLibraryByCategory(category libraries.LibraryCategory) (libraries.LibraryDto, error)
 }
+
+type ImportCreatorInterface interface {
+	CreateQueuedImport(transaction *sql.Tx, jobID int, fileName string, size int64) (int, error)
+}
+
+type ImportRecorderInterface interface {
+	MarkImportRunning(jobID int) error
+	CloseImportCompleted(jobID int, summary ImportSummary) error
+	CloseImportFailed(jobID int, failureMessage string) error
+}

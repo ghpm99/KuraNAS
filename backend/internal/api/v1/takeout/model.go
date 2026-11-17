@@ -51,3 +51,11 @@ type ExtractResult struct {
 	Ignored         int             `json:"ignored"`
 	FailedEntries   int             `json:"failed_entries"`
 }
+
+type ImportSummary struct {
+	TotalEntries    int
+	Imported        int
+	AlreadyExisting int
+	Ignored         int
+	FailedEntries   int
+}

@@ -30,17 +30,20 @@ type Service struct {
 	UploadJobDispatcher UploadJobDispatcherInterface
 	LibraryResolver     LibraryResolverInterface
 	NotificationService notificationServiceInterface
+	ImportCreator       ImportCreatorInterface
 }
 
 func NewService(
 	uploadJobDispatcher UploadJobDispatcherInterface,
 	libraryResolver LibraryResolverInterface,
 	notificationService notificationServiceInterface,
+	importCreator ImportCreatorInterface,
 ) ServiceInterface {
 	return &Service{
 		UploadJobDispatcher: uploadJobDispatcher,
 		LibraryResolver:     libraryResolver,
 		NotificationService: notificationService,
+		ImportCreator:       importCreator,
 	}
 }
 
@@ -148,6 +151,7 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 	}
 
 	var createdJob jobs.JobModel
+	var importID int
 	err = s.withTransaction(func(tx *sql.Tx) error {
 		scope, scopeErr := json.Marshal(map[string]any{
 			"upload_id": dto.UploadID,
@@ -179,15 +183,22 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 			Progress:    0,
 			Payload:     payload,
 		})
-		return createStepErr
+		if createStepErr != nil {
+			return createStepErr
+		}
+
+		createdImportID, createImportErr := s.ImportCreator.CreateQueuedImport(tx, createdJob.ID, session.FileName, session.ExpectedSize)
+		importID = createdImportID
+		return createImportErr
 	})
 	if err != nil {
 		return TakeoutImportResultDto{}, fmt.Errorf("CompleteUpload create job: %w", err)
 	}
 
 	return TakeoutImportResultDto{
-		JobID:   createdJob.ID,
-		Message: i18n.GetMessage("TAKEOUT_IMPORT_STARTED"),
+		JobID:    createdJob.ID,
+		ImportID: importID,
+		Message:  i18n.GetMessage("TAKEOUT_IMPORT_STARTED"),
 	}, nil
 }
 

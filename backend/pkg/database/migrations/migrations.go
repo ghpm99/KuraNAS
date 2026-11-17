@@ -224,6 +224,9 @@ var CascadeFileDependentsOnFileDeleteQuery string
 //go:embed queries/0071_add_trash_item_is_directory.sql
 var AddTrashItemIsDirectoryQuery string
 
+//go:embed queries/0072_create_takeout_import_table.sql
+var CreateTakeoutImportTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -512,4 +515,10 @@ func emailMigrationList() {
 	addMigrationRequiring("0041_create_email_analysis_table",
 		[]string{"0040_create_email_message_table"},
 		defaultMigrationFunc(CreateEmailAnalysisTableQuery))
+}
+
+func takeoutMigrationList() {
+	addMigrationRequiring("0072_create_takeout_import_table",
+		[]string{"0016_create_worker_job_tables"},
+		defaultMigrationFunc(CreateTakeoutImportTableQuery))
 }
