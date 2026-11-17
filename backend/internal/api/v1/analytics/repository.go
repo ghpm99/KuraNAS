@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -234,6 +235,67 @@ func (r *Repository) queryDuplicateGroups(query string, args ...any) ([]Duplicat
 		return result, fmt.Errorf("analytics duplicate groups failed: %w", err)
 	}
 	return result, nil
+}
+
+func (r *Repository) GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailModel], error) {
+	groups := []DuplicateGroupDetailModel{}
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(
+			queries.DuplicatesGroupsPageQuery,
+			pq.Array(category.includedFormats()),
+			pq.Array(category.excludedFormats()),
+			pageSize+1,
+			utils.CalculateOffset(page, pageSize),
+		)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			group, err := scanDuplicateGroupDetail(rows)
+			if err != nil {
+				return err
+			}
+			groups = append(groups, group)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return utils.PaginationResponse[DuplicateGroupDetailModel]{}, fmt.Errorf("analytics duplicate groups page failed: %w", err)
+	}
+	return buildDuplicateGroupsPage(groups, page, pageSize), nil
+}
+
+func scanDuplicateGroupDetail(rows *sql.Rows) (DuplicateGroupDetailModel, error) {
+	var group DuplicateGroupDetailModel
+	var copiesJSON []byte
+	if err := rows.Scan(&group.Signature, &group.Copies, &group.ItemSize, &group.ReclaimableSize, &copiesJSON); err != nil {
+		return group, err
+	}
+	if err := json.Unmarshal(copiesJSON, &group.Files); err != nil {
+		return group, err
+	}
+	group.Paths = make([]string, 0, len(group.Files))
+	for _, copyFile := range group.Files {
+		group.Paths = append(group.Paths, copyFile.Path)
+	}
+	return group, nil
+}
+
+func buildDuplicateGroupsPage(groups []DuplicateGroupDetailModel, page int, pageSize int) utils.PaginationResponse[DuplicateGroupDetailModel] {
+	hasNext := len(groups) > pageSize
+	if hasNext {
+		groups = groups[:pageSize]
+	}
+	return utils.PaginationResponse[DuplicateGroupDetailModel]{
+		Items: groups,
+		Pagination: utils.Pagination{
+			Page:     page,
+			PageSize: pageSize,
+			HasNext:  hasNext,
+			HasPrev:  page > 1,
+		},
+	}
 }
 
 func (r *Repository) GetLibrarySummary() (LibrarySummaryModel, error) {

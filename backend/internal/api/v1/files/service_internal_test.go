@@ -92,6 +92,7 @@ type filesRepoMock struct {
 	getTotalSpaceUsedFn         func() (int, error)
 	getReportSizeByFormatFn     func() ([]SizeReportModel, error)
 	getTopFilesBySizeFn         func(limit int) ([]FileModel, error)
+	getTopFilesBySizePageFn     func(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	getDuplicateFilesFn         func(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
 }
 
@@ -251,6 +252,12 @@ func (m *filesRepoMock) GetTopFilesBySize(limit int) ([]FileModel, error) {
 		return m.getTopFilesBySizeFn(limit)
 	}
 	return nil, nil
+}
+func (m *filesRepoMock) GetTopFilesBySizePage(page int, pageSize int) (utils.PaginationResponse[FileModel], error) {
+	if m.getTopFilesBySizePageFn != nil {
+		return m.getTopFilesBySizePageFn(page, pageSize)
+	}
+	return utils.PaginationResponse[FileModel]{}, nil
 }
 func (m *filesRepoMock) GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error) {
 	if m.getDuplicateFilesFn != nil {

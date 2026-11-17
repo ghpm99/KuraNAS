@@ -1,6 +1,9 @@
 package analytics
 
-import "nas-go/api/pkg/database"
+import (
+	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/utils"
+)
 
 type RepositoryInterface interface {
 	GetDbContext() *database.DbContext
@@ -15,6 +18,7 @@ type RepositoryInterface interface {
 	GetDuplicateGroups(limit int) ([]DuplicateGroupModel, error)
 	GetImageDuplicatesSummary() (DuplicatesSummaryModel, error)
 	GetImageDuplicateGroups(limit int) ([]DuplicateGroupModel, error)
+	GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailModel], error)
 	GetLibrarySummary() (LibrarySummaryModel, error)
 	GetProcessingSummary() (ProcessingSummaryModel, error)
 	GetHealth() (HealthModel, error)
@@ -32,6 +36,7 @@ type ServiceInterface interface {
 	GetDuplicateGroups(limit int) ([]DuplicateGroupDto, error)
 	GetImageDuplicatesSummary() (DuplicatesSummaryDto, error)
 	GetImageDuplicateGroups(limit int) ([]DuplicateGroupDto, error)
+	GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailDto], error)
 	GetLibrary() (LibraryDto, error)
 	GetProcessing() (ProcessingDto, error)
 	GetHealth() (HealthDto, error)

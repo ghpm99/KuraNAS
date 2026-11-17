@@ -4,6 +4,7 @@ import (
 	"errors"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/utils"
 	"net/http"
 	"strconv"
 
@@ -11,6 +12,8 @@ import (
 )
 
 const duplicatesTypeImage = "image"
+
+const defaultDuplicateGroupsPageSize = 20
 
 type Handler struct {
 	service ServiceInterface
@@ -93,6 +96,10 @@ func (handler *Handler) GetDuplicatesHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetDuplicateGroupsHandler(c *gin.Context) {
+	if c.Query("page") != "" {
+		handler.respondDuplicateGroupsPage(c)
+		return
+	}
 	limit := parseLimit(c, 20, 100)
 	switch c.Query("type") {
 	case "":
@@ -104,6 +111,20 @@ func (handler *Handler) GetDuplicateGroupsHandler(c *gin.Context) {
 	default:
 		handler.respondInvalidDuplicatesType(c)
 	}
+}
+
+func (handler *Handler) respondDuplicateGroupsPage(c *gin.Context) {
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, defaultDuplicateGroupsPageSize)
+	if !isPaginationValid {
+		return
+	}
+	category, isCategoryValid := ParseDuplicateCategory(c.Query("type"))
+	if !isCategoryValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_ANALYTICS_INVALID_DUPLICATE_GROUPS_TYPE")})
+		return
+	}
+	result, err := handler.service.GetDuplicateGroupsPage(category, page, pageSize)
+	handler.respond(c, result, err)
 }
 
 func (handler *Handler) respondInvalidDuplicatesType(c *gin.Context) {

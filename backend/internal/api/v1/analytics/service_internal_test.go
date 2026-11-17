@@ -6,6 +6,7 @@ import (
 	"errors"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/utils"
 	"testing"
 	"time"
 )
@@ -20,6 +21,7 @@ type repositoryStub struct {
 	hotFolders       []FolderHotModel
 	duplicatesSum    DuplicatesSummaryModel
 	duplicateGroups  []DuplicateGroupModel
+	groupsPage       utils.PaginationResponse[DuplicateGroupDetailModel]
 	librarySummary   LibrarySummaryModel
 	processing       ProcessingSummaryModel
 	health           HealthModel
@@ -81,6 +83,10 @@ func (stub *repositoryStub) GetImageDuplicateGroups(limit int) ([]DuplicateGroup
 func (stub *repositoryStub) GetDuplicateGroups(limit int) ([]DuplicateGroupModel, error) {
 	stub.capturedLimit = limit
 	return stub.duplicateGroups, stub.err
+}
+
+func (stub *repositoryStub) GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailModel], error) {
+	return stub.groupsPage, stub.err
 }
 
 func (stub *repositoryStub) GetLibrarySummary() (LibrarySummaryModel, error) {

@@ -74,6 +74,18 @@ type DuplicateGroupModel struct {
 	Paths           []string
 }
 
+type DuplicateCopyModel struct {
+	ID        int       `json:"id"`
+	Path      string    `json:"path"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Tier      string    `json:"tier"`
+}
+
+type DuplicateGroupDetailModel struct {
+	DuplicateGroupModel
+	Files []DuplicateCopyModel
+}
+
 type LibrarySummaryModel struct {
 	CategorizedMedia  int64
 	AudioWithMetadata int64

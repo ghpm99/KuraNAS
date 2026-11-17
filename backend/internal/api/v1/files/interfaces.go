@@ -38,6 +38,7 @@ type RepositoryInterface interface {
 	GetTotalSpaceUsed() (int, error)
 	GetReportSizeByFormat() ([]SizeReportModel, error)
 	GetTopFilesBySize(limit int) ([]FileModel, error)
+	GetTopFilesBySizePage(page int, pageSize int) (utils.PaginationResponse[FileModel], error)
 	GetDuplicateFiles(page int, pageSize int) (utils.PaginationResponse[DuplicateFilesModel], error)
 	DeleteFileByID(transaction *sql.Tx, id int) error
 }
@@ -75,6 +76,7 @@ type ServiceInterface interface {
 	GetTotalDirectory() (int, error)
 	GetReportSizeByFormat() ([]SizeReportDto, error)
 	GetTopFilesBySize(limit int) ([]FileDto, error)
+	GetTopFilesBySizePage(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
 	GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error)
 	CheckFileExists(fileId int) bool
 	CheckFileExistsByPath(path string) bool

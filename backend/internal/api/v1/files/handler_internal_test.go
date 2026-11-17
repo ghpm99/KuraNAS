@@ -122,6 +122,9 @@ func (m *filesHandlerServiceMock) GetReportSizeByFormat() ([]SizeReportDto, erro
 func (m *filesHandlerServiceMock) GetTopFilesBySize(limit int) ([]FileDto, error) {
 	return []FileDto{{ID: 1, Name: "big"}}, nil
 }
+func (m *filesHandlerServiceMock) GetTopFilesBySizePage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	return utils.PaginationResponse[FileDto]{}, nil
+}
 func (m *filesHandlerServiceMock) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error) {
 	return DuplicateFileReportDto{
 		Files: []DuplicateFileDto{{Name: "dup", Size: 10, Copies: 2, Paths: []string{"/a", "/b"}}},
@@ -170,23 +173,24 @@ func (m *filesRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]RecentFi
 
 type filesHandlerServiceFuncMock struct {
 	filesHandlerServiceMock
-	requestedChildrenSort ChildrenSort
-	getChildrenFn         func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	getFilesByPathFn      func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	getActiveFilesFn      func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
-	getFileByIdFn         func(id int) (FileDto, error)
-	updateFileFn          func(file FileDto) (bool, error)
-	toggleFileStarredFn   func(id int) (bool, error)
-	setFileStarredFn      func(id int, isStarred bool) (bool, error)
-	setFilesStarredFn     func(ids []int, isStarred bool) ([]int, error)
-	countStarredFn        func() (StarredCountsDto, error)
-	getTotalSpaceUsedFn   func() (int, error)
-	getTotalFilesFn       func() (int, error)
-	getTotalDirectoryFn   func() (int, error)
-	getReportSizeByFmtFn  func() ([]SizeReportDto, error)
-	getTopFilesBySizeFn   func(limit int) ([]FileDto, error)
-	getDuplicateFilesFn   func(page int, pageSize int) (DuplicateFileReportDto, error)
-	getFileThumbnailFn    func(fileDto FileDto, width, height int) ([]byte, error)
+	requestedChildrenSort   ChildrenSort
+	getChildrenFn           func(parentPath string, category FileCategory, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getFilesByPathFn        func(path string, page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getActiveFilesFn        func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getFileByIdFn           func(id int) (FileDto, error)
+	updateFileFn            func(file FileDto) (bool, error)
+	toggleFileStarredFn     func(id int) (bool, error)
+	setFileStarredFn        func(id int, isStarred bool) (bool, error)
+	setFilesStarredFn       func(ids []int, isStarred bool) ([]int, error)
+	countStarredFn          func() (StarredCountsDto, error)
+	getTotalSpaceUsedFn     func() (int, error)
+	getTotalFilesFn         func() (int, error)
+	getTotalDirectoryFn     func() (int, error)
+	getReportSizeByFmtFn    func() ([]SizeReportDto, error)
+	getTopFilesBySizeFn     func(limit int) ([]FileDto, error)
+	getTopFilesBySizePageFn func(page int, pageSize int) (utils.PaginationResponse[FileDto], error)
+	getDuplicateFilesFn     func(page int, pageSize int) (DuplicateFileReportDto, error)
+	getFileThumbnailFn      func(fileDto FileDto, width, height int) ([]byte, error)
 }
 
 func (m *filesHandlerServiceFuncMock) GetFileThumbnail(fileDto FileDto, width, height int) ([]byte, error) {
@@ -280,6 +284,12 @@ func (m *filesHandlerServiceFuncMock) GetTopFilesBySize(limit int) ([]FileDto, e
 		return m.getTopFilesBySizeFn(limit)
 	}
 	return m.filesHandlerServiceMock.GetTopFilesBySize(limit)
+}
+func (m *filesHandlerServiceFuncMock) GetTopFilesBySizePage(page int, pageSize int) (utils.PaginationResponse[FileDto], error) {
+	if m.getTopFilesBySizePageFn != nil {
+		return m.getTopFilesBySizePageFn(page, pageSize)
+	}
+	return m.filesHandlerServiceMock.GetTopFilesBySizePage(page, pageSize)
 }
 func (m *filesHandlerServiceFuncMock) GetDuplicateFiles(page int, pageSize int) (DuplicateFileReportDto, error) {
 	if m.getDuplicateFilesFn != nil {

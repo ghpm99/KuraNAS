@@ -96,6 +96,11 @@ func (handler *Handler) GetReportSizeByFormatHandler(c *gin.Context) {
 }
 
 func (handler *Handler) GetTopFilesBySizeHandler(c *gin.Context) {
+	if c.Query("page") != "" {
+		handler.respondTopFilesBySizePage(c)
+		return
+	}
+
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
 		Name:        "GetTopFilesBySize",
 		Description: "Fetching top files by size",

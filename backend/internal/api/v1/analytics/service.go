@@ -10,6 +10,7 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
+	"nas-go/api/pkg/utils"
 	"sort"
 	"strings"
 	"time"
@@ -128,6 +129,17 @@ func (s *Service) GetDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
 		return nil, err
 	}
 	return toDuplicateGroupDto(models), nil
+}
+
+func (s *Service) GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailDto], error) {
+	pageModels, err := s.Repository.GetDuplicateGroupsPage(category, page, pageSize)
+	if err != nil {
+		return utils.PaginationResponse[DuplicateGroupDetailDto]{}, err
+	}
+	return utils.PaginationResponse[DuplicateGroupDetailDto]{
+		Items:      toDuplicateGroupDetailDtos(pageModels.Items),
+		Pagination: pageModels.Pagination,
+	}, nil
 }
 
 func (s *Service) GetImageDuplicatesSummary() (DuplicatesSummaryDto, error) {
@@ -426,12 +438,36 @@ func toRecentFilesDto(models []RecentFileModel) []RecentFileDto {
 func toDuplicateGroupDto(models []DuplicateGroupModel) []DuplicateGroupDto {
 	response := make([]DuplicateGroupDto, 0, len(models))
 	for _, item := range models {
-		response = append(response, DuplicateGroupDto{
-			Signature:       item.Signature,
-			Copies:          item.Copies,
-			SizeBytes:       item.ItemSize,
-			ReclaimableSize: item.ReclaimableSize,
-			Paths:           item.Paths,
+		response = append(response, toDuplicateGroupSummaryDto(item))
+	}
+	return response
+}
+
+func toDuplicateGroupSummaryDto(model DuplicateGroupModel) DuplicateGroupDto {
+	return DuplicateGroupDto{
+		Signature:       model.Signature,
+		Copies:          model.Copies,
+		SizeBytes:       model.ItemSize,
+		ReclaimableSize: model.ReclaimableSize,
+		Paths:           model.Paths,
+	}
+}
+
+func toDuplicateGroupDetailDtos(models []DuplicateGroupDetailModel) []DuplicateGroupDetailDto {
+	response := make([]DuplicateGroupDetailDto, 0, len(models))
+	for _, group := range models {
+		copies := make([]DuplicateCopyDto, 0, len(group.Files))
+		for _, copyFile := range group.Files {
+			copies = append(copies, DuplicateCopyDto{
+				ID:        copyFile.ID,
+				Path:      copyFile.Path,
+				UpdatedAt: copyFile.UpdatedAt.Format(time.RFC3339),
+				Tier:      copyFile.Tier,
+			})
+		}
+		response = append(response, DuplicateGroupDetailDto{
+			DuplicateGroupDto: toDuplicateGroupSummaryDto(group.DuplicateGroupModel),
+			Files:             copies,
 		})
 	}
 	return response

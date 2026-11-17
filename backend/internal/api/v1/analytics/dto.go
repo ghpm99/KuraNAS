@@ -74,6 +74,18 @@ type DuplicateGroupDto struct {
 	Paths           []string `json:"paths"`
 }
 
+type DuplicateCopyDto struct {
+	ID        int    `json:"id"`
+	Path      string `json:"path"`
+	UpdatedAt string `json:"updated_at"`
+	Tier      string `json:"tier"`
+}
+
+type DuplicateGroupDetailDto struct {
+	DuplicateGroupDto
+	Files []DuplicateCopyDto `json:"files"`
+}
+
 type LibraryDto struct {
 	CategorizedMedia  int64 `json:"categorized_media"`
 	AudioWithMetadata int64 `json:"audio_with_metadata"`

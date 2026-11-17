@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"nas-go/api/pkg/utils"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,6 +17,12 @@ type serviceStub struct {
 	capturedLimit      int
 	calledImageSummary bool
 	calledImageGroups  bool
+	groupsToReturn     []DuplicateGroupDto
+	pageToReturn       utils.PaginationResponse[DuplicateGroupDetailDto]
+	capturedCategory   DuplicateCategory
+	capturedPage       int
+	capturedPageSize   int
+	calledGroupsPage   bool
 }
 
 func (s *serviceStub) GetStorage(period string) (StorageStatsDto, error) {
@@ -48,7 +56,14 @@ func (s *serviceStub) GetDuplicatesSummary() (DuplicatesSummaryDto, error) {
 }
 func (s *serviceStub) GetDuplicateGroups(limit int) ([]DuplicateGroupDto, error) {
 	s.capturedLimit = limit
-	return nil, s.err
+	return s.groupsToReturn, s.err
+}
+func (s *serviceStub) GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailDto], error) {
+	s.calledGroupsPage = true
+	s.capturedCategory = category
+	s.capturedPage = page
+	s.capturedPageSize = pageSize
+	return s.pageToReturn, s.err
 }
 func (s *serviceStub) GetImageDuplicatesSummary() (DuplicatesSummaryDto, error) {
 	s.calledImageSummary = true
