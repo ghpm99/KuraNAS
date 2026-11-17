@@ -13,6 +13,10 @@ const (
 	defaultAccentColor           = "violet"
 	defaultThemeMode             = "dark"
 	defaultAIImageClassification = true
+	defaultIndexDocumentText     = true
+	defaultScanIntervalHours     = 24
+	minScanIntervalHours         = 1
+	maxScanIntervalHours         = 168
 )
 
 var allowedSlideshowSeconds = map[int]struct{}{
@@ -40,6 +44,9 @@ func buildDefaultSettings(availableLocales []string) settingsState {
 			ScanOnStartup:    true,
 			ExtractMetadata:  true,
 			GeneratePreviews: true,
+
+			IndexDocumentText: boolPtr(defaultIndexDocumentText),
+			ScanIntervalHours: defaultScanIntervalHours,
 		},
 		Captures: capturesSettingsState{
 			SavePath: defaultCapturesPath(),
@@ -69,6 +76,8 @@ func normalizeState(candidate settingsState, defaults settingsState, availableLo
 	normalized.Indexing.ScanOnStartup = candidate.Indexing.ScanOnStartup
 	normalized.Indexing.ExtractMetadata = candidate.Indexing.ExtractMetadata
 	normalized.Indexing.GeneratePreviews = candidate.Indexing.GeneratePreviews
+	normalized.Indexing.IndexDocumentText = resolveBoolPtr(candidate.Indexing.IndexDocumentText, defaults.Indexing.IndexDocumentText)
+	normalized.Indexing.ScanIntervalHours = normalizeScanIntervalHours(candidate.Indexing.ScanIntervalHours, defaults.Indexing.ScanIntervalHours)
 	normalized.Captures.SavePath = sanitizeCapturePath(candidate.Captures.SavePath, defaults.Captures.SavePath)
 	normalized.AI.ImageClassification = resolveBoolPtr(candidate.AI.ImageClassification, defaults.AI.ImageClassification)
 	normalized.Players.RememberMusicQueue = candidate.Players.RememberMusicQueue
@@ -88,6 +97,9 @@ func (request UpdateSettingsRequest) toState() settingsState {
 			ScanOnStartup:    request.Indexing.ScanOnStartup,
 			ExtractMetadata:  request.Indexing.ExtractMetadata,
 			GeneratePreviews: request.Indexing.GeneratePreviews,
+
+			IndexDocumentText: request.Indexing.IndexDocumentText,
+			ScanIntervalHours: derefInt(request.Indexing.ScanIntervalHours, 0),
 		},
 		Captures: capturesSettingsState{
 			SavePath: request.Captures.SavePath,
@@ -112,6 +124,17 @@ func (request UpdateSettingsRequest) toState() settingsState {
 	}
 }
 
+func (request UpdateSettingsRequest) toStateKeepingAbsentIndexingKeys(current settingsState) settingsState {
+	state := request.toState()
+	if request.Indexing.IndexDocumentText == nil {
+		state.Indexing.IndexDocumentText = current.Indexing.IndexDocumentText
+	}
+	if request.Indexing.ScanIntervalHours == nil {
+		state.Indexing.ScanIntervalHours = current.Indexing.ScanIntervalHours
+	}
+	return state
+}
+
 func (state settingsState) toDto(availableLocales []string) SettingsDto {
 	return SettingsDto{
 		Indexing: IndexingSettingsDto{
@@ -119,6 +142,9 @@ func (state settingsState) toDto(availableLocales []string) SettingsDto {
 			ScanOnStartup:    state.Indexing.ScanOnStartup,
 			ExtractMetadata:  state.Indexing.ExtractMetadata,
 			GeneratePreviews: state.Indexing.GeneratePreviews,
+
+			IndexDocumentText: derefBool(state.Indexing.IndexDocumentText, defaultIndexDocumentText),
+			ScanIntervalHours: normalizeScanIntervalHours(state.Indexing.ScanIntervalHours, defaultScanIntervalHours),
 		},
 		Captures: CapturesSettingsDto{
 			SavePath:     state.Captures.SavePath,
@@ -205,6 +231,24 @@ func normalizeThemeMode(value string, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func normalizeScanIntervalHours(hours int, fallback int) int {
+	if isScanIntervalHoursInRange(hours) {
+		return hours
+	}
+	return fallback
+}
+
+func isScanIntervalHoursInRange(hours int) bool {
+	return hours >= minScanIntervalHours && hours <= maxScanIntervalHours
+}
+
+func derefInt(value *int, fallback int) int {
+	if value == nil {
+		return fallback
+	}
+	return *value
 }
 
 func boolPtr(value bool) *bool {

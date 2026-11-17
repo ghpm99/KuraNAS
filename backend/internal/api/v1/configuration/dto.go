@@ -22,6 +22,9 @@ type IndexingSettingsDto struct {
 	ScanOnStartup    bool `json:"scan_on_startup"`
 	ExtractMetadata  bool `json:"extract_metadata"`
 	GeneratePreviews bool `json:"generate_previews"`
+
+	IndexDocumentText bool `json:"index_document_text"`
+	ScanIntervalHours int  `json:"scan_interval_hours"`
 }
 
 // AISettingsDto toggles AI usage per feature so heavy/expensive AI work can be
@@ -116,6 +119,9 @@ type IndexingSettingsRequest struct {
 	ScanOnStartup    bool `json:"scan_on_startup"`
 	ExtractMetadata  bool `json:"extract_metadata"`
 	GeneratePreviews bool `json:"generate_previews"`
+
+	IndexDocumentText *bool `json:"index_document_text"`
+	ScanIntervalHours *int  `json:"scan_interval_hours"`
 }
 
 type AISettingsRequest struct {

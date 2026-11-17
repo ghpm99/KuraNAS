@@ -22,6 +22,7 @@ var ErrInvalidSettingsRequest = errors.New("invalid settings request")
 // inside a storage root (or a subfolder of one). Captures must live outside the
 // indexed roots so they — and their in-progress upload staging — are never
 // watched/indexed.
+var ErrScanIntervalOutOfRange = errors.New("scan interval hours must be between 1 and 168")
 var ErrInvalidThemeMode = errors.New("theme mode must be dark, light or system")
 var ErrCapturesPathInsideRoot = errors.New("captures path must be outside every storage root")
 
@@ -61,8 +62,13 @@ func (s *Service) UpdateSettings(request UpdateSettingsRequest) (SettingsDto, er
 		return SettingsDto{}, err
 	}
 
+	currentState, _, err := s.loadState()
+	if err != nil {
+		return SettingsDto{}, err
+	}
+
 	defaults := buildDefaultSettings(availableLocales)
-	normalized := normalizeState(request.toState(), defaults, availableLocales)
+	normalized := normalizeState(request.toStateKeepingAbsentIndexingKeys(currentState), defaults, availableLocales)
 	payload, err := json.Marshal(normalized)
 	if err != nil {
 		return SettingsDto{}, fmt.Errorf("falha ao serializar configuracoes: %w", err)
@@ -193,11 +199,21 @@ func validateUpdateRequest(request UpdateSettingsRequest, availableLocales []str
 	if resolveLocale(request.Language.Current, availableLocales) != strings.TrimSpace(request.Language.Current) {
 		return fmt.Errorf("%w: language.current", ErrInvalidSettingsRequest)
 	}
+	if err := validateScanIntervalHours(request.Indexing.ScanIntervalHours); err != nil {
+		return err
+	}
 	if err := validateCapturesPath(request.Captures.SavePath); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func validateScanIntervalHours(hours *int) error {
+	if hours == nil || isScanIntervalHoursInRange(*hours) {
+		return nil
+	}
+	return fmt.Errorf("%w: %d", ErrScanIntervalOutOfRange, *hours)
 }
 
 // validateCapturesPath enforces that a non-empty captures save path is absolute

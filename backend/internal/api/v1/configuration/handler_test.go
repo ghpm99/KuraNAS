@@ -79,6 +79,10 @@ func (m *serviceMock) IsAIImageClassificationEnabled() (bool, error) {
 	return true, nil
 }
 
+func (m *serviceMock) IndexingPreferences() IndexingPreferences {
+	return DefaultIndexingPreferences()
+}
+
 func (m *serviceMock) GetEnvConfig() (EnvConfigDto, error) {
 	if m.getEnvConfigFn != nil {
 		return m.getEnvConfigFn()

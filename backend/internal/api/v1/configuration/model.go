@@ -22,6 +22,9 @@ type indexingSettingsState struct {
 	ScanOnStartup    bool `json:"scan_on_startup"`
 	ExtractMetadata  bool `json:"extract_metadata"`
 	GeneratePreviews bool `json:"generate_previews"`
+
+	IndexDocumentText *bool `json:"index_document_text,omitempty"`
+	ScanIntervalHours int   `json:"scan_interval_hours,omitempty"`
 }
 
 // aiSettingsState stores AI toggles as pointers so an absent field in a document
