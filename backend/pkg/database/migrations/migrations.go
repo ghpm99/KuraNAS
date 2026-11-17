@@ -230,6 +230,9 @@ var CreateTakeoutImportTableQuery string
 //go:embed queries/0073_create_audio_metadata_override.sql
 var CreateAudioMetadataOverrideQuery string
 
+//go:embed queries/0074_add_audio_metadata_catalog_keys_version.sql
+var AddAudioMetadataCatalogKeysVersionQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -411,6 +414,10 @@ func musicMigrationList() {
 			"0062_add_audio_metadata_album_grouping",
 		},
 		defaultMigrationFunc(CreateAudioMetadataOverrideQuery))
+
+	addMigrationRequiring("0074_add_audio_metadata_catalog_keys_version",
+		[]string{"0073_create_audio_metadata_override"},
+		defaultMigrationFunc(AddAudioMetadataCatalogKeysVersionQuery))
 }
 
 func videoMigrationList() {
