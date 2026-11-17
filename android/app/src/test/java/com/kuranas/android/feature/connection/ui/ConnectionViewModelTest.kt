@@ -6,6 +6,7 @@ import com.kuranas.android.core.discovery.ServerSearch
 import com.kuranas.android.R
 import com.kuranas.android.core.server.ServerCheckResult
 import com.kuranas.android.core.server.ServerHealthChecker
+import com.kuranas.android.core.server.ServerSelectionEvents
 import com.kuranas.android.core.server.ServerStore
 import io.mockk.every
 import io.mockk.coEvery
@@ -34,6 +35,7 @@ class ConnectionViewModelTest {
     private val serverSearch = mockk<ServerSearch>()
     private val serverStore = mockk<ServerStore>(relaxed = true)
     private val serverHealthChecker = mockk<ServerHealthChecker>()
+    private val serverSelectionEvents = ServerSelectionEvents()
     private val context = mockk<Context>(relaxed = true)
     private val foundServer = DiscoveredServer("nas", "192.168.0.10", 8000)
 
@@ -49,7 +51,7 @@ class ConnectionViewModelTest {
 
     private fun viewModelSearching(servers: Flow<DiscoveredServer>): ConnectionViewModel {
         every { serverSearch.search() } returns servers
-        return ConnectionViewModel(serverSearch, serverStore, serverHealthChecker, context)
+        return ConnectionViewModel(serverSearch, serverStore, serverHealthChecker, serverSelectionEvents, context)
     }
 
     @Test
@@ -85,7 +87,7 @@ class ConnectionViewModelTest {
             emit(DiscoveredServer("stale", "10.0.0.1", 8000))
         }
         every { serverSearch.search() } returns firstSearch
-        val viewModel = ConnectionViewModel(serverSearch, serverStore, serverHealthChecker, context)
+        val viewModel = ConnectionViewModel(serverSearch, serverStore, serverHealthChecker, serverSelectionEvents, context)
 
         every { serverSearch.search() } returns flowOf(foundServer)
         viewModel.startDiscovery()
@@ -114,6 +116,26 @@ class ConnectionViewModelTest {
     }
 
     @Test
+    fun `confirmed manual address signals the selection`() {
+        coEvery { serverHealthChecker.check("http://192.168.0.10:8000") } returns ServerCheckResult.Confirmed
+        val viewModel = viewModelTyping("192.168.0.10")
+
+        viewModel.connectManual()
+
+        assertEquals(1, serverSelectionEvents.selectionCount.value)
+    }
+
+    @Test
+    fun `connecting to a discovered server saves it and signals the selection`() {
+        val viewModel = viewModelSearching(flowOf(foundServer))
+
+        viewModel.connectToDiscovered(foundServer)
+
+        coVerify { serverStore.saveDiscovered(foundServer.url, foundServer.name) }
+        assertEquals(1, serverSelectionEvents.selectionCount.value)
+    }
+
+    @Test
     fun `rejected check does not save and shows its reason`() {
         every { context.getString(R.string.connection_no_response) } returns "no response"
         every { context.getString(R.string.connection_not_kuranas) } returns "not kuranas"
@@ -134,6 +156,7 @@ class ConnectionViewModelTest {
             assertFalse(viewModel.state.value.isCheckingManualAddress)
         }
         coVerify(exactly = 0) { serverStore.saveManual(any()) }
+        assertEquals(0, serverSelectionEvents.selectionCount.value)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.kuranas.android.navigation
 
 import com.kuranas.android.core.server.ReconnectionOutcome
 import com.kuranas.android.core.server.ServerReconnection
+import com.kuranas.android.core.server.ServerSelectionEvents
 import com.kuranas.android.core.server.ServerState
 import com.kuranas.android.core.server.ServerStore
 import io.mockk.coEvery
@@ -28,6 +29,7 @@ class RootViewModelTest {
     private val serverStates = MutableStateFlow<ServerState>(rememberedServer)
     private val serverStore = mockk<ServerStore>()
     private val serverReconnection = mockk<ServerReconnection>()
+    private val serverSelectionEvents = ServerSelectionEvents()
     private val pendingOutcome = CompletableDeferred<ReconnectionOutcome>()
 
     @Before
@@ -42,7 +44,7 @@ class RootViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = RootViewModel(serverStore, serverReconnection)
+    private fun createViewModel() = RootViewModel(serverStore, serverReconnection, serverSelectionEvents)
 
     @Test
     fun `fica verificando ate o desfecho chegar`() = runTest {
@@ -99,8 +101,31 @@ class RootViewModelTest {
         pendingOutcome.complete(ReconnectionOutcome.Unreachable)
         advanceUntilIdle()
         serverStates.value = ServerState.Manual("http://10.0.0.5:8000")
+        serverSelectionEvents.notifyServerSelected()
         advanceUntilIdle()
 
         assertEquals(RootDestination.App, viewModel.destination.value)
+    }
+
+    @Test
+    fun `escolher o mesmo servidor depois de Unreachable entra no app`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.Unreachable)
+        advanceUntilIdle()
+        serverSelectionEvents.notifyServerSelected()
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.App, viewModel.destination.value)
+    }
+
+    @Test
+    fun `sem escolha depois de Unreachable continua na tela de conexao`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.Unreachable)
+        advanceUntilIdle()
+        serverStates.value = ServerState.Manual("http://10.0.0.5:8000")
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.Connection, viewModel.destination.value)
     }
 }

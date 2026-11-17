@@ -9,6 +9,7 @@ import com.kuranas.android.core.discovery.ServerSearch
 import com.kuranas.android.core.server.ManualServerAddress
 import com.kuranas.android.core.server.ServerCheckResult
 import com.kuranas.android.core.server.ServerHealthChecker
+import com.kuranas.android.core.server.ServerSelectionEvents
 import com.kuranas.android.core.server.ServerStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,6 +36,7 @@ class ConnectionViewModel @Inject constructor(
     private val serverSearch: ServerSearch,
     private val serverStore: ServerStore,
     private val serverHealthChecker: ServerHealthChecker,
+    private val serverSelectionEvents: ServerSelectionEvents,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -78,6 +80,7 @@ class ConnectionViewModel @Inject constructor(
     fun connectToDiscovered(server: DiscoveredServer) {
         viewModelScope.launch {
             serverStore.saveDiscovered(server.url, server.name)
+            serverSelectionEvents.notifyServerSelected()
         }
     }
 
@@ -91,7 +94,10 @@ class ConnectionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 when (serverHealthChecker.check(normalizedUrl)) {
-                    ServerCheckResult.Confirmed -> serverStore.saveManual(normalizedUrl)
+                    ServerCheckResult.Confirmed -> {
+                        serverStore.saveManual(normalizedUrl)
+                        serverSelectionEvents.notifyServerSelected()
+                    }
                     ServerCheckResult.NoResponse -> showError(R.string.connection_no_response)
                     ServerCheckResult.NotKuraNas -> showError(R.string.connection_not_kuranas)
                     ServerCheckResult.AccessDenied -> showError(R.string.connection_access_denied)

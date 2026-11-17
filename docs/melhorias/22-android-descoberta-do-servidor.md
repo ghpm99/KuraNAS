@@ -30,7 +30,7 @@ Em `android/app/src/main/java/com/kuranas/android/`. Uma alteração por item.
 
 ## Sub-itens levantados na execução (2026-11-16)
 
-- [ ] 22.1. Depois que a reconexão termina em `Unreachable`/`AccessDenied`, o `RootViewModel` mantém a tela de conexão enquanto o servidor salvo for igual ao que falhou. Escolher de novo **o mesmo** servidor (ele voltou e apareceu em "Procurar de novo") não emite valor novo no DataStore e o app não entra. A escolha na tela de conexão precisa sinalizar a raiz explicitamente (não por comparação de estado) — `24/RN-05`, `CA-05`.
+- [x] 22.1. Depois que a reconexão termina em `Unreachable`/`AccessDenied`, o `RootViewModel` mantém a tela de conexão enquanto o servidor salvo for igual ao que falhou. Escolher de novo **o mesmo** servidor (ele voltou e apareceu em "Procurar de novo") não emite valor novo no DataStore e o app não entra. A escolha na tela de conexão precisa sinalizar a raiz explicitamente (não por comparação de estado) — `24/RN-05`, `CA-05`.
 
 ## Critérios de aceite
 
