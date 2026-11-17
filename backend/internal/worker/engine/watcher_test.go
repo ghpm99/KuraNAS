@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"nas-go/api/internal/api/v1/configuration"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/worker/job"
@@ -238,18 +239,68 @@ func TestWatcherDispatchLoopDeliversNativeEventsAsJobs(t *testing.T) {
 	}
 }
 
-func TestReconcileIntervalIsConfigurableWithSaneDefault(t *testing.T) {
-	previous := config.AppConfig.WatcherReconcileHours
-	t.Cleanup(func() { config.AppConfig.WatcherReconcileHours = previous })
-
-	config.AppConfig.WatcherReconcileHours = 6
-	if got := reconcileInterval(); got != 6*time.Hour {
-		t.Fatalf("expected 6h interval, got %v", got)
+func TestReconcileWaitFollowsIndexingPreferences(t *testing.T) {
+	contextWithInterval := func(scanInterval time.Duration) *WorkerContext {
+		return &WorkerContext{IndexingPreferences: stubIndexingPreferences{
+			preferences: configuration.IndexingPreferences{ScanInterval: scanInterval},
+		}}
 	}
 
-	config.AppConfig.WatcherReconcileHours = 0
-	if got := reconcileInterval(); got != 24*time.Hour {
-		t.Fatalf("expected 24h default, got %v", got)
+	cases := []struct {
+		name    string
+		context *WorkerContext
+		want    time.Duration
+	}{
+		{"six hours", contextWithInterval(6 * time.Hour), 6 * time.Hour},
+		{"one week", contextWithInterval(168 * time.Hour), 168 * time.Hour},
+		{"absent reader", &WorkerContext{}, 24 * time.Hour},
+		{"nil context", nil, 24 * time.Hour},
+		{"zero interval", contextWithInterval(0), 24 * time.Hour},
+		{"negative interval", contextWithInterval(-time.Hour), 24 * time.Hour},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			if got := nextReconcileWait(testCase.context); got != testCase.want {
+				t.Fatalf("expected %v, got %v", testCase.want, got)
+			}
+		})
+	}
+}
+
+type mutableIndexingPreferences struct {
+	preferences configuration.IndexingPreferences
+}
+
+func (reader *mutableIndexingPreferences) IndexingPreferences() configuration.IndexingPreferences {
+	return reader.preferences
+}
+
+func TestReconciliationLoopRereadsIntervalEveryCycle(t *testing.T) {
+	reader := &mutableIndexingPreferences{preferences: configuration.IndexingPreferences{ScanInterval: 6 * time.Hour}}
+	context := &WorkerContext{IndexingPreferences: reader}
+
+	var observedWaits []time.Duration
+	runReconciliationLoop(context, func(wait time.Duration) bool {
+		observedWaits = append(observedWaits, wait)
+		switch len(observedWaits) {
+		case 1:
+			reader.preferences.ScanInterval = 48 * time.Hour
+		case 2:
+			reader.preferences.ScanInterval = 0
+		case 3:
+			return false
+		}
+		return true
+	})
+
+	wantWaits := []time.Duration{6 * time.Hour, 48 * time.Hour, 24 * time.Hour}
+	if len(observedWaits) != len(wantWaits) {
+		t.Fatalf("expected waits %v, got %v", wantWaits, observedWaits)
+	}
+	for index, want := range wantWaits {
+		if observedWaits[index] != want {
+			t.Fatalf("wait %d: expected %v, got %v (all: %v)", index, want, observedWaits[index], observedWaits)
+		}
 	}
 }
 

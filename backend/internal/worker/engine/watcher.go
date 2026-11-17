@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"nas-go/api/internal/api/v1/files"
-	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
 )
 
@@ -113,24 +112,33 @@ func watcherDispatchLoop(context *WorkerContext, rootPath string, watcher *recur
 	}
 }
 
-func reconcileInterval() time.Duration {
-	hours := config.AppConfig.WatcherReconcileHours
-	if hours <= 0 {
-		hours = 24
+const defaultReconcileInterval = 24 * time.Hour
+
+func nextReconcileWait(context *WorkerContext) time.Duration {
+	scanInterval := currentIndexingPreferences(context).ScanInterval
+	if scanInterval <= 0 {
+		return defaultReconcileInterval
 	}
-	return time.Duration(hours) * time.Hour
+	return scanInterval
 }
 
 // reconciliationLoop enqueues a low-priority full-tree fs_event per enabled
-// root at the WATCHER_RECONCILE_HOURS interval (default 24h) to capture
-// anything the native watchers missed. Boot reconciliation is the existing
-// startup_scan. The roots are re-read every tick, so roots registered after
-// boot are reconciled too.
+// root every scan_interval_hours preference (default 24h) to capture
+// anything the native watchers missed. The interval is re-read after every
+// cycle, so a changed preference applies without restart. Boot reconciliation
+// is the existing startup_scan. The roots are re-read every cycle, so roots
+// registered after boot are reconciled too.
 func reconciliationLoop(context *WorkerContext) {
-	ticker := time.NewTicker(reconcileInterval())
-	defer ticker.Stop()
+	runReconciliationLoop(context, sleepUnlessStopped)
+}
 
-	for range ticker.C {
+func sleepUnlessStopped(wait time.Duration) bool {
+	time.Sleep(wait)
+	return true
+}
+
+func runReconciliationLoop(context *WorkerContext, waitForNextCycle func(wait time.Duration) bool) {
+	for waitForNextCycle(nextReconcileWait(context)) {
 		for _, root := range roots.Enabled() {
 			if err := enqueueFilesystemEventJob(context, root.Path, job.JobPriorityLow); err != nil {
 				log.Printf("[watcher] failed to enqueue periodic reconciliation for %q: %v\n", root.Path, err)
