@@ -31,6 +31,13 @@ func (r *ImportRepository) MarkImportRunning(jobID int) error {
 	})
 }
 
+func (r *ImportRepository) UpdateImportProgress(jobID int, processedEntries int, totalEntries int) error {
+	return r.execForJob("UpdateImportProgress", func(transaction *sql.Tx) error {
+		_, err := transaction.Exec(queries.UpdateTakeoutImportProgressQuery, jobID, totalEntries, processedEntries)
+		return err
+	})
+}
+
 func (r *ImportRepository) CloseImportCompleted(jobID int, summary ImportSummary) error {
 	return r.execForJob("CloseImportCompleted", func(transaction *sql.Tx) error {
 		_, err := transaction.Exec(

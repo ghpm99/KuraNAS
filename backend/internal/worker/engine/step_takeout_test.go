@@ -214,11 +214,17 @@ type takeoutImportRecorderMock struct {
 	failureMessage   string
 	recordedJobID    int
 	closeErr         error
+	progressUpdates  [][2]int
 }
 
 func (m *takeoutImportRecorderMock) MarkImportRunning(jobID int) error {
 	m.events = append(m.events, "running")
 	m.recordedJobID = jobID
+	return nil
+}
+
+func (m *takeoutImportRecorderMock) UpdateImportProgress(jobID int, processedEntries int, totalEntries int) error {
+	m.progressUpdates = append(m.progressUpdates, [2]int{processedEntries, totalEntries})
 	return nil
 }
 

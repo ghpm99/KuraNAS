@@ -11,7 +11,6 @@ import (
 	"mime/multipart"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/notifications"
-	"nas-go/api/internal/config"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/i18n"
 	"os"
@@ -203,7 +202,7 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 }
 
 func (s *Service) takeoutUploadRootDir() string {
-	return filepath.Join(config.AppConfig.EntryPoint, ".takeout_uploads")
+	return UploadSessionsRootDir()
 }
 
 func (s *Service) takeoutUploadSessionDir(uploadID string) string {

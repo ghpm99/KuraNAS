@@ -10,7 +10,6 @@ import (
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"os"
-	"path/filepath"
 )
 
 func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) error {
@@ -26,9 +25,12 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 		return fmt.Errorf("takeout payload zip_path is required")
 	}
 
+	defer removeTakeoutUploadSession(payload.ZipPath)
+
 	recordTakeoutImportRunning(context, step)
 
-	extraction, err := takeout.ExtractTakeout(payload.ZipPath, context.LibrariesService)
+	progressReporter := newTakeoutProgressReporter(context, step)
+	extraction, err := takeout.ExtractTakeoutWithProgress(payload.ZipPath, context.LibrariesService, progressReporter.report)
 	if err != nil {
 		applog.Error("takeout import failed", "step_id", step.ID, "job_id", step.JobID, "zip_path", payload.ZipPath, "error", err.Error())
 		failureMessage := i18n.GetMessage(takeoutFailureMessageKey(err))
@@ -58,9 +60,6 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 
 	recordTakeoutImportCompleted(context, step, extraction)
 
-	_ = os.Remove(payload.ZipPath)
-	_ = os.RemoveAll(filepath.Dir(payload.ZipPath))
-
 	if context.NotificationService != nil {
 		_, _ = context.NotificationService.GroupOrCreate(notifications.CreateNotificationDto{
 			Type:  string(notifications.NotificationTypeSuccess),
@@ -77,6 +76,17 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 	}
 
 	return nil
+}
+
+func removeTakeoutUploadSession(zipPath string) {
+	sessionDir, isInsideSessionsArea := takeout.UploadSessionDirOfZip(zipPath)
+	if !isInsideSessionsArea {
+		applog.Warn("takeout cleanup: zip is outside the upload sessions area, nothing removed", "zip_path", zipPath)
+		return
+	}
+	if err := os.RemoveAll(sessionDir); err != nil {
+		applog.Error("takeout cleanup: remove upload session failed", "session_dir", sessionDir, "error", err.Error())
+	}
 }
 
 func recordTakeoutSidecars(context *WorkerContext, extraction takeout.ExtractResult) {

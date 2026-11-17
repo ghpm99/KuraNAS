@@ -50,26 +50,37 @@ func sanitizeEntryPath(entryPath string) string {
 	return strings.Join(segments, "/")
 }
 
+type stagedEntry struct {
+	path string
+	size int64
+	hash [sha256.Size]byte
+}
+
 func extractEntryWithoutOverwrite(entry *zip.File, destinationPath string) (string, bool, error) {
-	content, err := readZipEntry(entry)
-	if err != nil {
-		return "", false, err
-	}
-	if err := os.MkdirAll(filepath.Dir(destinationPath), 0755); err != nil {
+	destinationDirectory := filepath.Dir(destinationPath)
+	if err := os.MkdirAll(destinationDirectory, 0755); err != nil {
 		return "", false, fmt.Errorf("create destination directory: %w", err)
 	}
 
-	contentHash := sha256.Sum256(content)
+	staged, err := stageEntryContent(entry, destinationDirectory)
+	if err != nil {
+		return "", false, err
+	}
+	defer os.Remove(staged.path)
+
 	for attempt := 1; ; attempt++ {
 		candidatePath := suffixedPath(destinationPath, attempt)
-		writeErr := writeNewFile(candidatePath, content)
-		if writeErr == nil {
+		isOccupied, err := isPathOccupied(candidatePath)
+		if err != nil {
+			return "", false, err
+		}
+		if !isOccupied {
+			if err := os.Rename(staged.path, candidatePath); err != nil {
+				return "", false, fmt.Errorf("move extracted file into place: %w", err)
+			}
 			return candidatePath, false, nil
 		}
-		if !errors.Is(writeErr, os.ErrExist) {
-			return "", false, fmt.Errorf("write extracted file: %w", writeErr)
-		}
-		isSameContent, err := existingFileHasContent(candidatePath, int64(len(content)), contentHash)
+		isSameContent, err := existingFileHasContent(candidatePath, staged.size, staged.hash)
 		if err != nil {
 			return "", false, err
 		}
@@ -79,6 +90,46 @@ func extractEntryWithoutOverwrite(entry *zip.File, destinationPath string) (stri
 	}
 }
 
+func stageEntryContent(entry *zip.File, directory string) (stagedEntry, error) {
+	source, err := entry.Open()
+	if err != nil {
+		return stagedEntry{}, fmt.Errorf("open zip entry: %w", err)
+	}
+	defer source.Close()
+
+	partFile, err := os.CreateTemp(directory, ".takeout-*.part")
+	if err != nil {
+		return stagedEntry{}, fmt.Errorf("create partial file: %w", err)
+	}
+
+	hasher := sha256.New()
+	size, copyErr := io.Copy(io.MultiWriter(partFile, hasher), source)
+	closeErr := partFile.Close()
+	if err := errors.Join(copyErr, closeErr); err != nil {
+		os.Remove(partFile.Name())
+		return stagedEntry{}, fmt.Errorf("copy zip entry: %w", err)
+	}
+	if err := os.Chmod(partFile.Name(), 0644); err != nil {
+		os.Remove(partFile.Name())
+		return stagedEntry{}, fmt.Errorf("set partial file permissions: %w", err)
+	}
+
+	staged := stagedEntry{path: partFile.Name(), size: size}
+	copy(staged.hash[:], hasher.Sum(nil))
+	return staged, nil
+}
+
+func isPathOccupied(filePath string) (bool, error) {
+	_, err := os.Lstat(filePath)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func suffixedPath(destinationPath string, attempt int) string {
 	if attempt == 1 {
 		return destinationPath
@@ -86,18 +137,6 @@ func suffixedPath(destinationPath string, attempt int) string {
 	extension := filepath.Ext(destinationPath)
 	baseName := strings.TrimSuffix(destinationPath, extension)
 	return fmt.Sprintf("%s (%d)%s", baseName, attempt, extension)
-}
-
-func writeNewFile(filePath string, content []byte) error {
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
-	if err != nil {
-		return err
-	}
-	if _, err := file.Write(content); err != nil {
-		file.Close()
-		return err
-	}
-	return file.Close()
 }
 
 func existingFileHasContent(filePath string, expectedSize int64, expectedHash [sha256.Size]byte) (bool, error) {

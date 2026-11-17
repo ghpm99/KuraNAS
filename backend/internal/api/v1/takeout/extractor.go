@@ -2,9 +2,7 @@ package takeout
 
 import (
 	"archive/zip"
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -16,6 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+const maxMetadataEntryBytes = 1 << 20
+
+// ProgressReporter receives the entries processed so far and the total of
+// entries the extraction will process.
+type ProgressReporter func(processedEntries int, totalEntries int)
 
 func parseTakeoutMetadata(jsonBytes []byte) (TakeoutMetadata, error) {
 	var metadata TakeoutMetadata
@@ -90,11 +94,41 @@ func isUnsafeArchiveEntry(entry *zip.File) bool {
 	return false
 }
 
+func isCountedEntry(entry *zip.File) bool {
+	if entry.FileInfo().IsDir() {
+		return false
+	}
+	if entry.Mode()&os.ModeSymlink != 0 {
+		return true
+	}
+	if _, err := safeExtractionPath(".", entry.Name); err != nil {
+		return true
+	}
+	return !isMetadataFileName(stripGooglePhotosPrefix(entry.Name))
+}
+
+func countCountedEntries(entries []*zip.File) int {
+	counted := 0
+	for _, entry := range entries {
+		if isCountedEntry(entry) {
+			counted++
+		}
+	}
+	return counted
+}
+
 // ExtractTakeout extracts the photos and videos of a Google Takeout zip into
 // the matching libraries under takeout/<folders of the entry>/, never
 // overwriting existing files. Unreadable entries are counted as failed and the
 // extraction continues; an invalid zip or an unresolvable library aborts it.
 func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (ExtractResult, error) {
+	return ExtractTakeoutWithProgress(zipPath, libraryResolver, nil)
+}
+
+// ExtractTakeoutWithProgress behaves like ExtractTakeout and calls reportProgress
+// after every processed entry with the number of entries processed so far and
+// the total of entries that will be processed. A nil reportProgress is allowed.
+func ExtractTakeoutWithProgress(zipPath string, libraryResolver LibraryResolverInterface, reportProgress ProgressReporter) (ExtractResult, error) {
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return ExtractResult{}, ErrInvalidZipFile
@@ -105,66 +139,72 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 	extraction := ExtractResult{
 		Files: make([]ExtractedFile, 0),
 	}
+	totalEntries := countCountedEntries(reader.File)
 
 	for _, entry := range reader.File {
-		if entry.FileInfo().IsDir() {
+		if !isCountedEntry(entry) {
 			continue
 		}
-
-		if isUnsafeArchiveEntry(entry) {
-			extraction.TotalEntries++
-			extraction.Ignored++
-			continue
+		if err := extractCountedEntry(entry, libraryResolver, metadataIndex, &extraction); err != nil {
+			return ExtractResult{}, err
 		}
-
-		relativePath := stripGooglePhotosPrefix(entry.Name)
-		if isMetadataFileName(relativePath) {
-			continue
+		if reportProgress != nil {
+			reportProgress(extraction.TotalEntries, totalEntries)
 		}
-		extraction.TotalEntries++
-
-		entryName := path.Base(relativePath)
-		category := classifyFile(entryName, mime.TypeByExtension(strings.ToLower(filepath.Ext(entryName))))
-		if category == "" {
-			extraction.Ignored++
-			continue
-		}
-
-		libraryDto, resolveErr := libraryResolver.GetLibraryByCategory(category)
-		if resolveErr != nil {
-			return ExtractResult{}, fmt.Errorf("resolve library %s: %w", category, resolveErr)
-		}
-
-		destinationPath, pathErr := buildDestinationPath(libraryDto.Path, relativePath)
-		if pathErr != nil {
-			applog.Warn("takeout: skipping entry with unsafe destination", "entry", entry.Name)
-			extraction.Ignored++
-			continue
-		}
-
-		writtenPath, isAlreadyExisting, writeErr := extractEntryWithoutOverwrite(entry, destinationPath)
-		if writeErr != nil {
-			applog.Warn("takeout: failed to extract entry", "entry", entry.Name, "error", writeErr)
-			extraction.FailedEntries++
-			continue
-		}
-		if isAlreadyExisting {
-			extraction.AlreadyExisting++
-			continue
-		}
-		extraction.Imported++
-
-		metadata := metadataIndex.find(relativePath)
-		applyTakenTimeToFile(writtenPath, metadata)
-		extraction.Files = append(extraction.Files, ExtractedFile{
-			SourcePath:      entry.Name,
-			DestinationPath: writtenPath,
-			Category:        string(category),
-			Metadata:        metadata,
-		})
 	}
 
 	return extraction, nil
+}
+
+func extractCountedEntry(entry *zip.File, libraryResolver LibraryResolverInterface, metadataLookup *metadataIndex, extraction *ExtractResult) error {
+	extraction.TotalEntries++
+
+	if isUnsafeArchiveEntry(entry) {
+		extraction.Ignored++
+		return nil
+	}
+
+	relativePath := stripGooglePhotosPrefix(entry.Name)
+	entryName := path.Base(relativePath)
+	category := classifyFile(entryName, mime.TypeByExtension(strings.ToLower(filepath.Ext(entryName))))
+	if category == "" {
+		extraction.Ignored++
+		return nil
+	}
+
+	libraryDto, resolveErr := libraryResolver.GetLibraryByCategory(category)
+	if resolveErr != nil {
+		return fmt.Errorf("resolve library %s: %w", category, resolveErr)
+	}
+
+	destinationPath, pathErr := buildDestinationPath(libraryDto.Path, relativePath)
+	if pathErr != nil {
+		applog.Warn("takeout: skipping entry with unsafe destination", "entry", entry.Name)
+		extraction.Ignored++
+		return nil
+	}
+
+	writtenPath, isAlreadyExisting, writeErr := extractEntryWithoutOverwrite(entry, destinationPath)
+	if writeErr != nil {
+		applog.Warn("takeout: failed to extract entry", "entry", entry.Name, "error", writeErr)
+		extraction.FailedEntries++
+		return nil
+	}
+	if isAlreadyExisting {
+		extraction.AlreadyExisting++
+		return nil
+	}
+	extraction.Imported++
+
+	metadata := metadataLookup.find(relativePath)
+	applyTakenTimeToFile(writtenPath, metadata)
+	extraction.Files = append(extraction.Files, ExtractedFile{
+		SourcePath:      entry.Name,
+		DestinationPath: writtenPath,
+		Category:        string(category),
+		Metadata:        metadata,
+	})
+	return nil
 }
 
 func isMetadataFileName(entryPath string) bool {
@@ -181,8 +221,9 @@ func indexMetadataEntries(entries []*zip.File) *metadataIndex {
 		if !isMetadataFileName(relativePath) {
 			continue
 		}
-		content, readErr := readZipEntry(entry)
+		content, readErr := readMetadataEntry(entry)
 		if readErr != nil {
+			applog.Warn("takeout: ignoring unreadable metadata entry", "entry", entry.Name, "error", readErr)
 			continue
 		}
 		metadata, parseErr := parseTakeoutMetadata(content)
@@ -194,20 +235,22 @@ func indexMetadataEntries(entries []*zip.File) *metadataIndex {
 	return index
 }
 
-func readZipEntry(entry *zip.File) ([]byte, error) {
+func readMetadataEntry(entry *zip.File) ([]byte, error) {
+	if entry.UncompressedSize64 > maxMetadataEntryBytes {
+		return nil, ErrMetadataEntryTooLarge
+	}
 	reader, err := entry.Open()
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
 
-	buffer := bytes.NewBuffer(nil)
-	if _, err := io.Copy(buffer, reader); err != nil {
-		if errors.Is(err, io.EOF) {
-			return buffer.Bytes(), nil
-		}
+	content, err := io.ReadAll(io.LimitReader(reader, maxMetadataEntryBytes+1))
+	if err != nil {
 		return nil, err
 	}
-
-	return buffer.Bytes(), nil
+	if len(content) > maxMetadataEntryBytes {
+		return nil, ErrMetadataEntryTooLarge
+	}
+	return content, nil
 }

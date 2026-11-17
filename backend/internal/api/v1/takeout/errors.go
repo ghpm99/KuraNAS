@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrInvalidZipFile        = errors.New("invalid zip file")
 	ErrUnsafeArchiveEntry    = errors.New("unsafe archive entry path")
+	ErrMetadataEntryTooLarge = errors.New("metadata entry exceeds size limit")
 	ErrUploadSessionNotFound = errors.New("upload session not found")
 	ErrUploadOffsetMismatch  = errors.New("upload offset mismatch")
 	ErrUploadIncomplete      = errors.New("upload incomplete")

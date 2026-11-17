@@ -84,7 +84,7 @@ func executeOllamaPullStep(context *WorkerContext, step jobs.StepModel) error {
 		if progress.Total > 0 {
 			pct := int(progress.Completed * 100 / progress.Total)
 			if shouldReportProgress(pct, lastReported, lastReportAt) {
-				reportPullProgress(context, step, pct)
+				reportStepProgress(context, step, pct)
 				lastReported = pct
 				lastReportAt = time.Now()
 			}
@@ -112,7 +112,7 @@ func shouldReportProgress(pct, lastReported int, lastReportAt time.Time) bool {
 	return pct >= 100
 }
 
-func reportPullProgress(context *WorkerContext, step jobs.StepModel, pct int) {
+func reportStepProgress(context *WorkerContext, step jobs.StepModel, pct int) {
 	if context == nil || context.JobsRepository == nil {
 		return
 	}

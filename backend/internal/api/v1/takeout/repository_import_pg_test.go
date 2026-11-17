@@ -114,3 +114,21 @@ func TestImportStateConstraintRejectsUnknownState_Postgres(t *testing.T) {
 		t.Fatalf("expected check constraint violation")
 	}
 }
+
+func TestImportRepositoryUpdateProgress_Postgres(t *testing.T) {
+	repository := NewImportRepository(testutil.NewPostgresDB(t, "kuranas_takeout_import_it"))
+	jobID := createJobRow(t, repository)
+	importID := createQueuedImport(t, repository, jobID)
+	if err := repository.MarkImportRunning(jobID); err != nil {
+		t.Fatalf("MarkImportRunning: %v", err)
+	}
+
+	if err := repository.UpdateImportProgress(jobID, 30, 120); err != nil {
+		t.Fatalf("UpdateImportProgress: %v", err)
+	}
+
+	running := loadStoredImport(t, repository, importID)
+	if running.state != "running" || running.processedEntries != 30 || running.totalEntries != 120 || running.endedAt.Valid {
+		t.Fatalf("unexpected import after progress update: %+v", running)
+	}
+}

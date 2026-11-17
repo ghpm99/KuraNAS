@@ -103,7 +103,7 @@ func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 	for scanner.Scan() {
 		if pct, ok := parseDownloadProgress(scanner.Text()); ok {
 			if shouldReportProgress(pct, lastReported, lastReportAt) {
-				reportPullProgress(workerContext, step, pct)
+				reportStepProgress(workerContext, step, pct)
 				lastReported = pct
 				lastReportAt = time.Now()
 			}
