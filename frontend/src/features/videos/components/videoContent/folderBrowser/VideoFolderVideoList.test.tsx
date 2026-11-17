@@ -17,15 +17,7 @@ const buildVideo = (overrides: Partial<VideoFileDto> = {}): VideoFileDto => ({
 });
 
 const renderList = (videos: VideoFileDto[]) =>
-    render(
-        <VideoFolderVideoList
-            videos={videos}
-            hasNextPage={false}
-            isFetchingNextPage={false}
-            fetchNextPage={jest.fn()}
-            onPlayVideo={jest.fn()}
-        />
-    );
+    render(<VideoFolderVideoList videos={videos} onPlayVideo={jest.fn()} />);
 
 describe('VideoFolderVideoList', () => {
     it('renders a video without technical fields and shows no badges', () => {

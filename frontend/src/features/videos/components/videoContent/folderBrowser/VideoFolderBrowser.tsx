@@ -1,6 +1,7 @@
 import { CircularProgress } from '@mui/material';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import ErrorState from '@/components/errorState/errorState';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import VideoFolderBreadcrumb from './VideoFolderBreadcrumb';
 import VideoFolderCards from './VideoFolderCards';
@@ -17,6 +18,9 @@ export default function VideoFolderBrowser({ onPlayVideo }: VideoFolderBrowserPr
     const { selectedFolder, selectFolder, folderQuery, videoQuery, folders, videos } =
         useVideoFolderBrowser();
 
+    const retryFolders = useRetryFailedPage(folderQuery);
+    const retryVideos = useRetryFailedPage(videoQuery);
+
     const isRootEmpty =
         selectedFolder === '' && folderQuery.status === 'success' && folders.length === 0;
     const isFolderEmpty =
@@ -30,23 +34,20 @@ export default function VideoFolderBrowser({ onPlayVideo }: VideoFolderBrowserPr
         if (folderQuery.status === 'pending') {
             return <CircularProgress size={28} aria-label={t('LOADING')} />;
         }
-        if (folderQuery.status === 'error') {
-            return (
-                <ErrorState
-                    title={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_SECTION_FOLDERS') })}
-                    backendMessage={extractBackendErrorMessage(folderQuery.error)}
-                    onRetry={() => void folderQuery.refetch()}
-                />
-            );
-        }
         return (
-            <VideoFolderCards
-                folders={folders}
+            <ListFeedback
+                isEmpty={folders.length === 0}
+                isError={folderQuery.isError}
+                errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_SECTION_FOLDERS') })}
+                errorMessage={extractBackendErrorMessage(folderQuery.error)}
+                onRetry={retryFolders}
                 hasNextPage={folderQuery.hasNextPage}
                 isFetchingNextPage={folderQuery.isFetchingNextPage}
-                fetchNextPage={() => void folderQuery.fetchNextPage()}
-                onSelectFolder={selectFolder}
-            />
+                onLoadMore={() => void folderQuery.fetchNextPage()}
+                emptyState={null}
+            >
+                <VideoFolderCards folders={folders} onSelectFolder={selectFolder} />
+            </ListFeedback>
         );
     };
 
@@ -54,23 +55,20 @@ export default function VideoFolderBrowser({ onPlayVideo }: VideoFolderBrowserPr
         if (selectedFolder === '') {
             return null;
         }
-        if (videoQuery.status === 'error') {
-            return (
-                <ErrorState
-                    title={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_ALL') })}
-                    backendMessage={extractBackendErrorMessage(videoQuery.error)}
-                    onRetry={() => void videoQuery.refetch()}
-                />
-            );
-        }
         return (
-            <VideoFolderVideoList
-                videos={videos}
+            <ListFeedback
+                isEmpty={videos.length === 0}
+                isError={videoQuery.isError}
+                errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: t('VIDEO_ALL') })}
+                errorMessage={extractBackendErrorMessage(videoQuery.error)}
+                onRetry={retryVideos}
                 hasNextPage={videoQuery.hasNextPage}
                 isFetchingNextPage={videoQuery.isFetchingNextPage}
-                fetchNextPage={() => void videoQuery.fetchNextPage()}
-                onPlayVideo={onPlayVideo}
-            />
+                onLoadMore={() => void videoQuery.fetchNextPage()}
+                emptyState={null}
+            >
+                <VideoFolderVideoList videos={videos} onPlayVideo={onPlayVideo} />
+            </ListFeedback>
         );
     };
 

@@ -1,9 +1,10 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import VideoFolderBrowser from './VideoFolderBrowser';
+import { buildServerPage } from '@/shared/test/buildServerPage';
 import { getVideoLibraryFolders, getVideoLibraryFolderVideos } from '@/service/videoPlayback';
 
 jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
@@ -118,5 +119,100 @@ describe('VideoFolderBrowser', () => {
         await waitFor(() => expect(mockedFolders).toHaveBeenCalledWith('/Series', 1, 48));
         fireEvent.click(screen.getByRole('button', { name: 'VIDEO_SECTION_FOLDERS' }));
         await waitFor(() => expect(mockedFolders).toHaveBeenCalledWith('', 1, 48));
+    });
+
+    const buildFolder = (name: string) => ({
+        path: `/${name}`,
+        name,
+        video_count: 1,
+        cover_file_id: 0,
+    });
+
+    it('keeps the loaded folders when the next page fails and retries only that page', async () => {
+        mockedFolders
+            .mockResolvedValueOnce(
+                buildServerPage([buildFolder('A')], { page: 1, pageSize: 48, hasNext: true })
+            )
+            .mockRejectedValueOnce(new Error('boom'))
+            .mockResolvedValueOnce(
+                buildServerPage([buildFolder('B')], { page: 2, pageSize: 48, hasNext: false })
+            );
+
+        renderBrowser(<VideoFolderBrowser onPlayVideo={jest.fn()} />);
+
+        await screen.findByRole('button', { name: 'VIDEO_FOLDER_OPEN A' });
+        fireEvent.click(await screen.findByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'VIDEO_FOLDER_OPEN A' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+
+        fireEvent.click(within(screen.getByRole('alert')).getByRole('button'));
+
+        expect(
+            await screen.findByRole('button', { name: 'VIDEO_FOLDER_OPEN B' })
+        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'VIDEO_FOLDER_OPEN A' })).toBeInTheDocument();
+        expect(mockedFolders).toHaveBeenNthCalledWith(3, '', 2, 48);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('keeps the loaded videos when the next page fails and retries only that page', async () => {
+        const buildVideo = (id: number) => ({
+            id,
+            name: `Clip ${id}`,
+            path: `/S/Clip ${id}.mp4`,
+            parent_path: '/S',
+            format: '.mp4',
+            size: 1,
+        });
+        mockedFolders.mockResolvedValue(
+            buildServerPage([], { page: 1, pageSize: 48, hasNext: false })
+        );
+        mockedFolderVideos
+            .mockResolvedValueOnce(
+                buildServerPage([buildVideo(1)], { page: 1, pageSize: 24, hasNext: true })
+            )
+            .mockRejectedValueOnce(new Error('boom'))
+            .mockResolvedValueOnce(
+                buildServerPage([buildVideo(2)], { page: 2, pageSize: 24, hasNext: false })
+            );
+
+        renderBrowser(<VideoFolderBrowser onPlayVideo={jest.fn()} />, '/?folder=/S');
+
+        await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA Clip 1' });
+        fireEvent.click(await screen.findByRole('button', { name: 'LOAD_MORE' }));
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'VIDEO_PLAY_ARIA Clip 1' })).toBeInTheDocument();
+
+        fireEvent.click(within(screen.getByRole('alert')).getByRole('button'));
+
+        expect(
+            await screen.findByRole('button', { name: 'VIDEO_PLAY_ARIA Clip 2' })
+        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'VIDEO_PLAY_ARIA Clip 1' })).toBeInTheDocument();
+        expect(mockedFolderVideos).toHaveBeenNthCalledWith(3, '/S', 2, 24);
+    });
+
+    it('shows the error state, not the empty one, when the server is down from the start', async () => {
+        mockedFolders.mockRejectedValue(new Error('down'));
+
+        renderBrowser(<VideoFolderBrowser onPlayVideo={jest.fn()} />);
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(screen.queryByText('VIDEO_FOLDERS_EMPTY')).not.toBeInTheDocument();
+    });
+
+    it('keeps the folders visible when only the videos list fails', async () => {
+        mockedFolders.mockResolvedValue(
+            buildServerPage([buildFolder('A')], { page: 1, pageSize: 48, hasNext: false })
+        );
+        mockedFolderVideos.mockRejectedValue(new Error('down'));
+
+        renderBrowser(<VideoFolderBrowser onPlayVideo={jest.fn()} />, '/?folder=/S');
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'VIDEO_FOLDER_OPEN A' })).toBeInTheDocument();
     });
 });
