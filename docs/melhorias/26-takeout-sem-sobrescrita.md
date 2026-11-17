@@ -26,7 +26,7 @@ Toda foto e todo vídeo do zip chega ao servidor, na pasta de origem, sem sobres
 - [x] Teste do extrator: entrada com `../` e link simbólico são ignorados e contados.
 - [ ] `13/CA-03`, `CA-04`, `CA-09` — no sistema rodando, com um zip real de Takeout.
 - [x] A notificação de falha não contém erro interno nem caminho do servidor.
-- [ ] `make ci-backend` verde (cobertura ≥ 80 %).
+- [x] `make ci-backend` verde (cobertura ≥ 80 %).
 
 ## Fora de escopo
 

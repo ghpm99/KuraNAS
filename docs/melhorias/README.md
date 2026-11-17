@@ -54,7 +54,7 @@ Regras invariantes:
 | 23 | [Android: explorer paginado](23-android-explorer-paginado.md) | bug crítico | P0 | — | 🚫 bloqueada | código pronto, `testDebugUnitTest` (227) e `assembleDebug` verdes (2026-11-16); sub-item 23.1 levou o rodapé de erro às outras listas paginadas; faltam os CAs no aparelho (dono): pasta de 300 itens e raiz com mais de 50 rolam até o fim, servidor derrubado após a 1ª página, girar mantém itens e posição, operações atualizam a lista. | spec 24, 00 anexo A10 |
 | 24 | [Android: enviar arquivos e Compartilhar](24-android-enviar-arquivos.md) | feature | P0 | 22, 23 | pendente | spec 03 |
 | 25 | [Capturas: excluir não apaga o vídeo](25-excluir-captura-nao-apaga-video.md) | bug crítico | P0 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-16); faltam os CAs no sistema rodando (dono): excluir captura promovida mantém o vídeo em Vídeos e no disco e a confirmação diz isso; excluir captura que falhou na promoção apaga o arquivo recebido. | spec 12/RN-11 |
-| 26 | [Takeout: estrutura e sem sobrescrita](26-takeout-sem-sobrescrita.md) | bug crítico | P0 | — | em execução | spec 13 |
+| 26 | [Takeout: estrutura e sem sobrescrita](26-takeout-sem-sobrescrita.md) | bug crítico | P0 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-16); faltam `13/CA-03`, `CA-04`, `CA-09` no sistema rodando com um zip real de Takeout (dono). | spec 13 |
 | 27 | [Takeout: aplicar datas](27-takeout-aplica-datas.md) | bug | P0 | 26 | pendente | spec 13/RN-07 |
 | 28 | [Takeout: extração em fluxo](28-takeout-extracao-em-fluxo.md) | bug | P1 | 26 | pendente | spec 13/RN-09 |
 | 29 | [Indexação: preferências com efeito](29-preferencias-de-indexacao-com-efeito.md) | bug | P1 | — | pendente | spec 21/RN-14 |
