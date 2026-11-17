@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.kuranas.android.R
 import com.kuranas.android.core.discovery.DiscoveredServer
 import com.kuranas.android.core.discovery.ServerSearch
+import com.kuranas.android.core.server.ManualServerAddress
+import com.kuranas.android.core.server.ServerCheckResult
+import com.kuranas.android.core.server.ServerHealthChecker
 import com.kuranas.android.core.server.ServerStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,6 +26,7 @@ data class ConnectionUiState(
     val discovered: List<DiscoveredServer> = emptyList(),
     val hasSearchFinishedEmpty: Boolean = false,
     val manualUrl: String = "",
+    val isCheckingManualAddress: Boolean = false,
     val error: String? = null,
 )
 
@@ -30,6 +34,7 @@ data class ConnectionUiState(
 class ConnectionViewModel @Inject constructor(
     private val serverSearch: ServerSearch,
     private val serverStore: ServerStore,
+    private val serverHealthChecker: ServerHealthChecker,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -77,14 +82,27 @@ class ConnectionViewModel @Inject constructor(
     }
 
     fun connectManual() {
-        val url = _state.value.manualUrl.trim()
-        if (url.isEmpty()) {
-            _state.update { it.copy(error = context.getString(R.string.connection_invalid_address)) }
+        val normalizedUrl = ManualServerAddress.normalize(_state.value.manualUrl)
+        if (normalizedUrl == null) {
+            showError(R.string.connection_invalid_address)
             return
         }
-        val normalized = if (url.startsWith("http")) url else "http://$url"
+        _state.update { it.copy(isCheckingManualAddress = true, error = null) }
         viewModelScope.launch {
-            serverStore.saveManual(normalized)
+            try {
+                when (serverHealthChecker.check(normalizedUrl)) {
+                    ServerCheckResult.Confirmed -> serverStore.saveManual(normalizedUrl)
+                    ServerCheckResult.NoResponse -> showError(R.string.connection_no_response)
+                    ServerCheckResult.NotKuraNas -> showError(R.string.connection_not_kuranas)
+                    ServerCheckResult.AccessDenied -> showError(R.string.connection_access_denied)
+                }
+            } finally {
+                _state.update { it.copy(isCheckingManualAddress = false) }
+            }
         }
+    }
+
+    private fun showError(messageResId: Int) {
+        _state.update { it.copy(error = context.getString(messageResId)) }
     }
 }

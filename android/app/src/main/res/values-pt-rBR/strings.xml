@@ -32,6 +32,9 @@
     <string name="connection_server_address_label">Endereço do servidor</string>
     <string name="connection_server_address_placeholder">192.168.1.100:8000</string>
     <string name="connection_discovery_failed">Falha na descoberta automática</string>
+    <string name="connection_no_response">Nenhum servidor respondeu nesse endereço. Confira se está no mesmo Wi-Fi e se o servidor está ligado.</string>
+    <string name="connection_not_kuranas">Esse endereço respondeu, mas não é um servidor KuraNAS.</string>
+    <string name="connection_access_denied">O servidor recusou este aparelho. Libere o IP dele na lista de acesso do servidor.</string>
     <string name="connection_invalid_address">Insira um endereço válido</string>
     <string name="cd_search_again">Buscar novamente</string>
 

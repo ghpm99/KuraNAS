@@ -3,8 +3,13 @@ package com.kuranas.android.feature.connection.ui
 import android.content.Context
 import com.kuranas.android.core.discovery.DiscoveredServer
 import com.kuranas.android.core.discovery.ServerSearch
+import com.kuranas.android.R
+import com.kuranas.android.core.server.ServerCheckResult
+import com.kuranas.android.core.server.ServerHealthChecker
 import com.kuranas.android.core.server.ServerStore
 import io.mockk.every
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +33,7 @@ class ConnectionViewModelTest {
 
     private val serverSearch = mockk<ServerSearch>()
     private val serverStore = mockk<ServerStore>(relaxed = true)
+    private val serverHealthChecker = mockk<ServerHealthChecker>()
     private val context = mockk<Context>(relaxed = true)
     private val foundServer = DiscoveredServer("nas", "192.168.0.10", 8000)
 
@@ -43,7 +49,7 @@ class ConnectionViewModelTest {
 
     private fun viewModelSearching(servers: Flow<DiscoveredServer>): ConnectionViewModel {
         every { serverSearch.search() } returns servers
-        return ConnectionViewModel(serverSearch, serverStore, context)
+        return ConnectionViewModel(serverSearch, serverStore, serverHealthChecker, context)
     }
 
     @Test
@@ -79,7 +85,7 @@ class ConnectionViewModelTest {
             emit(DiscoveredServer("stale", "10.0.0.1", 8000))
         }
         every { serverSearch.search() } returns firstSearch
-        val viewModel = ConnectionViewModel(serverSearch, serverStore, context)
+        val viewModel = ConnectionViewModel(serverSearch, serverStore, serverHealthChecker, context)
 
         every { serverSearch.search() } returns flowOf(foundServer)
         viewModel.startDiscovery()
@@ -87,5 +93,57 @@ class ConnectionViewModelTest {
 
         assertEquals(listOf(foundServer), viewModel.state.value.discovered)
         assertFalse(viewModel.state.value.isDiscovering)
+    }
+
+    private fun viewModelTyping(typedAddress: String): ConnectionViewModel {
+        val viewModel = viewModelSearching(emptyFlow())
+        viewModel.onManualUrlChange(typedAddress)
+        return viewModel
+    }
+
+    @Test
+    fun `saves normalized address when server is confirmed`() {
+        coEvery { serverHealthChecker.check("http://192.168.0.10:8000") } returns ServerCheckResult.Confirmed
+        val viewModel = viewModelTyping("192.168.0.10")
+
+        viewModel.connectManual()
+
+        coVerify { serverStore.saveManual("http://192.168.0.10:8000") }
+        assertFalse(viewModel.state.value.isCheckingManualAddress)
+        assertEquals(null, viewModel.state.value.error)
+    }
+
+    @Test
+    fun `rejected check does not save and shows its reason`() {
+        every { context.getString(R.string.connection_no_response) } returns "no response"
+        every { context.getString(R.string.connection_not_kuranas) } returns "not kuranas"
+        every { context.getString(R.string.connection_access_denied) } returns "access denied"
+        val expectedErrors = mapOf(
+            ServerCheckResult.NoResponse to "no response",
+            ServerCheckResult.NotKuraNas to "not kuranas",
+            ServerCheckResult.AccessDenied to "access denied",
+        )
+
+        expectedErrors.forEach { (checkResult, expectedError) ->
+            coEvery { serverHealthChecker.check(any()) } returns checkResult
+            val viewModel = viewModelTyping("192.168.0.10")
+
+            viewModel.connectManual()
+
+            assertEquals(expectedError, viewModel.state.value.error)
+            assertFalse(viewModel.state.value.isCheckingManualAddress)
+        }
+        coVerify(exactly = 0) { serverStore.saveManual(any()) }
+    }
+
+    @Test
+    fun `invalid address does not call the checker`() {
+        every { context.getString(R.string.connection_invalid_address) } returns "invalid"
+        val viewModel = viewModelTyping("ftp://nas")
+
+        viewModel.connectManual()
+
+        assertEquals("invalid", viewModel.state.value.error)
+        coVerify(exactly = 0) { serverHealthChecker.check(any()) }
     }
 }

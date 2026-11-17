@@ -34,6 +34,9 @@
     <string name="connection_server_address_label">Server address</string>
     <string name="connection_server_address_placeholder">192.168.1.100:8000</string>
     <string name="connection_discovery_failed">Automatic discovery failed</string>
+    <string name="connection_no_response">No server answered at this address. Check that you are on the same Wi-Fi and that the server is on.</string>
+    <string name="connection_not_kuranas">This address answered, but it is not a KuraNAS server.</string>
+    <string name="connection_access_denied">The server refused this device. Allow its IP in the server access list.</string>
     <string name="connection_invalid_address">Enter a valid address</string>
     <string name="cd_search_again">Search again</string>
 
