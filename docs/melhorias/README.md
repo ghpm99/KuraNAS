@@ -57,7 +57,7 @@ Regras invariantes:
 | 26 | [Takeout: estrutura e sem sobrescrita](26-takeout-sem-sobrescrita.md) | bug crítico | P0 | — | 🚫 bloqueada | código pronto e `make ci` verde (2026-11-16); faltam `13/CA-03`, `CA-04`, `CA-09` no sistema rodando com um zip real de Takeout (dono). | spec 13 |
 | 27 | [Takeout: aplicar datas](27-takeout-aplica-datas.md) | bug | P0 | 26 | pendente | spec 13/RN-07 |
 | 28 | [Takeout: extração em fluxo](28-takeout-extracao-em-fluxo.md) | bug | P1 | 26 | pendente | spec 13/RN-09 |
-| 29 | [Indexação: preferências com efeito](29-preferencias-de-indexacao-com-efeito.md) | bug | P1 | — | pendente | spec 21/RN-14 |
+| 29 | [Indexação: preferências com efeito](29-preferencias-de-indexacao-com-efeito.md) | bug | P1 | — | em execução | spec 21/RN-14 |
 | 30 | [Reindexar por escopo](30-reindexar-por-escopo.md) | bug | P1 | — | pendente | spec 21/RN-15, 16/RN-07 |
 | 31 | [Analytics: links levam à lista certa](31-analytics-links-levam-a-lista-certa.md) | bug | P2 | 20, 21 | pendente | spec 16/RN-06 |
 | 32 | [Atualização confere checksum](32-atualizacao-confere-checksum.md) | segurança | P1 | — | pendente | spec 23/RN-15 |
