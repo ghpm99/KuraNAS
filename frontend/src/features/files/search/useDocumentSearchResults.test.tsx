@@ -11,7 +11,9 @@ jest.mock('@/service', () => ({
 }));
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
         {children}
     </QueryClientProvider>
 );
@@ -87,5 +89,31 @@ describe('useDocumentSearchResults seam', () => {
         act(() => result.current.retry());
 
         await waitFor(() => expect(result.current.status).toBe('success'));
+    });
+
+    it('keeps the first page items when the second page fails and retries only page 2', async () => {
+        mockGet
+            .mockResolvedValueOnce(pageOf(1, 1, true))
+            .mockRejectedValueOnce({ response: { data: { error: 'indisponivel' } } })
+            .mockResolvedValueOnce(pageOf(2, 2, false));
+
+        const { result } = renderHook(
+            () => useDocumentSearchResults({ query: 'contrato', isEnabled: true }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.items).toHaveLength(1));
+
+        act(() => result.current.fetchNextPage());
+        await waitFor(() => expect(result.current.status).toBe('error'));
+        expect(result.current.items).toHaveLength(1);
+
+        act(() => result.current.retry());
+        await waitFor(() => expect(result.current.items).toHaveLength(2));
+
+        expect(mockGet).toHaveBeenCalledTimes(3);
+        expect(mockGet).toHaveBeenLastCalledWith(
+            '/documents/search',
+            expect.objectContaining({ params: { q: 'contrato', page: 2, page_size: 20 } })
+        );
     });
 });

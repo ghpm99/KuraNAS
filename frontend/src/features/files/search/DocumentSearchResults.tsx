@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FileText } from 'lucide-react';
-import ErrorState from '@/components/errorState/errorState';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import HighlightedText from '@/components/search/HighlightedText';
 import { buildFilesUrl } from '@/app/routes';
@@ -42,22 +41,18 @@ const DocumentSearchResults = ({
         );
     }
 
-    if (status === 'error') {
-        return (
-            <ErrorState
-                title={t('FILES_LISTING_ERROR_TITLE')}
-                backendMessage={errorMessage}
-                onRetry={retry}
-            />
-        );
-    }
-
-    if (items.length === 0) {
-        return <p className={styles.contentStatus}>{t('FILES_SEARCH_CONTENT_EMPTY')}</p>;
-    }
-
     return (
-        <div>
+        <ListFeedback
+            isEmpty={items.length === 0}
+            isError={status === 'error'}
+            errorTitle={t('FILES_LISTING_ERROR_TITLE')}
+            errorMessage={errorMessage}
+            onRetry={() => retry?.()}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => fetchNextPage?.()}
+            emptyState={<p className={styles.contentStatus}>{t('FILES_SEARCH_CONTENT_EMPTY')}</p>}
+        >
             <ul className={styles.documentList} aria-label={t('FILES_SEARCH_MODE_CONTENT')}>
                 {items.map((documentResult) => {
                     const snippetText = formatDocumentSnippet(documentResult.snippet);
@@ -70,7 +65,10 @@ const DocumentSearchResults = ({
 
                     return (
                         <li key={documentResult.file_id}>
-                            <Link to={buildFilesUrl(documentResult.path)} className={styles.documentRow}>
+                            <Link
+                                to={buildFilesUrl(documentResult.path)}
+                                className={styles.documentRow}
+                            >
                                 <FileText size={18} className={styles.documentIcon} />
                                 <span className={styles.documentBody}>
                                     <span className={styles.documentName}>
@@ -92,12 +90,7 @@ const DocumentSearchResults = ({
                     );
                 })}
             </ul>
-            <LoadMoreSentinel
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                fetchNextPage={fetchNextPage}
-            />
-        </div>
+        </ListFeedback>
     );
 };
 

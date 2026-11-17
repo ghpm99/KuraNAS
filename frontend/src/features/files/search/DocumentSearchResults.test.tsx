@@ -65,6 +65,35 @@ describe('DocumentSearchResults', () => {
         expect(screen.getByText('vazio.txt')).toBeInTheDocument();
     });
 
+    it('keeps the items and shows the error below the list when a next page fails', () => {
+        const retry = jest.fn();
+        const fetchNextPage = jest.fn();
+        renderResults({
+            status: 'error',
+            items: [documentResult],
+            hasNextPage: true,
+            fetchNextPage,
+            errorMessage: 'falhou',
+            retry,
+        });
+
+        expect(screen.getByText('ata.docx')).toBeInTheDocument();
+        expect(screen.getByText('falhou')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'LOAD_MORE' })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+
+        expect(retry).toHaveBeenCalledTimes(1);
+        expect(fetchNextPage).not.toHaveBeenCalled();
+    });
+
+    it('shows the error state, not the empty message, when there are no items', () => {
+        renderResults({ status: 'error', items: [], errorMessage: 'falhou' });
+
+        expect(screen.getByText('falhou')).toBeInTheDocument();
+        expect(screen.queryByText('FILES_SEARCH_CONTENT_EMPTY')).not.toBeInTheDocument();
+    });
+
     it('requests the next page from the load more button', () => {
         const fetchNextPage = jest.fn();
         renderResults({
