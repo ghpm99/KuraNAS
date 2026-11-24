@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
+import { createEmptyPlaylistRules } from '@/features/music/providers/playlistsProvider/playlistRuleCriteria';
 import PlaylistEditDialog from './PlaylistEditDialog';
 
 const renderDialog = (overrides: Partial<React.ComponentProps<typeof PlaylistEditDialog>> = {}) => {
@@ -41,10 +42,42 @@ describe('PlaylistEditDialog', () => {
 
     it('disables saving while a submit is in flight and cancels through the close handler', () => {
         const { onClose } = renderDialog({ isSubmitting: true });
-        expect(screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_SAVE' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_SAVE' })
+        ).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'ACTION_CANCEL' }));
 
         expect(onClose).toHaveBeenCalled();
+    });
+
+    it('edits the rule of a rule playlist and submits it with the name', () => {
+        const { onSubmit } = renderDialog({
+            currentRules: { ...createEmptyPlaylistRules(), year_from: 1990 },
+        });
+
+        expect(screen.getByLabelText('MUSIC_PLAYLIST_RULE_YEAR_FROM')).toHaveValue(1990);
+        fireEvent.change(screen.getByLabelText('MUSIC_PLAYLIST_RULE_YEAR_TO'), {
+            target: { value: '1999' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'MUSIC_PLAYLIST_SAVE' }));
+
+        expect(onSubmit).toHaveBeenCalledWith('Mix', 'old', {
+            ...createEmptyPlaylistRules(),
+            year_from: 1990,
+            year_to: 1999,
+        });
+    });
+
+    it('tolerates a rule with missing lists and blocks saving a rule without criteria', () => {
+        renderDialog({ currentRules: { match: 'all' } as never });
+
+        expect(screen.getByRole('button', { name: 'MUSIC_PLAYLIST_SAVE' })).toBeDisabled();
+    });
+
+    it('does not show the rule form for a manual playlist', () => {
+        renderDialog({ currentRules: null });
+
+        expect(screen.queryByLabelText('MUSIC_PLAYLIST_RULE_GENRES')).not.toBeInTheDocument();
     });
 });

@@ -11,7 +11,7 @@ import { useState } from 'react';
 import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
 import { GripVertical, ListMusic, Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import { createPlaylistPlaybackContext } from '@/features/music/components/playbackContext';
-import { Playlist, PlaylistTrack } from '@/types/playlist';
+import { Playlist, PlaylistRules, PlaylistTrack } from '@/types/playlist';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { usePlaylistTrackHandlers } from '@/features/music/hooks/usePlaylistTrackHandlers/usePlaylistTrackHandlers';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
@@ -33,7 +33,13 @@ type PlaylistDetailSectionProps = {
     onRemoveTrack: (fileId: number) => void;
     onLoadMore: () => void;
     isRenaming?: boolean;
-    onRenamePlaylist?: (name: string, description: string, onSaved: () => void) => void;
+    renameErrorField?: string | null;
+    onRenamePlaylist?: (
+        name: string,
+        description: string,
+        onSaved: () => void,
+        rules?: PlaylistRules
+    ) => void;
     onMoveTrack?: (fileId: number, targetPosition: number) => void;
 };
 
@@ -47,6 +53,7 @@ export default function PlaylistDetailSection({
     onRemoveTrack,
     onLoadMore,
     isRenaming = false,
+    renameErrorField = null,
     onRenamePlaylist,
     onMoveTrack,
 }: PlaylistDetailSectionProps) {
@@ -126,11 +133,18 @@ export default function PlaylistDetailSection({
                 <PlaylistEditDialog
                     currentName={playlist.name}
                     currentDescription={playlist.description ?? ''}
+                    currentRules={playlist.rules}
+                    errorField={renameErrorField}
                     isSubmitting={isRenaming}
                     onClose={() => setIsEditOpen(false)}
-                    onSubmit={(name, description) =>
-                        onRenamePlaylist?.(name, description, () => setIsEditOpen(false))
-                    }
+                    onSubmit={(name, description, rules) => {
+                        const closeDialog = () => setIsEditOpen(false);
+                        if (rules) {
+                            onRenamePlaylist?.(name, description, closeDialog, rules);
+                            return;
+                        }
+                        onRenamePlaylist?.(name, description, closeDialog);
+                    }}
                 />
             )}
 

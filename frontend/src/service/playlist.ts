@@ -5,6 +5,8 @@ import {
     PlaylistTrack,
     CreatePlaylistRequest,
     UpdatePlaylistRequest,
+    PlaylistRules,
+    PlaylistRulePreview,
 } from '@/types/playlist';
 import { apiBase } from '.';
 
@@ -32,6 +34,14 @@ export const createPlaylist = async (req: CreatePlaylistRequest) => {
 
 export const updatePlaylist = async (id: number, req: UpdatePlaylistRequest) => {
     const response = await apiBase.put<Playlist>(`/music/playlists/${id}`, req);
+    return response.data;
+};
+
+export const previewPlaylistRule = async (rules: PlaylistRules) => {
+    const response = await apiBase.post<PlaylistRulePreview>(
+        '/music/playlists/rules/preview',
+        rules
+    );
     return response.data;
 };
 

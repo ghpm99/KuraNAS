@@ -19,6 +19,10 @@ export default function PlaylistsScreen() {
         createOpen,
         newName,
         newDescription,
+        newKind,
+        newRules,
+        createErrorField,
+        renameErrorField,
         selectPlaylist,
         backToList,
         fetchNextPlaylistPage,
@@ -27,6 +31,8 @@ export default function PlaylistsScreen() {
         closeCreateDialog,
         setNewName,
         setNewDescription,
+        setNewKind,
+        setNewRules,
         submitCreatePlaylist,
         deletePlaylistById,
         removeTrackByFileId,
@@ -45,6 +51,7 @@ export default function PlaylistsScreen() {
                 onBack={backToList}
                 onRemoveTrack={removeTrackByFileId}
                 isRenaming={isRenamingPlaylist}
+                renameErrorField={renameErrorField}
                 onRenamePlaylist={renameSelectedPlaylist}
                 onMoveTrack={moveTrackToPosition}
                 onLoadMore={() => void fetchNextTrackPage()}
@@ -68,7 +75,12 @@ export default function PlaylistsScreen() {
                 open={createOpen}
                 newName={newName}
                 newDescription={newDescription}
+                newKind={newKind}
+                newRules={newRules}
+                errorField={createErrorField}
                 isSubmitting={isCreatingPlaylist}
+                onKindChange={setNewKind}
+                onRulesChange={setNewRules}
                 onClose={closeCreateDialog}
                 onNameChange={setNewName}
                 onDescriptionChange={setNewDescription}

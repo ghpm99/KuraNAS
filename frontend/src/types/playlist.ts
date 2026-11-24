@@ -1,5 +1,22 @@
 import { IMusicData } from '@/types/music';
 
+export type PlaylistRuleMatch = 'any' | 'all';
+
+export interface PlaylistRules {
+    match: PlaylistRuleMatch;
+    genres: string[];
+    artists: string[];
+    albums: string[];
+    folders: string[];
+    year_from: number | null;
+    year_to: number | null;
+    favorites_only: boolean;
+}
+
+export interface PlaylistRulePreview {
+    track_count: number;
+}
+
 export interface Playlist {
     id: number;
     name: string;
@@ -12,6 +29,8 @@ export interface Playlist {
     created_at: string;
     updated_at: string;
     track_count: number;
+    total_length_seconds?: number;
+    rules?: PlaylistRules | null;
 }
 
 export interface PlaylistTrack {
@@ -24,9 +43,11 @@ export interface PlaylistTrack {
 export interface CreatePlaylistRequest {
     name: string;
     description?: string;
+    rules?: PlaylistRules;
 }
 
 export interface UpdatePlaylistRequest {
     name: string;
     description?: string;
+    rules?: PlaylistRules;
 }
