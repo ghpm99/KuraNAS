@@ -56,7 +56,7 @@ O backend não guarda temporada nem episódio de arquivos (só de capturas, em `
 
 - [x] **42.1** — o dedup do motor de playlists (`deduplicateCandidates`, sobreposição > 80% com o candidato de maior pontuação) deixa a playlist "mixed" (`random:smart_mix`, até 20 itens) engolir uma série pequena (≤ 12 episódios) num acervo pequeno: a série não vira playlist e não aparece em Séries. Achado no passo B1; afeta `06/CA-07` em bibliotecas pequenas. Playlists de série não devem ser descartadas por sobreposição com playlists de mistura. No passo B3, séries de 6 e 10 episódios também não viraram playlist (só a partir de 15–16).
 
-- [ ] **42.2** — corrigir para "série" um único vídeo numa pasta de filmes o tira de Filmes na hora, mas ele não aparece em Séries: a playlist da pasta segue a classificação dominante (filme) e o motor não forma uma série só com os vídeos corrigidos. Achado no passo B2; o motor deve agrupar os vídeos com classificação efetiva de série separadamente da classificação dominante da pasta.
+- [x] **42.2** — corrigir para "série" um único vídeo numa pasta de filmes o tira de Filmes na hora, mas ele não aparece em Séries: a playlist da pasta segue a classificação dominante (filme) e o motor não forma uma série só com os vídeos corrigidos. Achado no passo B2; o motor deve agrupar os vídeos com classificação efetiva de série separadamente da classificação dominante da pasta.
 
 ## Fora de escopo
 

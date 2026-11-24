@@ -17,6 +17,7 @@ SELECT
     vm.audio_codec,
     vm.audio_sample_rate,
     COALESCE(CASE vmo.classification WHEN 'other' THEN 'program' ELSE vmo.classification END, vm.classification),
+    vmo.classification IS NOT NULL,
     cap.title,
     cap.season,
     cap.episode

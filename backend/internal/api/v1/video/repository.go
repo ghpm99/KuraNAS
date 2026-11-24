@@ -1096,6 +1096,7 @@ func (r *Repository) GetAllVideosWithMetadata() ([]VideoWithMetadataModel, error
 				&item.MetaAudioCodec,
 				&item.MetaAudioSampleRate,
 				&item.MetaClassification,
+				&item.IsClassificationOverride,
 				&item.CaptureTitle,
 				&item.CaptureSeason,
 				&item.CaptureEpisode,

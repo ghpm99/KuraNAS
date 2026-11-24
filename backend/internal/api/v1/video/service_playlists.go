@@ -33,6 +33,8 @@ func (s *Service) RebuildSmartPlaylists() error {
 			Size:       v.Size,
 			CreatedAt:  v.CreatedAt,
 			UpdatedAt:  v.UpdatedAt,
+
+			IsClassificationOverride: v.IsClassificationOverride,
 		}
 
 		if v.MetaClassification.Valid {

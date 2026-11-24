@@ -317,3 +317,47 @@ func asValidationError(err error, target **VideoFieldValidationError) bool {
 }
 
 func isNoRows(err error) bool { return errors.Is(err, sql.ErrNoRows) }
+
+func (fixture *classificationFixture) seriesSectionVideoNames(t *testing.T) []string {
+	t.Helper()
+	page, err := fixture.service.GetPlaylistsBySection(PlaylistSectionRequest{Section: PlaylistSectionSeries, Page: 1, PageSize: 50})
+	if err != nil {
+		t.Fatalf("list series section: %v", err)
+	}
+	videoNames := []string{}
+	for _, playlistDto := range page.Items {
+		itemsPage, err := fixture.service.GetPlaylistItemsPage("client", playlistDto.ID, nil, 1, 50)
+		if err != nil {
+			t.Fatalf("playlist items %d: %v", playlistDto.ID, err)
+		}
+		for _, item := range itemsPage.Items {
+			videoNames = append(videoNames, item.Video.Name)
+		}
+	}
+	return videoNames
+}
+
+func TestOverridingOneVideoToSeriesListsItInSeriesSectionAndClearingRestores_Postgres(t *testing.T) {
+	fixture := newClassificationFixture(t)
+	if got := fixture.seriesSectionVideoNames(t); len(got) != 0 {
+		t.Fatalf("series section before override = %v, want empty", got)
+	}
+
+	fixture.setClassification(t, sagaFileNames[0], stringPointer("series"))
+
+	if got := fixture.seriesSectionVideoNames(t); !reflect.DeepEqual(got, []string{sagaFileNames[0]}) {
+		t.Fatalf("series section after override = %v, want [%s]", got, sagaFileNames[0])
+	}
+	if got := fixture.movieNames(t); !reflect.DeepEqual(got, sagaFileNames[1:]) {
+		t.Fatalf("movies after override = %v, want %v", got, sagaFileNames[1:])
+	}
+
+	fixture.setClassification(t, sagaFileNames[0], nil)
+
+	if got := fixture.seriesSectionVideoNames(t); len(got) != 0 {
+		t.Fatalf("series section after clearing = %v, want empty", got)
+	}
+	if got := fixture.movieNames(t); !reflect.DeepEqual(got, sagaFileNames) {
+		t.Fatalf("movies after clearing = %v", got)
+	}
+}

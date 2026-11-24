@@ -137,16 +137,17 @@ type VideoBehaviorEventModel struct {
 type VideoWithMetadataModel struct {
 	VideoFileModel
 	// Nullable metadata fields (LEFT JOIN)
-	MetaDuration        sql.NullString
-	MetaWidth           sql.NullInt64
-	MetaHeight          sql.NullInt64
-	MetaFrameRate       sql.NullFloat64
-	MetaCodecName       sql.NullString
-	MetaAspectRatio     sql.NullString
-	MetaAudioChannels   sql.NullInt64
-	MetaAudioCodec      sql.NullString
-	MetaAudioSampleRate sql.NullString
-	MetaClassification  sql.NullString
+	MetaDuration             sql.NullString
+	MetaWidth                sql.NullInt64
+	MetaHeight               sql.NullInt64
+	MetaFrameRate            sql.NullFloat64
+	MetaCodecName            sql.NullString
+	MetaAspectRatio          sql.NullString
+	MetaAudioChannels        sql.NullInt64
+	MetaAudioCodec           sql.NullString
+	MetaAudioSampleRate      sql.NullString
+	MetaClassification       sql.NullString
+	IsClassificationOverride bool
 	// Capture provenance (LEFT JOIN captures), present only for plugin-captured
 	// series episodes (title set + episode not null).
 	CaptureTitle   sql.NullString

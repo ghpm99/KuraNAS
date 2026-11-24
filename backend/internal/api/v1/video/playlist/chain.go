@@ -78,6 +78,20 @@ func (h *SeriesDetectionHandler) Handle(ctx *PlaylistContext, d *StrategyDecisio
 	return false
 }
 
+type OverriddenSeriesHandler struct{}
+
+func (h *OverriddenSeriesHandler) Name() string { return "overridden_series_check" }
+func (h *OverriddenSeriesHandler) Handle(ctx *PlaylistContext, d *StrategyDecision) bool {
+	for i := range ctx.Videos {
+		if ctx.Videos[i].Video.IsClassificationOverride && isSeriesLike(ctx.Videos[i].Classification) {
+			d.Strategies = append(d.Strategies, NewOverriddenSeriesStrategy())
+			d.Reasons = append(d.Reasons, "overridden_series_detected")
+			return true
+		}
+	}
+	return false
+}
+
 type FolderGroupingHandler struct{}
 
 func (h *FolderGroupingHandler) Name() string { return "folder_grouping" }
@@ -156,6 +170,7 @@ func DefaultStrategyChain() *StrategyChain {
 		&ContinueWatchingHandler{},
 		&CapturedSeriesHandler{},
 		&SeriesDetectionHandler{},
+		&OverriddenSeriesHandler{},
 		&FolderGroupingHandler{},
 		&RelatedContentHandler{},
 		&BehaviorBasedHandler{},

@@ -24,6 +24,8 @@ type VideoEntry struct {
 	Series *SeriesProvenance
 
 	PersistedClassification VideoClassification
+
+	IsClassificationOverride bool
 }
 
 // SeriesProvenance carrega o que a captura do plugin sabe sobre o episodio:

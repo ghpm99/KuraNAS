@@ -33,11 +33,11 @@ func (s *ByFolderStrategy) Build(ctx *PlaylistContext) []PlaylistCandidate {
 			continue
 		}
 
-		classCount := map[VideoClassification]int{}
-		for _, v := range videos {
-			classCount[v.Classification]++
+		dominant := folderDominantClassification(videos)
+		videos = videosCompatibleWithFolder(videos, dominant)
+		if len(videos) < s.MinItemsPerFolder {
+			continue
 		}
-		dominant := dominantClassification(classCount)
 
 		scored := make([]ScoredVideo, 0, len(videos))
 		for _, v := range videos {
@@ -80,6 +80,9 @@ func (s *SequentialSeriesStrategy) Build(ctx *PlaylistContext) []PlaylistCandida
 	prefixGroups := map[string][]*ClassifiedVideo{}
 	for i := range ctx.Videos {
 		v := &ctx.Videos[i]
+		if isOverriddenToNonSeries(v) {
+			continue
+		}
 		prefix := InferTitlePrefix(v.Video.Name)
 		if prefix != "" {
 			prefixGroups[prefix] = append(prefixGroups[prefix], v)
