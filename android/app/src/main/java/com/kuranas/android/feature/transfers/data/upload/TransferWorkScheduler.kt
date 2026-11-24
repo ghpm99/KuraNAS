@@ -15,15 +15,26 @@ import javax.inject.Inject
 
 class TransferWorkScheduler @Inject constructor(private val workManager: WorkManager) {
 
-    fun enqueueUpload(transferId: Long, existingWorkPolicy: ExistingWorkPolicy) =
-        enqueue(OneTimeWorkRequestBuilder<UploadTransferWorker>(), UploadTransferWorker.KEY_TRANSFER_ID, transferId, existingWorkPolicy)
+    fun enqueueUpload(transferId: Long, existingWorkPolicy: ExistingWorkPolicy, requiresUnmeteredNetwork: Boolean = false) =
+        enqueue(
+            OneTimeWorkRequestBuilder<UploadTransferWorker>(),
+            UploadTransferWorker.KEY_TRANSFER_ID,
+            transferId,
+            existingWorkPolicy,
+            requiredNetworkTypeOf(requiresUnmeteredNetwork),
+        )
 
     fun enqueueDownload(transferId: Long, existingWorkPolicy: ExistingWorkPolicy) =
-        enqueue(OneTimeWorkRequestBuilder<DownloadTransferWorker>(), DownloadTransferWorker.KEY_TRANSFER_ID, transferId, existingWorkPolicy)
+        enqueue(OneTimeWorkRequestBuilder<DownloadTransferWorker>(), DownloadTransferWorker.KEY_TRANSFER_ID, transferId, existingWorkPolicy, NetworkType.CONNECTED)
 
-    fun enqueue(transferId: Long, direction: TransferDirection, existingWorkPolicy: ExistingWorkPolicy) =
+    fun enqueue(
+        transferId: Long,
+        direction: TransferDirection,
+        existingWorkPolicy: ExistingWorkPolicy,
+        requiresUnmeteredNetwork: Boolean = false,
+    ) =
         when (direction) {
-            TransferDirection.UPLOAD -> enqueueUpload(transferId, existingWorkPolicy)
+            TransferDirection.UPLOAD -> enqueueUpload(transferId, existingWorkPolicy, requiresUnmeteredNetwork)
             TransferDirection.DOWNLOAD -> enqueueDownload(transferId, existingWorkPolicy)
         }
 
@@ -32,10 +43,11 @@ class TransferWorkScheduler @Inject constructor(private val workManager: WorkMan
         transferIdKey: String,
         transferId: Long,
         existingWorkPolicy: ExistingWorkPolicy,
+        networkType: NetworkType,
     ) {
         val request = requestBuilder
             .setInputData(workDataOf(transferIdKey to transferId))
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(networkType).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, INITIAL_BACKOFF_SECONDS, TimeUnit.SECONDS)
             .addTag(TRANSFERS_TAG)
             .build()
@@ -45,6 +57,9 @@ class TransferWorkScheduler @Inject constructor(private val workManager: WorkMan
     fun cancelWork(transferId: Long) {
         workManager.cancelUniqueWork(uniqueNameOf(transferId))
     }
+
+    private fun requiredNetworkTypeOf(requiresUnmeteredNetwork: Boolean) =
+        if (requiresUnmeteredNetwork) NetworkType.UNMETERED else NetworkType.CONNECTED
 
     private fun uniqueNameOf(transferId: Long) = "transfer-$transferId"
 

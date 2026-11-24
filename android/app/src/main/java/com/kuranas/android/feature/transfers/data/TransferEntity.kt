@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.transfers.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -14,6 +15,7 @@ data class TransferEntity(
     val targetFolderId: Long? = null,
     val targetFolderName: String,
     val relativePath: String? = null,
+    @ColumnInfo(defaultValue = "0") val requiresUnmeteredNetwork: Boolean = false,
     val remoteFileId: Long? = null,
     val downloadPurpose: String? = null,
     val destinationUri: String? = null,

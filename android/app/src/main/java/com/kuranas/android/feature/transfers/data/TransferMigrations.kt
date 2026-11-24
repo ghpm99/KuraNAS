@@ -16,4 +16,16 @@ object TransferMigrations {
             db.execSQL("ALTER TABLE transfers ADD COLUMN relativePath TEXT")
         }
     }
+
+    val FROM_3_TO_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE transfers ADD COLUMN requiresUnmeteredNetwork INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `camera_uploads` (`mediaStoreId` INTEGER NOT NULL, `mediaKind` TEXT NOT NULL, " +
+                    "`transferId` INTEGER NOT NULL, `displayName` TEXT NOT NULL, `dateTakenMillis` INTEGER NOT NULL, " +
+                    "`registeredAt` INTEGER NOT NULL, PRIMARY KEY(`mediaStoreId`, `mediaKind`))",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_camera_uploads_transferId` ON `camera_uploads` (`transferId`)")
+        }
+    }
 }

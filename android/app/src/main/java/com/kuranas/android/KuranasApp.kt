@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import coil.ImageLoader
+import com.kuranas.android.feature.cameraupload.data.CameraUploadStartup
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
@@ -15,6 +16,14 @@ class KuranasApp : Application(), ImageLoaderFactory, Configuration.Provider {
 
     @Inject
     lateinit var hiltWorkerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var cameraUploadStartup: CameraUploadStartup
+
+    override fun onCreate() {
+        super.onCreate()
+        cameraUploadStartup.reapplySchedule()
+    }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()

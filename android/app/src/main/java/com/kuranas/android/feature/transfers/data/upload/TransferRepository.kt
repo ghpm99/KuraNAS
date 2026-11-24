@@ -33,6 +33,8 @@ data class UploadRequestItem(
     val relativePath: String? = null,
 )
 
+data class EnqueuedUploads(val batchId: String, val transferIds: List<Long>)
+
 @Singleton
 class TransferRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -46,7 +48,14 @@ class TransferRepository @Inject constructor(
     private val batchNotifier: TransferBatchNotifier,
 ) {
 
-    suspend fun enqueueUploads(items: List<UploadRequestItem>, destination: UploadDestination): String {
+    suspend fun enqueueUploads(items: List<UploadRequestItem>, destination: UploadDestination): String =
+        enqueueUploadBatch(items, destination).batchId
+
+    suspend fun enqueueUploadBatch(
+        items: List<UploadRequestItem>,
+        destination: UploadDestination,
+        requiresUnmeteredNetwork: Boolean = false,
+    ): EnqueuedUploads {
         val batchId = UUID.randomUUID().toString()
         val now = clock.nowMillis()
         val entities = items.map { item ->
@@ -59,14 +68,15 @@ class TransferRepository @Inject constructor(
                 targetFolderId = destination.folderId?.toLongOrNull(),
                 targetFolderName = destination.folderName,
                 relativePath = item.relativePath,
+                requiresUnmeteredNetwork = requiresUnmeteredNetwork,
                 totalBytes = item.sizeBytes,
                 createdAt = now,
                 updatedAt = now,
             )
         }
         val transferIds = transferDao.insertAll(entities)
-        transferIds.forEach { scheduler.enqueueUpload(it, ExistingWorkPolicy.KEEP) }
-        return batchId
+        transferIds.forEach { scheduler.enqueueUpload(it, ExistingWorkPolicy.KEEP, requiresUnmeteredNetwork) }
+        return EnqueuedUploads(batchId, transferIds)
     }
 
     suspend fun stageSharedUri(uri: Uri): String = withContext(Dispatchers.IO) {
@@ -124,7 +134,7 @@ class TransferRepository @Inject constructor(
 
     suspend fun retry(transferId: Long) {
         val queued = transferDao.applyTransition(transferId) { stateMachine.retry(it) } ?: return
-        scheduler.enqueue(transferId, queued.direction, ExistingWorkPolicy.REPLACE)
+        scheduler.enqueue(transferId, queued.direction, ExistingWorkPolicy.REPLACE, queued.requiresUnmeteredNetwork)
     }
 
     suspend fun clearFinished() = transferDao.deleteFinished()
