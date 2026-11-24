@@ -22,6 +22,13 @@ Criar uma playlist definida por critérios, cujo conteúdo é calculado a cada l
 8. **Web — tela da playlist `rule`** (`RF-12`): mostra os critérios, não oferece reordenar nem adicionar; "Remover" continua disponível.
 9. **Web — "Criar playlist deste gênero"** na tela do gênero (`RF-07`): abre o formulário de regra com o gênero preenchido.
 
+## Decisões de desenho (2026-11-24)
+
+- **`kind`** vira coluna (`manual`, `rule`, `system`, `ai`), com backfill pelas flags `is_system`/`is_ai_generated`, que continuam existindo; as automáticas (id negativo) seguem saindo como `automatic`. O DTO passa a ler `kind` da coluna e ganha `rules` (nulo fora de `rule`) e `total_length_seconds`.
+- **Formato da regra**: o do contrato da spec 05 §8. Gêneros, artistas e álbuns chegam como nome ou chave e o servidor os normaliza com a mesma função das chaves de catálogo, comparando com `catalog_genre_keys`, `catalog_artist_key` e `catalog_album_key` de `audio_metadata_effective` (metadados corrigidos da task 40). Dentro de um critério a lista é "qualquer um"; `match` combina os critérios (gêneros, artistas, álbuns, pastas, intervalo de anos, só favoritas).
+- **Resolução**: um `.sql` parametrizado que devolve as faixas da regra (`hf.format` de áudio, `deleted_at IS NULL`, menos `playlist_rule_exclusion`), ordenado por título e `id`; contagem e duração pelo mesmo predicado. `tracks` pagina sobre ele; `queue` usa o mesmo limite das outras filas.
+- **Escrita**: adicionar e reordenar em `rule` → `409` com chave i18n própria; remover grava a exclusão.
+
 ## Critérios de aceite
 
 - [ ] `05/CA-10` — playlist por regra "gênero = Rock ou Metal" lista todas as faixas desses gêneros; uma faixa nova de Rock entra sem ação manual.
