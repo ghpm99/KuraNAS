@@ -20,6 +20,15 @@ Envios e downloads continuam com o app fechado, mostram notificação de progres
 6. **Ligação com as telas existentes**: "Enviar" do explorer e "Compartilhar para o KuraNAS" (task 24) e "Baixar" (task 36) passam a enfileirar na fila, no lugar da chamada direta.
 7. **Indicador** de transferências em andamento na navegação (`24/RF-06`) e entrada "Transferências" no menu "Mais".
 
+## Decisões de desenho (2026-11-24)
+
+- **Fila** em Room (`transfers`), uma linha por arquivo, agrupada por `batch_id` (lote = uma ação do usuário). A máquina de estados é uma função pura (`TransferStateMachine`) testada à parte; o DAO só persiste.
+- **Execução**: um `CoroutineWorker` por transferência (`@HiltWorker`), `ExistingWorkPolicy.KEEP` com nome único `transfer-<id>`, restrição `NetworkType.CONNECTED`, backoff exponencial, `setForeground` com tipo `dataSync`. O WorkManager já reagenda após reiniciar o aparelho.
+- **Origem do envio**: `Uri` do seletor do explorer (`OpenMultipleDocuments`) recebe `takePersistableUriPermission`; `Uri` de "Compartilhar para o KuraNAS" (permissão temporária) é copiado para `filesDir/outbox/<id>` no ato de enfileirar e o arquivo é apagado quando a transferência termina ou é cancelada.
+- **Envio**: sempre em partes (`init|chunk|complete`), `checksum` SHA-256 calculado no worker antes do `init`, `modified_at` da origem quando disponível, `on_conflict=rename` (automático mantém os dois, §8). Ao recomeçar com `upload_id` salvo, `GET /files/upload/:id` dá o `received_size`; `404` reabre com `init`. `409` no chunk realinha pelo `received_size` do corpo. `already_exists` vira estado `já existia`. Cancelar chama `DELETE /files/upload/:id`.
+- **Download**: o worker reaproveita o `StreamingDownloader`, persistindo bytes recebidos e o `Uri` pendente do `MediaStore` para continuar com `Range` após o processo morrer.
+- **Navegação**: a barra inferior de `24/RF-03` é da task 39; aqui "Transferências" entra como rota própria alcançável pelo drawer atual e pela notificação, com o indicador de andamento no drawer.
+
 ## Critérios de aceite
 
 Verificados em aparelho real.
