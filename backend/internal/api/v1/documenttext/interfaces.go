@@ -8,6 +8,9 @@ type RepositoryInterface interface {
 	SearchDocuments(termPatterns utils.SearchTermPatterns, limit int, offset int) ([]DocumentMatchModel, error)
 	FindDocumentForIndexing(fileID int) (PendingDocument, bool, error)
 	FindIndexState(fileID int) (IndexStateModel, bool, error)
+	ListDocuments(query DocumentListQuery) (utils.PaginationResponse[DocumentListItemModel], error)
+	CountDocuments(filter DocumentFilter, folderPathPrefix string) (int, error)
+	FindActiveFolderPath(folderID int) (path string, isFound bool, err error)
 }
 
 type ReindexLauncher interface {
@@ -19,4 +22,6 @@ type ServiceInterface interface {
 	SearchTopDocuments(query string, limit int) ([]DocumentSearchResultDto, error)
 	GetIndexState(fileID int) (IndexStateDto, error)
 	ReindexDocument(fileID int) (int, error)
+	ListDocuments(params DocumentListParams) (utils.PaginationResponse[DocumentItemDto], error)
+	CountDocuments(filter DocumentFilter, folderID int) (DocumentCountDto, error)
 }

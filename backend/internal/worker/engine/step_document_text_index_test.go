@@ -29,6 +29,18 @@ func (repository *fakeDocumentTextRepository) FindDocumentForIndexing(fileID int
 	return document, isFound, nil
 }
 
+func (repository *fakeDocumentTextRepository) ListDocuments(documenttext.DocumentListQuery) (utils.PaginationResponse[documenttext.DocumentListItemModel], error) {
+	return utils.PaginationResponse[documenttext.DocumentListItemModel]{}, nil
+}
+
+func (repository *fakeDocumentTextRepository) CountDocuments(documenttext.DocumentFilter, string) (int, error) {
+	return 0, nil
+}
+
+func (repository *fakeDocumentTextRepository) FindActiveFolderPath(int) (string, bool, error) {
+	return "", false, nil
+}
+
 func (repository *fakeDocumentTextRepository) FindIndexState(int) (documenttext.IndexStateModel, bool, error) {
 	return documenttext.IndexStateModel{}, false, nil
 }

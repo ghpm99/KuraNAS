@@ -732,6 +732,8 @@ func RegisterDocumentTextRoutes(router *gin.RouterGroup, context *AppContext) {
 	}
 
 	documents := router.Group("/documents")
+	documents.GET("", context.DocumentText.Handler.ListDocumentsHandler)
+	documents.GET("/count", context.DocumentText.Handler.CountDocumentsHandler)
 	documents.GET("/search", context.DocumentText.Handler.SearchDocumentsHandler)
 	documents.GET("/:file_id/index-state", context.DocumentText.Handler.GetIndexStateHandler)
 	documents.POST("/:file_id/reindex", context.DocumentText.Handler.ReindexDocumentHandler)

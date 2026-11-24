@@ -20,6 +20,27 @@ type recordingRepository struct {
 	gotLimit     int
 	gotOffset    int
 	searchCalled bool
+
+	folderPath    string
+	isFolderFound bool
+	listedPage    utils.PaginationResponse[DocumentListItemModel]
+	gotListQuery  DocumentListQuery
+	gotCountPath  string
+	total         int
+}
+
+func (repository *recordingRepository) ListDocuments(query DocumentListQuery) (utils.PaginationResponse[DocumentListItemModel], error) {
+	repository.gotListQuery = query
+	return repository.listedPage, repository.err
+}
+
+func (repository *recordingRepository) CountDocuments(_ DocumentFilter, folderPathPrefix string) (int, error) {
+	repository.gotCountPath = folderPathPrefix
+	return repository.total, repository.err
+}
+
+func (repository *recordingRepository) FindActiveFolderPath(int) (string, bool, error) {
+	return repository.folderPath, repository.isFolderFound, repository.findErr
 }
 
 func (repository *recordingRepository) ListPendingIndexing(int, int) ([]PendingDocument, error) {
