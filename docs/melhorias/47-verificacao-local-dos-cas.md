@@ -27,4 +27,4 @@ Para cada task, abrir o arquivo dela, pegar os `CA` desmarcados e verificar com 
 ## Critérios de aceite
 
 - [x] Cada item acima com os `CA` da task marcados ou anotados com o motivo de não poder ser exercitado localmente. *Defeitos achados e corrigidos na verificação: `GET /files/recent` sempre 500 (rota morta, removida), WebDAV sem os métodos do protocolo (corrigido), promoção de captura que não falhava (25.1). O que depende de navegador, aparelho, tablet, Windows ou release está em `pendencias-do-dono.md`.*
-- [ ] `make ci` verde ao final.
+- [x] `make ci` verde ao final.
