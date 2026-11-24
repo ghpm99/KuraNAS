@@ -70,9 +70,15 @@ class ServerHealthCheckerTest {
     }
 
     @Test
-    fun `403 e acesso negado`() {
-        server.enqueue(MockResponse().setResponseCode(403))
-        assertEquals(ServerCheckResult.AccessDenied, check())
+    fun `403 com ip e mensagem no corpo carrega os dois`() {
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{"error":"Blocked 10.0.0.9","ip":"10.0.0.9"}"""))
+        assertEquals(ServerCheckResult.AccessDenied(AccessDenial("10.0.0.9", "Blocked 10.0.0.9")), check())
+    }
+
+    @Test
+    fun `403 sem corpo legivel e acesso negado com ip desconhecido`() {
+        server.enqueue(MockResponse().setResponseCode(403).setBody("<html>no</html>"))
+        assertEquals(ServerCheckResult.AccessDenied(AccessDenial(null, null)), check())
     }
 
     @Test

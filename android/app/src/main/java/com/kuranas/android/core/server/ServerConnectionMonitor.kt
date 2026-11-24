@@ -24,6 +24,7 @@ class ServerConnectionMonitor(
     private val networkChanges: Flow<Unit>,
     private val checkServer: suspend (String) -> ServerCheckResult,
     private val scope: CoroutineScope,
+    private val accessDeniedEvents: AccessDeniedEvents,
     private val policy: ConnectionCheckPolicy = ConnectionCheckPolicy(),
 ) {
     private val _state = MutableStateFlow(ServerConnectionState.Online)
@@ -83,10 +84,19 @@ class ServerConnectionMonitor(
         ConnectionObservation.Unreachable
     }
 
+    private fun publishAccessDenial(observation: ConnectionObservation) {
+        when (observation) {
+            is ConnectionObservation.Denied -> accessDeniedEvents.report(observation.denial)
+            ConnectionObservation.Reachable, ConnectionObservation.NoServer -> accessDeniedEvents.clear()
+            ConnectionObservation.Unreachable -> Unit
+        }
+    }
+
     private fun apply(observation: ConnectionObservation) {
         val transition = reduceConnection(snapshot, observation)
         snapshot = transition.snapshot
         _state.value = transition.snapshot.state
+        publishAccessDenial(observation)
         if (transition.hasReconnected) _reconnections.tryEmit(Unit)
     }
 }

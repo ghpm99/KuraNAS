@@ -5,5 +5,5 @@ sealed interface ServerCheckResult {
     data object Confirmed : ServerCheckResult
     data object NoResponse : ServerCheckResult
     data object NotKuraNas : ServerCheckResult
-    data object AccessDenied : ServerCheckResult
+    data class AccessDenied(val denial: AccessDenial) : ServerCheckResult
 }

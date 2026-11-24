@@ -42,6 +42,24 @@ class ServerConnectionReducerTest {
     }
 
     @Test
+    fun `acesso negado leva ao estado proprio sem marcar offline`() {
+        val transition = reduceConnection(ConnectionSnapshot(), ConnectionObservation.Denied(AccessDenial("10.0.0.9", null)))
+
+        assertEquals(ServerConnectionState.AccessDenied, transition.snapshot.state)
+        assertFalse(transition.hasReconnected)
+    }
+
+    @Test
+    fun `voltar a responder depois de acesso negado conta como reconexao`() {
+        val denied = ConnectionSnapshot(ServerConnectionState.AccessDenied, 1)
+
+        val transition = reduceConnection(denied, ConnectionObservation.Reachable)
+
+        assertEquals(ServerConnectionState.Online, transition.snapshot.state)
+        assertTrue(transition.hasReconnected)
+    }
+
+    @Test
     fun `falhas consecutivas acumulam`() {
         val transition = reduceConnection(offlineSnapshot, ConnectionObservation.Unreachable)
 
@@ -49,8 +67,9 @@ class ServerConnectionReducerTest {
     }
 
     @Test
-    fun `acesso negado conta como inalcancavel`() {
-        assertEquals(ConnectionObservation.Unreachable, ServerCheckResult.AccessDenied.toObservation())
+    fun `acesso negado vira observacao propria`() {
+        val denial = AccessDenial("10.0.0.9", "blocked")
+        assertEquals(ConnectionObservation.Denied(denial), ServerCheckResult.AccessDenied(denial).toObservation())
         assertEquals(ConnectionObservation.Reachable, ServerCheckResult.Confirmed.toObservation())
     }
 

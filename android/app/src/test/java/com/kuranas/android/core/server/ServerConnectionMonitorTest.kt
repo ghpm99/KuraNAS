@@ -21,6 +21,7 @@ class ServerConnectionMonitorTest {
     private val networkChanges = MutableSharedFlow<Unit>()
     private var nextResult: ServerCheckResult = ServerCheckResult.Confirmed
     private var checkCount = 0
+    private val accessDeniedEvents = AccessDeniedEvents()
 
     private fun TestScope.monitor(changes: Flow<Unit> = networkChanges) = ServerConnectionMonitor(
         serverUrl = serverUrl,
@@ -30,6 +31,7 @@ class ServerConnectionMonitorTest {
             nextResult
         },
         scope = backgroundScope,
+        accessDeniedEvents = accessDeniedEvents,
     )
 
     @Test
@@ -41,6 +43,34 @@ class ServerConnectionMonitorTest {
         runCurrent()
 
         assertEquals(ServerConnectionState.Offline, monitor.state.value)
+    }
+
+    @Test
+    fun `acesso negado publica a recusa em vez de ficar offline`() = runTest {
+        val denial = AccessDenial("10.0.0.9", "blocked")
+        nextResult = ServerCheckResult.AccessDenied(denial)
+        val monitor = monitor()
+
+        monitor.start()
+        runCurrent()
+
+        assertEquals(ServerConnectionState.AccessDenied, monitor.state.value)
+        assertEquals(denial, accessDeniedEvents.denial.value)
+    }
+
+    @Test
+    fun `voltar a responder limpa a recusa`() = runTest {
+        nextResult = ServerCheckResult.AccessDenied(AccessDenial("10.0.0.9", null))
+        val monitor = monitor()
+        monitor.start()
+        runCurrent()
+
+        nextResult = ServerCheckResult.Confirmed
+        monitor.checkNow()
+        runCurrent()
+
+        assertEquals(ServerConnectionState.Online, monitor.state.value)
+        assertEquals(null, accessDeniedEvents.denial.value)
     }
 
     @Test

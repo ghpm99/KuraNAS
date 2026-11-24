@@ -41,7 +41,7 @@ class ServerHealthChecker @Inject constructor(json: Json) {
     }
 
     private fun classify(response: Response): ServerCheckResult {
-        if (response.code == HTTP_FORBIDDEN) return ServerCheckResult.AccessDenied
+        if (response.code == HTTP_FORBIDDEN) return ServerCheckResult.AccessDenied(parseAccessDenial(response.body?.string().orEmpty(), lenientJson))
         if (response.code != HTTP_OK) return ServerCheckResult.NotKuraNas
         val responseText = response.body?.string().orEmpty()
         val payload = runCatching { lenientJson.decodeFromString<HealthPayload>(responseText) }.getOrNull() ?: return ServerCheckResult.NotKuraNas

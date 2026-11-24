@@ -17,9 +17,9 @@ class ServerReconnection @Inject constructor(
      */
     suspend fun ensureReachable(): ReconnectionOutcome {
         val rememberedUrl = serverStore.serverUrl.firstOrNull() ?: return ReconnectionOutcome.NoServer
-        return when (healthChecker.check(rememberedUrl)) {
+        return when (val result = healthChecker.check(rememberedUrl)) {
             ServerCheckResult.Confirmed -> ReconnectionOutcome.Reachable
-            ServerCheckResult.AccessDenied -> ReconnectionOutcome.AccessDenied
+            is ServerCheckResult.AccessDenied -> ReconnectionOutcome.AccessDenied(result.denial)
             ServerCheckResult.NoResponse, ServerCheckResult.NotKuraNas -> relocate()
         }
     }

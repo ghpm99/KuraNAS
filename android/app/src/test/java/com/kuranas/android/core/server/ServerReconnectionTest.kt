@@ -45,9 +45,10 @@ class ServerReconnectionTest {
     @Test
     fun `acesso negado devolve AccessDenied sem buscar outro servidor`() = runTest {
         rememberServer()
-        coEvery { healthChecker.check(rememberedUrl) } returns ServerCheckResult.AccessDenied
+        val denial = AccessDenial("10.0.0.9", "blocked")
+        coEvery { healthChecker.check(rememberedUrl) } returns ServerCheckResult.AccessDenied(denial)
 
-        assertEquals(ReconnectionOutcome.AccessDenied, reconnection.ensureReachable())
+        assertEquals(ReconnectionOutcome.AccessDenied(denial), reconnection.ensureReachable())
         verify(exactly = 0) { serverSearch.search() }
     }
 

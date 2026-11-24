@@ -100,7 +100,7 @@ class ConnectionViewModel @Inject constructor(
                     }
                     ServerCheckResult.NoResponse -> showError(R.string.connection_no_response)
                     ServerCheckResult.NotKuraNas -> showError(R.string.connection_not_kuranas)
-                    ServerCheckResult.AccessDenied -> showError(R.string.connection_access_denied)
+                    is ServerCheckResult.AccessDenied -> showError(R.string.connection_access_denied)
                 }
             } finally {
                 _state.update { it.copy(isCheckingManualAddress = false) }

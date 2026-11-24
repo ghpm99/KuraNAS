@@ -324,4 +324,10 @@
     <string name="connection_banner_retry_now">Try now</string>
     <string name="change_server_dialog_title">Change server?</string>
     <string name="change_server_dialog_text">The server address will be removed and you will need to reconnect.</string>
+    <string name="access_denied_title">This device is not allowed</string>
+    <string name="access_denied_explanation">The server refused access from this device. Ask the server owner to allow the IP below in the server access list.</string>
+    <string name="access_denied_ip_label">Device IP</string>
+    <string name="access_denied_ip_unknown">The server did not report this device\'s IP.</string>
+    <string name="access_denied_copy_ip">Copy IP</string>
+    <string name="access_denied_retry">Try again</string>
 </resources>

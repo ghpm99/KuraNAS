@@ -1,10 +1,11 @@
 package com.kuranas.android.core.server
 
-enum class ServerConnectionState { Online, Offline }
+enum class ServerConnectionState { Online, Offline, AccessDenied }
 
 sealed interface ConnectionObservation {
     data object Reachable : ConnectionObservation
     data object Unreachable : ConnectionObservation
+    data class Denied(val denial: AccessDenial) : ConnectionObservation
     data object NoServer : ConnectionObservation
 }
 
@@ -17,7 +18,8 @@ data class ConnectionTransition(val snapshot: ConnectionSnapshot, val hasReconne
 
 fun ServerCheckResult.toObservation(): ConnectionObservation = when (this) {
     ServerCheckResult.Confirmed -> ConnectionObservation.Reachable
-    ServerCheckResult.NoResponse, ServerCheckResult.NotKuraNas, ServerCheckResult.AccessDenied -> ConnectionObservation.Unreachable
+    is ServerCheckResult.AccessDenied -> ConnectionObservation.Denied(denial)
+    ServerCheckResult.NoResponse, ServerCheckResult.NotKuraNas -> ConnectionObservation.Unreachable
 }
 
 fun reduceConnection(current: ConnectionSnapshot, observation: ConnectionObservation): ConnectionTransition = when (observation) {
@@ -26,9 +28,13 @@ fun reduceConnection(current: ConnectionSnapshot, observation: ConnectionObserva
         ConnectionSnapshot(ServerConnectionState.Offline, current.consecutiveFailures + 1),
         hasReconnected = false,
     )
+    is ConnectionObservation.Denied -> ConnectionTransition(
+        ConnectionSnapshot(ServerConnectionState.AccessDenied, current.consecutiveFailures + 1),
+        hasReconnected = false,
+    )
     ConnectionObservation.Reachable -> ConnectionTransition(
         ConnectionSnapshot(ServerConnectionState.Online, consecutiveFailures = 0),
-        hasReconnected = current.state == ServerConnectionState.Offline,
+        hasReconnected = current.state != ServerConnectionState.Online,
     )
 }
 

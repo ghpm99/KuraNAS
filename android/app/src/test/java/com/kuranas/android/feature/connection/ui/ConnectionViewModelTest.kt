@@ -4,6 +4,7 @@ import android.content.Context
 import com.kuranas.android.core.discovery.DiscoveredServer
 import com.kuranas.android.core.discovery.ServerSearch
 import com.kuranas.android.R
+import com.kuranas.android.core.server.AccessDenial
 import com.kuranas.android.core.server.ServerCheckResult
 import com.kuranas.android.core.server.ServerHealthChecker
 import com.kuranas.android.core.server.ServerSelectionEvents
@@ -143,7 +144,7 @@ class ConnectionViewModelTest {
         val expectedErrors = mapOf(
             ServerCheckResult.NoResponse to "no response",
             ServerCheckResult.NotKuraNas to "not kuranas",
-            ServerCheckResult.AccessDenied to "access denied",
+            ServerCheckResult.AccessDenied(AccessDenial("10.0.0.9", null)) to "access denied",
         )
 
         expectedErrors.forEach { (checkResult, expectedError) ->

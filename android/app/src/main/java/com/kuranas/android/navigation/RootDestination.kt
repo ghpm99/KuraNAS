@@ -1,3 +1,10 @@
 package com.kuranas.android.navigation
 
-enum class RootDestination { Checking, Connection, App }
+import com.kuranas.android.core.server.AccessDenial
+
+sealed interface RootDestination {
+    data object Checking : RootDestination
+    data object Connection : RootDestination
+    data object App : RootDestination
+    data class AccessDenied(val denial: AccessDenial) : RootDestination
+}

@@ -4,6 +4,7 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import com.kuranas.android.BuildConfig
 import com.kuranas.android.core.client.ClientIdInterceptor
 import com.kuranas.android.core.client.ClientIdProvider
+import com.kuranas.android.core.server.AccessDeniedEvents
 import com.kuranas.android.core.server.ServerStore
 import dagger.Module
 import dagger.Provides
@@ -83,14 +84,21 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideAccessDenialInterceptor(accessDeniedEvents: AccessDeniedEvents, json: Json): AccessDenialInterceptor =
+        AccessDenialInterceptor(accessDeniedEvents, json)
+
+    @Provides
+    @Singleton
     fun provideOkHttpClient(
         logging: HttpLoggingInterceptor,
+        accessDenialInterceptor: AccessDenialInterceptor,
         serverInterceptor: Interceptor,
         clientIdProvider: ClientIdProvider,
     ): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(serverInterceptor)
             .addInterceptor(ClientIdInterceptor(clientIdProvider))
+            .addInterceptor(accessDenialInterceptor)
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)

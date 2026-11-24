@@ -52,10 +52,11 @@ fun KuranasRoot(
     val destination by rootViewModel.destination.collectAsStateWithLifecycle()
 
     KNFrame(modifier = modifier) {
-        when (destination) {
+        when (val currentDestination = destination) {
             RootDestination.Checking -> LoadingView()
             RootDestination.Connection -> ConnectionScreen()
             RootDestination.App -> AuthenticatedApp(shouldOpenTransfers, onOpenTransfersHandled)
+            is RootDestination.AccessDenied -> AccessDeniedScreen(currentDestination.denial)
         }
     }
 }

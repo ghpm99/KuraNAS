@@ -19,10 +19,12 @@ object ServerConnectionModule {
         serverStore: ServerStore,
         healthChecker: ServerHealthChecker,
         networkChangeEvents: NetworkChangeEvents,
+        accessDeniedEvents: AccessDeniedEvents,
     ): ServerConnectionMonitor = ServerConnectionMonitor(
         serverUrl = serverStore.serverUrl,
         networkChanges = networkChangeEvents.events,
         checkServer = healthChecker::check,
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        accessDeniedEvents = accessDeniedEvents,
     )
 }

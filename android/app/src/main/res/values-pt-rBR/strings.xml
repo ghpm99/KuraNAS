@@ -322,4 +322,10 @@
     <string name="connection_banner_retry_now">Tentar agora</string>
     <string name="change_server_dialog_title">Trocar servidor?</string>
     <string name="change_server_dialog_text">O endereço do servidor será removido e você precisará reconectar.</string>
+    <string name="access_denied_title">Este aparelho não tem permissão</string>
+    <string name="access_denied_explanation">O servidor recusou o acesso deste aparelho. Peça ao dono do servidor para liberar o IP abaixo na lista de acesso.</string>
+    <string name="access_denied_ip_label">IP do aparelho</string>
+    <string name="access_denied_ip_unknown">O servidor não informou o IP deste aparelho.</string>
+    <string name="access_denied_copy_ip">Copiar IP</string>
+    <string name="access_denied_retry">Tentar de novo</string>
 </resources>

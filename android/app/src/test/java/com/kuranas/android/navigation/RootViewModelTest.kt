@@ -1,5 +1,8 @@
 package com.kuranas.android.navigation
 
+import com.kuranas.android.core.server.AccessDenial
+import com.kuranas.android.core.server.AccessDeniedEvents
+import com.kuranas.android.core.server.ChangeServerAction
 import com.kuranas.android.core.server.ReconnectionOutcome
 import com.kuranas.android.core.server.ServerReconnection
 import com.kuranas.android.core.server.ServerSelectionEvents
@@ -30,6 +33,9 @@ class RootViewModelTest {
     private val serverStore = mockk<ServerStore>()
     private val serverReconnection = mockk<ServerReconnection>()
     private val serverSelectionEvents = ServerSelectionEvents()
+    private val accessDeniedEvents = AccessDeniedEvents()
+    private val changeServerAction = mockk<ChangeServerAction>(relaxed = true)
+    private val denial = AccessDenial("10.0.0.9", "blocked")
     private val pendingOutcome = CompletableDeferred<ReconnectionOutcome>()
 
     @Before
@@ -44,7 +50,7 @@ class RootViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = RootViewModel(serverStore, serverReconnection, serverSelectionEvents)
+    private fun createViewModel() = RootViewModel(serverStore, serverReconnection, serverSelectionEvents, accessDeniedEvents, changeServerAction)
 
     @Test
     fun `fica verificando ate o desfecho chegar`() = runTest {
@@ -84,15 +90,76 @@ class RootViewModelTest {
     }
 
     @Test
-    fun `Unreachable e AccessDenied abrem a tela de conexao`() = runTest {
-        listOf(ReconnectionOutcome.Unreachable, ReconnectionOutcome.AccessDenied).forEach { outcome ->
-            val deferredOutcome = CompletableDeferred(outcome)
-            coEvery { serverReconnection.ensureReachable() } coAnswers { deferredOutcome.await() }
-            val viewModel = createViewModel()
-            advanceUntilIdle()
+    fun `Unreachable abre a tela de conexao`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.Unreachable)
+        advanceUntilIdle()
 
-            assertEquals(outcome.toString(), RootDestination.Connection, viewModel.destination.value)
-        }
+        assertEquals(RootDestination.Connection, viewModel.destination.value)
+    }
+
+    @Test
+    fun `AccessDenied na abertura mostra a tela de acesso negado com o ip`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.AccessDenied(denial))
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.AccessDenied(denial), viewModel.destination.value)
+    }
+
+    @Test
+    fun `recusa no meio da sessao troca o app pela tela de acesso negado`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.Reachable)
+        advanceUntilIdle()
+        assertEquals(RootDestination.App, viewModel.destination.value)
+
+        accessDeniedEvents.report(denial)
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.AccessDenied(denial), viewModel.destination.value)
+    }
+
+    @Test
+    fun `tentar de novo com sucesso limpa a recusa e volta ao app`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.AccessDenied(denial))
+        advanceUntilIdle()
+        coEvery { serverReconnection.ensureReachable() } returns ReconnectionOutcome.Reachable
+
+        viewModel.retryAfterAccessDenied()
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.App, viewModel.destination.value)
+        assertEquals(null, accessDeniedEvents.denial.value)
+    }
+
+    @Test
+    fun `tentar de novo ainda recusado continua na tela de acesso negado`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.AccessDenied(denial))
+        advanceUntilIdle()
+        val newDenial = AccessDenial("10.0.0.10", null)
+        coEvery { serverReconnection.ensureReachable() } returns ReconnectionOutcome.AccessDenied(newDenial)
+
+        viewModel.retryAfterAccessDenied()
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.AccessDenied(newDenial), viewModel.destination.value)
+    }
+
+    @Test
+    fun `trocar servidor na tela de acesso negado limpa a recusa e abre a conexao`() = runTest {
+        coEvery { changeServerAction.changeServer() } coAnswers { serverStates.value = ServerState.NotConfigured }
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.AccessDenied(denial))
+        advanceUntilIdle()
+
+        viewModel.changeServerAfterAccessDenied()
+        advanceUntilIdle()
+
+        assertEquals(RootDestination.Connection, viewModel.destination.value)
+        assertEquals(null, accessDeniedEvents.denial.value)
     }
 
     @Test
