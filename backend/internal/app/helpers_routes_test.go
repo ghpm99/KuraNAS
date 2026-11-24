@@ -277,6 +277,30 @@ func TestWebDAVRouteIsGatedByConfig(t *testing.T) {
 	}
 }
 
+func TestWebDAVRoutesAcceptEveryWebDAVMethod(t *testing.T) {
+	previous := config.AppConfig.EnableWebDAV
+	t.Cleanup(func() { config.AppConfig.EnableWebDAV = previous })
+	config.AppConfig.EnableWebDAV = true
+
+	router := SetUpRouter()
+	RegisterRoutes(router, buildRouteContext())
+
+	registeredMethodsByPath := map[string]map[string]bool{}
+	for _, route := range router.Routes() {
+		if registeredMethodsByPath[route.Path] == nil {
+			registeredMethodsByPath[route.Path] = map[string]bool{}
+		}
+		registeredMethodsByPath[route.Path][route.Method] = true
+	}
+	for _, davPath := range []string{"/dav", "/dav/*path"} {
+		for _, method := range []string{"PROPFIND", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK", http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodOptions} {
+			if !registeredMethodsByPath[davPath][method] {
+				t.Fatalf("expected %s %s to be routed to the WebDAV handler", method, davPath)
+			}
+		}
+	}
+}
+
 // denyAllAccessControl implements accesscontrol.ServiceInterface refusing
 // every non-loopback IP, to prove protected routes answer 403.
 type denyAllAccessControl struct{}

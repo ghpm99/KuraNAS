@@ -73,11 +73,16 @@ func registerWebDAVRoutes(router *gin.Engine, context *AppContext) {
 	if context != nil && context.DB != nil {
 		coldFiles = dav.NewColdFileRepository(context.DB)
 	}
-	handler := dav.NewHandler(coldFiles)
-	router.Any(dav.Prefix+"/*path", gin.WrapH(handler))
-	// Mount-point requests arrive without the trailing slash.
-	router.Any(dav.Prefix, gin.WrapH(handler))
+	handler := gin.WrapH(dav.NewHandler(coldFiles))
+	for _, davPath := range []string{dav.Prefix + "/*path", dav.Prefix} {
+		router.Any(davPath, handler)
+		for _, webDAVMethod := range webDAVOnlyMethods {
+			router.Handle(webDAVMethod, davPath, handler)
+		}
+	}
 }
+
+var webDAVOnlyMethods = []string{"PROPFIND", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK"}
 
 func RegisterIndexingRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context == nil || context.Indexing == nil || context.Indexing.Handler == nil {
