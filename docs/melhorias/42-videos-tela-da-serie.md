@@ -21,6 +21,18 @@ Uma tela por série com seletor de temporada, lista de episódios com progresso,
 7. **Web — ações** (`RF-08`): marcar temporada/série como assistida ou não; favoritar; ocultar; "Corrigir classificação" e "Corrigir episódio" no menu de cada vídeo.
 8. **Player**: "próximo" no último episódio de uma temporada abre o primeiro da seguinte; no último da série fica desabilitado (`RN-17`).
 
+## Reconferência no código (2026-11-24)
+
+O backend não guarda temporada nem episódio de arquivos (só de capturas, em `captures`); o classificador só testa padrões por regex, sem extrair números. A web agrupa por temporada no cliente (`parseSeasonEpisode.ts`) sobre os itens já carregados, o que faz "Continuar" errar com mais de uma página. A ordem das playlists automáticas é gravada em `video_playlist_item.order_index` no rebuild, e o player (web e `POST /video/playback/next`) segue essa ordem. Séries é listada por playlist (`video_playlist.classification`), Filmes por vídeo (`video_metadata.classification`). Progresso é por `client_id`.
+
+## Decisões de desenho (2026-11-24)
+
+- **Temporada e episódio automáticos** extraídos em Go no rebuild (função com captura que reaproveita os padrões do classificador: `S02E03`, `2x03`, `Ep 3`/`Episódio 3`, `- 03`; sem temporada → 1; capturas usam a proveniência) e gravados em `video_playlist_item` (`season`, `episode`). Com `video_manual_override` (`file_id`, `classification`, `season`, `episode`), o valor efetivo é `COALESCE(override, automático)`.
+- **Uma ordem só**: em playlist automática de série, `order_index` = temporada, episódio, nome natural, id — com os valores efetivos. Corrigir episódio renumera aquela playlist na hora; assim lista, "próximo" do player (web e backend) e `RN-17` usam a mesma ordem e cruzar temporada sai de graça. Playlist do dono mantém a ordem dela.
+- **Classificação**: o `PUT` aceita os valores da spec (`series`, `movie`, `personal`, `clip`, `other`) e `null`; leitura de Filmes usa o efetivo na hora; a seção Séries depende da playlist, então o `PUT` dispara a reconstrução das playlists automáticas, que passa a usar a classificação efetiva.
+- **Cabeçalho da série** (`GET /video/playlists/:id`) ganha `seasons` (número, episódios, assistidos) e `resume` (vídeo, temporada, episódio, posição e modo `continue`/`start`/`rewatch`, `RN-12`), calculados no servidor para o cliente da requisição. `items` aceita `season` (inválido → `400`).
+- **Favoritar/ocultar** (`RF-08`): favoritar é por episódio (estrela do arquivo, já existe) e ocultar é da série (já existe); a tela só os expõe.
+
 ## Critérios de aceite
 
 - [ ] `06/CA-07` — série de 24 episódios `Ep 1`…`Ep 24` aparece na ordem 1, 2, 3 … 24.
