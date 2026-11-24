@@ -456,3 +456,106 @@ func TestWithoutServerPathsIgnoresEmptyDirs(t *testing.T) {
 		t.Fatalf("unexpected message: %q", cleaned)
 	}
 }
+
+func remoteFetchStepInto(t *testing.T, libraryDir string, fakeYtDlpScript string) jobs.StepModel {
+	t.Helper()
+	rawPayload, _ := json.Marshal(ingestapi.RemoteFetchStepPayload{
+		URL:       "https://x.test/clip",
+		Preset:    "audio_mp3",
+		OutputDir: libraryDir,
+		Binary:    writeFakeYtDlp(t, fakeYtDlpScript),
+	})
+	return jobs.StepModel{Payload: rawPayload}
+}
+
+func namesIn(t *testing.T, dir string) []string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read %s: %v", dir, err)
+	}
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	return names
+}
+
+func TestExecuteRemoteFetchStepPlacesTheDownloadedContentInTheLibrary(t *testing.T) {
+	libraryDir := t.TempDir()
+	fetchStep := remoteFetchStepInto(t, libraryDir, fakeYtDlpReadsOutputDir+"printf 'audio-bytes' > \"$output_dir/clip.mp3\"\n")
+
+	if err := executeRemoteFetchStep(nil, fetchStep); err != nil {
+		t.Fatalf("download failed: %v", err)
+	}
+
+	placedContent, err := os.ReadFile(filepath.Join(libraryDir, "clip.mp3"))
+	if err != nil || string(placedContent) != "audio-bytes" {
+		t.Fatalf("expected the finished file in the library, got %q err=%v", placedContent, err)
+	}
+}
+
+func TestExecuteRemoteFetchStepFailsWithItsOwnReasonWhenNoFileIsProduced(t *testing.T) {
+	libraryDir := t.TempDir()
+	fetchStep := remoteFetchStepInto(t, libraryDir, "exit 0\n")
+
+	err := executeRemoteFetchStep(nil, fetchStep)
+
+	if err == nil || !strings.Contains(err.Error(), "produced no output file") {
+		t.Fatalf("expected the no-output failure, got %v", err)
+	}
+	if strings.Contains(err.Error(), libraryDir) {
+		t.Fatalf("the failure must not expose the library path: %v", err)
+	}
+	if leftovers := namesIn(t, libraryDir); len(leftovers) != 0 {
+		t.Fatalf("nothing may reach the library, got %v", leftovers)
+	}
+}
+
+func TestExecuteRemoteFetchStepNeverPlacesAPartialDownloadInTheLibrary(t *testing.T) {
+	libraryDir := t.TempDir()
+	fetchStep := remoteFetchStepInto(t, libraryDir, fakeYtDlpReadsOutputDir+
+		"echo half > \"$output_dir/clip.mp3.part\"\necho half > \"$output_dir/clip.ytdl\"\nexit 0\n")
+
+	err := executeRemoteFetchStep(nil, fetchStep)
+
+	if err == nil || !strings.Contains(err.Error(), "produced no output file") {
+		t.Fatalf("a run that leaves only partial files must fail, got %v", err)
+	}
+	if leftovers := namesIn(t, libraryDir); len(leftovers) != 0 {
+		t.Fatalf("partial files must never reach the library, got %v", leftovers)
+	}
+}
+
+func TestExecuteRemoteFetchStepLeavesTheLibraryUntouchedWhenTheDownloadFails(t *testing.T) {
+	libraryDir := t.TempDir()
+	fetchStep := remoteFetchStepInto(t, libraryDir, fakeYtDlpReadsOutputDir+
+		"echo half > \"$output_dir/clip.mp3.part\"\necho \"ERROR: unable to download $output_dir/clip.mp3\" >&2\nexit 1\n")
+
+	err := executeRemoteFetchStep(nil, fetchStep)
+
+	if err == nil || strings.Contains(err.Error(), libraryDir) || strings.Contains(err.Error(), os.TempDir()) {
+		t.Fatalf("expected a failure without server paths, got %v", err)
+	}
+	if leftovers := namesIn(t, libraryDir); len(leftovers) != 0 {
+		t.Fatalf("a failed download must leave the library empty, got %v", leftovers)
+	}
+}
+
+func TestExecuteRemoteFetchStepNeverOverwritesAnExistingLibraryFile(t *testing.T) {
+	libraryDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(libraryDir, "clip.mp3"), []byte("already here"), 0o644); err != nil {
+		t.Fatalf("seed library: %v", err)
+	}
+	fetchStep := remoteFetchStepInto(t, libraryDir, fakeYtDlpReadsOutputDir+"printf 'new download' > \"$output_dir/clip.mp3\"\n")
+
+	if err := executeRemoteFetchStep(nil, fetchStep); err != nil {
+		t.Fatalf("download failed: %v", err)
+	}
+
+	keptContent, _ := os.ReadFile(filepath.Join(libraryDir, "clip.mp3"))
+	numberedContent, _ := os.ReadFile(filepath.Join(libraryDir, "clip (2).mp3"))
+	if string(keptContent) != "already here" || string(numberedContent) != "new download" {
+		t.Fatalf("expected the original kept and the new file numbered, got %q and %q", keptContent, numberedContent)
+	}
+}
