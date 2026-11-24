@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -13,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.kuranas.android.R
 
 @Composable
 fun KNHeader(
@@ -24,6 +28,7 @@ fun KNHeader(
     trailingIcon: ImageVector? = null,
     trailingContentDescription: String? = null,
     onTrailingClick: (() -> Unit)? = null,
+    onSearchClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -43,6 +48,15 @@ fun KNHeader(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
         )
+        if (onSearchClick != null) {
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = stringResource(R.string.nav_search),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
         if (trailingIcon != null && onTrailingClick != null) {
             IconButton(onClick = onTrailingClick) {
                 Icon(trailingIcon, contentDescription = trailingContentDescription, tint = MaterialTheme.colorScheme.primary)

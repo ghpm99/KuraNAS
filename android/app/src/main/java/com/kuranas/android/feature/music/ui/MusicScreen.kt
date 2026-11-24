@@ -58,6 +58,7 @@ fun MusicScreen(
     onOpenAlbum: (String) -> Unit,
     onOpenPlaylist: (Int) -> Unit,
     onOpenFolder: (String) -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: MusicViewModel = hiltViewModel(),
 ) {
     val tab by viewModel.tab.collectAsStateWithLifecycle()
@@ -78,7 +79,7 @@ fun MusicScreen(
 
     FileStarErrorHost(viewModel.stars) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-            KNHeader(title = stringResource(R.string.nav_music))
+            KNHeader(title = stringResource(R.string.nav_music), onSearchClick = onOpenSearch)
             ScrollableTabRow(
                 selectedTabIndex = tab.ordinal,
                 containerColor = androidx.compose.ui.graphics.Color.Transparent,

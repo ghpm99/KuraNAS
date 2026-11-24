@@ -96,6 +96,7 @@ fun FilesScreen(
     onPlayAudio: (String) -> Unit,
     onOpenFile: (String, String) -> Unit,
     onOpenTransfers: () -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: FilesViewModel = hiltViewModel(),
     uploadViewModel: UploadViewModel = hiltViewModel(),
 ) {
@@ -163,6 +164,7 @@ fun FilesScreen(
                 title = if (state.breadcrumb.isEmpty()) stringResource(R.string.nav_files) else state.breadcrumb.last().first,
                 leadingIcon = if (state.breadcrumb.isNotEmpty()) Icons.AutoMirrored.Filled.ArrowBack else null,
                 onLeadingClick = viewModel::navigateUp,
+                onSearchClick = onOpenSearch,
             )
 
             if (state.isSelecting) {

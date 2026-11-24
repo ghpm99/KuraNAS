@@ -14,3 +14,8 @@ fun shouldBackReturnToHome(selectedTab: BottomTab?, isAtTabRoot: Boolean): Boole
 
 fun hasBadge(tab: BottomTab, activeTransfersCount: Int, unreadNotificationsCount: Int): Boolean =
     tab == BottomTab.MORE && (activeTransfersCount > 0 || unreadNotificationsCount > 0)
+
+fun highlightedTabFor(route: String?, selectedTab: BottomTab?): BottomTab? = when {
+    route == AppRoute.SEARCH -> null
+    else -> selectedTab ?: BottomTab.MORE
+}

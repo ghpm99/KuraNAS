@@ -55,6 +55,7 @@ private const val PREFETCH_DISTANCE_ITEMS = 24
 @Composable
 fun ImagesScreen(
     onOpenImage: (String) -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: ImagesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -77,7 +78,7 @@ fun ImagesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.nav_images))
+        KNHeader(title = stringResource(R.string.nav_images), onSearchClick = onOpenSearch)
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
             onRefresh = viewModel::refresh,

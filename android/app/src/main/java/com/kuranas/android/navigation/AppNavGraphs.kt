@@ -54,6 +54,8 @@ fun NavHostController.openTransfers() {
     navigate(AppRoute.TRANSFERS) { launchSingleTop = true }
 }
 
+private fun NavHostController.openSearch() = navigate(AppRoute.SEARCH) { launchSingleTop = true }
+
 private fun NavHostController.openImage(id: String) = navigate(AppRoute.imageViewer(id))
 
 private fun NavHostController.openVideo(id: String) = navigate(AppRoute.videoPlayer(id))
@@ -85,6 +87,7 @@ private fun NavGraphBuilder.homeGraph(navController: NavHostController) {
                 onOpenVideoFile = navController::openVideo,
                 onPlayAudio = navController::playAudio,
                 onOpenFile = navController::openFile,
+                onOpenSearch = navController::openSearch,
             )
         }
     }
@@ -98,7 +101,7 @@ private fun NavGraphBuilder.filesGraph(navController: NavHostController) {
 
 private fun NavGraphBuilder.imagesGraph(navController: NavHostController) {
     navigation(startDestination = BottomTab.IMAGES.startRoute, route = BottomTab.IMAGES.graphRoute) {
-        composable(AppRoute.IMAGES) { ImagesScreen(onOpenImage = navController::openImage) }
+        composable(AppRoute.IMAGES) { ImagesScreen(onOpenImage = navController::openImage, onOpenSearch = navController::openSearch) }
     }
 }
 
@@ -111,6 +114,7 @@ private fun NavGraphBuilder.musicGraph(navController: NavHostController) {
                 onOpenAlbum = { key -> navController.navigate(AppRoute.musicAlbum(key)) },
                 onOpenPlaylist = { id -> navController.navigate(AppRoute.musicPlaylist(id)) },
                 onOpenFolder = { key -> navController.navigate(AppRoute.musicFolder(key)) },
+                onOpenSearch = navController::openSearch,
             )
         }
         composable(
@@ -163,6 +167,7 @@ private fun NavGraphBuilder.videoGraph(navController: NavHostController) {
                 onPlayVideo = navController::openVideo,
                 onOpenPlaylist = { id -> navController.navigate(AppRoute.videoPlaylist(id)) },
                 onOpenLibrary = { navController.navigate(AppRoute.VIDEO_LIBRARY) },
+                onOpenSearch = navController::openSearch,
             )
         }
         composable(
@@ -195,14 +200,6 @@ private fun NavGraphBuilder.moreGraph(navController: NavHostController) {
                 onOpenVideo = navController::openVideo,
                 onPlayAudio = navController::playAudio,
                 onOpenFile = navController::openFile,
-            )
-        }
-        composable(AppRoute.SEARCH) {
-            SearchScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onOpenFile = { id -> navController.navigate(AppRoute.fileDetail(id)) },
-                onPlayAudio = navController::playAudio,
-                onPlayVideo = navController::openVideo,
             )
         }
         composable(AppRoute.TRASH) { TrashScreen(onNavigateBack = { navController.popBackStack() }) }
@@ -267,6 +264,14 @@ fun NavGraphBuilder.topLevelRoutes(navController: NavHostController) {
             onNavigateBack = { navController.popBackStack() },
         )
     }
+    composable(AppRoute.SEARCH) {
+        SearchScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onOpenFile = { id -> navController.navigate(AppRoute.fileDetail(id)) },
+            onPlayAudio = navController::playAudio,
+            onPlayVideo = navController::openVideo,
+        )
+    }
     composable(AppRoute.TRANSFERS) {
         TransfersScreen(onNavigateBack = { navController.popBackStack() })
     }
@@ -286,6 +291,7 @@ private fun FilesDestination(navController: NavHostController) {
         onPlayAudio = navController::playAudio,
         onOpenFile = navController::openFile,
         onOpenTransfers = navController::openTransfers,
+        onOpenSearch = navController::openSearch,
     )
 }
 

@@ -61,6 +61,7 @@ fun VideoScreen(
     onPlayVideo: (String) -> Unit,
     onOpenPlaylist: (Int) -> Unit,
     onOpenLibrary: () -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: VideoViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -70,7 +71,7 @@ fun VideoScreen(
 
     FileStarErrorHost(viewModel.stars) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-            KNHeader(title = stringResource(R.string.nav_videos))
+            KNHeader(title = stringResource(R.string.nav_videos), onSearchClick = onOpenSearch)
             PullToRefreshBox(
                 isRefreshing = state.isRefreshing,
                 onRefresh = viewModel::refresh,

@@ -57,6 +57,7 @@ fun HomeScreen(
     onOpenVideoFile: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
     onOpenFile: (String, String) -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -70,7 +71,7 @@ fun HomeScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.nav_home))
+        KNHeader(title = stringResource(R.string.nav_home), onSearchClick = onOpenSearch)
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = viewModel::refresh,

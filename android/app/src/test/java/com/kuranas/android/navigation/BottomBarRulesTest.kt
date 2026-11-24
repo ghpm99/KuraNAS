@@ -47,4 +47,16 @@ class BottomBarRulesTest {
             BottomTab.entries.toList(),
         )
     }
+
+    @Test
+    fun `search highlights no tab and keeps the bar visible`() {
+        assertEquals(null, highlightedTabFor(AppRoute.SEARCH, null))
+        assertTrue(isBottomBarVisible(AppRoute.SEARCH))
+    }
+
+    @Test
+    fun `tab routes highlight their tab and other top level routes fall back to more`() {
+        assertEquals(BottomTab.FILES, highlightedTabFor(AppRoute.FILES, BottomTab.FILES))
+        assertEquals(BottomTab.MORE, highlightedTabFor(AppRoute.TRANSFERS, null))
+    }
 }

@@ -107,7 +107,7 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
         }
         if (isBottomBarVisible(currentRoute)) {
             AppBottomBar(
-                selectedTab = selectedTab ?: BottomTab.MORE,
+                highlightedTab = highlightedTabFor(currentRoute, selectedTab),
                 isAtTabRoot = isAtTabRoot,
                 activeTransfersCount = activeTransfersCount,
                 unreadNotificationsCount = unreadNotificationsCount,
@@ -119,7 +119,7 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
 
 @Composable
 private fun AppBottomBar(
-    selectedTab: BottomTab,
+    highlightedTab: BottomTab?,
     isAtTabRoot: Boolean,
     activeTransfersCount: Int,
     unreadNotificationsCount: Int,
@@ -128,7 +128,7 @@ private fun AppBottomBar(
     NavigationBar(containerColor = BgCanvas) {
         BottomTab.entries.forEach { tab ->
             val label = stringResource(tab.labelRes)
-            val isSelected = tab == selectedTab
+            val isSelected = tab == highlightedTab
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
