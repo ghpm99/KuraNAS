@@ -110,7 +110,7 @@ func (s *YtDlpService) Status() YtDlpStatusDto {
 	status.ReleaseURL = release.HTMLURL
 	status.ReleaseDate = release.PublishedAt
 	if current == "" {
-		status.UpdateAvailable = true // nothing installed yet — an install is offered
+		status.UpdateAvailable = true
 	} else {
 		status.UpdateAvailable = compareCalVer(current, release.TagName) < 0
 	}

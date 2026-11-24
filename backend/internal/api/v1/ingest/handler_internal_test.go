@@ -60,7 +60,7 @@ func TestFetchHandlerSuccess(t *testing.T) {
 }
 
 // TestFetchHandlerDecodesPayload pins the request seam: it captures the
-// FetchRequestDto the handler decodes (service/ingest.ts → POST /downloads/fetch)
+// FetchRequestDto the handler decodes (service/ingest.ts → POST /ingest/fetch)
 // and asserts every field. A json tag drift fails here instead of silently
 // dropping a field of the download request in production.
 func TestFetchHandlerDecodesPayload(t *testing.T) {

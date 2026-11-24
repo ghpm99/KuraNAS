@@ -19,8 +19,6 @@ func TestResolveYtDlpPaths(t *testing.T) {
 		managedYtDlpDir = originalDir
 	})
 
-	// Pin the managed dir to a temp dir so resolution never depends on the
-	// developer's real bin/.
 	dir := t.TempDir()
 	managedYtDlpDir = func() string { return dir }
 
@@ -36,13 +34,10 @@ func TestResolveYtDlpPaths(t *testing.T) {
 	if got := resolveYtDlpInstallPath(); got != filepath.Join(dir, ytDlpBinaryName()) {
 		t.Fatalf("managed install path: got %q", got)
 	}
-	// No managed binary on disk -> falls back to the PATH command.
 	if got := resolveYtDlpBinary(); got != "yt-dlp" {
 		t.Fatalf("expected PATH fallback, got %q", got)
 	}
 
-	// A managed binary on disk -> it is preferred over the PATH command, so a
-	// dev install survives restarts without YTDLP_PATH.
 	managed := filepath.Join(dir, ytDlpBinaryName())
 	if err := os.WriteFile(managed, []byte("bin"), 0o755); err != nil {
 		t.Fatal(err)
@@ -53,8 +48,6 @@ func TestResolveYtDlpPaths(t *testing.T) {
 }
 
 func TestYtDlpBinaryNameCarriesExecExt(t *testing.T) {
-	// The installed binary name and the Windows asset name must agree on the
-	// executable extension — that mismatch was the production "not installed" bug.
 	if want := "yt-dlp" + ytDlpExecExt(); ytDlpBinaryName() != want {
 		t.Fatalf("ytDlpBinaryName() = %q, want %q", ytDlpBinaryName(), want)
 	}
@@ -76,8 +69,6 @@ func TestYtDlpAssetNameAndConstructor(t *testing.T) {
 }
 
 func TestYtDlpVersion(t *testing.T) {
-	// `echo --version` exits 0 with output — exercises the success path without
-	// depending on a real yt-dlp install (the exact text is OS-dependent).
 	if out, err := ytDlpVersion("echo"); err != nil || out == "" {
 		t.Fatalf("ytDlpVersion(echo) = %q, %v", out, err)
 	}

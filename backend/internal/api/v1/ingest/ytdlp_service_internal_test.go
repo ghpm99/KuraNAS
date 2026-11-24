@@ -27,8 +27,8 @@ func TestCompareCalVer(t *testing.T) {
 		{"2024.08.06", "2024.09.01", -1},
 		{"2024.09.01", "2024.08.06", 1},
 		{"2023.12.30", "2024.01.01", -1},
-		{"2024.08", "2024.08.06", -1}, // fewer segments, older
-		{"dev", "2024.08.06", -1},     // non-numeric is oldest
+		{"2024.08", "2024.08.06", -1},
+		{"dev", "2024.08.06", -1},
 	}
 	for _, tc := range cases {
 		if got := compareCalVer(tc.a, tc.b); got != tc.want {

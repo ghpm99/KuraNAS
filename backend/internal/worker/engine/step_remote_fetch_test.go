@@ -32,8 +32,6 @@ func TestExecuteRemoteFetchStepEarlyErrors(t *testing.T) {
 	if err := executeRemoteFetchStep(nil, step(ingestapi.RemoteFetchStepPayload{URL: "https://x.test/v", Preset: "audio_mp3", OutputDir: ""})); err == nil {
 		t.Fatal("expected an error for an empty output dir")
 	}
-	// A missing binary makes cmd.Start fail — exercises the exec path without
-	// needing a real yt-dlp installed.
 	err := executeRemoteFetchStep(nil, step(ingestapi.RemoteFetchStepPayload{
 		URL:       "https://x.test/v",
 		Preset:    "audio_mp3",
@@ -54,7 +52,6 @@ func TestBuildYtDlpArgs(t *testing.T) {
 			t.Fatalf("args missing %q: %v", want, args)
 		}
 	}
-	// The URL must be last so flags never get parsed as the positional arg.
 	if args[len(args)-1] != "https://x.test/v" {
 		t.Fatalf("expected url last, got %q", args[len(args)-1])
 	}

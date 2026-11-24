@@ -1,6 +1,6 @@
 package ingest
 
-// FetchRequestDto is the body of POST /downloads/fetch: a media URL to pull
+// FetchRequestDto is the body of POST /ingest/fetch: a media URL to pull
 // server-side with yt-dlp, the chosen quality preset, and where it should land.
 type FetchRequestDto struct {
 	URL        string `json:"url"`
@@ -9,7 +9,7 @@ type FetchRequestDto struct {
 	Subfolder  string `json:"subfolder"`
 }
 
-// FetchResponseDto is returned by POST /downloads/fetch. The download runs in a
+// FetchResponseDto is returned by POST /ingest/fetch. The download runs in a
 // background job; the caller tracks progress through the jobs API.
 type FetchResponseDto struct {
 	JobID int `json:"job_id"`

@@ -33,16 +33,20 @@ var presets = []preset{
 	},
 }
 
+// copyOfArgs returns an independent copy so callers cannot mutate the shared preset slice.
+func copyOfArgs(args []string) []string {
+	copied := make([]string, len(args))
+	copy(copied, args)
+	return copied
+}
+
 // ResolvePreset returns the format arguments for a preset key. The second result
 // is false when the key is unknown, so callers reject it instead of running an
 // unconfigured download.
 func ResolvePreset(key string) ([]string, bool) {
 	for _, p := range presets {
 		if p.Key == key {
-			// Copy so callers cannot mutate the shared slice.
-			args := make([]string, len(p.Args))
-			copy(args, p.Args)
-			return args, true
+			return copyOfArgs(p.Args), true
 		}
 	}
 	return nil, false

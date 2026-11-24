@@ -145,12 +145,11 @@ func resolveTarget(enabled []roots.Root, targetRoot, subfolder string) (string, 
 	if sub == "" {
 		return matched, nil
 	}
-	// Clean and confine: the joined path must stay inside the root.
-	joined := filepath.Clean(filepath.Join(matched, sub))
-	if joined != matched && !strings.HasPrefix(joined, matched+string(filepath.Separator)) {
+	confined := filepath.Clean(filepath.Join(matched, sub))
+	if confined != matched && !strings.HasPrefix(confined, matched+string(filepath.Separator)) {
 		return "", ErrInvalidSubfolder
 	}
-	return joined, nil
+	return confined, nil
 }
 
 func targetsFrom(enabled []roots.Root) []TargetDto {
