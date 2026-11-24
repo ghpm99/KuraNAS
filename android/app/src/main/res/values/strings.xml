@@ -240,4 +240,24 @@
     <string name="settings_direct_upload_stop">Stop sending directly</string>
     <string name="transfer_source_missing">The source file is no longer available</string>
     <string name="transfer_rejected_without_detail">The server rejected the transfer</string>
+    <string name="nav_transfers">Transfers</string>
+    <string name="transfers_title">Transfers</string>
+    <string name="transfers_empty">No transfers</string>
+    <string name="transfers_clear_finished">Clear finished</string>
+    <string name="transfers_section_in_progress">In progress</string>
+    <string name="transfers_section_completed">Completed</string>
+    <string name="transfers_section_failed">Failed</string>
+    <string name="transfers_destination">To %1$s</string>
+    <string name="transfers_action_retry">Try again</string>
+    <string name="transfers_status_queued">Queued</string>
+    <string name="transfers_status_uploading">Uploading %1$d%%</string>
+    <string name="transfers_status_uploading_unknown">Uploading</string>
+    <string name="transfers_status_downloading">Downloading %1$d%%</string>
+    <string name="transfers_status_downloading_unknown">Downloading</string>
+    <string name="transfers_status_waiting_for_network">Waiting for connection</string>
+    <string name="transfers_status_completed">Completed</string>
+    <string name="transfers_status_already_existed">Already existed</string>
+    <string name="transfers_status_failed">Failed</string>
+    <string name="transfers_status_failed_with_reason">Failed: %1$s</string>
+    <string name="transfers_status_cancelled">Cancelled</string>
 </resources>

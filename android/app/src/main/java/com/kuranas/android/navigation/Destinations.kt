@@ -45,6 +45,7 @@ object AppRoute {
     const val VIDEO_PLAYLIST = "video/playlist/{id}"
     const val VIDEO_LIBRARY = "video/library"
     const val FILES_FOLDER = "files/folder/{folderId}?name={name}"
+    const val TRANSFERS = "transfers"
     const val JOBS = "jobs"
     const val JOB_DETAIL = "jobs/{id}"
     const val ANALYTICS = "analytics"

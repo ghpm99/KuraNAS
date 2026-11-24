@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -31,6 +34,8 @@ fun KNDrawer(
     current: Int,
     onSelect: (Int) -> Unit,
     onForget: () -> Unit,
+    activeTransfersCount: Int,
+    onOpenTransfers: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ModalDrawerSheet(
@@ -63,6 +68,14 @@ fun KNDrawer(
                     ),
                 )
             }
+            NavigationDrawerItem(
+                icon = { Icon(Icons.Filled.SwapVert, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                label = { Text(stringResource(R.string.nav_transfers)) },
+                badge = { if (activeTransfersCount > 0) Badge { Text(activeTransfersCount.toString()) } },
+                selected = false,
+                onClick = onOpenTransfers,
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
             Spacer(Modifier.weight(1f))
             Row(
                 modifier = Modifier

@@ -10,6 +10,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -45,6 +46,8 @@ import com.kuranas.android.feature.music.ui.MusicScreen
 import com.kuranas.android.feature.notifications.ui.NotificationsScreen
 import com.kuranas.android.feature.search.ui.SearchScreen
 import com.kuranas.android.feature.settings.ui.SettingsScreen
+import com.kuranas.android.feature.transfers.ui.TransfersIndicatorViewModel
+import com.kuranas.android.feature.transfers.ui.TransfersScreen
 import com.kuranas.android.feature.video.ui.VideoLibraryScreen
 import com.kuranas.android.feature.video.ui.VideoPlayerScreen
 import com.kuranas.android.feature.video.ui.VideoPlaylistScreen
@@ -56,6 +59,8 @@ private const val ROUTE_HOME = "home"
 @Composable
 fun KuranasRoot(
     modifier: Modifier = Modifier,
+    shouldOpenTransfers: Boolean = false,
+    onOpenTransfersHandled: () -> Unit = {},
     rootViewModel: RootViewModel = hiltViewModel(),
 ) {
     val destination by rootViewModel.destination.collectAsStateWithLifecycle()
@@ -64,14 +69,20 @@ fun KuranasRoot(
         when (destination) {
             RootDestination.Checking -> LoadingView()
             RootDestination.Connection -> ConnectionScreen()
-            RootDestination.App -> AuthenticatedApp()
+            RootDestination.App -> AuthenticatedApp(shouldOpenTransfers, onOpenTransfersHandled)
         }
     }
 }
 
 @Composable
-private fun AuthenticatedApp() {
+private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandled: () -> Unit) {
     val navController = rememberNavController()
+
+    LaunchedEffect(shouldOpenTransfers) {
+        if (!shouldOpenTransfers) return@LaunchedEffect
+        navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true }
+        onOpenTransfersHandled()
+    }
 
     NavHost(navController = navController, startDestination = ROUTE_HOME, modifier = Modifier.fillMaxSize()) {
         composable(ROUTE_HOME) { AppPagerHost(navController) }
@@ -181,6 +192,9 @@ private fun AuthenticatedApp() {
                 onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
             )
         }
+        composable(AppRoute.TRANSFERS) {
+            TransfersScreen(onNavigateBack = { navController.popBackStack() })
+        }
         composable(AppRoute.VIDEO_LIBRARY) {
             VideoLibraryScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -196,6 +210,8 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val transfersIndicatorViewModel: TransfersIndicatorViewModel = hiltViewModel()
+    val activeTransfersCount by transfersIndicatorViewModel.activeCount.collectAsStateWithLifecycle()
 
     fun goToPage(page: SwipePage) {
         scope.launch { pagerState.animateScrollToPage(page.ordinal) }
@@ -214,6 +230,13 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                     }
                 },
                 onForget = { /* handled in SettingsScreen */ },
+                activeTransfersCount = activeTransfersCount,
+                onOpenTransfers = {
+                    scope.launch {
+                        drawerState.close()
+                        navController.navigate(AppRoute.TRANSFERS)
+                    }
+                },
             )
         },
     ) {

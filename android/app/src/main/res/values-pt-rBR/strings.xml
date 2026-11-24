@@ -238,4 +238,24 @@
     <string name="settings_direct_upload_stop">Parar de enviar direto</string>
     <string name="transfer_source_missing">O arquivo de origem não está mais disponível</string>
     <string name="transfer_rejected_without_detail">O servidor recusou a transferência</string>
+    <string name="nav_transfers">Transferências</string>
+    <string name="transfers_title">Transferências</string>
+    <string name="transfers_empty">Nenhuma transferência</string>
+    <string name="transfers_clear_finished">Limpar concluídas</string>
+    <string name="transfers_section_in_progress">Em andamento</string>
+    <string name="transfers_section_completed">Concluídas</string>
+    <string name="transfers_section_failed">Com falha</string>
+    <string name="transfers_destination">Para %1$s</string>
+    <string name="transfers_action_retry">Tentar de novo</string>
+    <string name="transfers_status_queued">Na fila</string>
+    <string name="transfers_status_uploading">Enviando %1$d%%</string>
+    <string name="transfers_status_uploading_unknown">Enviando</string>
+    <string name="transfers_status_downloading">Baixando %1$d%%</string>
+    <string name="transfers_status_downloading_unknown">Baixando</string>
+    <string name="transfers_status_waiting_for_network">Aguardando conexão</string>
+    <string name="transfers_status_completed">Concluída</string>
+    <string name="transfers_status_already_existed">Já existia</string>
+    <string name="transfers_status_failed">Falhou</string>
+    <string name="transfers_status_failed_with_reason">Falhou: %1$s</string>
+    <string name="transfers_status_cancelled">Cancelada</string>
 </resources>
