@@ -72,7 +72,7 @@ Regras invariantes:
 | 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | ✅ concluída (2026-11-17) | spec 05; CAs verificados no sistema local; sub-itens 40.1 (RN-04 completa), 40.2 (seleção de faixas), 40.3 (player reflete a edição) |
 | 41 | [Música: playlist por regra](41-musica-playlist-por-regra.md) | feature | P0 | 40 | ✅ concluída (2026-11-24) | spec 05; CAs verificados no backend local |
 | 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | ✅ concluída (2026-11-24) | spec 06; CAs verificados no backend local; sub-itens 42.1 (série pequena) e 42.2 (vídeo corrigido para série) |
-| 43 | [Vídeos: faixa de áudio](43-videos-faixa-de-audio.md) | feature | P1 | — | em execução | spec 06 |
+| 43 | [Vídeos: faixa de áudio](43-videos-faixa-de-audio.md) | feature | P1 | — | ✅ concluída (2026-11-24) | spec 06; verificada com MKV de dois idiomas no backend local; sub-item 43.1 (remux começa no quadro-chave real); avanço no navegador não exercitado |
 | 44 | [Documentos: biblioteca no backend](44-documentos-biblioteca-backend.md) | feature | P0 | — | pendente | spec 07 |
 | 45 | [Documentos: tela na web](45-documentos-tela-web.md) | feature | P0 | 44, 20, 21 | pendente | spec 07 |
 | 46 | [Documentos: tela no Android](46-documentos-android.md) | feature | P1 | 44, 36, 39 | pendente | spec 07 |
