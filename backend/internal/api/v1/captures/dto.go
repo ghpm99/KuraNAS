@@ -19,6 +19,7 @@ type CaptureDto struct {
 
 	FileID        *int     `json:"file_id,omitempty"`
 	Status        string   `json:"status"`
+	FailureReason string   `json:"failure_reason,omitempty"`
 	Title         string   `json:"title,omitempty"`
 	EpisodeTitle  string   `json:"episode_title,omitempty"`
 	Season        *int     `json:"season,omitempty"`
@@ -101,6 +102,7 @@ func (m *CaptureModel) ToDto() CaptureDto {
 		CreatedAt:     m.CreatedAt,
 		FileID:        m.FileID,
 		Status:        string(m.Status),
+		FailureReason: m.FailureReason,
 		Title:         m.Title,
 		EpisodeTitle:  m.EpisodeTitle,
 		Season:        m.Season,

@@ -22,5 +22,5 @@ var DeleteCaptureQuery string
 //go:embed update_capture_promotion.sql
 var UpdateCapturePromotionQuery string
 
-//go:embed update_capture_status.sql
-var UpdateCaptureStatusQuery string
+//go:embed mark_capture_promotion_failed.sql
+var MarkCapturePromotionFailedQuery string

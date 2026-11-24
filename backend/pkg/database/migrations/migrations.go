@@ -245,6 +245,9 @@ var CreateVideoManualOverrideQuery string
 //go:embed queries/0078_add_document_text_index_state.sql
 var AddDocumentTextIndexStateQuery string
 
+//go:embed queries/0079_add_capture_failure_reason.sql
+var AddCaptureFailureReasonQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -509,6 +512,10 @@ func capturesMigrationList() {
 	addMigrationRequiring("0043_expand_captures_table",
 		[]string{"0023_create_captures_table", "0001_create_home_file_table"},
 		defaultMigrationFunc(ExpandCapturesTableQuery))
+
+	addMigrationRequiring("0079_add_capture_failure_reason",
+		[]string{"0043_expand_captures_table"},
+		defaultMigrationFunc(AddCaptureFailureReasonQuery))
 }
 
 func librariesMigrationList() {

@@ -53,6 +53,7 @@ func (s *Service) PromoteCapture(captureID int) error {
 	}
 
 	stagingPath := capture.FilePath
+	receivedFileName := capture.FileName
 	stagingDir := filepath.Dir(stagingPath)
 
 	meta := parseCaptureMetadata(capture.RawMetadata)
@@ -104,9 +105,9 @@ func (s *Service) PromoteCapture(captureID int) error {
 	// download just means the thumbnail step later falls back to an ffmpeg frame.
 	s.downloadPoster(meta, fileID)
 
-	if moveErr := placeRecordingInLibrary(stagingPath, finalPath); moveErr != nil {
-		s.rollbackPromotion(captureID, fileID)
-		promoteErr := fmt.Errorf("PromoteCapture: move recording into library: %w", moveErr)
+	if placementErr := placeRecordingInLibrary(stagingPath, finalPath); placementErr != nil {
+		s.rollbackPromotion(captureID, fileID, receivedFileName, stagingPath, placementErr.failureReason())
+		promoteErr := fmt.Errorf("PromoteCapture: place recording into library: %w", placementErr)
 		s.emitPromotionFailedNotification(capture, promoteErr)
 		return promoteErr
 	}
@@ -116,24 +117,43 @@ func (s *Service) PromoteCapture(captureID int) error {
 	return nil
 }
 
+type recordingPlacementError struct {
+	reasonKey string
+	cause     error
+}
+
+func (e *recordingPlacementError) Error() string {
+	return e.cause.Error()
+}
+
+func (e *recordingPlacementError) Unwrap() error {
+	return e.cause
+}
+
+func (e *recordingPlacementError) failureReason() string {
+	return i18n.GetMessage(e.reasonKey)
+}
+
 // placeRecordingInLibrary moves the staged recording into the watched library,
-// remuxing MP4 captures into a broadly-compatible file first. The plugin emits
-// fragmented MP4 with Opus audio (the browser had no AAC encoder), which the
-// Android/ExoPlayer Mp4 demuxer cannot play; the remux copies the video stream
-// untouched, transcodes the audio to AAC and writes a faststart (defragmented)
-// file. ffmpeg is already a runtime dependency (video thumbnails); if it is
-// missing or the remux fails, fall back to a plain move so the recording is
-// still promoted — just not necessarily playable everywhere — and log it for
-// follow-up. Non-MP4 containers (e.g. WebM) are moved as-is.
-func placeRecordingInLibrary(stagingPath, finalPath string) error {
+// remuxing MP4-family captures into a broadly-compatible file first. The plugin
+// emits fragmented MP4 with Opus audio, which the Android/ExoPlayer Mp4 demuxer
+// cannot play; the remux copies the video stream, transcodes the audio to AAC
+// and writes a faststart file. A failed remux fails the placement and leaves
+// the library untouched, so an unplayable file never enters it. Other
+// containers (e.g. WebM) are moved as-is.
+func placeRecordingInLibrary(stagingPath, finalPath string) *recordingPlacementError {
 	if isRemuxableContainer(finalPath) {
 		if err := remuxRecording(stagingPath, finalPath); err != nil {
-			applog.Error("captures: remux failed, falling back to plain move", "src", stagingPath, "dest", finalPath, "error", err)
-		} else {
-			return nil
+			_ = os.Remove(finalPath)
+			applog.Error("captures: remux failed", "src", stagingPath, "dest", finalPath, "error", err)
+			return &recordingPlacementError{reasonKey: "CAPTURE_PROMOTION_FAILED_REMUX", cause: err}
 		}
+		return nil
 	}
-	return moveFile(stagingPath, finalPath)
+	if err := moveFile(stagingPath, finalPath); err != nil {
+		return &recordingPlacementError{reasonKey: "CAPTURE_PROMOTION_FAILED_MOVE", cause: err}
+	}
+	return nil
 }
 
 // isRemuxableContainer reports whether the destination is an MP4-family container
@@ -173,15 +193,16 @@ func ffmpegRemuxForPlayback(srcPath, destPath string) error {
 	return nil
 }
 
-// rollbackPromotion undoes the DB side of a promotion whose move failed: the
-// pre-registered home_file stub is removed and the capture is flipped to failed
-// with its file_id detached, leaving the recording in staging for a retry.
-func (s *Service) rollbackPromotion(captureID int, fileID int) {
+// rollbackPromotion undoes the DB side of a promotion whose placement failed:
+// the pre-registered home_file stub is removed and the capture is flipped to
+// failed with the stored reason, its file_id detached and its file_name/file_path
+// pointing back at the received file kept in staging for a retry.
+func (s *Service) rollbackPromotion(captureID int, fileID int, receivedFileName string, receivedFilePath string, failureReason string) {
 	if delErr := s.FilesProvider.DeleteFileRecord(fileID); delErr != nil {
 		applog.Error("captures: rollback delete home_file failed", "capture_id", captureID, "file_id", fileID, "error", delErr)
 	}
 	if statusErr := s.withTransaction(func(tx *sql.Tx) error {
-		return s.Repository.UpdateCaptureStatus(tx, captureID, CaptureStatusFailed, nil)
+		return s.Repository.MarkCapturePromotionFailed(tx, captureID, receivedFileName, receivedFilePath, failureReason)
 	}); statusErr != nil {
 		applog.Error("captures: rollback capture status failed", "capture_id", captureID, "error", statusErr)
 	}

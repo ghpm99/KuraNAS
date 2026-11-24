@@ -49,4 +49,5 @@ type CaptureModel struct {
 	ThumbnailURL  string
 	ContentType   string
 	RawMetadata   json.RawMessage
+	FailureReason string
 }

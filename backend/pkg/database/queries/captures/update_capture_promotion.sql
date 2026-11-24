@@ -17,5 +17,6 @@ SET file_id = $2,
     platform = $17,
     source_url = $18,
     thumbnail_url = $19,
-    content_type = $20
+    content_type = $20,
+    failure_reason = ''
 WHERE id = $1;

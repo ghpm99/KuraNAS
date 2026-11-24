@@ -64,6 +64,7 @@ func scanCapture(scanner rowScanner) (CaptureModel, error) {
 		&m.ThumbnailURL,
 		&m.ContentType,
 		&rawMetadata,
+		&m.FailureReason,
 	)
 	if err != nil {
 		return m, err
@@ -275,12 +276,12 @@ func (r *Repository) UpdateCapturePromotion(transaction *sql.Tx, capture Capture
 	return nil
 }
 
-// UpdateCaptureStatus sets a capture's lifecycle status and (optionally) clears
-// or sets its file_id — used to flip to "failed" and detach the rolled-back
-// home_file during a promotion failure.
-func (r *Repository) UpdateCaptureStatus(transaction *sql.Tx, id int, status CaptureStatus, fileID *int) error {
-	if _, err := transaction.Exec(queries.UpdateCaptureStatusQuery, id, string(status), ptrToNullInt(fileID)); err != nil {
-		return fmt.Errorf("UpdateCaptureStatus: %w", err)
+// MarkCapturePromotionFailed flips the capture to failed, detaches its file_id
+// and points file_name/file_path back at the received file so a retry or a
+// delete operates on what is actually on disk.
+func (r *Repository) MarkCapturePromotionFailed(transaction *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error {
+	if _, err := transaction.Exec(queries.MarkCapturePromotionFailedQuery, id, receivedFileName, receivedFilePath, failureReason); err != nil {
+		return fmt.Errorf("MarkCapturePromotionFailed: %w", err)
 	}
 	return nil
 }

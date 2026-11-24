@@ -146,10 +146,10 @@ func TestPromoteCaptureMoveFailureRollsBack(t *testing.T) {
 		getByIDFn: func(id int) (CaptureModel, error) {
 			return CaptureModel{ID: id, Name: "gone", FileName: "missing.mp4", FilePath: staging, RawMetadata: json.RawMessage(`{"title":"Gone"}`)}, nil
 		},
-		updateStatusFn: func(tx *sql.Tx, id int, status CaptureStatus, fileID *int) error {
-			failedStatus = status
-			if fileID != nil {
-				t.Fatalf("expected nil file id on rollback, got %v", *fileID)
+		markFailedFn: func(tx *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error {
+			failedStatus = CaptureStatusFailed
+			if receivedFilePath != staging || receivedFileName != "missing.mp4" || failureReason == "" {
+				t.Fatalf("unexpected failure record: %q %q %q", receivedFileName, receivedFilePath, failureReason)
 			}
 			return nil
 		},
@@ -231,7 +231,7 @@ func TestPlaceRecordingInLibraryRemuxesMP4(t *testing.T) {
 	}
 }
 
-func TestPlaceRecordingInLibraryFallsBackOnRemuxError(t *testing.T) {
+func TestPlaceRecordingInLibraryFailsWithoutMovingOnRemuxError(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "staging", "rec.mp4")
 	if err := os.MkdirAll(filepath.Dir(src), 0755); err != nil {
@@ -247,14 +247,15 @@ func TestPlaceRecordingInLibraryFallsBackOnRemuxError(t *testing.T) {
 
 	swapRemux(t, func(s, d string) error { return os.ErrNotExist })
 
-	if err := placeRecordingInLibrary(src, dest); err != nil {
-		t.Fatalf("expected fallback move to succeed: %v", err)
+	placementErr := placeRecordingInLibrary(src, dest)
+	if placementErr == nil || placementErr.reasonKey != "CAPTURE_PROMOTION_FAILED_REMUX" {
+		t.Fatalf("expected remux placement error, got %v", placementErr)
 	}
-	if data, err := os.ReadFile(dest); err != nil || string(data) != "raw" {
-		t.Fatalf("expected moved file at dest (data=%q, err=%v)", string(data), err)
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		t.Fatalf("expected nothing at dest, stat err = %v", err)
 	}
-	if _, err := os.Stat(src); !os.IsNotExist(err) {
-		t.Fatalf("expected source consumed by move, stat err = %v", err)
+	if data, err := os.ReadFile(src); err != nil || string(data) != "raw" {
+		t.Fatalf("expected received file untouched (data=%q, err=%v)", string(data), err)
 	}
 }
 

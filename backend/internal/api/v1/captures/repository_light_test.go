@@ -15,11 +15,11 @@ import (
 )
 
 // captureColumns mirrors the SELECT projection of every capture read query, so
-// the sqlmock rows scan into the same 27 destinations scanCapture expects.
+// the sqlmock rows scan into the same 28 destinations scanCapture expects.
 var captureColumns = []string{
 	"id", "name", "file_name", "file_path", "media_type", "mime_type", "size", "episode_key", "created_at",
 	"file_id", "status", "title", "episode_title", "season", "episode", "description", "release_year",
-	"genres", "cast_members", "directors", "studio", "content_rating", "platform", "source_url", "thumbnail_url", "content_type", "raw_metadata",
+	"genres", "cast_members", "directors", "studio", "content_rating", "platform", "source_url", "thumbnail_url", "content_type", "raw_metadata", "failure_reason",
 }
 
 // captureRow builds a full mock row from the historical columns, leaving the
@@ -28,7 +28,7 @@ func captureRow(id int, name, fileName, filePath, mediaType, mimeType string, si
 	return []driver.Value{
 		id, name, fileName, filePath, mediaType, mimeType, size, episodeKey, createdAt,
 		nil, "uploaded", "", "", nil, nil, "", nil,
-		[]byte("[]"), []byte("[]"), []byte("[]"), "", "", "", "", "", "", []byte("{}"),
+		[]byte("[]"), []byte("[]"), []byte("[]"), "", "", "", "", "", "", []byte("{}"), "",
 	}
 }
 

@@ -28,7 +28,7 @@ type repoMock struct {
 	getByIDFn         func(id int) (CaptureModel, error)
 	getByEpisodeKeyFn func(episodeKey string) (CaptureModel, bool, error)
 	updatePromotionFn func(tx *sql.Tx, capture CaptureModel) error
-	updateStatusFn    func(tx *sql.Tx, id int, status CaptureStatus, fileID *int) error
+	markFailedFn      func(tx *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error
 	deleteFn          func(tx *sql.Tx, id int) error
 }
 
@@ -100,9 +100,9 @@ func (r *repoMock) UpdateCapturePromotion(tx *sql.Tx, capture CaptureModel) erro
 	return nil
 }
 
-func (r *repoMock) UpdateCaptureStatus(tx *sql.Tx, id int, status CaptureStatus, fileID *int) error {
-	if r.updateStatusFn != nil {
-		return r.updateStatusFn(tx, id, status, fileID)
+func (r *repoMock) MarkCapturePromotionFailed(tx *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error {
+	if r.markFailedFn != nil {
+		return r.markFailedFn(tx, id, receivedFileName, receivedFilePath, failureReason)
 	}
 	return nil
 }
