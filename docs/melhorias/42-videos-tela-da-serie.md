@@ -46,6 +46,10 @@ O backend não guarda temporada nem episódio de arquivos (só de capturas, em `
 - [ ] Testes: ordenação e overrides contra Postgres real; seam test das mutações; render sem mock da tela.
 - [ ] `make ci` verde.
 
+## Sub-itens
+
+- [ ] **42.1** — o dedup do motor de playlists (`deduplicateCandidates`, sobreposição > 80% com o candidato de maior pontuação) deixa a playlist "mixed" (`random:smart_mix`, até 20 itens) engolir uma série pequena (≤ 12 episódios) num acervo pequeno: a série não vira playlist e não aparece em Séries. Achado no passo B1; afeta `06/CA-07` em bibliotecas pequenas. Playlists de série não devem ser descartadas por sobreposição com playlists de mistura.
+
 ## Fora de escopo
 
 - Metadados de serviços externos (sinopse, pôster da internet).
