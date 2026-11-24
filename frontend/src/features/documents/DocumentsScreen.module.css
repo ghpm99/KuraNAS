@@ -1,0 +1,11 @@
+.list {
+    margin: 0;
+    padding: 0;
+}
+
+.listEndTotal {
+    margin: var(--app-space-3, 12px) 0 0;
+    text-align: center;
+    color: var(--app-color-text-secondary);
+    font-size: 0.875rem;
+}
