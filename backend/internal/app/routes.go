@@ -242,7 +242,6 @@ func RegisterFilesRoutes(router *gin.RouterGroup, context *AppContext) {
 	files.GET("/starred", context.Files.Handler.GetStarredFilesHandler)
 	files.GET("/starred/counts", context.Files.Handler.GetStarredCountsHandler)
 	files.GET("/recent-files", context.Files.Handler.GetRecentlyAccessedFilesHandler)
-	files.GET("/recent", context.Files.Handler.GetRecentFilesHandler)
 	files.GET("/recent/:id", context.Files.Handler.GetRecentAccessByFileHandler)
 	files.GET("/ancestors/:id", context.Files.Handler.GetFileAncestorsHandler)
 	files.GET("/folder-stats/:id", context.Files.Handler.GetFolderStatsHandler)

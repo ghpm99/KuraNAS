@@ -13,32 +13,6 @@ import (
 	"net/http"
 )
 
-func (handler *Handler) GetRecentFilesHandler(c *gin.Context) {
-	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
-		Name:        "GetRecentFiles",
-		Description: "Fetching recent files",
-		Level:       logger.LogLevelInfo,
-		Status:      logger.LogStatusPending,
-		IPAddress:   c.ClientIP(),
-	}, nil)
-
-	page, pageSize, isPaginationValid := utils.ParsePagination(c, 15)
-	if !isPaginationValid {
-		return
-	}
-
-	recentFiles, err := handler.recentFileService.GetRecentFiles(page, pageSize)
-
-	if err != nil {
-		handler.Logger.CompleteWithErrorLog(loggerModel, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_INTERNAL")})
-		return
-	}
-
-	handler.Logger.CompleteWithSuccessLog(loggerModel)
-	c.JSON(http.StatusOK, recentFiles)
-}
-
 func (handler *Handler) GetRecentAccessByFileHandler(c *gin.Context) {
 
 	loggerModel, _ := handler.Logger.CreateLog(logger.LoggerModel{
@@ -166,30 +140,8 @@ func NewRecentFileService(repo RecentFileRepositoryInterface) *RecentFileService
 	return &RecentFileService{Repo: repo}
 }
 
-var DEFAULT_LIMIT = 10
-
 func (s *RecentFileService) RegisterAccess(ip string, fileID int) error {
 	return s.Repo.Upsert(ip, fileID)
-}
-
-func (s *RecentFileService) GetRecentFiles(page int, limit int) ([]RecentFileDto, error) {
-	if limit <= 0 {
-		limit = DEFAULT_LIMIT
-	}
-
-	if page < 1 {
-		page = 1
-	}
-	recentAccess, err := s.Repo.GetRecentFiles(page, limit)
-	if err != nil {
-		return nil, err
-	}
-	var result []RecentFileDto
-	for _, access := range recentAccess {
-		dto := access.ToDto()
-		result = append(result, dto)
-	}
-	return result, nil
 }
 
 func (s *RecentFileService) DeleteRecentFile(ip string, fileID int) error {
@@ -229,36 +181,6 @@ func (r *RecentFileRepository) Upsert(ip string, fileID int) error {
 		return fmt.Errorf("falha ao realizar upsert de arquivo recente: %w", err)
 	}
 	return nil
-}
-
-func (r *RecentFileRepository) GetRecentFiles(page int, pageSize int) ([]RecentFileModel, error) {
-	var result []RecentFileModel
-
-	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(
-			queries.GetRecentFilesQuery,
-			pageSize+1,
-			utils.CalculateOffset(page, pageSize),
-		)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var rf RecentFileModel
-			if err := rows.Scan(&rf.ID, &rf.IPAddress, &rf.FileID, &rf.AccessedAt); err != nil {
-				return err
-			}
-			result = append(result, rf)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("falha ao obter arquivos recentes: %w", err)
-	}
-	return result, nil
 }
 
 func (r *RecentFileRepository) Delete(ip string, fileID int) error {

@@ -22,10 +22,7 @@ type videoFilesServiceMock struct {
 
 type videoRecentServiceMock struct{}
 
-func (m *videoRecentServiceMock) RegisterAccess(ip string, fileID int) error { return nil }
-func (m *videoRecentServiceMock) GetRecentFiles(page int, pageSize int) ([]files.RecentFileDto, error) {
-	return nil, nil
-}
+func (m *videoRecentServiceMock) RegisterAccess(ip string, fileID int) error   { return nil }
 func (m *videoRecentServiceMock) DeleteRecentFile(ip string, fileID int) error { return nil }
 func (m *videoRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]files.RecentFileDto, error) {
 	return nil, nil

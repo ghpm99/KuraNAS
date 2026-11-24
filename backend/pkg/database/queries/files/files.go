@@ -67,9 +67,6 @@ var DeleteRecentFileQuery string
 //go:embed upsert_recent_file.sql
 var UpsertRecentFileQuery string
 
-//go:embed get_recent_files.sql
-var GetRecentFilesQuery string
-
 //go:embed get_recent_by_file_id.sql
 var GetRecentByFileIDQuery string
 

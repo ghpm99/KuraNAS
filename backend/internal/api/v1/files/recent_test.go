@@ -17,15 +17,11 @@ import (
 
 type recentRepoMock struct {
 	upsertFn      func(ip string, fileID int) error
-	getRecentFn   func(page int, pageSize int) ([]RecentFileModel, error)
 	deleteFn      func(ip string, fileID int) error
 	getByFileIDFn func(fileID int) ([]RecentFileModel, error)
 }
 
 func (m *recentRepoMock) Upsert(ip string, fileID int) error { return m.upsertFn(ip, fileID) }
-func (m *recentRepoMock) GetRecentFiles(page int, pageSize int) ([]RecentFileModel, error) {
-	return m.getRecentFn(page, pageSize)
-}
 func (m *recentRepoMock) Delete(ip string, fileID int) error { return m.deleteFn(ip, fileID) }
 func (m *recentRepoMock) GetByFileID(fileID int) ([]RecentFileModel, error) {
 	return m.getByFileIDFn(fileID)
@@ -35,9 +31,6 @@ func TestRecentFileService(t *testing.T) {
 	now := time.Now()
 	repo := &recentRepoMock{
 		upsertFn: func(ip string, fileID int) error { return nil },
-		getRecentFn: func(page int, pageSize int) ([]RecentFileModel, error) {
-			return []RecentFileModel{{ID: 1, IPAddress: "127.0.0.1", FileID: 2, AccessedAt: now}}, nil
-		},
 		deleteFn: func(ip string, fileID int) error { return nil },
 		getByFileIDFn: func(fileID int) ([]RecentFileModel, error) {
 			return []RecentFileModel{{ID: 2, IPAddress: "127.0.0.1", FileID: fileID, AccessedAt: now}}, nil
@@ -47,10 +40,6 @@ func TestRecentFileService(t *testing.T) {
 
 	if err := svc.RegisterAccess("127.0.0.1", 2); err != nil {
 		t.Fatalf("RegisterAccess failed: %v", err)
-	}
-	list, err := svc.GetRecentFiles(0, 0)
-	if err != nil || len(list) != 1 {
-		t.Fatalf("GetRecentFiles failed len=%d err=%v", len(list), err)
 	}
 	if err := svc.DeleteRecentFile("127.0.0.1", 2); err != nil {
 		t.Fatalf("DeleteRecentFile failed: %v", err)
@@ -78,15 +67,6 @@ func TestRecentFileRepository(t *testing.T) {
 	mock.ExpectCommit()
 	if err := repo.Upsert("127.0.0.1", 10); err != nil {
 		t.Fatalf("Upsert failed: %v", err)
-	}
-
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(queries.GetRecentFilesQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "ip_address", "file_id", "accessed_at"}).
-			AddRow(1, "127.0.0.1", 10, now))
-	result, err := repo.GetRecentFiles(1, 10)
-	if err != nil || len(result) != 1 {
-		t.Fatalf("GetRecentFiles failed len=%d err=%v", len(result), err)
 	}
 
 	mock.ExpectBegin()
@@ -134,7 +114,6 @@ func TestFileModelChecksumAndServiceConstructors(t *testing.T) {
 func TestRecentFileService_RegisterAccessErrors(t *testing.T) {
 	upsertErrRepo := &recentRepoMock{
 		upsertFn:      func(ip string, fileID int) error { return errors.New("upsert failed") },
-		getRecentFn:   func(page int, pageSize int) ([]RecentFileModel, error) { return nil, nil },
 		deleteFn:      func(ip string, fileID int) error { return nil },
 		getByFileIDFn: func(fileID int) ([]RecentFileModel, error) { return nil, nil },
 	}

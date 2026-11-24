@@ -162,10 +162,7 @@ func (m *filesHandlerServiceMock) CopyFile(sourceID int, destinationFolderID *in
 
 type filesRecentServiceMock struct{}
 
-func (m *filesRecentServiceMock) RegisterAccess(ip string, fileID int) error { return nil }
-func (m *filesRecentServiceMock) GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error) {
-	return []RecentFileDto{{ID: 1, FileID: 1, IPAddress: "127.0.0.1", AccessedAt: time.Now()}}, nil
-}
+func (m *filesRecentServiceMock) RegisterAccess(ip string, fileID int) error   { return nil }
 func (m *filesRecentServiceMock) DeleteRecentFile(ip string, fileID int) error { return nil }
 func (m *filesRecentServiceMock) GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error) {
 	return []RecentFileDto{{ID: 2, FileID: fileID, IPAddress: "127.0.0.1", AccessedAt: time.Now()}}, nil
@@ -300,16 +297,9 @@ func (m *filesHandlerServiceFuncMock) GetDuplicateFiles(page int, pageSize int) 
 
 type filesRecentServiceFuncMock struct {
 	filesRecentServiceMock
-	getRecentFilesFn  func(page int, pageSize int) ([]RecentFileDto, error)
 	getRecentByFileFn func(fileID int) ([]RecentFileDto, error)
 }
 
-func (m *filesRecentServiceFuncMock) GetRecentFiles(page int, pageSize int) ([]RecentFileDto, error) {
-	if m.getRecentFilesFn != nil {
-		return m.getRecentFilesFn(page, pageSize)
-	}
-	return m.filesRecentServiceMock.GetRecentFiles(page, pageSize)
-}
 func (m *filesRecentServiceFuncMock) GetRecentAccessByFileID(fileID int) ([]RecentFileDto, error) {
 	if m.getRecentByFileFn != nil {
 		return m.getRecentByFileFn(fileID)
@@ -345,7 +335,6 @@ func newFilesHandlerRouter(handler *Handler) *gin.Engine {
 	router.GET("/files/tree", handler.GetFilesTreeHandler)
 	router.GET("/files/thumbnail/:id", handler.GetFileThumbnailHandler)
 	router.GET("/files/blob/:id", handler.GetBlobFileHandler)
-	router.GET("/files/recent", handler.GetRecentFilesHandler)
 	router.GET("/files/recent/:id", handler.GetRecentAccessByFileHandler)
 	router.POST("/files/starred", handler.SetFilesStarredHandler)
 	router.GET("/files/starred/counts", handler.GetStarredCountsHandler)
@@ -375,7 +364,6 @@ func TestFilesHandlerManyEndpoints(t *testing.T) {
 		{method: http.MethodGet, path: "/files/children/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/tree", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/thumbnail/1", code: http.StatusOK},
-		{method: http.MethodGet, path: "/files/recent", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/recent/1", code: http.StatusOK},
 		{method: http.MethodPost, path: "/files/starred/1", code: http.StatusOK},
 		{method: http.MethodGet, path: "/files/total-space-used", code: http.StatusOK},
@@ -545,9 +533,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		},
 	}
 	recentService := &filesRecentServiceFuncMock{
-		getRecentFilesFn: func(page int, pageSize int) ([]RecentFileDto, error) {
-			return nil, errBoom
-		},
 		getRecentByFileFn: func(fileID int) ([]RecentFileDto, error) {
 			return nil, errBoom
 		},
@@ -565,7 +550,6 @@ func TestFilesHandlerErrorResponses(t *testing.T) {
 		{method: http.MethodGet, path: "/files/tree", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/children/1", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/blob/1", code: http.StatusInternalServerError},
-		{method: http.MethodGet, path: "/files/recent", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/recent/1", code: http.StatusInternalServerError},
 		{method: http.MethodPost, path: "/files/starred/1", code: http.StatusInternalServerError},
 		{method: http.MethodGet, path: "/files/total-space-used", code: http.StatusInternalServerError},
