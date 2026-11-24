@@ -6,6 +6,7 @@ SELECT
     matched.format,
     matched.size,
     matched.updated_at,
+    matched.starred,
     COALESCE(content_hit.has_every_term, FALSE) AS has_content_match,
     CASE
         WHEN COALESCE(content_hit.has_every_term, FALSE)

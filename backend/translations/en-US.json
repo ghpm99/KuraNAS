@@ -2381,6 +2381,7 @@
 	"DOCUMENTS_FOLDERS_COLLAPSE": "Collapse {{name}}",
 	"DOCUMENTS_FOLDERS_NOT_CONFIGURED": "The documents folder is not configured. Set it up in settings to filter by folder.",
 	"DOCUMENTS_FOLDERS_OPEN_SETTINGS": "Open settings",
+	"DOCUMENTS_ACTIONS_NOT_CONFIGURED": "Set the documents folder in settings to upload files and create folders.",
 	"DOCUMENTS_SEARCH_PLACEHOLDER": "Search by name or content",
 	"DOCUMENTS_SEARCH_RESULTS": "Document search results",
 	"DOCUMENTS_SEARCH_PAGE": "Page {{page}}",

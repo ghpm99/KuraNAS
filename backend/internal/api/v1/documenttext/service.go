@@ -161,6 +161,7 @@ func mapMatches(matches []DocumentMatchModel, terms []string) []DocumentSearchRe
 			Format:     match.Format,
 			Size:       match.Size,
 			UpdatedAt:  match.UpdatedAt,
+			Starred:    match.IsStarred,
 			Snippet:    snippet,
 			Page:       match.Page,
 		})

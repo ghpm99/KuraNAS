@@ -46,6 +46,7 @@ type DocumentMatchModel struct {
 	Format          string
 	Size            int64
 	UpdatedAt       time.Time
+	IsStarred       bool
 	HasContentMatch bool
 	ContentWindow   string
 	Page            *int

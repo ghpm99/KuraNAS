@@ -10,6 +10,7 @@ type DocumentSearchResultDto struct {
 	Format     string    `json:"format"`
 	Size       int64     `json:"size"`
 	UpdatedAt  time.Time `json:"updated_at"`
+	Starred    bool      `json:"starred"`
 	Snippet    string    `json:"snippet"`
 	Page       *int      `json:"page"`
 }

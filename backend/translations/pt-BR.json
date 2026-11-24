@@ -2381,6 +2381,7 @@
 	"DOCUMENTS_FOLDERS_COLLAPSE": "Recolher {{name}}",
 	"DOCUMENTS_FOLDERS_NOT_CONFIGURED": "A pasta de documentos não está configurada. Configure-a nas configurações para filtrar por pasta.",
 	"DOCUMENTS_FOLDERS_OPEN_SETTINGS": "Abrir configurações",
+	"DOCUMENTS_ACTIONS_NOT_CONFIGURED": "Configure a pasta de documentos nas configurações para enviar arquivos e criar pastas.",
 	"DOCUMENTS_SEARCH_PLACEHOLDER": "Buscar por nome ou conteúdo",
 	"DOCUMENTS_SEARCH_RESULTS": "Resultados da busca de documentos",
 	"DOCUMENTS_SEARCH_PAGE": "Página {{page}}",

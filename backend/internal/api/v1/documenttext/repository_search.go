@@ -43,7 +43,7 @@ func (repository *Repository) SearchDocuments(query DocumentSearchQuery) ([]Docu
 		for rows.Next() {
 			var match DocumentMatchModel
 			var page sql.NullInt64
-			if scanErr := rows.Scan(&match.FileID, &match.Name, &match.Path, &match.ParentPath, &match.Format, &match.Size, &match.UpdatedAt, &match.HasContentMatch, &match.ContentWindow, &page); scanErr != nil {
+			if scanErr := rows.Scan(&match.FileID, &match.Name, &match.Path, &match.ParentPath, &match.Format, &match.Size, &match.UpdatedAt, &match.IsStarred, &match.HasContentMatch, &match.ContentWindow, &page); scanErr != nil {
 				return scanErr
 			}
 			if page.Valid {

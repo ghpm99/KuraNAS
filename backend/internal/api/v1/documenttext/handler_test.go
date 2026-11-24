@@ -92,7 +92,7 @@ func TestSearchDocumentsHandlerReturnsPaginatedItems(t *testing.T) {
 		t.Fatal(err)
 	}
 	item := payload["items"].([]any)[0].(map[string]any)
-	for _, field := range []string{"file_id", "name", "path", "parent_path", "format", "size", "updated_at", "snippet", "page"} {
+	for _, field := range []string{"file_id", "name", "path", "parent_path", "format", "size", "updated_at", "starred", "snippet", "page"} {
 		if _, hasField := item[field]; !hasField {
 			t.Fatalf("missing field %q in %v", field, item)
 		}

@@ -162,6 +162,9 @@ func TestSearchDocumentsAppliesLibraryFilters_Postgres(t *testing.T) {
 		if len(results) != 1 || results[0].FileID != inside {
 			t.Fatalf("%s: expected only %d, got %v", name, inside, resultNames(results))
 		}
+		if !results[0].Starred {
+			t.Fatalf("%s: expected the starred document to come back starred", name)
+		}
 	}
 
 	oldDate := now.Add(-96 * time.Hour)
