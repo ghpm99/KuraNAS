@@ -6,6 +6,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -14,6 +15,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,6 +32,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.kuranas.android.core.server.ServerConnectionState
+import com.kuranas.android.core.ui.LocalServerReconnections
 import com.kuranas.android.core.ui.components.KNFrame
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.feature.connection.ui.ConnectionScreen
@@ -62,6 +66,8 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
     val activityOwner = LocalActivity.current as ComponentActivity
     val transfersIndicatorViewModel: TransfersIndicatorViewModel = hiltViewModel(activityOwner)
     val notificationsIndicatorViewModel: NotificationsIndicatorViewModel = hiltViewModel(activityOwner)
+    val connectionBannerViewModel: ConnectionBannerViewModel = hiltViewModel()
+    val connectionState by connectionBannerViewModel.connectionState.collectAsStateWithLifecycle()
     val activeTransfersCount by transfersIndicatorViewModel.activeCount.collectAsStateWithLifecycle()
     val unreadNotificationsCount by notificationsIndicatorViewModel.unreadCount.collectAsStateWithLifecycle()
 
@@ -86,33 +92,42 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
         navController.openTab(BottomTab.HOME)
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(1f)) {
-            NavHost(
-                navController = navController,
-                startDestination = BottomTab.HOME.graphRoute,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                tabGraphs(navController)
-                topLevelRoutes(navController)
+    CompositionLocalProvider(LocalServerReconnections provides connectionBannerViewModel.reconnections) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
+                NavHost(
+                    navController = navController,
+                    startDestination = BottomTab.HOME.graphRoute,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    tabGraphs(navController)
+                    topLevelRoutes(navController)
+                }
+                if (isBottomBarVisible(currentRoute)) {
+                    MiniPlayer(
+                        onExpand = { navController.navigate(AppRoute.MUSIC_PLAYER) },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                    )
+                }
             }
-            if (isBottomBarVisible(currentRoute)) {
-                MiniPlayer(
-                    onExpand = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 12.dp, vertical = 12.dp),
+            if (connectionState == ServerConnectionState.Offline) {
+                ConnectionBanner(
+                    onRetryNow = connectionBannerViewModel::retryNow,
+                    onChangeServer = connectionBannerViewModel::changeServer,
+                    modifier = if (isBottomBarVisible(currentRoute)) Modifier else Modifier.navigationBarsPadding(),
                 )
             }
-        }
-        if (isBottomBarVisible(currentRoute)) {
-            AppBottomBar(
-                highlightedTab = highlightedTabFor(currentRoute, selectedTab),
-                isAtTabRoot = isAtTabRoot,
-                activeTransfersCount = activeTransfersCount,
-                unreadNotificationsCount = unreadNotificationsCount,
-                navController = navController,
-            )
+            if (isBottomBarVisible(currentRoute)) {
+                AppBottomBar(
+                    highlightedTab = highlightedTabFor(currentRoute, selectedTab),
+                    isAtTabRoot = isAtTabRoot,
+                    activeTransfersCount = activeTransfersCount,
+                    unreadNotificationsCount = unreadNotificationsCount,
+                    navController = navController,
+                )
+            }
         }
     }
 }

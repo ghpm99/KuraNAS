@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.video.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +68,7 @@ fun VideoScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
     val catalog = state.catalog
+    ReconnectionRefresh(viewModel::refresh)
     val errorMessage = state.error
 
     FileStarErrorHost(viewModel.stars) {

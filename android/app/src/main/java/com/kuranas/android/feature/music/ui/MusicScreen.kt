@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.music.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import com.kuranas.android.feature.files.ui.FileStarErrorHost
 import com.kuranas.android.core.paging.LoadMoreOnNearEnd
 import com.kuranas.android.core.paging.PagedListState
@@ -68,6 +69,7 @@ fun MusicScreen(
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val folders by viewModel.folders.collectAsStateWithLifecycle()
     val starredById by viewModel.stars.starredById.collectAsStateWithLifecycle()
+    ReconnectionRefresh(viewModel::refresh)
     val currentList = when (tab) {
         MusicTab.TRACKS -> tracks.toListStatus()
         MusicTab.ARTISTS -> artists.toListStatus()

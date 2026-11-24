@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.notifications.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import com.kuranas.android.feature.notifications.data.NotificationDto
 @Composable
 fun NotificationsScreen(onNavigateBack: () -> Unit, viewModel: NotificationsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    ReconnectionRefresh(viewModel::refresh)
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(

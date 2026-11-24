@@ -318,6 +318,8 @@
     <string name="camera_upload_outcome_permission">Falta permissão para ler fotos e vídeos.</string>
     <string name="camera_upload_outcome_up_to_date">Tudo já foi enviado.</string>
     <string name="camera_upload_outcome_enqueued">Itens novos na fila de envio.</string>
+    <string name="connection_banner_offline">Sem conexão com o servidor — tentando de novo</string>
+    <string name="connection_banner_retry_now">Tentar agora</string>
     <string name="change_server_dialog_title">Trocar servidor?</string>
     <string name="change_server_dialog_text">O endereço do servidor será removido e você precisará reconectar.</string>
 </resources>

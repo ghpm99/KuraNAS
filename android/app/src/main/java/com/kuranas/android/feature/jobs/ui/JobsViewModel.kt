@@ -37,6 +37,14 @@ class JobsViewModel @Inject constructor(private val api: JobsApi) : ViewModel() 
         startPolling()
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            val response = safeApiCall { api.listJobs() }
+            if (response !is AppResult.Success) return@launch
+            _state.update { it.copy(isLoading = false, jobs = response.data.items, error = null) }
+        }
+    }
+
     fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }

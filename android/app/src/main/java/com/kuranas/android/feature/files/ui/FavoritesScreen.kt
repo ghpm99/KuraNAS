@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.files.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +54,7 @@ fun FavoritesScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, state.favorites.size, state.hasMore, viewModel::loadMore)
+    ReconnectionRefresh(viewModel::refresh)
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(state.actionErrorMessage) {

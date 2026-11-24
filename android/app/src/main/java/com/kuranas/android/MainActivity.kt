@@ -14,10 +14,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import com.kuranas.android.core.server.ServerConnectionMonitor
 import com.kuranas.android.feature.transfers.ui.TransfersIntents
 import com.kuranas.android.navigation.KuranasRoot
 import com.kuranas.android.ui.theme.KuranasTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -25,7 +27,20 @@ class MainActivity : ComponentActivity() {
     private val requestNotifications =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* nada a fazer */ }
 
+    @Inject
+    lateinit var serverConnectionMonitor: ServerConnectionMonitor
+
     private var shouldOpenTransfers by mutableStateOf(false)
+
+    override fun onStart() {
+        super.onStart()
+        serverConnectionMonitor.start()
+    }
+
+    override fun onStop() {
+        serverConnectionMonitor.stop()
+        super.onStop()
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

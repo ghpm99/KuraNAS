@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.files.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -120,6 +121,8 @@ fun FilesScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         if (shouldSkipNextResumeRefresh) shouldSkipNextResumeRefresh = false else viewModel.refresh()
     }
+
+    ReconnectionRefresh(viewModel::refresh)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val queuedDownloadsMessage = if (state.queuedDownloadsCount > 0) {

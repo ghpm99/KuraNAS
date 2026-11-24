@@ -69,6 +69,8 @@ class FavoritesViewModel @Inject constructor(private val repository: FilesReposi
         loadFirstPage()
     }
 
+    fun refresh() = favoritesLoader.refresh()
+
     fun loadMore() = favoritesLoader.loadMore()
 
     fun retryLoadMore() = favoritesLoader.retryLoadMore()

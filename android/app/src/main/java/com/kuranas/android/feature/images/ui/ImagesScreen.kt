@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.images.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -76,6 +77,8 @@ fun ImagesScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         if (firstResume) firstResume = false else viewModel.refresh()
     }
+
+    ReconnectionRefresh(viewModel::refresh)
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(title = stringResource(R.string.nav_images), onSearchClick = onOpenSearch)

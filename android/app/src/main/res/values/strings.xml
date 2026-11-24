@@ -320,6 +320,8 @@
     <string name="camera_upload_outcome_permission">Missing permission to read photos and videos.</string>
     <string name="camera_upload_outcome_up_to_date">Everything is already sent.</string>
     <string name="camera_upload_outcome_enqueued">New items queued for sending.</string>
+    <string name="connection_banner_offline">No connection to the server — trying again</string>
+    <string name="connection_banner_retry_now">Try now</string>
     <string name="change_server_dialog_title">Change server?</string>
     <string name="change_server_dialog_text">The server address will be removed and you will need to reconnect.</string>
 </resources>

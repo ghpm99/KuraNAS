@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.trash.ui
 
+import com.kuranas.android.core.ui.ReconnectionRefresh
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -67,6 +68,7 @@ fun TrashScreen(onNavigateBack: () -> Unit, viewModel: TrashViewModel = hiltView
     LoadMoreOnNearEnd(listState, state.items.size, state.hasMore, viewModel::loadMore)
 
     LaunchedEffect(Unit) { viewModel.loadTrash() }
+    ReconnectionRefresh(viewModel::refresh)
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(state.actionErrorMessage) {
