@@ -8,4 +8,10 @@ describe('DocumentsListSkeleton', () => {
 
         expect(screen.getByRole('status')).toBeInTheDocument();
     });
+
+    it('renders the grid variant', () => {
+        renderWithoutBackend(<DocumentsListSkeleton viewMode="grid" />);
+
+        expect(screen.getByRole('status')).toBeInTheDocument();
+    });
 });

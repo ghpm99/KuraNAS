@@ -3,6 +3,7 @@ import path from 'path';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import DocumentsScreen from './DocumentsScreen';
+import { documentsViewModeStorageKey } from './documentsViewModePreference';
 
 const mockGet = jest.fn();
 
@@ -28,7 +29,10 @@ const routeRequests = (listHandler: (page: number) => unknown, total = 3) => {
 };
 
 describe('DocumentsScreen', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        window.localStorage.clear();
+    });
 
     it('renders without any backend', async () => {
         mockGet.mockRejectedValue(new Error('no backend'));
@@ -68,7 +72,9 @@ describe('DocumentsScreen', () => {
     it('renders the real first page and appends the second, with the total at the end', async () => {
         routeRequests((page) =>
             Promise.resolve(
-                readGolden(page === 1 ? 'documents_page_with_next.json' : 'documents_last_page.json')
+                readGolden(
+                    page === 1 ? 'documents_page_with_next.json' : 'documents_last_page.json'
+                )
             )
         );
 
@@ -85,11 +91,7 @@ describe('DocumentsScreen', () => {
     });
 
     it('ignores a repeated document in the next page', async () => {
-        routeRequests(() =>
-            Promise.resolve(
-                readGolden('documents_page_with_next.json')
-            )
-        );
+        routeRequests(() => Promise.resolve(readGolden('documents_page_with_next.json')));
 
         renderWithoutBackend(<DocumentsScreen />);
         fireEvent.click(await screen.findByRole('button', { name: 'LOAD_MORE' }));
@@ -131,6 +133,51 @@ describe('DocumentsScreen', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'DOCUMENTS_RELOAD' }));
 
-        await waitFor(() => expect(mockGet.mock.calls.length).toBeGreaterThanOrEqual(callsBefore + 2));
+        await waitFor(() =>
+            expect(mockGet.mock.calls.length).toBeGreaterThanOrEqual(callsBefore + 2)
+        );
+    });
+
+    it('starts in list view and switches to grid, remembering the choice', async () => {
+        routeRequests(() => Promise.resolve(readGolden('documents_last_page.json')), 1);
+
+        const { unmount } = renderWithoutBackend(<DocumentsScreen />);
+        await screen.findByText('documento.pdf');
+        expect(screen.getByRole('button', { name: 'DOCUMENTS_VIEW_LIST' })).toHaveAttribute(
+            'aria-pressed',
+            'true'
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'DOCUMENTS_VIEW_GRID' }));
+
+        expect(window.localStorage.getItem(documentsViewModeStorageKey)).toBe('grid');
+        expect(screen.getByText('documento.pdf')).toBeInTheDocument();
+        unmount();
+
+        renderWithoutBackend(<DocumentsScreen />);
+        await screen.findByText('documento.pdf');
+        expect(screen.getByRole('button', { name: 'DOCUMENTS_VIEW_GRID' })).toHaveAttribute(
+            'aria-pressed',
+            'true'
+        );
+    });
+
+    it('renders the grid with the same pagination and total behavior', async () => {
+        window.localStorage.setItem(documentsViewModeStorageKey, 'grid');
+        routeRequests((page) =>
+            Promise.resolve(
+                readGolden(
+                    page === 1 ? 'documents_page_with_next.json' : 'documents_last_page.json'
+                )
+            )
+        );
+
+        renderWithoutBackend(<DocumentsScreen />);
+
+        expect(await screen.findAllByText('documento.pdf')).toHaveLength(2);
+        fireEvent.click(await screen.findByRole('button', { name: 'LOAD_MORE' }));
+
+        await waitFor(() => expect(screen.getAllByText('documento.pdf')).toHaveLength(3));
+        expect(screen.getAllByText('DOCUMENTS_TOTAL').length).toBeGreaterThan(0);
     });
 });

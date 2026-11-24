@@ -9,3 +9,11 @@
     color: var(--app-color-text-secondary);
     font-size: 0.875rem;
 }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--app-space-3, 12px);
+    margin: 0;
+    padding: 0;
+}
