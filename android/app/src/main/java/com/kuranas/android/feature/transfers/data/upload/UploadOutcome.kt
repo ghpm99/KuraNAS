@@ -12,6 +12,7 @@ data class UploadRequest(
     val uploadId: String?,
     val targetFolderId: Long?,
     val displayName: String,
+    val relativePath: String? = null,
 )
 
 fun interface UploadProgressListener {

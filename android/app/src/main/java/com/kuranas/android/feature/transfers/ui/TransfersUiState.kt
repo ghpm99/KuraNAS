@@ -30,11 +30,14 @@ fun TransferEntity.toTransferItem(): TransferItem = TransferItem(
     id = id,
     name = displayName,
     direction = direction,
-    destinationFolderName = targetFolderName.takeIf { direction == TransferDirection.UPLOAD },
+    destinationFolderName = destinationLabel().takeIf { direction == TransferDirection.UPLOAD },
     progressFraction = progressFractionOf(transferredBytes, totalBytes),
     status = status,
     failureMessage = failureMessage,
 )
+
+private fun TransferEntity.destinationLabel(): String =
+    relativePath?.takeIf { it.isNotBlank() }?.let { "$targetFolderName/$it" } ?: targetFolderName
 
 fun groupTransfers(transfers: List<TransferEntity>): TransfersUiState {
     val items = transfers.map { it.toTransferItem() }

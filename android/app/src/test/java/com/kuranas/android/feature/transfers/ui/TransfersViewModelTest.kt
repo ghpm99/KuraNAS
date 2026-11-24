@@ -48,12 +48,14 @@ class TransfersViewModelTest {
         totalBytes: Long = 100,
         transferredBytes: Long = 0,
         failureMessage: String? = null,
+        relativePath: String? = null,
     ) = TransferEntity(
         id = id,
         batchId = "batch",
         direction = direction,
         displayName = "file-$id",
         targetFolderName = "Photos",
+        relativePath = relativePath,
         totalBytes = totalBytes,
         transferredBytes = transferredBytes,
         status = status,
@@ -97,6 +99,13 @@ class TransfersViewModelTest {
 
         assertEquals("Photos", upload.destinationFolderName)
         assertNull(download.destinationFolderName)
+    }
+
+    @Test
+    fun `upload destination appends the relative path when set`() {
+        val upload = transferWith(1, TransferStatus.QUEUED, relativePath = "Celular/2026/11").toTransferItem()
+
+        assertEquals("Photos/Celular/2026/11", upload.destinationFolderName)
     }
 
     @Test

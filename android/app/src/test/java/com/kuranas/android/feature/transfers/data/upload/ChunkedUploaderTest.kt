@@ -95,6 +95,35 @@ class ChunkedUploaderTest {
     }
 
     @Test
+    fun initSendsRelativePathWhenSet() = runTest {
+        server.enqueue(initResponse(chunkSize = 10))
+        server.enqueue(chunkResponse(10))
+        server.enqueue(completeResponse())
+
+        uploader.upload(
+            InMemoryUploadSource(content),
+            freshRequest.copy(relativePath = "Fotos/Celular/2026/11"),
+            progressListener,
+            openGate,
+        )
+
+        val initBody = server.takeRequest().body.readUtf8()
+        assertTrue(initBody, initBody.contains("\"relative_path\":\"Fotos/Celular/2026/11\""))
+    }
+
+    @Test
+    fun initOmitsRelativePathWhenNull() = runTest {
+        server.enqueue(initResponse(chunkSize = 10))
+        server.enqueue(chunkResponse(10))
+        server.enqueue(completeResponse())
+
+        uploader.upload(InMemoryUploadSource(content), freshRequest, progressListener, openGate)
+
+        val initBody = server.takeRequest().body.readUtf8()
+        assertTrue(initBody, !initBody.contains("relative_path"))
+    }
+
+    @Test
     fun resumeWithSavedUploadIdContinuesFromServerReceivedSize() = runTest {
         server.enqueue(json(200, """{"upload_id":"up-1","size":10,"received_size":4}"""))
         server.enqueue(chunkResponse(10))

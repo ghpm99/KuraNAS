@@ -61,7 +61,7 @@ class UploadTransferWorker @AssistedInject constructor(
         } catch (exception: UploadSourceUnavailableException) {
             return UploadOutcome.SourceMissing
         }
-        val request = UploadRequest(transfer.uploadId, transfer.targetFolderId, transfer.displayName)
+        val request = UploadRequest(transfer.uploadId, transfer.targetFolderId, transfer.displayName, transfer.relativePath)
         return uploader.upload(
             source = source,
             request = request,

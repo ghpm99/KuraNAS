@@ -30,6 +30,7 @@ data class UploadRequestItem(
     val sizeBytes: Long,
     val sourceUri: String? = null,
     val stagedFilePath: String? = null,
+    val relativePath: String? = null,
 )
 
 @Singleton
@@ -57,6 +58,7 @@ class TransferRepository @Inject constructor(
                 stagedFilePath = item.stagedFilePath,
                 targetFolderId = destination.folderId?.toLongOrNull(),
                 targetFolderName = destination.folderName,
+                relativePath = item.relativePath,
                 totalBytes = item.sizeBytes,
                 createdAt = now,
                 updatedAt = now,

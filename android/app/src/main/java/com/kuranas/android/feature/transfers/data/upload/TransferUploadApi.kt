@@ -43,6 +43,7 @@ data class UploadInitRequest(
     val checksum: String,
     @SerialName("modified_at") val modifiedAt: String? = null,
     @SerialName("on_conflict") val onConflict: String,
+    @SerialName("relative_path") val relativePath: String? = null,
 ) {
     companion object {
         const val ON_CONFLICT_RENAME = "rename"

@@ -13,6 +13,7 @@ data class TransferEntity(
     val stagedFilePath: String? = null,
     val targetFolderId: Long? = null,
     val targetFolderName: String,
+    val relativePath: String? = null,
     val remoteFileId: Long? = null,
     val downloadPurpose: String? = null,
     val destinationUri: String? = null,

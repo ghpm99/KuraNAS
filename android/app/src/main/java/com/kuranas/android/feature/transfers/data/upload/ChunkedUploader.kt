@@ -106,6 +106,7 @@ class ChunkedUploader @Inject constructor(private val api: TransferUploadApi) {
                     checksum = checksumOfSource(),
                     modifiedAt = source.modifiedAtMillis()?.let { Instant.ofEpochMilli(it).toString() },
                     onConflict = UploadInitRequest.ON_CONFLICT_RENAME,
+                    relativePath = request.relativePath?.takeIf { it.isNotBlank() },
                 ),
             )
             if (!response.isSuccessful) return Established.Finished(rejectionOf(response))

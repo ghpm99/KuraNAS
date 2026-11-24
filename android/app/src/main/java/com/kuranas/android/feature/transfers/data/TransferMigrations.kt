@@ -10,4 +10,10 @@ object TransferMigrations {
             db.execSQL("ALTER TABLE transfers ADD COLUMN mimeType TEXT")
         }
     }
+
+    val FROM_2_TO_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE transfers ADD COLUMN relativePath TEXT")
+        }
+    }
 }
