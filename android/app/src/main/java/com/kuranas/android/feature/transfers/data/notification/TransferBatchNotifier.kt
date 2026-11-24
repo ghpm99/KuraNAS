@@ -14,6 +14,7 @@ import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.work.ForegroundInfo
 import com.kuranas.android.R
 import com.kuranas.android.feature.files.data.download.UNKNOWN_MIME_TYPE
@@ -122,7 +123,7 @@ class SystemTransferBatchNotifier @Inject constructor(
                 .setContentIntent(openTransfersPendingIntent(notificationId))
                 .build()
         }
-        val openFile = openFilePendingIntent(notificationId, Uri.parse(savedUri), savedDownload.mimeType ?: UNKNOWN_MIME_TYPE)
+        val openFile = openFilePendingIntent(notificationId, savedUri.toUri(), savedDownload.mimeType ?: UNKNOWN_MIME_TYPE)
         return builder
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setContentTitle(context.getString(R.string.download_notification_completed_title))
