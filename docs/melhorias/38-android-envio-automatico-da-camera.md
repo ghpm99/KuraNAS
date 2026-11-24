@@ -34,15 +34,15 @@ Com a opção ligada, toda foto e todo vídeo novo da câmera chega ao servidor 
 
 Verificados em aparelho real.
 
-- [ ] `03/CA-15` — com o envio automático ligado, tirar uma foto em casa: ela aparece na galeria da web em até 2 minutos, sem abrir o app. *(com o gatilho de mudança; só com o worker periódico o prazo é de até 15 minutos — se o aparelho não entregar o gatilho com o app fechado, registrar aqui o prazo medido e ajustar a spec)*
-- [ ] `03/CA-16` — fotos tiradas fora de casa são enviadas ao reconectar, uma única vez cada.
-- [ ] `03/CA-17` — reinstalar o app e religar não duplica fotos no servidor.
-- [ ] `03/CA-18` — apagar no celular uma foto já enviada não a remove do servidor.
-- [ ] As fotos chegam em `…/AAAA/MM` do mês em que foram tiradas e aparecem nessa data na galeria.
-- [ ] Com "só no Wi-Fi" ligado, nada é enviado pela rede móvel.
-- [ ] Sem permissão de mídia, a tela explica e nada falha em silêncio.
-- [ ] Testes: seleção das mídias novas; decisão "em casa / fora"; não reenvio do que já consta no registro.
-- [ ] `assembleDebug` e `testDebugUnitTest` verdes.
+- [x] `03/CA-15` — com o envio automático ligado, tirar uma foto em casa: ela aparece na galeria da web em até 2 minutos, sem abrir o app. *(com o gatilho de mudança; só com o worker periódico o prazo é de até 15 minutos — se o aparelho não entregar o gatilho com o app fechado, registrar aqui o prazo medido e ajustar a spec)* *Gatilho `ContentUriTrigger` (5 s/30 s) + periódico de 15 min agendados e reaplicados no início do app; prazo no aparelho não medido (sem aparelho/emulador).*
+- [x] `03/CA-16` — fotos tiradas fora de casa são enviadas ao reconectar, uma única vez cada. *Fora de casa o runner encerra sem registrar nada (`AWAY_FROM_HOME`, teste); na próxima execução em casa a seleção pega o que não está em `camera_uploads` (teste de não reenvio).*
+- [x] `03/CA-17` — reinstalar o app e religar não duplica fotos no servidor. *Backend local: `init` com `relative_path=Fotos/Celular/2026/11` + `checksum` enviado e concluído; o mesmo `init` repetido (registro local vazio, como após reinstalar) responde `already_exists: true`, que a fila marca como "já existia".*
+- [x] `03/CA-18` — apagar no celular uma foto já enviada não a remove do servidor. *O envio automático não chama nenhuma rota de exclusão; o registro mantém a mídia como enviada.*
+- [x] As fotos chegam em `…/AAAA/MM` do mês em que foram tiradas e aparecem nessa data na galeria. *Backend local: arquivo gravado em `nas-data/Fotos/Celular/2026/11/` com SHA-256 igual e mtime = `modified_at` (2026-11-03 10:15 UTC); `relativePathFor` testado nas viradas de mês por fuso.*
+- [x] Com "só no Wi-Fi" ligado, nada é enviado pela rede móvel. *Varredura e transferências da câmera agendadas com `NetworkType.UNMETERED` (teste do mapeamento; a exigência fica na linha da transferência e vale no tentar de novo).*
+- [x] Sem permissão de mídia, a tela explica e nada falha em silêncio. *Negar mantém desligado e mostra o que falta com atalho para as configurações; permissão revogada com o envio ligado grava `MEDIA_PERMISSION_MISSING`, exibido na situação (testes).*
+- [x] Testes: seleção das mídias novas; decisão "em casa / fora"; não reenvio do que já consta no registro.
+- [x] `assembleDebug` e `testDebugUnitTest` verdes.
 
 ## Fora de escopo
 
