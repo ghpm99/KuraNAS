@@ -93,6 +93,18 @@ func (r *DownloadRepository) MarkCanceled(downloadID int) error {
 	return r.execute("MarkCanceled", queries.MarkIngestDownloadCanceledQuery, downloadID)
 }
 
+// FailInterruptedDownloads marks every queued or running download as failed
+// with the translated reason and fails its worker job and open steps so the
+// engine never resumes them. It returns how many downloads were interrupted.
+func (r *DownloadRepository) FailInterruptedDownloads(translatedError string) (int, error) {
+	var interruptedCount int
+	err := r.DbContext.GetDatabase().QueryRow(queries.FailInterruptedIngestDownloadsQuery, translatedError).Scan(&interruptedCount)
+	if err != nil {
+		return 0, fmt.Errorf("FailInterruptedDownloads: %w", err)
+	}
+	return interruptedCount, nil
+}
+
 func (r *DownloadRepository) execute(operation string, query string, arguments ...any) error {
 	if _, err := r.DbContext.GetDatabase().Exec(query, arguments...); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)

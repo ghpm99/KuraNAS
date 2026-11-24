@@ -180,6 +180,7 @@ func InitializeApp() (*Application, error) {
 		workerFileContext.DownloadRecorder = appContext.Ingest.Downloads
 	}
 
+	failInterruptedDownloads(appContext)
 	startWorkersFn(workerFileContext, 200)
 
 	folderWatcher := newFolderWatcherFn(appContext)
@@ -420,4 +421,18 @@ func (app *Application) Stop() error {
 
 	log.Println("Servidor encerrado com sucesso.")
 	return nil
+}
+
+func failInterruptedDownloads(appContext *AppContext) {
+	if appContext == nil || appContext.Ingest == nil || appContext.Ingest.Downloads == nil {
+		return
+	}
+	interruptedCount, err := appContext.Ingest.Downloads.FailInterruptedDownloads(i18n.GetMessage("INGEST_DOWNLOAD_ERROR_SERVER_RESTARTED"))
+	if err != nil {
+		log.Printf("[APP] Failed to fail interrupted downloads: %v", err)
+		return
+	}
+	if interruptedCount > 0 {
+		log.Printf("[APP] Marked %d interrupted download(s) as failed", interruptedCount)
+	}
 }
