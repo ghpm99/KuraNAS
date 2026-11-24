@@ -236,4 +236,6 @@
     <string name="settings_direct_upload_title">Envio direto</string>
     <string name="settings_direct_upload_folder">Os arquivos compartilhados vão direto para: %1$s</string>
     <string name="settings_direct_upload_stop">Parar de enviar direto</string>
+    <string name="transfer_source_missing">O arquivo de origem não está mais disponível</string>
+    <string name="transfer_rejected_without_detail">O servidor recusou a transferência</string>
 </resources>

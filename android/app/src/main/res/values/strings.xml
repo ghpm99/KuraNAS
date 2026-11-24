@@ -238,4 +238,6 @@
     <string name="settings_direct_upload_title">Direct upload</string>
     <string name="settings_direct_upload_folder">Shared files are sent straight to: %1$s</string>
     <string name="settings_direct_upload_stop">Stop sending directly</string>
+    <string name="transfer_source_missing">The source file is no longer available</string>
+    <string name="transfer_rejected_without_detail">The server rejected the transfer</string>
 </resources>
