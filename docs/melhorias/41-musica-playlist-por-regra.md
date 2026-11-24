@@ -31,14 +31,14 @@ Criar uma playlist definida por critérios, cujo conteúdo é calculado a cada l
 
 ## Critérios de aceite
 
-- [ ] `05/CA-10` — playlist por regra "gênero = Rock ou Metal" lista todas as faixas desses gêneros; uma faixa nova de Rock entra sem ação manual.
-- [ ] Uma faixa removida da playlist por regra não volta depois de reindexar nem depois de adicionar outras faixas.
-- [ ] A prévia mostra o mesmo número que a playlist terá depois de criada.
-- [ ] Tocar e Embaralhar a playlist por regra seguem `05/RN-08` a `RN-10` (só faixas dela, todas, sem repetir).
-- [ ] Tentar adicionar faixa a uma playlist por regra mostra a mensagem do servidor.
-- [ ] Playlists manuais existentes continuam iguais (aparecem como `manual`).
-- [ ] Testes: resolução da regra contra Postgres real (`any` e `all`, exclusão, pasta com subpasta); seam test das mutações; render sem mock do formulário.
-- [ ] `make ci` verde.
+- [x] `05/CA-10` — playlist por regra "gênero = Rock ou Metal" lista todas as faixas desses gêneros; uma faixa nova de Rock entra sem ação manual. *Backend local: regra `genres=["Rock","Blues"]` → 8 faixas (6 Rock + 2 Blues, como `/music/library/genres`); corrigir o gênero da faixa 872 (sem gênero) para Rock pela edição de metadados fez a contagem ir de 7 para 8 e a faixa aparecer em `tracks`, sem tocar na playlist.*
+- [x] Uma faixa removida da playlist por regra não volta depois de reindexar nem depois de adicionar outras faixas. *Backend local: `DELETE …/tracks/873` → 200, contagem 8 → 7, fila com 7; depois da faixa 872 entrar, a 873 continua fora. Reindexação (novo upsert de `audio_metadata`) coberta por teste em Postgres.*
+- [x] A prévia mostra o mesmo número que a playlist terá depois de criada. *Backend local: `rules/preview` → `{"track_count":8}` e o `POST` com a mesma regra → `track_count: 8`.*
+- [x] Tocar e Embaralhar a playlist por regra seguem `05/RN-08` a `RN-10` (só faixas dela, todas, sem repetir). *Backend local: `/queue` devolve 7 itens, 7 distintos, `truncated: false`, iguais às faixas da regra; Embaralhar é a mesma fila embaralhada no cliente.*
+- [x] Tentar adicionar faixa a uma playlist por regra mostra a mensagem do servidor. *Backend local: adicionar e reordenar → `409 {"error":"Playlist por regra não aceita adicionar nem reordenar faixas"}`; a web não oferece playlist por regra no menu e mostra a mensagem do servidor quando recebe o 409 (testes).*
+- [x] Playlists manuais existentes continuam iguais (aparecem como `manual`). *Backend local: playlist criada sem regra sai `kind: manual`, `rules: null`, e aceita adicionar faixa (201); migração com backfill testada (manual, system, ai).*
+- [x] Testes: resolução da regra contra Postgres real (`any` e `all`, exclusão, pasta com subpasta); seam test das mutações; render sem mock do formulário.
+- [x] `make ci` verde.
 
 ## Fora de escopo
 
