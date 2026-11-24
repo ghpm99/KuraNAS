@@ -494,6 +494,7 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	playlists.GET("/:id/items", context.Video.Handler.GetPlaylistItemsPageHandler)
 	playlists.GET("/:id/poster", context.Video.Handler.GetPlaylistPosterHandler)
 	playlists.PUT("/:id", context.Video.Handler.UpdatePlaylistHandler)
+	playlists.PUT("/:id/watched", context.Video.Handler.SetPlaylistWatchedHandler)
 	playlists.PUT("/:id/hidden", context.Video.Handler.SetPlaylistHiddenHandler)
 	playlists.POST("/:id/videos", context.Video.Handler.AddPlaylistVideoHandler)
 	playlists.DELETE("/:id/videos/:videoId", context.Video.Handler.RemovePlaylistVideoHandler)

@@ -84,11 +84,14 @@ func (m *videoHandlerServiceMock) GetPlaylistByID(clientID string, id int) (Vide
 	}
 	return VideoPlaylistDto{ID: id, Name: "p"}, nil
 }
-func (m *videoHandlerServiceMock) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
+func (m *videoHandlerServiceMock) GetPlaylistHeaderByID(clientID string, id int) (VideoPlaylistHeaderDto, error) {
 	if id == 404 {
-		return VideoPlaylistDto{}, errors.New("missing")
+		return VideoPlaylistHeaderDto{}, errors.New("missing")
 	}
-	return VideoPlaylistDto{ID: id, Name: "header", ItemCount: 5, Items: []VideoPlaylistItemDto{}}, nil
+	return VideoPlaylistHeaderDto{VideoPlaylistDto: VideoPlaylistDto{ID: id, Name: "header", ItemCount: 5, Items: []VideoPlaylistItemDto{}}}, nil
+}
+func (m *videoHandlerServiceMock) SetPlaylistWatched(clientID string, playlistID int, season *int, isWatched bool) (int, error) {
+	return 0, nil
 }
 func (m *videoHandlerServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	if playlistID == 404 {
@@ -202,8 +205,11 @@ func (m *videoHandlerErrServiceMock) GetPlaylistsByVideo(videoID int) ([]VideoPl
 func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, error) {
 	return VideoPlaylistDto{}, errors.New("playlist missing")
 }
-func (m *videoHandlerErrServiceMock) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
-	return VideoPlaylistDto{}, errors.New("playlist missing")
+func (m *videoHandlerErrServiceMock) GetPlaylistHeaderByID(clientID string, id int) (VideoPlaylistHeaderDto, error) {
+	return VideoPlaylistHeaderDto{}, errors.New("playlist missing")
+}
+func (m *videoHandlerErrServiceMock) SetPlaylistWatched(clientID string, playlistID int, season *int, isWatched bool) (int, error) {
+	return 0, errors.New("watched failed")
 }
 func (m *videoHandlerErrServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	return utils.PaginationResponse[VideoPlaylistItemDto]{}, errors.New("items failed")

@@ -41,6 +41,26 @@ type VideoPlaylistDto struct {
 	Items          []VideoPlaylistItemDto `json:"items"`
 }
 
+type PlaylistSeasonDto struct {
+	Season       int `json:"season"`
+	EpisodeCount int `json:"episode_count"`
+	WatchedCount int `json:"watched_count"`
+}
+
+type PlaylistResumeDto struct {
+	VideoID         int     `json:"video_id"`
+	Season          *int    `json:"season"`
+	Episode         *int    `json:"episode"`
+	PositionSeconds float64 `json:"position_seconds"`
+	Mode            string  `json:"mode"`
+}
+
+type VideoPlaylistHeaderDto struct {
+	VideoPlaylistDto
+	Seasons []PlaylistSeasonDto `json:"seasons"`
+	Resume  *PlaylistResumeDto  `json:"resume"`
+}
+
 type VideoPlaylistItemDto struct {
 	ID          int          `json:"id"`
 	OrderIndex  int          `json:"order_index"`
@@ -130,6 +150,11 @@ type UpdatePlaybackStateRequest struct {
 
 type SetVideoWatchedRequest struct {
 	Watched *bool `json:"watched" binding:"required"`
+}
+
+type SetPlaylistWatchedRequest struct {
+	Watched *bool `json:"watched" binding:"required"`
+	Season  *int  `json:"season" binding:"omitempty,min=0"`
 }
 
 type SetPlaylistHiddenRequest struct {

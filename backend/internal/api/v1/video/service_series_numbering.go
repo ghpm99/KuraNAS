@@ -81,7 +81,7 @@ func (s *Service) RenumberSeriesPlaylist(playlistID int) error {
 	if err != nil {
 		return err
 	}
-	if !seriesPlaylist.IsAuto || !playlist.IsSeriesLikePlaylist(seriesPlaylist.Type, seriesPlaylist.Classification) {
+	if !isAutomaticSeries(seriesPlaylist) {
 		return ErrPlaylistNotAutomaticSeries
 	}
 

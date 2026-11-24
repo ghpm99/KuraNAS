@@ -18,7 +18,7 @@ func TestGetPlaylistHeaderByIDReturnsCountWithoutLoadingItems(t *testing.T) {
 		},
 	}
 
-	header, err := newVideoServiceForTest(t, repo).GetPlaylistHeaderByID(7)
+	header, err := newVideoServiceForTest(t, repo).GetPlaylistHeaderByID("tv", 7)
 	if err != nil {
 		t.Fatalf("expected header success, err=%v", err)
 	}

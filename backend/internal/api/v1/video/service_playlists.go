@@ -306,19 +306,47 @@ func (s *Service) GetPlaylistByID(clientID string, id int) (VideoPlaylistDto, er
 	return pl.ToDto(itemDtos), nil
 }
 
-func (s *Service) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
+func (s *Service) GetPlaylistHeaderByID(clientID string, id int) (VideoPlaylistHeaderDto, error) {
 	pl, err := s.Repository.GetVideoPlaylistByID(id)
 	if err != nil {
-		return VideoPlaylistDto{}, err
+		return VideoPlaylistHeaderDto{}, err
 	}
 
 	itemCount, err := s.Repository.CountVideoPlaylistItems(id)
 	if err != nil {
-		return VideoPlaylistDto{}, err
+		return VideoPlaylistHeaderDto{}, err
 	}
 
 	pl.ItemCount = itemCount
-	return pl.ToDto([]VideoPlaylistItemDto{}), nil
+	header := VideoPlaylistHeaderDto{
+		VideoPlaylistDto: pl.ToDto([]VideoPlaylistItemDto{}),
+		Seasons:          []PlaylistSeasonDto{},
+	}
+	if !isAutomaticSeries(pl) {
+		return header, nil
+	}
+
+	seasonSummaries, err := s.Repository.GetPlaylistSeasonSummaries(clientID, id)
+	if err != nil {
+		return VideoPlaylistHeaderDto{}, err
+	}
+	for _, summary := range seasonSummaries {
+		header.Seasons = append(header.Seasons, PlaylistSeasonDto(summary))
+	}
+
+	resume, err := s.Repository.GetPlaylistResume(clientID, id)
+	if err != nil {
+		return VideoPlaylistHeaderDto{}, err
+	}
+	if resume != nil {
+		resumeDto := PlaylistResumeDto(*resume)
+		header.Resume = &resumeDto
+	}
+	return header, nil
+}
+
+func isAutomaticSeries(pl VideoPlaylistModel) bool {
+	return pl.IsAuto && playlist.IsSeriesLikePlaylist(pl.Type, pl.Classification)
 }
 
 func (s *Service) GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {

@@ -803,6 +803,7 @@
 	"ERROR_VIDEO_OPERATION_FAILED": "Failed to process video request",
 	"ERROR_VIDEO_PLAYLIST_NAME_REQUIRED": "Playlist name is required",
 	"ERROR_VIDEO_PLAYLIST_NAME_TOO_LONG": "Playlist name is too long",
+	"ERROR_VIDEO_PLAYLIST_NOT_AUTOMATIC_SERIES": "This playlist is not an automatic series",
 	"ERROR_VIDEO_PLAYLIST_AUTOMATIC_NOT_DELETABLE": "Automatic playlists cannot be deleted",
 	"ERROR_VIDEO_INVALID_LIMIT": "Invalid video limit",
 	"ERROR_UPDATE_STATUS": "Failed to check for updates",

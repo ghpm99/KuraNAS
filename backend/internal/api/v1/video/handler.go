@@ -60,7 +60,7 @@ func respondVideoError(c *gin.Context, err error) {
 		errors.Is(err, ErrPlaylistWithoutItems):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
 	case errors.Is(err, ErrPlaylistNotAutomaticSeries):
-		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_REQUEST")})
+		c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_PLAYLIST_NOT_AUTOMATIC_SERIES")})
 	case errors.Is(err, ErrPosterNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_POSTER_NOT_FOUND")})
 	case errors.Is(err, ErrNoVideosForContext):
@@ -237,6 +237,33 @@ func (h *Handler) SetVideoWatchedHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
+func (h *Handler) SetPlaylistWatchedHandler(c *gin.Context) {
+	playlistID := utils.ParseInt(c.Param("id"), c)
+	if c.IsAborted() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	var req SetPlaylistWatchedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	clientID, isClientIDValid := clientidentity.Resolve(c)
+	if !isClientIDValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	updatedCount, err := h.service.SetPlaylistWatched(clientID, playlistID, req.Season, *req.Watched)
+	if err != nil {
+		respondVideoError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"updated": updatedCount})
+}
+
 func (h *Handler) RebuildPlaylistsHandler(c *gin.Context) {
 	if err := h.service.RebuildSmartPlaylists(); err != nil {
 		respondVideoError(c, err)
@@ -346,7 +373,7 @@ func (h *Handler) GetPlaylistByIDHandler(c *gin.Context) {
 	}
 
 	if !shouldIncludeItems {
-		playlistHeader, err := h.service.GetPlaylistHeaderByID(id)
+		playlistHeader, err := h.service.GetPlaylistHeaderByID(clientID, id)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 			return

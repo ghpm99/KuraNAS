@@ -244,6 +244,15 @@ func (m *videoRepoMock) CountVideoPlaylistItems(playlistID int) (int, error) {
 	}
 	return 0, nil
 }
+func (m *videoRepoMock) GetPlaylistSeasonSummaries(clientID string, playlistID int) ([]PlaylistSeasonSummaryModel, error) {
+	return nil, nil
+}
+func (m *videoRepoMock) GetPlaylistResume(clientID string, playlistID int) (*PlaylistResumeModel, error) {
+	return nil, nil
+}
+func (m *videoRepoMock) SetPlaylistWatched(tx *sql.Tx, clientID string, playlistID int, season *int, isWatched bool) (int, error) {
+	return 0, nil
+}
 func (m *videoRepoMock) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error) {
 	if m.getVideoPlaylistItemsFn != nil {
 		return m.getVideoPlaylistItemsFn(playlistID)

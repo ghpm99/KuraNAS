@@ -252,3 +252,12 @@ var GetVideoEpisodeStateQuery string
 
 //go:embed get_auto_series_playlist_ids_by_video.sql
 var GetAutoSeriesPlaylistIDsByVideoQuery string
+
+//go:embed get_playlist_season_summaries.sql
+var GetPlaylistSeasonSummariesQuery string
+
+//go:embed get_playlist_resume_episode.sql
+var GetPlaylistResumeEpisodeQuery string
+
+//go:embed set_playlist_watched.sql
+var SetPlaylistWatchedQuery string

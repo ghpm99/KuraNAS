@@ -31,6 +31,24 @@ func (s *Service) SetVideoWatched(clientID string, videoID int, isWatched bool) 
 	})
 }
 
+func (s *Service) SetPlaylistWatched(clientID string, playlistID int, season *int, isWatched bool) (int, error) {
+	targetPlaylist, err := s.Repository.GetVideoPlaylistByID(playlistID)
+	if err != nil {
+		return 0, err
+	}
+	if !isAutomaticSeries(targetPlaylist) {
+		return 0, ErrPlaylistNotAutomaticSeries
+	}
+
+	updatedCount := 0
+	err = s.withTransaction(func(tx *sql.Tx) error {
+		var updateErr error
+		updatedCount, updateErr = s.Repository.SetPlaylistWatched(tx, clientID, playlistID, season, isWatched)
+		return updateErr
+	})
+	return updatedCount, err
+}
+
 func (s *Service) knownDurationSeconds(clientID string, videoID int) (float64, error) {
 	storedProgress, err := s.Repository.GetVideoWatchProgress(clientID, videoID)
 	if errors.Is(err, sql.ErrNoRows) {
