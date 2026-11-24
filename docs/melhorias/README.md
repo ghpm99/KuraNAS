@@ -68,7 +68,7 @@ Regras invariantes:
 | 36 | [Android: download em fluxo](36-android-download-em-fluxo.md) | bug | P0 | 22 | ✅ concluída (2026-11-17) | spec 03; aparelho não exercitado (build + testes + servidor local) |
 | 37 | [Android: transferências em segundo plano](37-android-transferencias-em-segundo-plano.md) | feature | P0 | 24, 34, 36 | ✅ concluída (2026-11-24) | spec 03; uploader verificado contra o backend local (retomada + SHA-256); aparelho não exercitado; sub-item 37.1 (explorer recarrega após envio) |
 | 38 | [Android: envio automático da câmera](38-android-envio-automatico-da-camera.md) | feature | P0 | 37 | ✅ concluída (2026-11-24) | spec 03; destino e não duplicar verificados contra o backend local; prazo do gatilho no aparelho não medido |
-| 39 | [Android: navegação](39-android-navegacao.md) | bug | P1 | 22 | em execução | spec 24 |
+| 39 | [Android: navegação](39-android-navegacao.md) | bug | P1 | 22 | ✅ concluída (2026-11-24) | spec 24; 403 com IP verificado contra o backend local; aparelho não exercitado (CA-13 sem verificação de tela) |
 | 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | ✅ concluída (2026-11-17) | spec 05; CAs verificados no sistema local; sub-itens 40.1 (RN-04 completa), 40.2 (seleção de faixas), 40.3 (player reflete a edição) |
 | 41 | [Música: playlist por regra](41-musica-playlist-por-regra.md) | feature | P0 | 40 | pendente | spec 05 |
 | 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | pendente | spec 06 |
