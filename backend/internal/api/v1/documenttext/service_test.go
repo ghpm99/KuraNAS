@@ -49,6 +49,10 @@ func (repository *recordingRepository) FindDocumentForIndexing(int) (PendingDocu
 	return repository.document, repository.isFound, repository.findErr
 }
 
+func (repository *recordingRepository) FindDocumentText(int) (DocumentTextContentModel, bool, error) {
+	return DocumentTextContentModel{}, false, nil
+}
+
 func (repository *recordingRepository) FindIndexState(int) (IndexStateModel, bool, error) {
 	return repository.indexState, repository.isFound, repository.findErr
 }

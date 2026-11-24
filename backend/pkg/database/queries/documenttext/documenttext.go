@@ -81,3 +81,6 @@ var DocumentsPageQuery string
 
 //go:embed select_active_folder_path.sql
 var SelectActiveFolderPathQuery string
+
+//go:embed select_document_text.sql
+var SelectDocumentTextQuery string

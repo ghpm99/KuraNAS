@@ -25,3 +25,8 @@ type IndexStateDto struct {
 type ReindexJobDto struct {
 	JobID int `json:"job_id"`
 }
+
+type DocumentTextDto struct {
+	Text      string `json:"text"`
+	IsPartial bool   `json:"is_partial"`
+}

@@ -55,6 +55,19 @@ func (service *Service) GetIndexState(fileID int) (IndexStateDto, error) {
 	return indexStateDto, nil
 }
 
+// GetDocumentText returns the text already extracted by indexing, or
+// ErrDocumentNotFound when the file is not an active document.
+func (service *Service) GetDocumentText(fileID int) (DocumentTextDto, error) {
+	content, isFound, err := service.Repository.FindDocumentText(fileID)
+	if err != nil {
+		return DocumentTextDto{}, err
+	}
+	if !isFound {
+		return DocumentTextDto{}, ErrDocumentNotFound
+	}
+	return DocumentTextDto{Text: content.Text, IsPartial: content.IsPartial}, nil
+}
+
 func failureMessageKeyFor(failureReason string) string {
 	messageKey, isKnownReason := failureMessageKeyByReason[failureReason]
 	if !isKnownReason {

@@ -41,6 +41,10 @@ func (repository *fakeDocumentTextRepository) FindActiveFolderPath(int) (string,
 	return "", false, nil
 }
 
+func (repository *fakeDocumentTextRepository) FindDocumentText(int) (documenttext.DocumentTextContentModel, bool, error) {
+	return documenttext.DocumentTextContentModel{}, false, nil
+}
+
 func (repository *fakeDocumentTextRepository) FindIndexState(int) (documenttext.IndexStateModel, bool, error) {
 	return documenttext.IndexStateModel{}, false, nil
 }

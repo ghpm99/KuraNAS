@@ -113,3 +113,20 @@ func (repository *Repository) FindIndexState(fileID int) (IndexStateModel, bool,
 	indexState.FailureReason = failureReason.String
 	return indexState, true, nil
 }
+
+// FindDocumentText returns the already-extracted text of an active document,
+// empty when the stored text is missing or older than the file.
+func (repository *Repository) FindDocumentText(fileID int) (DocumentTextContentModel, bool, error) {
+	var content DocumentTextContentModel
+	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.SelectDocumentTextQuery, fileID, pq.Array(DocumentFormats())).
+			Scan(&content.Text, &content.IsPartial)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return DocumentTextContentModel{}, false, nil
+	}
+	if err != nil {
+		return DocumentTextContentModel{}, false, fmt.Errorf("documenttext: find document text: %w", err)
+	}
+	return content, true, nil
+}

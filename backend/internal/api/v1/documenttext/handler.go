@@ -93,6 +93,26 @@ func (handler *Handler) GetIndexStateHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, indexState)
 }
 
+func (handler *Handler) GetDocumentTextHandler(c *gin.Context) {
+	fileID, isValidID := parseFileID(c)
+	if !isValidID {
+		return
+	}
+
+	documentText, err := handler.service.GetDocumentText(fileID)
+	if errors.Is(err, ErrDocumentNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_DOCUMENT_NOT_FOUND")})
+		return
+	}
+	if err != nil {
+		applog.ErrorWithStack("documenttext: document text failed", err, "file_id", fileID, "ip", c.ClientIP())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_DOCUMENT_TEXT_FAILED")})
+		return
+	}
+
+	c.JSON(http.StatusOK, documentText)
+}
+
 func (handler *Handler) ReindexDocumentHandler(c *gin.Context) {
 	fileID, isValidID := parseFileID(c)
 	if !isValidID {

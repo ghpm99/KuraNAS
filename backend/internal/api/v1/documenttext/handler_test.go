@@ -21,6 +21,7 @@ type stubService struct {
 	wasCalled bool
 
 	indexState      IndexStateDto
+	documentText    DocumentTextDto
 	documentPage    utils.PaginationResponse[DocumentItemDto]
 	documentCount   DocumentCountDto
 	gotListParams   DocumentListParams
@@ -38,6 +39,10 @@ func (service *stubService) SearchDocuments(params DocumentSearchParams) (utils.
 
 func (service *stubService) GetIndexState(fileID int) (IndexStateDto, error) {
 	return service.indexState, service.err
+}
+
+func (service *stubService) GetDocumentText(fileID int) (DocumentTextDto, error) {
+	return service.documentText, service.err
 }
 
 func (service *stubService) ReindexDocument(fileID int) (int, error) {

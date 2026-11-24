@@ -1,0 +1,32 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "documento.pdf",
+      "format": ".pdf",
+      "parent_path": "/Casa",
+      "size": 1024,
+      "modified_at": "2024-03-05T10:00:00Z",
+      "created_at": "2024-03-05T10:00:00Z",
+      "starred": true,
+      "index_state": "indexed"
+    },
+    {
+      "id": 2,
+      "name": "documento.pdf",
+      "format": ".pdf",
+      "parent_path": "/Casa",
+      "size": 1024,
+      "modified_at": "2024-03-05T10:00:00Z",
+      "created_at": "2024-03-05T10:00:00Z",
+      "starred": false,
+      "index_state": "indexed"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 2,
+    "has_next": true,
+    "has_prev": false
+  }
+}

@@ -50,3 +50,8 @@ type DocumentMatchModel struct {
 	ContentWindow   string
 	Page            *int
 }
+
+type DocumentTextContentModel struct {
+	Text      string
+	IsPartial bool
+}
