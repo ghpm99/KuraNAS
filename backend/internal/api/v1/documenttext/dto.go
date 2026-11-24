@@ -11,6 +11,7 @@ type DocumentSearchResultDto struct {
 	Size       int64     `json:"size"`
 	UpdatedAt  time.Time `json:"updated_at"`
 	Snippet    string    `json:"snippet"`
+	Page       *int      `json:"page"`
 }
 
 type IndexStateDto struct {

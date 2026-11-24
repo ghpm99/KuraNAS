@@ -43,13 +43,27 @@ func (handler *Handler) SearchDocumentsHandler(c *gin.Context) {
 		return
 	}
 
+	filter, folderID, filterErrorKey := parseDocumentFilter(c)
+	if filterErrorKey != "" {
+		respondDocumentBadRequest(c, filterErrorKey)
+		return
+	}
 	page, pageSize, isPaginationValid := utils.ParsePagination(c, defaultSearchPageSize)
 	if !isPaginationValid {
 		return
 	}
-	pageSize = min(pageSize, maxSearchPageSize)
 
-	response, err := handler.service.SearchDocuments(query, page, pageSize)
+	response, err := handler.service.SearchDocuments(DocumentSearchParams{
+		Query:    query,
+		Filter:   filter,
+		FolderID: folderID,
+		Page:     page,
+		PageSize: min(pageSize, maxSearchPageSize),
+	})
+	if errors.Is(err, ErrFolderNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_FILE_NOT_FOUND")})
+		return
+	}
 	if err != nil {
 		applog.ErrorWithStack("documenttext: search failed", err, "ip", c.ClientIP())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_DOCUMENT_SEARCH_FAILED")})

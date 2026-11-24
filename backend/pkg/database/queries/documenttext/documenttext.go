@@ -10,8 +10,17 @@ var UpsertDocumentTextQuery string
 //go:embed select_pending_indexing.sql
 var SelectPendingIndexingQuery string
 
-//go:embed search_documents.sql
-var SearchDocumentsQuery string
+//go:embed search_documents_columns.sql
+var SearchDocumentsColumnsQuery string
+
+//go:embed search_documents_filter_match.sql
+var SearchDocumentsFilterMatchQuery string
+
+//go:embed search_documents_order.sql
+var SearchDocumentsOrderQuery string
+
+//go:embed search_documents_content_hit.sql
+var SearchDocumentsContentHitQuery string
 
 //go:embed select_document_for_indexing.sql
 var SelectDocumentForIndexingQuery string

@@ -66,7 +66,7 @@ func (repository *fakeDocumentTextRepository) UpsertDocumentText(documentText do
 	return nil
 }
 
-func (repository *fakeDocumentTextRepository) SearchDocuments(utils.SearchTermPatterns, int, int) ([]documenttext.DocumentMatchModel, error) {
+func (repository *fakeDocumentTextRepository) SearchDocuments(documenttext.DocumentSearchQuery) ([]documenttext.DocumentMatchModel, error) {
 	return nil, nil
 }
 

@@ -17,9 +17,7 @@ import (
 type stubService struct {
 	page      utils.PaginationResponse[DocumentSearchResultDto]
 	err       error
-	gotQuery  string
-	gotPage   int
-	gotSize   int
+	gotSearch DocumentSearchParams
 	wasCalled bool
 
 	indexState      IndexStateDto
@@ -32,9 +30,9 @@ type stubService struct {
 	reindexedFileID int
 }
 
-func (service *stubService) SearchDocuments(query string, page int, pageSize int) (utils.PaginationResponse[DocumentSearchResultDto], error) {
+func (service *stubService) SearchDocuments(params DocumentSearchParams) (utils.PaginationResponse[DocumentSearchResultDto], error) {
 	service.wasCalled = true
-	service.gotQuery, service.gotPage, service.gotSize = query, page, pageSize
+	service.gotSearch = params
 	return service.page, service.err
 }
 
@@ -81,18 +79,65 @@ func TestSearchDocumentsHandlerReturnsPaginatedItems(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status %d body %s", recorder.Code, recorder.Body.String())
 	}
-	if service.gotQuery != "contrato" || service.gotPage != 2 || service.gotSize != 10 {
-		t.Fatalf("unexpected call %q %d %d", service.gotQuery, service.gotPage, service.gotSize)
+	if service.gotSearch.Query != "contrato" || service.gotSearch.Page != 2 || service.gotSearch.PageSize != 10 {
+		t.Fatalf("unexpected call %+v", service.gotSearch)
 	}
 	var payload map[string]any
 	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
 	item := payload["items"].([]any)[0].(map[string]any)
-	for _, field := range []string{"file_id", "name", "path", "parent_path", "format", "size", "updated_at", "snippet"} {
+	for _, field := range []string{"file_id", "name", "path", "parent_path", "format", "size", "updated_at", "snippet", "page"} {
 		if _, hasField := item[field]; !hasField {
 			t.Fatalf("missing field %q in %v", field, item)
 		}
+	}
+	if item["page"] != nil || item["snippet"] != "trecho" {
+		t.Fatalf("unexpected snippet/page %v", item)
+	}
+}
+
+func TestSearchDocumentsHandlerSerializesPageNumber(t *testing.T) {
+	page := 7
+	service := &stubService{page: utils.PaginationResponse[DocumentSearchResultDto]{
+		Items: []DocumentSearchResultDto{{FileID: 4, Name: "a.pdf", Snippet: "trecho", Page: &page}},
+	}}
+
+	recorder := performSearchRequest(NewHandler(service), "q=contrato")
+
+	var payload struct {
+		Items []struct {
+			Snippet string `json:"snippet"`
+			Page    *int   `json:"page"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Items) != 1 || payload.Items[0].Page == nil || *payload.Items[0].Page != 7 || payload.Items[0].Snippet != "trecho" {
+		t.Fatalf("unexpected payload %s", recorder.Body.String())
+	}
+}
+
+func TestSearchDocumentsHandlerPassesFiltersToService(t *testing.T) {
+	service := &stubService{}
+
+	recorder := performSearchRequest(NewHandler(service), "q=contrato&format=pdf&folder_id=9&favorites_only=true&index_state=name_only&modified_from=2026-01-01&modified_to=2026-02-01")
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status %d body %s", recorder.Code, recorder.Body.String())
+	}
+	params := service.gotSearch
+	if params.Filter.Format != GroupPDF || params.FolderID != 9 || !params.Filter.FavoritesOnly || params.Filter.IndexState != StateNameOnly || params.Filter.ModifiedFrom == nil || params.Filter.ModifiedTo == nil {
+		t.Fatalf("unexpected params %+v", params)
+	}
+}
+
+func TestSearchDocumentsHandlerUnknownFolderIsNotFound(t *testing.T) {
+	recorder := performSearchRequest(NewHandler(&stubService{err: ErrFolderNotFound}), "q=contrato&folder_id=9")
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d %s", recorder.Code, recorder.Body.String())
 	}
 }
 
@@ -100,13 +145,13 @@ func TestSearchDocumentsHandlerAppliesDefaultsAndCapsPageSize(t *testing.T) {
 	service := &stubService{}
 
 	performSearchRequest(NewHandler(service), "q=contrato")
-	if service.gotPage != 1 || service.gotSize != defaultSearchPageSize {
-		t.Fatalf("unexpected defaults %d/%d", service.gotPage, service.gotSize)
+	if service.gotSearch.Page != 1 || service.gotSearch.PageSize != defaultSearchPageSize {
+		t.Fatalf("unexpected defaults %+v", service.gotSearch)
 	}
 
 	performSearchRequest(NewHandler(service), "q=contrato&page_size=400")
-	if service.gotSize != maxSearchPageSize {
-		t.Fatalf("page size not capped: %d", service.gotSize)
+	if service.gotSearch.PageSize != maxSearchPageSize {
+		t.Fatalf("page size not capped: %d", service.gotSearch.PageSize)
 	}
 }
 
@@ -118,6 +163,12 @@ func TestSearchDocumentsHandlerRejectsInvalidRequests(t *testing.T) {
 		"overlong query":   "q=" + url.QueryEscape(strings.Repeat("a", maxQueryLength+1)),
 		"non numeric page": "q=contrato&page=abc",
 		"non numeric size": "q=contrato&page_size=x",
+		"invalid format":   "q=contrato&format=zip",
+		"invalid folder":   "q=contrato&folder_id=abc",
+		"invalid date":     "q=contrato&modified_from=ontem",
+		"inverted range":   "q=contrato&modified_from=2026-02-01&modified_to=2026-01-01",
+		"invalid favorite": "q=contrato&favorites_only=talvez",
+		"invalid state":    "q=contrato&index_state=lento",
 	}
 
 	for name, rawQuery := range testCases {

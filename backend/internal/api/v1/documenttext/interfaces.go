@@ -5,7 +5,7 @@ import "nas-go/api/pkg/utils"
 type RepositoryInterface interface {
 	ListPendingIndexing(afterFileID int, limit int) ([]PendingDocument, error)
 	UpsertDocumentText(documentText DocumentTextModel) error
-	SearchDocuments(termPatterns utils.SearchTermPatterns, limit int, offset int) ([]DocumentMatchModel, error)
+	SearchDocuments(query DocumentSearchQuery) ([]DocumentMatchModel, error)
 	FindDocumentForIndexing(fileID int) (PendingDocument, bool, error)
 	FindIndexState(fileID int) (IndexStateModel, bool, error)
 	ListDocuments(query DocumentListQuery) (utils.PaginationResponse[DocumentListItemModel], error)
@@ -18,7 +18,7 @@ type ReindexLauncher interface {
 }
 
 type ServiceInterface interface {
-	SearchDocuments(query string, page int, pageSize int) (utils.PaginationResponse[DocumentSearchResultDto], error)
+	SearchDocuments(params DocumentSearchParams) (utils.PaginationResponse[DocumentSearchResultDto], error)
 	SearchTopDocuments(query string, limit int) ([]DocumentSearchResultDto, error)
 	GetIndexState(fileID int) (IndexStateDto, error)
 	ReindexDocument(fileID int) (int, error)

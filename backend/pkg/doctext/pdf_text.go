@@ -40,27 +40,46 @@ func extractPDFText(ctx context.Context, path string) (Result, error) {
 		return Result{}, ErrEncrypted
 	}
 
+	pagedCollector, isPaged, err := collectPagedPDFText(ctx, pdfBytes)
+	if err != nil {
+		return Result{}, err
+	}
+	if isPaged && hasVisibleText(pagedCollector.builder.String()) {
+		return finalizePagedText(pagedCollector.builder.String(), pagedCollector.isFull), nil
+	}
+
 	collector := &textCollector{}
+	if err := collectUnpagedPDFText(ctx, pdfBytes, collector); err != nil {
+		return Result{}, err
+	}
+	return finalizeText(collector.builder.String(), collector.isFull), nil
+}
+
+func collectUnpagedPDFText(ctx context.Context, pdfBytes []byte, collector *textCollector) error {
 	searchFrom := 0
 	for !collector.isFull {
 		if err := ctx.Err(); err != nil {
-			return Result{}, err
+			return err
 		}
 		stream, nextSearchFrom, hasStream := nextPDFStream(pdfBytes, searchFrom)
 		if !hasStream {
 			break
 		}
 		searchFrom = nextSearchFrom
-		if !stream.isTextContentCandidate() {
-			continue
-		}
-		content, err := stream.decode()
-		if err != nil || !bytes.Contains(content, []byte("BT")) {
-			continue
-		}
-		collectContentStreamText(content, collector)
+		collectStreamText(stream, collector)
 	}
-	return finalizeText(collector.text(), collector.isFull), nil
+	return nil
+}
+
+func collectStreamText(stream pdfStream, collector *textCollector) {
+	if !stream.isTextContentCandidate() {
+		return
+	}
+	content, err := stream.decode()
+	if err != nil || !bytes.Contains(content, []byte("BT")) {
+		return
+	}
+	collectContentStreamText(content, collector)
 }
 
 type pdfStream struct {

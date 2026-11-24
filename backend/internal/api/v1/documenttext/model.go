@@ -39,12 +39,14 @@ type PendingDocument struct {
 }
 
 type DocumentMatchModel struct {
-	FileID        int
-	Name          string
-	Path          string
-	ParentPath    string
-	Format        string
-	Size          int64
-	UpdatedAt     time.Time
-	ExtractedText string
+	FileID          int
+	Name            string
+	Path            string
+	ParentPath      string
+	Format          string
+	Size            int64
+	UpdatedAt       time.Time
+	HasContentMatch bool
+	ContentWindow   string
+	Page            *int
 }

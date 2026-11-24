@@ -7,7 +7,6 @@ import (
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/documenttext"
-	"nas-go/api/pkg/utils"
 
 	"github.com/lib/pq"
 )
@@ -77,32 +76,6 @@ func (repository *Repository) UpsertDocumentText(documentText DocumentTextModel)
 		return fmt.Errorf("documenttext: upsert document text: %w", err)
 	}
 	return nil
-}
-
-// SearchDocuments returns indexed documents whose text contains every term,
-// name matches first, then most recently updated.
-func (repository *Repository) SearchDocuments(termPatterns utils.SearchTermPatterns, limit int, offset int) ([]DocumentMatchModel, error) {
-	matches := []DocumentMatchModel{}
-	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.SearchDocumentsQuery, termPatterns.DrivingPattern, pq.Array(termPatterns.AllPatterns), limit, offset)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var match DocumentMatchModel
-			if err := rows.Scan(&match.FileID, &match.Name, &match.Path, &match.ParentPath, &match.Format, &match.Size, &match.UpdatedAt, &match.ExtractedText); err != nil {
-				return err
-			}
-			matches = append(matches, match)
-		}
-		return rows.Err()
-	})
-	if err != nil {
-		return nil, fmt.Errorf("documenttext: search documents: %w", err)
-	}
-	return matches, nil
 }
 
 // FindDocumentForIndexing returns the active file when it has a document

@@ -129,11 +129,11 @@ func TestSearchDocumentsPagination_Postgres(t *testing.T) {
 		storeText(t, repository, fileID, "termo comum", now, "")
 	}
 
-	firstPage, err := service.SearchDocuments("termo", 1, 2)
+	firstPage, err := service.SearchDocuments(DocumentSearchParams{Query: "termo", Page: 1, PageSize: 2})
 	if err != nil {
 		t.Fatal(err)
 	}
-	secondPage, err := service.SearchDocuments("termo", 2, 2)
+	secondPage, err := service.SearchDocuments(DocumentSearchParams{Query: "termo", Page: 2, PageSize: 2})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,6 +1,10 @@
 package documenttext
 
-import "time"
+import (
+	"time"
+
+	"nas-go/api/pkg/utils"
+)
 
 const (
 	FormatImage = "image"
@@ -66,4 +70,21 @@ type DocumentItemDto struct {
 
 type DocumentCountDto struct {
 	Total int `json:"total"`
+}
+
+type DocumentSearchQuery struct {
+	TermPatterns utils.SearchTermPatterns
+	Terms        []string
+	Filter       DocumentFilter
+	FolderPath   string
+	Limit        int
+	Offset       int
+}
+
+type DocumentSearchParams struct {
+	Query    string
+	Filter   DocumentFilter
+	FolderID int
+	Page     int
+	PageSize int
 }

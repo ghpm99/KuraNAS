@@ -79,28 +79,42 @@ func (service *Service) ReindexDocument(fileID int) (int, error) {
 	return service.Reindexer.LaunchDocumentReindex(fileID)
 }
 
-func (service *Service) SearchDocuments(query string, page int, pageSize int) (utils.PaginationResponse[DocumentSearchResultDto], error) {
+// SearchDocuments returns one page of documents matching the query in name or
+// content, or ErrFolderNotFound when params.FolderID is not an active folder.
+func (service *Service) SearchDocuments(params DocumentSearchParams) (utils.PaginationResponse[DocumentSearchResultDto], error) {
 	emptyPage := utils.PaginationResponse[DocumentSearchResultDto]{
 		Items:      []DocumentSearchResultDto{},
-		Pagination: utils.Pagination{Page: page, PageSize: pageSize, HasPrev: page > 1},
+		Pagination: utils.Pagination{Page: params.Page, PageSize: params.PageSize, HasPrev: params.Page > 1},
 	}
 
-	termPatterns, hasTerms := utils.BuildSearchTermPatterns(query)
+	termPatterns, hasTerms := utils.BuildSearchTermPatterns(params.Query)
 	if !hasTerms {
 		return emptyPage, nil
 	}
-
-	matches, err := service.Repository.SearchDocuments(termPatterns, pageSize+1, (page-1)*pageSize)
+	folderPrefix, err := service.resolveFolderPrefix(params.FolderID)
 	if err != nil {
 		return emptyPage, err
 	}
 
-	hasNext := len(matches) > pageSize
-	if hasNext {
-		matches = matches[:pageSize]
+	terms := utils.SplitSearchTerms(params.Query)
+	matches, err := service.Repository.SearchDocuments(DocumentSearchQuery{
+		TermPatterns: termPatterns,
+		Terms:        terms,
+		Filter:       params.Filter,
+		FolderPath:   folderPrefix,
+		Limit:        params.PageSize + 1,
+		Offset:       utils.CalculateOffset(params.Page, params.PageSize),
+	})
+	if err != nil {
+		return emptyPage, err
 	}
 
-	emptyPage.Items = mapMatches(matches, utils.SplitSearchTerms(query))
+	hasNext := len(matches) > params.PageSize
+	if hasNext {
+		matches = matches[:params.PageSize]
+	}
+
+	emptyPage.Items = mapMatches(matches, terms)
 	emptyPage.Pagination.HasNext = hasNext
 	return emptyPage, nil
 }
@@ -111,16 +125,21 @@ func (service *Service) SearchTopDocuments(query string, limit int) ([]DocumentS
 		return []DocumentSearchResultDto{}, nil
 	}
 
-	matches, err := service.Repository.SearchDocuments(termPatterns, limit, 0)
+	terms := utils.SplitSearchTerms(query)
+	matches, err := service.Repository.SearchDocuments(DocumentSearchQuery{TermPatterns: termPatterns, Terms: terms, Limit: limit})
 	if err != nil {
 		return nil, err
 	}
-	return mapMatches(matches, utils.SplitSearchTerms(query)), nil
+	return mapMatches(matches, terms), nil
 }
 
 func mapMatches(matches []DocumentMatchModel, terms []string) []DocumentSearchResultDto {
 	results := make([]DocumentSearchResultDto, 0, len(matches))
 	for _, match := range matches {
+		snippet := ""
+		if match.HasContentMatch {
+			snippet = BuildSnippet(match.ContentWindow, terms)
+		}
 		results = append(results, DocumentSearchResultDto{
 			FileID:     match.FileID,
 			Name:       match.Name,
@@ -129,7 +148,8 @@ func mapMatches(matches []DocumentMatchModel, terms []string) []DocumentSearchRe
 			Format:     match.Format,
 			Size:       match.Size,
 			UpdatedAt:  match.UpdatedAt,
-			Snippet:    BuildSnippet(match.ExtractedText, terms),
+			Snippet:    snippet,
+			Page:       match.Page,
 		})
 	}
 	return results
