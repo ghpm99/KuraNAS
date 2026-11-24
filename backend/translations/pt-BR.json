@@ -2369,5 +2369,16 @@
 	"DOCUMENTS_SORT_ORDER_ASCENDING": "Crescente",
 	"DOCUMENTS_SORT_ORDER_DESCENDING": "Decrescente",
 	"DOCUMENTS_FILTER_EMPTY_TITLE": "Nenhum documento com esses filtros",
-	"DOCUMENTS_FILTER_EMPTY_DESCRIPTION": "Nenhum documento corresponde aos filtros escolhidos. Limpe os filtros para ver todos."
+	"DOCUMENTS_FILTER_EMPTY_DESCRIPTION": "Nenhum documento corresponde aos filtros escolhidos. Limpe os filtros para ver todos.",
+	"DOCUMENTS_FOLDERS_TITLE": "Pastas",
+	"DOCUMENTS_FOLDERS_ALL": "Todos os documentos",
+	"DOCUMENTS_FOLDERS_LOADING": "Carregando pastas",
+	"DOCUMENTS_FOLDERS_LOAD_ERROR": "Não foi possível carregar as pastas",
+	"DOCUMENTS_FOLDERS_RETRY": "Tentar de novo",
+	"DOCUMENTS_FOLDERS_NO_SUBFOLDERS": "Sem subpastas",
+	"DOCUMENTS_FOLDERS_LOAD_MORE": "Carregar mais pastas",
+	"DOCUMENTS_FOLDERS_EXPAND": "Expandir {{name}}",
+	"DOCUMENTS_FOLDERS_COLLAPSE": "Recolher {{name}}",
+	"DOCUMENTS_FOLDERS_NOT_CONFIGURED": "A pasta de documentos não está configurada. Configure-a nas configurações para filtrar por pasta.",
+	"DOCUMENTS_FOLDERS_OPEN_SETTINGS": "Abrir configurações"
 }

@@ -2369,5 +2369,16 @@
 	"DOCUMENTS_SORT_ORDER_ASCENDING": "Ascending",
 	"DOCUMENTS_SORT_ORDER_DESCENDING": "Descending",
 	"DOCUMENTS_FILTER_EMPTY_TITLE": "No documents match these filters",
-	"DOCUMENTS_FILTER_EMPTY_DESCRIPTION": "No document matches the chosen filters. Clear the filters to see them all."
+	"DOCUMENTS_FILTER_EMPTY_DESCRIPTION": "No document matches the chosen filters. Clear the filters to see them all.",
+	"DOCUMENTS_FOLDERS_TITLE": "Folders",
+	"DOCUMENTS_FOLDERS_ALL": "All documents",
+	"DOCUMENTS_FOLDERS_LOADING": "Loading folders",
+	"DOCUMENTS_FOLDERS_LOAD_ERROR": "Could not load the folders",
+	"DOCUMENTS_FOLDERS_RETRY": "Try again",
+	"DOCUMENTS_FOLDERS_NO_SUBFOLDERS": "No subfolders",
+	"DOCUMENTS_FOLDERS_LOAD_MORE": "Load more folders",
+	"DOCUMENTS_FOLDERS_EXPAND": "Expand {{name}}",
+	"DOCUMENTS_FOLDERS_COLLAPSE": "Collapse {{name}}",
+	"DOCUMENTS_FOLDERS_NOT_CONFIGURED": "The documents folder is not configured. Set it up in settings to filter by folder.",
+	"DOCUMENTS_FOLDERS_OPEN_SETTINGS": "Open settings"
 }
