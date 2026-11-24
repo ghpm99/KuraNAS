@@ -202,6 +202,7 @@ func TestRetryDownloadHandlerErrorStatuses(t *testing.T) {
 		{"not retryable", "/ingest/downloads/12/retry", ErrDownloadNotRetryable, http.StatusConflict},
 		{"destination gone", "/ingest/downloads/12/retry", ErrInvalidTarget, http.StatusBadRequest},
 		{"jobs unavailable", "/ingest/downloads/12/retry", ErrJobsUnavailable, http.StatusServiceUnavailable},
+		{"yt-dlp not installed", "/ingest/downloads/12/retry", ErrYtDlpNotInstalled, http.StatusServiceUnavailable},
 		{"unexpected", "/ingest/downloads/12/retry", errors.New("db down"), http.StatusInternalServerError},
 		{"invalid id", "/ingest/downloads/abc/retry", nil, http.StatusBadRequest},
 		{"zero id", "/ingest/downloads/0/retry", nil, http.StatusBadRequest},
@@ -215,4 +216,14 @@ func TestRetryDownloadHandlerErrorStatuses(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRetryDownloadHandlerYtDlpNotInstalledReturnsTranslatedMessage(t *testing.T) {
+	loadTranslationsForTest(t)
+	service := &fakeDownloadsService{retryErr: ErrYtDlpNotInstalled}
+	rec := doRequest(newDownloadsRouter(service), http.MethodPost, "/ingest/downloads/12/retry", "")
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", rec.Code)
+	}
+	assertTranslatedYtDlpMessage(t, rec.Body.String())
 }

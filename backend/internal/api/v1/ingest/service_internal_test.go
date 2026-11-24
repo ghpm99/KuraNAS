@@ -13,6 +13,10 @@ import (
 	"nas-go/api/pkg/database"
 )
 
+type installedProbe struct{ missing bool }
+
+func (p installedProbe) IsInstalled() bool { return !p.missing }
+
 type fakeJobsRepo struct {
 	createdJob  jobs.JobModel
 	createdStep jobs.StepModel
@@ -60,7 +64,7 @@ func TestFetchSuccessEnqueuesJobAndStep(t *testing.T) {
 	root := seedRoot(t)
 	repo := &fakeJobsRepo{}
 	downloads := &fakeDownloadsRepo{}
-	service := NewService(repo, downloads)
+	service := NewService(repo, downloads, installedProbe{})
 
 	response, err := service.Fetch(FetchRequestDto{
 		URL:        "https://youtu.be/abc123",
@@ -103,7 +107,7 @@ func TestFetchSuccessEnqueuesJobAndStep(t *testing.T) {
 
 func TestFetchValidationErrors(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(&fakeJobsRepo{}, &fakeDownloadsRepo{})
+	service := NewService(&fakeJobsRepo{}, &fakeDownloadsRepo{}, installedProbe{})
 
 	cases := []struct {
 		name    string
@@ -127,7 +131,7 @@ func TestFetchValidationErrors(t *testing.T) {
 
 func TestFetchJobsUnavailable(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(nil, nil)
+	service := NewService(nil, nil, installedProbe{})
 	_, err := service.Fetch(FetchRequestDto{URL: "https://x.test/v", Preset: "audio_mp3", TargetRoot: root.Path})
 	if !errors.Is(err, ErrJobsUnavailable) {
 		t.Fatalf("expected ErrJobsUnavailable, got %v", err)
@@ -136,7 +140,7 @@ func TestFetchJobsUnavailable(t *testing.T) {
 
 func TestFetchPropagatesRepoError(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(&fakeJobsRepo{jobErr: errors.New("db down")}, &fakeDownloadsRepo{})
+	service := NewService(&fakeJobsRepo{jobErr: errors.New("db down")}, &fakeDownloadsRepo{}, installedProbe{})
 	if _, err := service.Fetch(FetchRequestDto{URL: "https://x.test/v", Preset: "audio_mp3", TargetRoot: root.Path}); err == nil {
 		t.Fatal("expected an error when CreateJob fails")
 	}
@@ -178,7 +182,7 @@ func TestResolveTarget(t *testing.T) {
 
 func TestListTargetsAndPresets(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(&fakeJobsRepo{}, &fakeDownloadsRepo{})
+	service := NewService(&fakeJobsRepo{}, &fakeDownloadsRepo{}, installedProbe{})
 
 	targets := service.ListTargets()
 	if len(targets) != 1 || targets[0].Path != root.Path {
@@ -208,9 +212,28 @@ func TestResolvePresetUnknown(t *testing.T) {
 func TestFetchRejectsAURLBeyondTheMaximumLength(t *testing.T) {
 	oversizedURL := "https://x.test/" + strings.Repeat("a", MaxURLLength)
 
-	_, err := NewService(nil, nil).Fetch(FetchRequestDto{URL: oversizedURL, Preset: "audio_mp3"})
+	_, err := NewService(nil, nil, installedProbe{}).Fetch(FetchRequestDto{URL: oversizedURL, Preset: "audio_mp3"})
 
 	if !errors.Is(err, ErrURLTooLong) {
 		t.Fatalf("expected ErrURLTooLong, got %v", err)
+	}
+}
+
+func TestFetchRefusesWhenYtDlpNotInstalled(t *testing.T) {
+	root := seedRoot(t)
+	repo := &fakeJobsRepo{}
+	downloads := &fakeDownloadsRepo{}
+	service := NewService(repo, downloads, installedProbe{missing: true})
+
+	_, err := service.Fetch(FetchRequestDto{URL: "https://youtu.be/abc123", Preset: "audio_mp3", TargetRoot: root.Path})
+
+	if !errors.Is(err, ErrYtDlpNotInstalled) {
+		t.Fatalf("expected ErrYtDlpNotInstalled, got %v", err)
+	}
+	if repo.createdJob.ID != 0 || repo.createdStep.JobID != 0 {
+		t.Fatalf("no job or step should be created, got %+v %+v", repo.createdJob, repo.createdStep)
+	}
+	if downloads.recorded.URL != "" {
+		t.Fatal("no download record should be created")
 	}
 }

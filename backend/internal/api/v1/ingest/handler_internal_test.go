@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"nas-go/api/pkg/i18n"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -101,6 +103,7 @@ func TestFetchHandlerErrorMapping(t *testing.T) {
 		{"invalid target", ErrInvalidTarget, http.StatusBadRequest},
 		{"invalid subfolder", ErrInvalidSubfolder, http.StatusBadRequest},
 		{"jobs unavailable", ErrJobsUnavailable, http.StatusServiceUnavailable},
+		{"yt-dlp not installed", ErrYtDlpNotInstalled, http.StatusServiceUnavailable},
 		{"unexpected", errString("boom"), http.StatusInternalServerError},
 	}
 	for _, tc := range cases {
@@ -153,4 +156,28 @@ func TestFetchHandlerTellsAnInvalidSubfolderApartFromAnInvalidTarget(t *testing.
 	if subfolderMessage == "" || subfolderMessage == targetMessage {
 		t.Fatalf("subfolder and target need distinct messages, got %q and %q", subfolderMessage, targetMessage)
 	}
+}
+
+func loadTranslationsForTest(t *testing.T) {
+	t.Helper()
+	if err := i18n.LoadTranslations(); err != nil {
+		t.Fatalf("load translations: %v", err)
+	}
+}
+
+func assertTranslatedYtDlpMessage(t *testing.T, body string) {
+	t.Helper()
+	if strings.Contains(body, "ERROR_DOWNLOAD_YTDLP_NOT_INSTALLED") || !strings.Contains(body, "yt-dlp") {
+		t.Fatalf("expected translated message, got %s", body)
+	}
+}
+
+func TestFetchHandlerYtDlpNotInstalledReturnsTranslatedMessage(t *testing.T) {
+	loadTranslationsForTest(t)
+	router := newTestRouter(&fakeService{fetchErr: ErrYtDlpNotInstalled})
+	rec := doRequest(router, http.MethodPost, "/ingest/fetch", `{"url":"https://x.test/v","preset":"audio_mp3","target_root":"/srv"}`)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503, got %d", rec.Code)
+	}
+	assertTranslatedYtDlpMessage(t, rec.Body.String())
 }

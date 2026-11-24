@@ -26,10 +26,11 @@ const MaxURLLength = 2048
 type Service struct {
 	jobsRepo      jobEnqueuer
 	downloadsRepo downloadRecorder
+	ytDlp         ytDlpInstallProbe
 }
 
-func NewService(jobsRepo jobEnqueuer, downloadsRepo downloadRecorder) *Service {
-	return &Service{jobsRepo: jobsRepo, downloadsRepo: downloadsRepo}
+func NewService(jobsRepo jobEnqueuer, downloadsRepo downloadRecorder, ytDlp ytDlpInstallProbe) *Service {
+	return &Service{jobsRepo: jobsRepo, downloadsRepo: downloadsRepo, ytDlp: ytDlp}
 }
 
 // Fetch validates the request, records it as a queued download and enqueues a
@@ -53,6 +54,9 @@ func (s *Service) Fetch(request FetchRequestDto) (FetchResponseDto, error) {
 	}
 	if s.jobsRepo == nil || s.downloadsRepo == nil {
 		return FetchResponseDto{}, ErrJobsUnavailable
+	}
+	if !s.ytDlp.IsInstalled() {
+		return FetchResponseDto{}, ErrYtDlpNotInstalled
 	}
 	targetRoot := findRootByPath(enabledRoots, request.TargetRoot)
 	subfolder, err := relativeSubfolder(targetRoot.Path, outputDir)

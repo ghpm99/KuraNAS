@@ -83,6 +83,8 @@ func (h *DownloadsHandler) respondRetryError(c *gin.Context, err error) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_INVALID_TARGET")})
 	case errors.Is(err, ErrInvalidSubfolder):
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_INVALID_SUBFOLDER")})
+	case errors.Is(err, ErrYtDlpNotInstalled):
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_YTDLP_NOT_INSTALLED")})
 	case errors.Is(err, ErrJobsUnavailable):
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_DOWNLOAD_JOBS_UNAVAILABLE")})
 	default:

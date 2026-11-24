@@ -295,8 +295,8 @@ type IngestContext struct {
 // (version status, verified manual update, and the update-available checker
 // that raises a notification).
 func newIngestContext(jobsRepository jobs.RepositoryInterface, downloadRepository *ingest.DownloadRepository, notifier ingest.Notifier) *IngestContext {
-	service := ingest.NewService(jobsRepository, downloadRepository)
 	ytdlp := ingest.NewYtDlpService()
+	service := ingest.NewService(jobsRepository, downloadRepository, ytdlp)
 	return &IngestContext{
 		Handler:          ingest.NewHandler(service),
 		Service:          service,

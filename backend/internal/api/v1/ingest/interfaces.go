@@ -20,6 +20,11 @@ type YtDlpServiceInterface interface {
 	Update() error
 }
 
+// ytDlpInstallProbe tells whether the yt-dlp binary is usable.
+type ytDlpInstallProbe interface {
+	IsInstalled() bool
+}
+
 // jobEnqueuer is the slice of the jobs repository the download service needs to
 // enqueue a background fetch. Declared locally so the service depends on the
 // narrowest contract and tests can fake it without the full repository.

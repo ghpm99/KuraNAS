@@ -17,7 +17,7 @@ func newRetryService(t *testing.T, dbContext *database.DbContext) *DownloadsServ
 	roots.Set([]roots.Root{{ID: 2, Path: filepath.Clean(t.TempDir()), Label: "Videos", Enabled: true}})
 	t.Cleanup(roots.Reset)
 	downloadRepository := NewDownloadRepository(dbContext)
-	fetchService := NewService(jobs.NewRepository(dbContext), downloadRepository)
+	fetchService := NewService(jobs.NewRepository(dbContext), downloadRepository, installedProbe{})
 	return NewDownloadsService(downloadRepository, fetchService)
 }
 

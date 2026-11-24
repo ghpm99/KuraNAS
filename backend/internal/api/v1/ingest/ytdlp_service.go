@@ -85,12 +85,7 @@ func NewYtDlpService() *YtDlpService {
 	}
 }
 
-// Status never errors: an unreachable GitHub or a missing binary degrades to a
-// partial status, exactly like the Ollama status probe. The --version failure
-// is still recorded forensically — a binary in the wrong place, an ephemeral
-// install path and a genuinely absent binary all collapse to CurrentVersion ==
-// "" for the client, so the real cause only survives in the file log.
-func (s *YtDlpService) Status() YtDlpStatusDto {
+func (s *YtDlpService) installedVersion() string {
 	execPath := s.execPath()
 	current, err := s.versionOf(execPath)
 	if err != nil {
@@ -100,6 +95,22 @@ func (s *YtDlpService) Status() YtDlpStatusDto {
 			applog.Warn("ytdlp: binary not found", "path", execPath, "error", err.Error())
 		}
 	}
+	return current
+}
+
+// IsInstalled reports whether the yt-dlp binary runs, with the same detection
+// as Status but without querying GitHub.
+func (s *YtDlpService) IsInstalled() bool {
+	return s.installedVersion() != ""
+}
+
+// Status never errors: an unreachable GitHub or a missing binary degrades to a
+// partial status, exactly like the Ollama status probe. The --version failure
+// is still recorded forensically — a binary in the wrong place, an ephemeral
+// install path and a genuinely absent binary all collapse to CurrentVersion ==
+// "" for the client, so the real cause only survives in the file log.
+func (s *YtDlpService) Status() YtDlpStatusDto {
+	current := s.installedVersion()
 	status := YtDlpStatusDto{Installed: current != "", CurrentVersion: current}
 
 	release, err := s.fetchRelease()
