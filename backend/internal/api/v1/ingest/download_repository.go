@@ -137,6 +137,27 @@ func (r *DownloadRepository) ListDownloads(stateFilter string, page int, pageSiz
 	return downloads, nil
 }
 
+// GetDownload returns one download by id, or ErrDownloadNotFound.
+func (r *DownloadRepository) GetDownload(downloadID int) (DownloadDto, error) {
+	rows, err := r.DbContext.GetDatabase().Query(queries.GetIngestDownloadQuery, downloadID)
+	if err != nil {
+		return DownloadDto{}, fmt.Errorf("GetDownload: %w", err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return DownloadDto{}, fmt.Errorf("GetDownload: %w", err)
+		}
+		return DownloadDto{}, ErrDownloadNotFound
+	}
+	download, err := scanDownload(rows)
+	if err != nil {
+		return DownloadDto{}, fmt.Errorf("GetDownload: %w", err)
+	}
+	return download, nil
+}
+
 func scanDownload(rows *sql.Rows) (DownloadDto, error) {
 	var (
 		download            DownloadDto

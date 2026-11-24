@@ -30,3 +30,6 @@ var ListIngestDownloadsQuery string
 
 //go:embed fail_interrupted_ingest_downloads.sql
 var FailInterruptedIngestDownloadsQuery string
+
+//go:embed get_ingest_download.sql
+var GetIngestDownloadQuery string

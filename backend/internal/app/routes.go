@@ -687,6 +687,7 @@ func RegisterIngestRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	if context.Ingest.DownloadsHandler != nil {
 		group.GET("/downloads", context.Ingest.DownloadsHandler.ListDownloadsHandler)
+		group.POST("/downloads/:id/retry", context.Ingest.DownloadsHandler.RetryDownloadHandler)
 	}
 
 	if context.Ingest.YtDlpHandler != nil {

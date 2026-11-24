@@ -304,7 +304,7 @@ func newIngestContext(jobsRepository jobs.RepositoryInterface, downloadRepositor
 		YtDlpHandler:     ingest.NewYtDlpHandler(ytdlp),
 		Notifier:         notifier,
 		Downloads:        downloadRepository,
-		DownloadsHandler: ingest.NewDownloadsHandler(ingest.NewDownloadsService(downloadRepository)),
+		DownloadsHandler: ingest.NewDownloadsHandler(ingest.NewDownloadsService(downloadRepository, service)),
 	}
 }
 

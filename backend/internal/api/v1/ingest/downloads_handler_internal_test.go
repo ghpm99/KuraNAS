@@ -13,6 +13,9 @@ import (
 )
 
 type fakeDownloadsService struct {
+	retried     DownloadDto
+	retryErr    error
+	retriedID   int
 	response    utils.PaginationResponse[DownloadDto]
 	err         error
 	stateFilter string
@@ -27,10 +30,16 @@ func (f *fakeDownloadsService) ListDownloads(stateFilter string, page int, pageS
 	return f.response, f.err
 }
 
+func (f *fakeDownloadsService) RetryDownload(downloadID int) (DownloadDto, error) {
+	f.retriedID = downloadID
+	return f.retried, f.retryErr
+}
+
 func newDownloadsRouter(service DownloadsServiceInterface) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.GET("/ingest/downloads", NewDownloadsHandler(service).ListDownloadsHandler)
+	router.POST("/ingest/downloads/:id/retry", NewDownloadsHandler(service).RetryDownloadHandler)
 	return router
 }
 
@@ -118,12 +127,16 @@ type fakeDownloadLister struct {
 	err       error
 }
 
+func (f fakeDownloadLister) GetDownload(int) (DownloadDto, error) {
+	return DownloadDto{}, f.err
+}
+
 func (f fakeDownloadLister) ListDownloads(string, int, int) ([]DownloadDto, error) {
 	return f.downloads, f.err
 }
 
 func TestDownloadsServiceSetsHasNextAndTrimsExtraRow(t *testing.T) {
-	service := NewDownloadsService(fakeDownloadLister{downloads: []DownloadDto{{ID: 3}, {ID: 2}, {ID: 1}}})
+	service := NewDownloadsService(fakeDownloadLister{downloads: []DownloadDto{{ID: 3}, {ID: 2}, {ID: 1}}}, nil)
 	response, err := service.ListDownloads("", 1, 2)
 	if err != nil {
 		t.Fatalf("ListDownloads: %v", err)
@@ -134,7 +147,7 @@ func TestDownloadsServiceSetsHasNextAndTrimsExtraRow(t *testing.T) {
 }
 
 func TestDownloadsServiceNilRowsBecomeEmptyItems(t *testing.T) {
-	service := NewDownloadsService(fakeDownloadLister{})
+	service := NewDownloadsService(fakeDownloadLister{}, nil)
 	response, err := service.ListDownloads("finished", 2, 5)
 	if err != nil || response.Items == nil || response.Pagination.HasNext || !response.Pagination.HasPrev {
 		t.Fatalf("unexpected response: %+v err=%v", response, err)
@@ -142,8 +155,64 @@ func TestDownloadsServiceNilRowsBecomeEmptyItems(t *testing.T) {
 }
 
 func TestDownloadsServiceRejectsInvalidState(t *testing.T) {
-	service := NewDownloadsService(fakeDownloadLister{})
+	service := NewDownloadsService(fakeDownloadLister{}, nil)
 	if _, err := service.ListDownloads("bogus", 1, 5); !errors.Is(err, ErrInvalidDownloadStateFilter) {
 		t.Fatalf("err = %v, want ErrInvalidDownloadStateFilter", err)
+	}
+}
+
+func TestRetryDownloadHandlerResponseFieldNames(t *testing.T) {
+	jobID := 346
+	createdAt := time.Date(2026, 11, 16, 20, 15, 0, 0, time.UTC)
+	service := &fakeDownloadsService{retried: DownloadDto{
+		ID: 13, JobID: &jobID, URL: "https://x.test/v", Preset: "video_1080",
+		TargetRootID: 2, TargetRootName: "Videos", Subfolder: "Shows", State: "queued", CreatedAt: createdAt,
+	}}
+	rec := doRequest(newDownloadsRouter(service), http.MethodPost, "/ingest/downloads/12/retry", "")
+
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if service.retriedID != 12 {
+		t.Fatalf("retried id = %d, want 12", service.retriedID)
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, field := range []string{"id", "job_id", "url", "title", "preset", "target_root_id", "target_root_name",
+		"subfolder", "state", "progress", "speed_bytes_per_second", "eta_seconds", "file_id", "error", "created_at", "ended_at"} {
+		if _, exists := body[field]; !exists {
+			t.Fatalf("field %q missing in %s", field, rec.Body.String())
+		}
+	}
+	if body["id"] != float64(13) || body["state"] != "queued" || body["url"] != "https://x.test/v" {
+		t.Fatalf("unexpected body: %s", rec.Body.String())
+	}
+}
+
+func TestRetryDownloadHandlerErrorStatuses(t *testing.T) {
+	testCases := []struct {
+		name       string
+		path       string
+		err        error
+		wantStatus int
+	}{
+		{"missing", "/ingest/downloads/12/retry", ErrDownloadNotFound, http.StatusNotFound},
+		{"not retryable", "/ingest/downloads/12/retry", ErrDownloadNotRetryable, http.StatusConflict},
+		{"destination gone", "/ingest/downloads/12/retry", ErrInvalidTarget, http.StatusBadRequest},
+		{"jobs unavailable", "/ingest/downloads/12/retry", ErrJobsUnavailable, http.StatusServiceUnavailable},
+		{"unexpected", "/ingest/downloads/12/retry", errors.New("db down"), http.StatusInternalServerError},
+		{"invalid id", "/ingest/downloads/abc/retry", nil, http.StatusBadRequest},
+		{"zero id", "/ingest/downloads/0/retry", nil, http.StatusBadRequest},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			service := &fakeDownloadsService{retryErr: testCase.err}
+			rec := doRequest(newDownloadsRouter(service), http.MethodPost, testCase.path, "")
+			if rec.Code != testCase.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, testCase.wantStatus, rec.Body.String())
+			}
+		})
 	}
 }
