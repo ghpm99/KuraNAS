@@ -38,6 +38,13 @@ func expectPlaylistLock(mock sqlmock.Sqlmock, playlistID int) {
 	mock.ExpectQuery(regexp.QuoteMeta(queries.LockPlaylistQuery)).
 		WithArgs(playlistID).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(playlistID))
+	expectManualPlaylistKind(mock, playlistID)
+}
+
+func expectManualPlaylistKind(mock sqlmock.Sqlmock, playlistID int) {
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistRulesByIDQuery)).
+		WithArgs(playlistID).
+		WillReturnRows(sqlmock.NewRows([]string{"rules"}))
 }
 
 func expectPlaylistCompaction(mock sqlmock.Sqlmock, playlistID int) {
@@ -255,6 +262,7 @@ func TestMusicRepositoryArtistClustersAndAIPlaylists(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(queries.CreateAIPlaylistQuery)).
 		WithArgs("Classic Rock", "").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(7, now, now))
+	expectManualPlaylistKind(mock, 7)
 	mock.ExpectExec(regexp.QuoteMeta(queries.ClearPlaylistTracksQuery)).
 		WithArgs(7).
 		WillReturnResult(sqlmock.NewResult(0, 5))
@@ -285,6 +293,7 @@ func TestMusicRepositoryArtistClustersAndAIPlaylists(t *testing.T) {
 
 	// ReplacePlaylistTracks with no files only clears, never inserts.
 	mock.ExpectBegin()
+	expectManualPlaylistKind(mock, 7)
 	mock.ExpectExec(regexp.QuoteMeta(queries.ClearPlaylistTracksQuery)).
 		WithArgs(7).
 		WillReturnResult(sqlmock.NewResult(0, 2))
@@ -306,6 +315,7 @@ func TestMusicRepositoryGetPlaylistTracksScanError(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistRulesByIDQuery)).WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"rules"}))
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistTracksQuery)).
 		WithArgs(1, 11, 0).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
@@ -423,6 +433,7 @@ func TestMusicRepositoryGetPlaylistTracksSuccessAndQueryError(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistRulesByIDQuery)).WithArgs(10).WillReturnRows(sqlmock.NewRows([]string{"rules"}))
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistTracksQuery)).
 		WithArgs(10, 11, 0).
 		WillReturnRows(sqlmock.NewRows(sequentialCols(len(trackValues))).AddRow(trackValues...))
@@ -433,6 +444,7 @@ func TestMusicRepositoryGetPlaylistTracksSuccessAndQueryError(t *testing.T) {
 	}
 
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistRulesByIDQuery)).WithArgs(10).WillReturnRows(sqlmock.NewRows([]string{"rules"}))
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistTracksQuery)).
 		WithArgs(10, 11, 0).
 		WillReturnError(errors.New("query failed"))

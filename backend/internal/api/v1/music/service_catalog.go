@@ -17,6 +17,8 @@ const (
 
 var ErrAutoPlaylistReadOnly = errors.New("automatic playlists are read-only")
 
+var ErrPlaylistRuleReadOnly = errors.New("rule playlists do not accept adding or reordering tracks")
+
 var ErrTrackAlreadyInPlaylist = errors.New("track is already in the playlist")
 
 func normalizePagination(page int, pageSize int) (int, int) {

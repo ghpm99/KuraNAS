@@ -258,3 +258,15 @@ var CreateRulePlaylistQuery string
 
 //go:embed update_playlist_rules.sql
 var UpdatePlaylistRulesQuery string
+
+//go:embed get_playlist_rule_tracks.sql
+var GetPlaylistRuleTracksQuery string
+
+//go:embed get_playlist_rule_queue.sql
+var GetPlaylistRuleQueueQuery string
+
+//go:embed get_playlist_rules_by_id.sql
+var GetPlaylistRulesByIDQuery string
+
+//go:embed add_playlist_rule_exclusion.sql
+var AddPlaylistRuleExclusionQuery string

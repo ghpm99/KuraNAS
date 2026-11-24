@@ -3,6 +3,7 @@ package music
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	queries "nas-go/api/pkg/database/queries/music"
 	"nas-go/api/pkg/utils"
@@ -158,4 +159,97 @@ func applyPlaylistRuleTotals(tx *sql.Tx, playlists []PlaylistModel) error {
 		playlists[index].TotalLengthSeconds = totals.TotalLengthSeconds
 	}
 	return nil
+}
+
+func scanPlaylistTrack(rowScanner playlistRowScanner) (PlaylistTrackModel, error) {
+	var track PlaylistTrackModel
+	err := rowScanner.Scan(
+
+		&track.ID, &track.PlaylistID, &track.FileID,
+		&track.Position, &track.AddedAt,
+		&track.FileID, &track.FileName, &track.FilePath,
+		&track.FileParentPath, &track.FileFormat, &track.FileSize,
+		&track.FileUpdatedAt, &track.FileCreatedAt,
+		&track.LastInteraction, &track.LastBackup,
+		&track.FileType, &track.FileCheckSum,
+		&track.FileDeletedAt, &track.FileStarred,
+		&track.MetadataID, &track.MetadataFileId, &track.MetadataPath,
+		&track.MetadataMime, &track.MetadataLength, &track.MetadataBitrate,
+		&track.MetadataSampleRate, &track.MetadataChannels,
+		&track.MetadataBitrateMode, &track.MetadataEncoderInfo, &track.MetadataBitDepth,
+		&track.MetadataTitle, &track.MetadataArtist, &track.MetadataAlbum,
+		&track.MetadataAlbumArtist, &track.MetadataTrackNumber, &track.MetadataGenre,
+		&track.MetadataComposer, &track.MetadataYear, &track.MetadataRecordingDate,
+		&track.MetadataEncoder, &track.MetadataPublisher, &track.MetadataOriginalReleaseDate,
+		&track.MetadataOriginalArtist, &track.MetadataLyricist, &track.MetadataLyrics,
+		&track.MetadataCreatedAt,
+	)
+	return track, err
+}
+
+func findPlaylistRuleSpec(tx *sql.Tx, playlistID int) (*playlistRuleQuerySpec, error) {
+	var encodedRules []byte
+	err := tx.QueryRow(queries.GetPlaylistRulesByIDQuery, playlistID).Scan(&encodedRules)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var rules PlaylistRules
+	if err := json.Unmarshal(encodedRules, &rules); err != nil {
+		return nil, fmt.Errorf("regras da playlist %d invalidas: %w", playlistID, err)
+	}
+	ruleSpec := buildPlaylistRuleQuerySpec(rules, &playlistID)
+	return &ruleSpec, nil
+}
+
+func (r *Repository) findPlaylistRuleSpec(playlistID int) (*playlistRuleQuerySpec, error) {
+	var ruleSpec *playlistRuleQuerySpec
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		foundSpec, err := findPlaylistRuleSpec(tx, playlistID)
+		ruleSpec = foundSpec
+		return err
+	})
+	return ruleSpec, err
+}
+
+func isRulePlaylist(tx *sql.Tx, playlistID int) (bool, error) {
+	ruleSpec, err := findPlaylistRuleSpec(tx, playlistID)
+	return ruleSpec != nil, err
+}
+
+func refuseWriteOnRulePlaylist(tx *sql.Tx, playlistID int) error {
+	isRule, err := isRulePlaylist(tx, playlistID)
+	if err != nil {
+		return err
+	}
+	if isRule {
+		return ErrPlaylistRuleReadOnly
+	}
+	return nil
+}
+
+func excludeTrackFromRulePlaylist(tx *sql.Tx, playlistID int, fileID int) error {
+	if _, err := tx.Exec(queries.AddPlaylistRuleExclusionQuery, playlistID, fileID); err != nil {
+		return fmt.Errorf("falha ao excluir faixa da playlist por regra: %w", err)
+	}
+	return nil
+}
+
+func queryPlaylistTrackRows(tx *sql.Tx, playlistID int, limit int, offset int) (*sql.Rows, error) {
+	ruleSpec, err := findPlaylistRuleSpec(tx, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	if ruleSpec == nil {
+		return tx.Query(queries.GetPlaylistTracksQuery, playlistID, limit, offset)
+	}
+
+	encodedSpecs, err := encodePlaylistRuleQuerySpecs([]playlistRuleQuerySpec{*ruleSpec})
+	if err != nil {
+		return nil, err
+	}
+	return tx.Query(queries.GetPlaylistRuleTracksQuery, pq.Array(utils.AudioFormats), encodedSpecs, limit, offset)
 }

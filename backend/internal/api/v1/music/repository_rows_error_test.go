@@ -45,6 +45,9 @@ func TestMusicListingsReturnRowIterationError(t *testing.T) {
 			defer db.Close()
 
 			mock.ExpectBegin()
+			if name == "GetPlaylistTracks" {
+				mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistRulesByIDQuery)).WillReturnRows(sqlmock.NewRows([]string{"rules"}))
+			}
 			mock.ExpectQuery(regexp.QuoteMeta(testCase.query)).WillReturnRows(failingRows(iterationFailure))
 			mock.ExpectRollback()
 

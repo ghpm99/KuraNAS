@@ -783,6 +783,7 @@
 	"ERROR_MUSIC_METADATA_FIELDS_EMPTY": "Informe ao menos um campo para corrigir",
 	"ERROR_MUSIC_GENRE_NAME_EMPTY": "Informe o nome do gênero",
 	"ERROR_MUSIC_GENRE_NAME_SEPARATOR": "O nome do gênero não pode conter ; , ou |",
+	"ERROR_MUSIC_PLAYLIST_RULE_READ_ONLY": "Playlist por regra não aceita adicionar nem reordenar faixas",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "Esta faixa já está na playlist",
 	"ERROR_MUSIC_PLAYLIST_RULE_EMPTY": "Informe ao menos um critério para a regra da playlist",
 	"ERROR_MUSIC_PLAYLIST_RULE_MATCH_INVALID": "Informe se a regra combina os critérios com \"any\" (qualquer) ou \"all\" (todos)",

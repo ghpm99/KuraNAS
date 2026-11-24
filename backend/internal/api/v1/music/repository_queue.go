@@ -69,7 +69,19 @@ func (r *Repository) GetLibraryQueueByFolder(folderPath string, limit int) ([]Mu
 }
 
 func (r *Repository) GetPlaylistQueue(playlistID int, limit int) ([]MusicQueueEntryModel, error) {
-	return r.queryQueueEntries(queries.GetPlaylistQueueQuery, playlistID, limit)
+	ruleSpec, err := r.findPlaylistRuleSpec(playlistID)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao montar a fila de reproducao: %w", err)
+	}
+	if ruleSpec == nil {
+		return r.queryQueueEntries(queries.GetPlaylistQueueQuery, playlistID, limit)
+	}
+
+	encodedSpecs, err := encodePlaylistRuleQuerySpecs([]playlistRuleQuerySpec{*ruleSpec})
+	if err != nil {
+		return nil, fmt.Errorf("falha ao montar a fila de reproducao: %w", err)
+	}
+	return r.queryQueueEntries(queries.GetPlaylistRuleQueueQuery, pq.Array(utils.AudioFormats), encodedSpecs, limit)
 }
 
 func (r *Repository) GetLibraryQueueByFileIDs(fileIDs []int) ([]MusicQueueEntryModel, error) {

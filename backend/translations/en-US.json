@@ -783,6 +783,7 @@
 	"ERROR_MUSIC_METADATA_FIELDS_EMPTY": "Provide at least one field to correct",
 	"ERROR_MUSIC_GENRE_NAME_EMPTY": "Enter the genre name",
 	"ERROR_MUSIC_GENRE_NAME_SEPARATOR": "The genre name cannot contain ; , or |",
+	"ERROR_MUSIC_PLAYLIST_RULE_READ_ONLY": "Rule playlists do not accept adding or reordering tracks",
 	"ERROR_MUSIC_TRACK_ALREADY_IN_PLAYLIST": "This track is already in the playlist",
 	"ERROR_MUSIC_PLAYLIST_RULE_EMPTY": "Enter at least one criterion for the playlist rule",
 	"ERROR_MUSIC_PLAYLIST_RULE_MATCH_INVALID": "Choose whether the rule combines criteria with \"any\" or \"all\"",

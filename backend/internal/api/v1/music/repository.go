@@ -309,41 +309,19 @@ func (r *Repository) GetPlaylistTracks(playlistID int, page int, pageSize int) (
 		},
 	}
 
-	args := []any{
-		playlistID,
-		pageSize + 1,
-		utils.CalculateOffset(page, pageSize),
-	}
+	pageLimit := pageSize + 1
+	pageOffset := utils.CalculateOffset(page, pageSize)
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.GetPlaylistTracksQuery, args...)
+		rows, err := queryPlaylistTrackRows(tx, playlistID, pageLimit, pageOffset)
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
 
 		for rows.Next() {
-			var track PlaylistTrackModel
-			if err := rows.Scan(
-				&track.ID, &track.PlaylistID, &track.FileID,
-				&track.Position, &track.AddedAt,
-				&track.FileID, &track.FileName, &track.FilePath,
-				&track.FileParentPath, &track.FileFormat, &track.FileSize,
-				&track.FileUpdatedAt, &track.FileCreatedAt,
-				&track.LastInteraction, &track.LastBackup,
-				&track.FileType, &track.FileCheckSum,
-				&track.FileDeletedAt, &track.FileStarred,
-				&track.MetadataID, &track.MetadataFileId, &track.MetadataPath,
-				&track.MetadataMime, &track.MetadataLength, &track.MetadataBitrate,
-				&track.MetadataSampleRate, &track.MetadataChannels,
-				&track.MetadataBitrateMode, &track.MetadataEncoderInfo, &track.MetadataBitDepth,
-				&track.MetadataTitle, &track.MetadataArtist, &track.MetadataAlbum,
-				&track.MetadataAlbumArtist, &track.MetadataTrackNumber, &track.MetadataGenre,
-				&track.MetadataComposer, &track.MetadataYear, &track.MetadataRecordingDate,
-				&track.MetadataEncoder, &track.MetadataPublisher, &track.MetadataOriginalReleaseDate,
-				&track.MetadataOriginalArtist, &track.MetadataLyricist, &track.MetadataLyrics,
-				&track.MetadataCreatedAt,
-			); err != nil {
+			track, err := scanPlaylistTrack(rows)
+			if err != nil {
 				return err
 			}
 			paginationResponse.Items = append(paginationResponse.Items, track)
@@ -375,6 +353,9 @@ func (r *Repository) AddPlaylistTrack(tx *sql.Tx, playlistID int, fileID int) (P
 	if err := lockPlaylist(tx, playlistID); err != nil {
 		return track, err
 	}
+	if err := refuseWriteOnRulePlaylist(tx, playlistID); err != nil {
+		return track, err
+	}
 
 	err := tx.QueryRow(queries.AddPlaylistTrackQuery, playlistID, fileID).Scan(
 		&track.ID, &track.Position, &track.AddedAt,
@@ -392,6 +373,14 @@ func (r *Repository) AddPlaylistTrack(tx *sql.Tx, playlistID int, fileID int) (P
 func (r *Repository) RemovePlaylistTrack(tx *sql.Tx, playlistID int, fileID int) error {
 	if err := lockPlaylist(tx, playlistID); err != nil {
 		return err
+	}
+
+	isRulePlaylist, err := isRulePlaylist(tx, playlistID)
+	if err != nil {
+		return err
+	}
+	if isRulePlaylist {
+		return excludeTrackFromRulePlaylist(tx, playlistID, fileID)
 	}
 
 	result, err := tx.Exec(queries.RemovePlaylistTrackQuery, playlistID, fileID)
@@ -417,6 +406,9 @@ func (r *Repository) RemovePlaylistTrack(tx *sql.Tx, playlistID int, fileID int)
 
 func (r *Repository) ReorderPlaylistTrack(tx *sql.Tx, playlistID int, fileID int, position int) error {
 	if err := lockPlaylist(tx, playlistID); err != nil {
+		return err
+	}
+	if err := refuseWriteOnRulePlaylist(tx, playlistID); err != nil {
 		return err
 	}
 
@@ -578,6 +570,10 @@ func (r *Repository) CreateAIPlaylist(tx *sql.Tx, name string, description strin
 // ordered file IDs. Used to keep AI playlists in sync with the current library
 // without duplicating rows or leaving stale tracks behind.
 func (r *Repository) ReplacePlaylistTracks(tx *sql.Tx, playlistID int, fileIDs []int) error {
+	if err := refuseWriteOnRulePlaylist(tx, playlistID); err != nil {
+		return err
+	}
+
 	if _, err := tx.Exec(queries.ClearPlaylistTracksQuery, playlistID); err != nil {
 		return fmt.Errorf("falha ao limpar tracks da playlist: %w", err)
 	}
