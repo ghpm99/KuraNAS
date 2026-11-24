@@ -111,6 +111,23 @@ export const writeDocumentsFilters = (
     return nextParams;
 };
 
+export const parseDocumentsFolderId = (searchParams: URLSearchParams): number | undefined => {
+    const rawFolderId = searchParams.get('folder_id');
+    if (rawFolderId === null || !/^\d+$/.test(rawFolderId)) return undefined;
+    const folderId = Number(rawFolderId);
+    return folderId > 0 ? folderId : undefined;
+};
+
+export const writeDocumentsFolderId = (
+    currentParams: URLSearchParams,
+    folderId: number | undefined
+): URLSearchParams => {
+    const nextParams = new URLSearchParams(currentParams);
+    nextParams.delete('folder_id');
+    if (folderId !== undefined) nextParams.set('folder_id', String(folderId));
+    return nextParams;
+};
+
 export const writeDocumentsSort = (
     currentParams: URLSearchParams,
     sort: DocumentsSortState

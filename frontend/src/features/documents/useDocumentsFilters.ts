@@ -5,10 +5,12 @@ import {
     defaultDocumentsSort,
     emptyDocumentsFilters,
     parseDocumentsFilters,
+    parseDocumentsFolderId,
     parseDocumentsSort,
     toDocumentFilters,
     toDocumentSort,
     writeDocumentsFilters,
+    writeDocumentsFolderId,
     writeDocumentsSort,
     type DocumentsFilterState,
     type DocumentsSortState,
@@ -30,7 +32,14 @@ const useDocumentsFilters = () => {
             defaultDocumentsSort,
         [serializedParams]
     );
-    const requestFilters = useMemo(() => toDocumentFilters(filters), [filters]);
+    const folderId = useMemo(
+        () => parseDocumentsFolderId(new URLSearchParams(serializedParams)),
+        [serializedParams]
+    );
+    const requestFilters = useMemo(
+        () => ({ ...toDocumentFilters(filters), folderId }),
+        [filters, folderId]
+    );
     const requestSort = useMemo(() => toDocumentSort(sortState), [sortState]);
 
     const setFilters = useCallback(
@@ -52,16 +61,28 @@ const useDocumentsFilters = () => {
         [setSearchParams]
     );
 
+    const setFolderId = useCallback(
+        (nextFolderId: number | undefined) => {
+            setSearchParams(
+                (currentParams) => writeDocumentsFolderId(currentParams, nextFolderId),
+                { replace: true }
+            );
+        },
+        [setSearchParams]
+    );
+
     const resetFilters = useCallback(() => setFilters(emptyDocumentsFilters), [setFilters]);
 
     return {
         filters,
         sortState,
+        folderId,
         requestFilters,
         requestSort,
         activeFilterCount: countActiveDocumentsFilters(filters),
         setFilters,
         setSort,
+        setFolderId,
         resetFilters,
     };
 };

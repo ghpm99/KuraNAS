@@ -3,10 +3,12 @@ import {
     defaultDocumentsSort,
     emptyDocumentsFilters,
     parseDocumentsFilters,
+    parseDocumentsFolderId,
     parseDocumentsSort,
     toDocumentFilters,
     toDocumentSort,
     writeDocumentsFilters,
+    writeDocumentsFolderId,
     writeDocumentsSort,
     type DocumentsFilterState,
 } from './documentsFilters';
@@ -103,5 +105,28 @@ describe('documentsFilters', () => {
             sort: 'modified_at',
             order: 'desc',
         });
+    });
+});
+
+describe('documents folder id param', () => {
+    it('parses only positive integers', () => {
+        expect(parseDocumentsFolderId(new URLSearchParams('folder_id=12'))).toBe(12);
+        expect(parseDocumentsFolderId(new URLSearchParams('folder_id=abc'))).toBeUndefined();
+        expect(parseDocumentsFolderId(new URLSearchParams('folder_id=0'))).toBeUndefined();
+        expect(parseDocumentsFolderId(new URLSearchParams(''))).toBeUndefined();
+    });
+
+    it('writes and clears folder_id keeping the other params', () => {
+        const withFolder = writeDocumentsFolderId(new URLSearchParams('format=pdf'), 7);
+        expect(withFolder.toString()).toBe('format=pdf&folder_id=7');
+        expect(writeDocumentsFolderId(withFolder, undefined).toString()).toBe('format=pdf');
+    });
+
+    it('is preserved when filters are rewritten', () => {
+        const nextParams = writeDocumentsFilters(
+            new URLSearchParams('folder_id=7&format=pdf'),
+            emptyDocumentsFilters
+        );
+        expect(nextParams.toString()).toBe('folder_id=7');
     });
 });

@@ -17,3 +17,35 @@
     margin: 0;
     padding: 0;
 }
+
+.workspace {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: var(--app-spacing-4);
+    align-items: start;
+}
+
+.workspaceNarrow {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.folderColumn {
+    min-width: 0;
+}
+
+.mainColumn {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
+    min-width: 0;
+}
+
+.drawerContent {
+    min-width: 260px;
+    padding: var(--app-spacing-4);
+}
+
+.folderError {
+    display: flex;
+    justify-content: center;
+}
