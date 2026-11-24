@@ -128,4 +128,20 @@ class RootViewModelTest {
 
         assertEquals(RootDestination.Connection, viewModel.destination.value)
     }
+
+    @Test
+    fun `trocar servidor depois de Reachable volta para a tela de conexao e permite escolher de novo`() = runTest {
+        val viewModel = createViewModel()
+        pendingOutcome.complete(ReconnectionOutcome.Reachable)
+        advanceUntilIdle()
+
+        serverStates.value = ServerState.NotConfigured
+        advanceUntilIdle()
+        assertEquals(RootDestination.Connection, viewModel.destination.value)
+
+        serverStates.value = ServerState.Manual("http://10.0.0.5:8000")
+        serverSelectionEvents.notifyServerSelected()
+        advanceUntilIdle()
+        assertEquals(RootDestination.App, viewModel.destination.value)
+    }
 }

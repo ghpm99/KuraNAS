@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kuranas.android.R
+import com.kuranas.android.core.ui.components.ChangeServerConfirmationDialog
 import com.kuranas.android.core.ui.components.GlassLevel
 import com.kuranas.android.core.ui.components.KNHeader
 import com.kuranas.android.core.ui.components.LoadingView
@@ -51,7 +51,7 @@ import com.kuranas.android.ui.theme.StatusPositive
 @Composable
 fun SettingsScreen(onNavigateBack: () -> Unit, onOpenCameraUpload: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var showForgetDialog by remember { mutableStateOf(false) }
+    var isChangeServerDialogVisible by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(title = stringResource(R.string.settings_title), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
@@ -137,27 +137,25 @@ fun SettingsScreen(onNavigateBack: () -> Unit, onOpenCameraUpload: () -> Unit, v
 
             item {
                 Button(
-                    onClick = { showForgetDialog = true },
+                    onClick = { isChangeServerDialogVisible = true },
                     colors = ButtonDefaults.buttonColors(containerColor = StatusNegative),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
-                    Text(stringResource(R.string.action_forget_server))
+                    Text(stringResource(R.string.action_change_server))
                 }
             }
         }
     }
 
-    if (showForgetDialog) {
-        AlertDialog(
-            onDismissRequest = { showForgetDialog = false },
-            title = { Text(stringResource(R.string.settings_forget_dialog_title)) },
-            text = { Text(stringResource(R.string.settings_forget_dialog_text)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.forgetServer(); showForgetDialog = false }) { Text(stringResource(R.string.action_forget)) }
+    if (isChangeServerDialogVisible) {
+        ChangeServerConfirmationDialog(
+            onConfirm = {
+                isChangeServerDialogVisible = false
+                viewModel.changeServer()
             },
-            dismissButton = { TextButton(onClick = { showForgetDialog = false }) { Text(stringResource(R.string.action_cancel)) } },
+            onDismiss = { isChangeServerDialogVisible = false },
         )
     }
 }

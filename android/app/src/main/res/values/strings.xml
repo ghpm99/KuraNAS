@@ -9,8 +9,7 @@
     <string name="action_connect">Connect</string>
     <string name="action_retry">Try again</string>
     <string name="action_back">Back</string>
-    <string name="action_forget">Forget</string>
-    <string name="action_forget_server">Forget server</string>
+    <string name="action_change_server">Change server</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -183,8 +182,6 @@
     <string name="settings_uptime">Uptime: %1$s</string>
     <string name="settings_update_available">Update available</string>
     <string name="settings_update_detail">v%1$s available (current: v%2$s)</string>
-    <string name="settings_forget_dialog_title">Forget server?</string>
-    <string name="settings_forget_dialog_text">The server address will be removed and you will need to reconnect.</string>
 
     <!-- Video -->
     <string name="video_continue_watching">Continue watching</string>
@@ -323,4 +320,6 @@
     <string name="camera_upload_outcome_permission">Missing permission to read photos and videos.</string>
     <string name="camera_upload_outcome_up_to_date">Everything is already sent.</string>
     <string name="camera_upload_outcome_enqueued">New items queued for sending.</string>
+    <string name="change_server_dialog_title">Change server?</string>
+    <string name="change_server_dialog_text">The server address will be removed and you will need to reconnect.</string>
 </resources>

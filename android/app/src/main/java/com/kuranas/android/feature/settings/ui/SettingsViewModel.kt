@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.network.safeApiCall
+import com.kuranas.android.core.server.ChangeServerAction
 import com.kuranas.android.core.server.ServerStore
 import com.kuranas.android.feature.files.data.UploadDestination
 import com.kuranas.android.feature.files.data.UploadDestinationStore
@@ -38,6 +39,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val api: ConfigApi,
     private val serverStore: ServerStore,
+    private val changeServerAction: ChangeServerAction,
     private val uploadDestinationStore: UploadDestinationStore,
 ) : ViewModel() {
 
@@ -83,8 +85,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun forgetServer() {
-        viewModelScope.launch { serverStore.clear() }
+    fun changeServer() {
+        viewModelScope.launch { changeServerAction.changeServer() }
     }
 }
 
