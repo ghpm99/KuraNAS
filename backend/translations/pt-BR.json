@@ -1778,6 +1778,7 @@
 	"ERROR_DOWNLOAD_INVALID_PRESET": "Formato de download desconhecido",
 	"ERROR_DOWNLOAD_INVALID_TARGET": "Destino inválido: selecione uma biblioteca habilitada",
 	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Subpasta inválida: ela precisa ficar dentro da biblioteca escolhida",
+	"ERROR_DOWNLOAD_YTDLP_NOT_INSTALLED": "O yt-dlp não está instalado. Instale-o em Configurações para baixar por endereço.",
 	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "O subsistema de tarefas está indisponível",
 	"ERROR_DOWNLOAD_ENQUEUE": "Não foi possível enfileirar o download",
 	"ERROR_DOWNLOAD_INVALID_STATE_FILTER": "Filtro de estado inválido: use active ou finished",

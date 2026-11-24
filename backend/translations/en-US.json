@@ -1778,6 +1778,7 @@
 	"ERROR_DOWNLOAD_INVALID_PRESET": "Unknown download format",
 	"ERROR_DOWNLOAD_INVALID_TARGET": "Invalid destination: select an enabled library",
 	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Invalid subfolder: it must stay inside the chosen library",
+	"ERROR_DOWNLOAD_YTDLP_NOT_INSTALLED": "yt-dlp is not installed. Install it in Settings to download from a URL.",
 	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "The jobs subsystem is unavailable",
 	"ERROR_DOWNLOAD_ENQUEUE": "Could not enqueue the download",
 	"ERROR_DOWNLOAD_INVALID_STATE_FILTER": "Invalid state filter: use active or finished",
