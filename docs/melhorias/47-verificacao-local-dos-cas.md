@@ -14,7 +14,7 @@ Para cada task, abrir o arquivo dela, pegar os `CA` desmarcados e verificar com 
 - [x] 21 — falha ao carregar mais não esvazia a lista.
 - [x] 22 — Android: descoberta do servidor (API: UDP/mDNS respondem localmente).
 - [x] 23 — Android: explorer paginado (API das páginas).
-- [ ] 25 — excluir captura não apaga o vídeo.
+- [x] 25 — excluir captura não apaga o vídeo.
 - [x] 26 — Takeout: estrutura e sem sobrescrita (zip de Takeout montado para teste).
 - [x] 29 — preferências de indexação com efeito (`21/CA-12`).
 - [x] 30 — reindexar por escopo.
@@ -26,5 +26,5 @@ Para cada task, abrir o arquivo dela, pegar os `CA` desmarcados e verificar com 
 
 ## Critérios de aceite
 
-- [ ] Cada item acima com os `CA` da task marcados ou anotados com o motivo de não poder ser exercitado localmente.
+- [x] Cada item acima com os `CA` da task marcados ou anotados com o motivo de não poder ser exercitado localmente. *Defeitos achados e corrigidos na verificação: `GET /files/recent` sempre 500 (rota morta, removida), WebDAV sem os métodos do protocolo (corrigido), promoção de captura que não falhava (25.1). O que depende de navegador, aparelho, tablet, Windows ou release está em `pendencias-do-dono.md`.*
 - [ ] `make ci` verde ao final.
