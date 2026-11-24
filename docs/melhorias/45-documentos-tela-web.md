@@ -25,6 +25,18 @@ Uma alteração por item.
 9. **Enviar e Nova pasta** (`RF-07`) para a pasta selecionada.
 10. **Visualizador** (`RF-08` a `RF-11`): PDF com ir para página e busca, abrindo na página do trecho quando vem de um resultado; TXT/MD/CSV formatados; demais formatos com o texto extraído e "Baixar original"; anterior/próximo na ordem da lista; Detalhes com a situação da indexação e "Reindexar texto".
 
+## Reconferência no código (2026-11-24)
+
+Só existe `searchDocuments` no cliente. As ações, a seleção, o menu e os detalhes de Arquivos chamam `useFile()` e exigem o `FileProvider`; nenhuma lista de invalidação conhece o cache de documentos. Não há leitor de PDF além do `<embed>` nativo, nem renderização de Markdown ou CSV. O backend não gera miniatura de PDF (devolve o ícone do formato) e não expõe o texto extraído. O menu lateral é uma lista plana, sem os grupos de `01/RF-01`.
+
+## Decisões de desenho (2026-11-24)
+
+- **Tela** em `features/documents/`, envolvida no `FilesLayout` (como Favoritos) para reaproveitar menu, lote, diálogos e detalhes de Arquivos; um adaptador converte o item de `/documents` em `FileData` (caminho = `parent_path` + nome). As chaves de cache de documentos entram nas listas de invalidação de arquivos, de favoritos e do envio.
+- **Menu**: "Documentos" entra logo depois de Vídeos; os grupos de `01/RF-01` ficam para o board de revisão.
+- **Leitor de PDF**: o leitor nativo do navegador em `<iframe>` (páginas, zoom, busca, imprimir e baixar já vêm dele), aberto com `#page=N` quando vem de um resultado de busca. Sem biblioteca nova.
+- **Grade**: ícone do formato no lugar da miniatura da primeira página até o backend gerar essa miniatura (ver `pendencias-do-dono.md`).
+- **Demais formatos (`RF-10`)**: rota nova `GET /documents/:file_id/text` (spec 07 §8) com o texto já extraído; Markdown renderizado por um conversor próprio e seguro (sem HTML cru) e CSV em tabela, sem dependência nova.
+
 ## Critérios de aceite
 
 Verificados no sistema rodando, com pelo menos três páginas de documentos.
