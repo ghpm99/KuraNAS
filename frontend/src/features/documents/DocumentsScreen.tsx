@@ -8,17 +8,30 @@ import ListFeedback from '@/components/listFeedback/ListFeedback';
 import EmptyState from '@/components/emptyState/emptyState';
 import DocumentCard from './DocumentCard';
 import DocumentRow from './DocumentRow';
+import DocumentsFilterBar from './DocumentsFilterBar';
+import DocumentsSortControl from './DocumentsSortControl';
 import DocumentsListSkeleton from './DocumentsListSkeleton';
 import {
     loadDocumentsViewMode,
     saveDocumentsViewMode,
     type DocumentsViewMode,
 } from './documentsViewModePreference';
+import useDocumentsFilters from './useDocumentsFilters';
 import useDocumentsList from './useDocumentsList';
 import styles from './DocumentsScreen.module.css';
 
 const DocumentsScreen = () => {
     const { t } = useI18n();
+    const {
+        filters,
+        sortState,
+        requestFilters,
+        requestSort,
+        activeFilterCount,
+        setFilters,
+        setSort,
+        resetFilters,
+    } = useDocumentsFilters();
     const [viewMode, setViewMode] = useState<DocumentsViewMode>(loadDocumentsViewMode);
     const {
         documents,
@@ -32,7 +45,7 @@ const DocumentsScreen = () => {
         errorMessage,
         retry,
         reload,
-    } = useDocumentsList();
+    } = useDocumentsList(requestFilters, requestSort);
 
     const changeViewMode = (nextViewMode: DocumentsViewMode | null) => {
         if (!nextViewMode) return;
@@ -51,6 +64,7 @@ const DocumentsScreen = () => {
                 subtitle={subtitle}
                 actions={
                     <>
+                        <DocumentsSortControl sortState={sortState} onChange={setSort} />
                         <ToggleButtonGroup
                             size="small"
                             value={viewMode}
@@ -78,6 +92,7 @@ const DocumentsScreen = () => {
                     </>
                 }
             />
+            <DocumentsFilterBar filters={filters} onChange={setFilters} onReset={resetFilters} />
             {isLoading && !isError ? (
                 <DocumentsListSkeleton viewMode={viewMode} />
             ) : (
@@ -92,11 +107,24 @@ const DocumentsScreen = () => {
                     isFetchingNextPage={isFetchingNextPage}
                     onLoadMore={fetchNextPage}
                     emptyState={
-                        <EmptyState
-                            icon={<FileText size={32} aria-hidden="true" />}
-                            title={t('DOCUMENTS_EMPTY_TITLE')}
-                            description={t('DOCUMENTS_EMPTY_DESCRIPTION')}
-                        />
+                        activeFilterCount > 0 ? (
+                            <EmptyState
+                                icon={<FileText size={32} aria-hidden="true" />}
+                                title={t('DOCUMENTS_FILTER_EMPTY_TITLE')}
+                                description={t('DOCUMENTS_FILTER_EMPTY_DESCRIPTION')}
+                                actions={
+                                    <Button size="small" variant="outlined" onClick={resetFilters}>
+                                        {t('DOCUMENTS_FILTERS_CLEAR')}
+                                    </Button>
+                                }
+                            />
+                        ) : (
+                            <EmptyState
+                                icon={<FileText size={32} aria-hidden="true" />}
+                                title={t('DOCUMENTS_EMPTY_TITLE')}
+                                description={t('DOCUMENTS_EMPTY_DESCRIPTION')}
+                            />
+                        )
                     }
                 >
                     {viewMode === 'grid' ? (

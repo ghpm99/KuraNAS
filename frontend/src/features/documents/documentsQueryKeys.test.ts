@@ -1,4 +1,8 @@
-import { documentsCountQueryKey, documentsListQueryKey, documentsQueryKeyPrefix } from './documentsQueryKeys';
+import {
+    documentsCountQueryKey,
+    documentsListQueryKey,
+    documentsQueryKeyPrefix,
+} from './documentsQueryKeys';
 
 describe('documentsQueryKeys', () => {
     it('keeps every key under the documents prefix', () => {
@@ -7,7 +11,11 @@ describe('documentsQueryKeys', () => {
     });
 
     it('changes the key with filters and sort', () => {
-        expect(documentsListQueryKey({ format: 'pdf' }, {})).not.toEqual(documentsListQueryKey({}, {}));
-        expect(documentsListQueryKey({}, { sort: 'name' })).not.toEqual(documentsListQueryKey({}, {}));
+        expect(documentsListQueryKey({ format: 'pdf' }, {})).not.toEqual(
+            documentsListQueryKey({}, {})
+        );
+        expect(documentsListQueryKey({}, { sort: 'name' })).not.toEqual(
+            documentsListQueryKey({}, {})
+        );
     });
 });

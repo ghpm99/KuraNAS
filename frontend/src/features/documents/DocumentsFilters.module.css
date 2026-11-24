@@ -1,0 +1,37 @@
+.filterBar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.filterControls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-2);
+}
+
+.filterDrawer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-3);
+    padding: var(--app-spacing-4);
+}
+
+.filterDrawerTitle {
+    margin: 0;
+    font-weight: 600;
+}
+
+.filterDrawerActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--app-spacing-2);
+}
+
+.sortControl {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-1);
+}

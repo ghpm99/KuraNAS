@@ -21,7 +21,10 @@ const dedupeById = (documents: DocumentListItem[]): DocumentListItem[] => {
     });
 };
 
-const useDocumentsList = (filters: DocumentFilters = noFilters, sort: DocumentSort = defaultSort) => {
+const useDocumentsList = (
+    filters: DocumentFilters = noFilters,
+    sort: DocumentSort = defaultSort
+) => {
     const listQuery = useInfiniteQuery({
         queryKey: documentsListQueryKey(filters, sort),
         queryFn: ({ pageParam = 1, signal }) =>
