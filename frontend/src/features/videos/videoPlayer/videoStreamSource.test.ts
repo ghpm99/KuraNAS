@@ -24,6 +24,21 @@ describe('videoPlayer/videoStreamSource', () => {
         );
     });
 
+    it('adds the audio stream index alone or combined with the start offset', () => {
+        expect(buildRemuxVideoStreamUrl(7, 0, 2)).toMatch(
+            /\/video\/stream\/7\/remux\?audio_stream_index=2$/
+        );
+        expect(buildRemuxVideoStreamUrl(7, 12.5, 2)).toMatch(
+            /\/video\/stream\/7\/remux\?start=12\.500&audio_stream_index=2$/
+        );
+        expect(buildTranscodeVideoStreamUrl(7, 12.5, 0)).toMatch(
+            /\/video\/stream\/7\/transcode\?start=12\.500&audio_stream_index=0$/
+        );
+        expect(buildTranscodeVideoStreamUrl(7, 0, 3)).toMatch(
+            /\/video\/stream\/7\/transcode\?audio_stream_index=3$/
+        );
+    });
+
     it('flags remux candidate containers the browser cannot play', () => {
         expect(isContainerUnplayableByBrowser('mkv', () => '')).toBe(true);
         expect(isContainerUnplayableByBrowser('.M2TS', () => '')).toBe(true);

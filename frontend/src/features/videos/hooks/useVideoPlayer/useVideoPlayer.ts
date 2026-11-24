@@ -5,6 +5,8 @@ import {
     updateVideoPlaybackState,
     type UpdateVideoPlaybackStateRequest,
     VideoPlaybackSessionDto,
+    getVideoAudioTracks,
+    type VideoAudioTrackDto,
 } from '@/service/videoPlayback';
 import {
     buildDirectVideoStreamUrl,
@@ -24,6 +26,14 @@ import {
     saveVideoPlaybackPreferences,
     type VideoPlaybackPreferences,
 } from './videoPlaybackPreferences';
+import {
+    loadVideoAudioPreferences,
+    saveVideoAudioPreferences,
+} from '@/features/videos/hooks/useVideoAudioTracks/videoAudioPreferences';
+import {
+    findAudioStreamIndexToStartWith,
+    findDefaultAudioTrack,
+} from '@/features/videos/hooks/useVideoAudioTracks/audioTrackSelection';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
@@ -31,6 +41,29 @@ type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
 type StreamMode = 'direct' | 'remux' | 'transcode';
 
 const VOLUME_PERSIST_DEBOUNCE_MS = 300;
+
+const AUDIO_TRACKS_WAIT_TIMEOUT_MS = 1500;
+
+const noAudioTracks: VideoAudioTrackDto[] = [];
+
+type AudioTracksOfVideo = {
+    videoId: number;
+    audioTracks: VideoAudioTrackDto[];
+};
+
+const waitForAudioTracks = (
+    audioTracksPromise: Promise<VideoAudioTrackDto[]>
+): Promise<VideoAudioTrackDto[]> =>
+    new Promise((resolve) => {
+        const timeoutId = window.setTimeout(
+            () => resolve(noAudioTracks),
+            AUDIO_TRACKS_WAIT_TIMEOUT_MS
+        );
+        audioTracksPromise
+            .then(resolve)
+            .catch(() => resolve(noAudioTracks))
+            .finally(() => window.clearTimeout(timeoutId));
+    });
 
 const TRANSCODE_FALLBACK_ERROR_KINDS: PlaybackErrorKind[] = ['unsupported', 'decode'];
 
@@ -66,6 +99,11 @@ const useVideoPlayer = ({
     const [playbackRate, setPlaybackRate] = useState(initialPreferences.playbackRate);
     const [playbackError, setPlaybackError] = useState<PlaybackErrorKind | null>(null);
     const [session, setSession] = useState<VideoPlaybackSessionDto | null>(null);
+    const [audioTracksOfVideo, setAudioTracksOfVideo] = useState<AudioTracksOfVideo | null>(null);
+    const [selectedAudioStreamIndex, setSelectedAudioStreamIndex] = useState<number | null>(null);
+    const audioStreamIndexRef = useRef<number | null>(null);
+    const audioTracksRequestsRef = useRef(new Map<number, Promise<VideoAudioTrackDto[]>>());
+    const sourceRequestCounterRef = useRef(0);
     const videoRef = useRef<HTMLVideoElement>(null);
     const remuxOffsetSecondsRef = useRef<number | null>(null);
     const streamModeRef = useRef<StreamMode>('direct');
@@ -127,6 +165,38 @@ const useVideoPlayer = ({
         videoElement.playbackRate = savedRate;
     }, []);
 
+    const requestAudioTracks = useCallback((videoToPlayId: number) => {
+        const requests = audioTracksRequestsRef.current;
+        const cachedRequest = requests.get(videoToPlayId);
+        if (cachedRequest) return cachedRequest;
+        const request = Promise.resolve()
+            .then(() => getVideoAudioTracks(videoToPlayId))
+            .catch(() => {
+                requests.delete(videoToPlayId);
+                return noAudioTracks;
+            });
+        requests.set(videoToPlayId, request);
+        return request;
+    }, []);
+
+    const currentVideoIdForAudioTracks = currentVideo?.id ?? null;
+
+    useEffect(() => {
+        if (currentVideoIdForAudioTracks === null) return;
+        let isStale = false;
+        requestAudioTracks(currentVideoIdForAudioTracks).then((audioTracks) => {
+            if (!isStale) {
+                setAudioTracksOfVideo({
+                    videoId: currentVideoIdForAudioTracks,
+                    audioTracks,
+                });
+            }
+        });
+        return () => {
+            isStale = true;
+        };
+    }, [currentVideoIdForAudioTracks, requestAudioTracks]);
+
     const loadStreamSource = useCallback(
         (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => {
             const videoElement = videoRef.current;
@@ -138,8 +208,16 @@ const useVideoPlayer = ({
                 remuxOffsetSecondsRef.current = seekSeconds;
                 videoElement.src =
                     streamMode === 'remux'
-                        ? buildRemuxVideoStreamUrl(videoToPlayId, seekSeconds)
-                        : buildTranscodeVideoStreamUrl(videoToPlayId, seekSeconds);
+                        ? buildRemuxVideoStreamUrl(
+                              videoToPlayId,
+                              seekSeconds,
+                              audioStreamIndexRef.current
+                          )
+                        : buildTranscodeVideoStreamUrl(
+                              videoToPlayId,
+                              seekSeconds,
+                              audioStreamIndexRef.current
+                          );
                 setCurrentTime(seekSeconds);
             } else {
                 remuxOffsetSecondsRef.current = null;
@@ -176,18 +254,43 @@ const useVideoPlayer = ({
     }, [loadStreamSource]);
 
     const attachVideoSource = useCallback(
-        (videoToPlayId: number, seekSeconds: number, format?: string) => {
+        (
+            videoToPlayId: number,
+            seekSeconds: number,
+            format: string | undefined,
+            audioStreamIndex: number | null
+        ) => {
             const isContainerUnplayable = isContainerUnplayableByBrowser(
                 format,
                 videoRef.current?.canPlayType?.bind(videoRef.current)
             );
-            loadStreamSource(
-                videoToPlayId,
-                seekSeconds,
-                isContainerUnplayable ? 'remux' : 'direct'
-            );
+            audioStreamIndexRef.current = audioStreamIndex;
+            setSelectedAudioStreamIndex(audioStreamIndex);
+            const shouldRemux = isContainerUnplayable || audioStreamIndex !== null;
+            loadStreamSource(videoToPlayId, seekSeconds, shouldRemux ? 'remux' : 'direct');
         },
         [loadStreamSource]
+    );
+
+    const attachVideoSourceWithRememberedAudio = useCallback(
+        async (videoToPlayId: number, seekSeconds: number, format?: string) => {
+            sourceRequestCounterRef.current += 1;
+            const sourceRequest = sourceRequestCounterRef.current;
+            const rememberedLanguage = loadVideoAudioPreferences()?.language ?? null;
+            if (rememberedLanguage === null) {
+                attachVideoSource(videoToPlayId, seekSeconds, format, null);
+                return;
+            }
+            const audioTracks = await waitForAudioTracks(requestAudioTracks(videoToPlayId));
+            if (sourceRequest !== sourceRequestCounterRef.current) return;
+            attachVideoSource(
+                videoToPlayId,
+                seekSeconds,
+                format,
+                findAudioStreamIndexToStartWith(audioTracks, rememberedLanguage)
+            );
+        },
+        [attachVideoSource, requestAudioTracks]
     );
 
     const reportPlaybackError = useCallback(
@@ -217,7 +320,8 @@ const useVideoPlayer = ({
         attachVideoSource(
             currentVideoId,
             latest.currentTime,
-            findVideoFormat(latest.session, currentVideoId)
+            findVideoFormat(latest.session, currentVideoId),
+            audioStreamIndexRef.current
         );
     }, [attachVideoSource]);
 
@@ -296,7 +400,7 @@ const useVideoPlayer = ({
         setCurrentTime(resumeTime);
         setDuration(response.playback_state.duration || 0);
         if (response.playback_state.video_id) {
-            attachVideoSource(
+            await attachVideoSourceWithRememberedAudio(
                 response.playback_state.video_id,
                 resumeTime,
                 findVideoFormat(response, response.playback_state.video_id)
@@ -305,7 +409,7 @@ const useVideoPlayer = ({
                 void syncState({ currentTime: 0, completed: false, isPaused: false });
             }
         }
-    }, [attachVideoSource, persistProgress, playlistId, syncState, videoId]);
+    }, [attachVideoSourceWithRememberedAudio, persistProgress, playlistId, syncState, videoId]);
 
     const pause = useCallback(() => {
         if (videoRef.current) {
@@ -335,6 +439,33 @@ const useVideoPlayer = ({
             setCurrentTime(time);
         },
         [loadStreamSource]
+    );
+
+    const audioTracks =
+        audioTracksOfVideo?.videoId === currentVideo?.id
+            ? (audioTracksOfVideo?.audioTracks ?? noAudioTracks)
+            : noAudioTracks;
+    const currentAudioStreamIndex =
+        selectedAudioStreamIndex ?? findDefaultAudioTrack(audioTracks)?.stream_index ?? null;
+
+    const selectAudioTrack = useCallback(
+        (audioStreamIndex: number) => {
+            const latest = latestPlaybackRef.current;
+            const currentVideoId = latest.session?.playback_state.video_id;
+            if (!currentVideoId || !videoRef.current) return;
+            const chosenAudioTrack = audioTracks.find(
+                (audioTrack) => audioTrack.stream_index === audioStreamIndex
+            );
+            if (chosenAudioTrack?.language) {
+                saveVideoAudioPreferences({ language: chosenAudioTrack.language });
+            }
+            audioStreamIndexRef.current = audioStreamIndex;
+            setSelectedAudioStreamIndex(audioStreamIndex);
+            const nextStreamMode =
+                streamModeRef.current === 'direct' ? 'remux' : streamModeRef.current;
+            loadStreamSource(currentVideoId, latest.currentTime, nextStreamMode);
+        },
+        [audioTracks, loadStreamSource]
     );
 
     const persistPreferencesNow = useCallback(() => {
@@ -415,13 +546,13 @@ const useVideoPlayer = ({
         setCurrentTime(0);
         setDuration(0);
         if (response.playback_state.video_id) {
-            attachVideoSource(
+            await attachVideoSourceWithRememberedAudio(
                 response.playback_state.video_id,
                 0,
                 findVideoFormat(response, response.playback_state.video_id)
             );
         }
-    }, [attachVideoSource]);
+    }, [attachVideoSourceWithRememberedAudio]);
 
     const previousVideo = useCallback(async () => {
         const response = await previousVideoPlayback();
@@ -429,13 +560,13 @@ const useVideoPlayer = ({
         setCurrentTime(0);
         setDuration(0);
         if (response.playback_state.video_id) {
-            attachVideoSource(
+            await attachVideoSourceWithRememberedAudio(
                 response.playback_state.video_id,
                 0,
                 findVideoFormat(response, response.playback_state.video_id)
             );
         }
-    }, [attachVideoSource]);
+    }, [attachVideoSourceWithRememberedAudio]);
 
     const togglePlayPause = useCallback(() => {
         if (status === 'playing') {
@@ -509,6 +640,9 @@ const useVideoPlayer = ({
         reportPlaybackError,
         retryPlayback,
         setVideoStarred,
+        audioTracks,
+        currentAudioStreamIndex,
+        selectAudioTrack,
     };
 };
 

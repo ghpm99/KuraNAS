@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import VideoControls from './videoControls';
+import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 
 const buildProps = () => ({
     isPlaying: false,
@@ -19,7 +20,52 @@ const buildProps = () => ({
     previousVideo: jest.fn(),
 });
 
+const audioTrackOptions = [
+    { streamIndex: 1, label: 'Japanese' },
+    { streamIndex: 2, label: 'Portuguese · Dub' },
+];
+
 describe('features/videos/videoControls/videoControls', () => {
+    it('renders without a backend and shows no audio track menu', () => {
+        renderWithoutBackend(<VideoControls {...buildProps()} />);
+
+        expect(screen.queryByRole('button', { name: 'VIDEO_AUDIO_TRACK' })).toBeNull();
+    });
+
+    it('hides the audio track menu when the video has a single track', () => {
+        render(
+            <VideoControls
+                {...buildProps()}
+                audioTrackOptions={[audioTrackOptions[0]!]}
+                selectedAudioStreamIndex={1}
+            />
+        );
+
+        expect(screen.queryByRole('button', { name: 'VIDEO_AUDIO_TRACK' })).toBeNull();
+    });
+
+    it('lists the tracks, marks the current one and selects another', () => {
+        const onSelectAudioTrack = jest.fn();
+        render(
+            <VideoControls
+                {...buildProps()}
+                audioTrackOptions={audioTrackOptions}
+                selectedAudioStreamIndex={1}
+                onSelectAudioTrack={onSelectAudioTrack}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'VIDEO_AUDIO_TRACK' }));
+
+        expect(screen.getByRole('menuitem', { name: 'Japanese' })).toHaveClass('Mui-selected');
+        expect(screen.getByRole('menuitem', { name: 'Portuguese · Dub' })).not.toHaveClass(
+            'Mui-selected'
+        );
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Portuguese · Dub' }));
+
+        expect(onSelectAudioTrack).toHaveBeenCalledWith(2);
+    });
+
     it('renders without the shortcuts help button when no handler is given', () => {
         render(<VideoControls {...buildProps()} />);
 

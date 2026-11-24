@@ -14,6 +14,7 @@ import {
     Keyboard,
     PictureInPicture2,
     Captions,
+    AudioLines,
 } from 'lucide-react';
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -21,6 +22,11 @@ import { usePlayerPortalContainer } from '@/features/videos/videoPlayer/playerPo
 import { getVideoSubtitleKey, type VideoSubtitleDto } from '@/service/videoPlayback';
 import { buildSubtitleLabel } from '@/features/videos/hooks/useVideoSubtitles/subtitleLabel';
 import './videoControls.css';
+
+export interface AudioTrackOption {
+    streamIndex: number;
+    label: string;
+}
 
 interface VideoControlsProps {
     isPlaying: boolean;
@@ -48,6 +54,9 @@ interface VideoControlsProps {
     subtitles?: VideoSubtitleDto[];
     selectedSubtitleKey?: string | null;
     onSelectSubtitle?: (subtitleKey: string | null) => void;
+    audioTrackOptions?: AudioTrackOption[];
+    selectedAudioStreamIndex?: number | null;
+    onSelectAudioTrack?: (audioStreamIndex: number) => void;
 }
 const VideoControls = ({
     isPlaying,
@@ -75,10 +84,14 @@ const VideoControls = ({
     subtitles = [],
     selectedSubtitleKey = null,
     onSelectSubtitle,
+    audioTrackOptions = [],
+    selectedAudioStreamIndex = null,
+    onSelectAudioTrack,
 }: VideoControlsProps) => {
     const { t } = useI18n();
     const [settingsAnchor, setSettingsAnchor] = useState<null | HTMLElement>(null);
     const [subtitlesAnchor, setSubtitlesAnchor] = useState<null | HTMLElement>(null);
+    const [audioTracksAnchor, setAudioTracksAnchor] = useState<null | HTMLElement>(null);
     const [scrubbingTime, setScrubbingTime] = useState<number | null>(null);
     const portalContainer = usePlayerPortalContainer();
     const displayedTime = scrubbingTime ?? currentTime;
@@ -128,6 +141,15 @@ const VideoControls = ({
         handleSubtitlesClose();
     };
 
+    const handleAudioTracksClose = () => {
+        setAudioTracksAnchor(null);
+    };
+
+    const handleAudioTrackSelected = (audioStreamIndex: number) => {
+        onSelectAudioTrack?.(audioStreamIndex);
+        handleAudioTracksClose();
+    };
+
     const handlePlaybackRateChange = (rate: number) => {
         setPlaybackRate(rate);
         handleSettingsClose();
@@ -149,6 +171,7 @@ const VideoControls = ({
     const muteLabel = isSilent ? t('VIDEO_UNMUTE') : t('VIDEO_MUTE');
     const tooltipSlotProps = { popper: { container: portalContainer } };
     const hasSubtitles = subtitles.length > 0;
+    const hasMultipleAudioTracks = audioTrackOptions.length > 1;
     const playbackRates = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
     if (!areControlsVisible) {
@@ -241,6 +264,18 @@ const VideoControls = ({
                         </Tooltip>
                     ) : null}
 
+                    {hasMultipleAudioTracks ? (
+                        <Tooltip title={t('VIDEO_AUDIO_TRACK')} slotProps={tooltipSlotProps}>
+                            <IconButton
+                                onClick={(event) => setAudioTracksAnchor(event.currentTarget)}
+                                size="small"
+                                aria-label={t('VIDEO_AUDIO_TRACK')}
+                            >
+                                <AudioLines size={20} />
+                            </IconButton>
+                        </Tooltip>
+                    ) : null}
+
                     {onOpenShortcutsHelp ? (
                         <Tooltip
                             title={t('VIDEO_SHORTCUTS_HELP_BUTTON')}
@@ -301,6 +336,24 @@ const VideoControls = ({
                         selected={selectedSubtitleKey === getVideoSubtitleKey(subtitle)}
                     >
                         {buildSubtitleLabel(subtitle, t)}
+                    </MenuItem>
+                ))}
+            </Menu>
+
+            <Menu
+                anchorEl={audioTracksAnchor}
+                open={Boolean(audioTracksAnchor)}
+                container={portalContainer}
+                onClose={handleAudioTracksClose}
+                className="settings-menu"
+            >
+                {audioTrackOptions.map((audioTrackOption) => (
+                    <MenuItem
+                        key={audioTrackOption.streamIndex}
+                        onClick={() => handleAudioTrackSelected(audioTrackOption.streamIndex)}
+                        selected={selectedAudioStreamIndex === audioTrackOption.streamIndex}
+                    >
+                        {audioTrackOption.label}
                     </MenuItem>
                 ))}
             </Menu>

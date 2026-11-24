@@ -140,6 +140,15 @@ export interface UpdateVideoPlaybackStateRequest {
 
 export type VideoSubtitleSource = 'external' | 'embedded';
 
+export interface VideoAudioTrackDto {
+    stream_index: number;
+    language: string;
+    title: string;
+    codec: string;
+    channels: number;
+    is_default: boolean;
+}
+
 export interface VideoSubtitleDto {
     id: number;
     source?: VideoSubtitleSource;
@@ -481,6 +490,14 @@ export const getVideoPreviewUrl = (
 export const getVideoSubtitles = async (videoFileId: number): Promise<VideoSubtitleDto[]> => {
     const response = await apiBase.get<VideoSubtitleDto[]>(`/video/subtitles/${videoFileId}`);
     return response.data;
+};
+
+export const getVideoAudioTracks = async (videoFileId: number): Promise<VideoAudioTrackDto[]> => {
+    const response = await apiBase.get<{ items?: VideoAudioTrackDto[] }>(
+        `/video/metadata/${videoFileId}/audio-tracks`
+    );
+    const audioTracks = response.data?.items;
+    return Array.isArray(audioTracks) ? audioTracks : [];
 };
 
 export const isEmbeddedSubtitle = (subtitle: VideoSubtitleDto): boolean =>

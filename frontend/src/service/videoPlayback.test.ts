@@ -40,6 +40,7 @@ import {
     getVideoMoviePosterUrl,
     getVideoPlaylistPosterUrl,
     getVideoSubtitles,
+    getVideoAudioTracks,
     getVideoSubtitleKey,
     type VideoSubtitleDto,
     getVideoSubtitleVttUrl,
@@ -470,5 +471,28 @@ describe('video poster urls', () => {
         it('falls back to the external key when an embedded subtitle has no key', () => {
             expect(getVideoSubtitleKey({ ...embeddedSubtitle, key: undefined })).toBe('external:0');
         });
+    });
+
+    it('requests the audio tracks of a video and unwraps the items', async () => {
+        const items = [
+            {
+                stream_index: 1,
+                language: 'ja',
+                title: '',
+                codec: 'aac',
+                channels: 2,
+                is_default: true,
+            },
+        ];
+        (apiBase.get as jest.Mock).mockResolvedValueOnce({ data: { items } });
+
+        await expect(getVideoAudioTracks(30)).resolves.toEqual(items);
+        expect(apiBase.get).toHaveBeenCalledWith('/video/metadata/30/audio-tracks');
+    });
+
+    it('returns no audio tracks when the response has no items list', async () => {
+        (apiBase.get as jest.Mock).mockResolvedValueOnce({ data: {} });
+
+        await expect(getVideoAudioTracks(30)).resolves.toEqual([]);
     });
 });

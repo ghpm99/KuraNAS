@@ -69,6 +69,9 @@ export default function VideoPlayerScreen() {
         selectedSubtitleKey,
         selectSubtitle,
         toggleSubtitles,
+        audioTrackOptions,
+        currentAudioStreamIndex,
+        selectAudioTrack,
         upNext,
     } = useVideoPlayerScreen();
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -170,6 +173,9 @@ export default function VideoPlayerScreen() {
                             subtitles={subtitles}
                             selectedSubtitleKey={selectedSubtitleKey}
                             onSelectSubtitle={selectSubtitle}
+                            audioTrackOptions={audioTrackOptions}
+                            selectedAudioStreamIndex={currentAudioStreamIndex}
+                            onSelectAudioTrack={selectAudioTrack}
                         />
                         {upNext.isOpen && nextItem ? (
                             <UpNextAutoplayCard

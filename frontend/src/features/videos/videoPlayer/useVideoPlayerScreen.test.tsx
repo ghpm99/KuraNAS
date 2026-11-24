@@ -157,6 +157,9 @@ const buildPlayerState = (overrides?: Partial<any>) => ({
     togglePlayPause: jest.fn(),
     nextVideo: mockNextVideo,
     previousVideo: mockPreviousVideo,
+    audioTracks: [],
+    currentAudioStreamIndex: null,
+    selectAudioTrack: jest.fn(),
     status: 'playing',
     currentTime: 120,
     duration: 1800,
@@ -203,6 +206,39 @@ describe('features/videos/videoPlayer/useVideoPlayerScreen', () => {
             toggleStar: mockToggleStar,
             isStarTogglePending: false,
         });
+    });
+
+    it('exposes the audio tracks as labelled options with the language name', () => {
+        mockUseVideoPlayer.mockReturnValue(
+            buildPlayerState({
+                audioTracks: [
+                    {
+                        stream_index: 1,
+                        language: 'ja',
+                        title: 'Original',
+                        codec: 'aac',
+                        channels: 2,
+                        is_default: true,
+                    },
+                    {
+                        stream_index: 2,
+                        language: '',
+                        title: '',
+                        codec: 'aac',
+                        channels: 2,
+                        is_default: false,
+                    },
+                ],
+                currentAudioStreamIndex: 1,
+            })
+        );
+        const { result } = renderHook(() => useVideoPlayerScreen());
+
+        expect(result.current.audioTrackOptions).toEqual([
+            { streamIndex: 1, label: expect.stringContaining('Original') },
+            { streamIndex: 2, label: 'VIDEO_AUDIO_TRACK_UNKNOWN_LANGUAGE' },
+        ]);
+        expect(result.current.currentAudioStreamIndex).toBe(1);
     });
 
     it('toggles the star of the current video from its present state and wires the session patcher', () => {

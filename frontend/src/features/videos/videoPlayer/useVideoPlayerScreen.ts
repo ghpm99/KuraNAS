@@ -2,6 +2,7 @@ import { appRoutes } from '@/app/routes';
 import useContainerFullscreen from '@/features/videos/hooks/useContainerFullscreen/useContainerFullscreen';
 import usePictureInPicture from '@/features/videos/hooks/usePictureInPicture/usePictureInPicture';
 import useVideoSubtitles from '@/features/videos/hooks/useVideoSubtitles/useVideoSubtitles';
+import { buildAudioTrackLabel } from '@/features/videos/hooks/useVideoAudioTracks/audioTrackLabel';
 import useUpNextAutoplay from '@/features/videos/upNext/useUpNextAutoplay';
 import { useVideoStarToggle } from '@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle';
 import useVideoPlayer from '@/features/videos/hooks/useVideoPlayer/useVideoPlayer';
@@ -99,6 +100,9 @@ export default function useVideoPlayerScreen() {
         reportPlaybackError,
         retryPlayback,
         setVideoStarred,
+        audioTracks,
+        currentAudioStreamIndex,
+        selectAudioTrack,
     } = useVideoPlayer({
         videoId,
         playlistId: resolvedPlaylistId,
@@ -122,11 +126,20 @@ export default function useVideoPlayerScreen() {
         togglePictureInPicture,
         requestError: pictureInPictureError,
     } = usePictureInPicture({ videoRef, isFullscreen, exitFullscreen: toggleFullscreen });
+    const interfaceLanguage = settings.language?.current ?? '';
     const { subtitles, selectedSubtitleKey, selectSubtitle, toggleSubtitles } = useVideoSubtitles({
         videoId: currentVideo?.id ?? null,
         videoRef,
-        interfaceLanguage: settings.language?.current ?? '',
+        interfaceLanguage,
     });
+    const audioTrackOptions = useMemo(
+        () =>
+            audioTracks.map((audioTrack) => ({
+                streamIndex: audioTrack.stream_index,
+                label: buildAudioTrackLabel(audioTrack, interfaceLanguage, t),
+            })),
+        [audioTracks, interfaceLanguage, t]
+    );
     const syncedRouteVideoIdRef = useRef<string | null>(null);
 
     const fallbackContextRoute = useMemo(() => {
@@ -380,6 +393,9 @@ export default function useVideoPlayerScreen() {
         selectedSubtitleKey,
         selectSubtitle,
         toggleSubtitles,
+        audioTrackOptions,
+        currentAudioStreamIndex,
+        selectAudioTrack,
         upNext,
     };
 }

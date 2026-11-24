@@ -16,15 +16,30 @@ const REMUX_CANDIDATE_MIME_TYPE_BY_EXTENSION: Record<string, string> = {
 export const buildDirectVideoStreamUrl = (videoId: number): string =>
     `${getApiV1BaseUrl()}/files/video-stream/${videoId}`;
 
-export const buildRemuxVideoStreamUrl = (videoId: number, startSeconds: number): string => {
-    const baseUrl = `${getApiV1BaseUrl()}/video/stream/${videoId}/remux`;
-    return startSeconds > 0 ? `${baseUrl}?start=${startSeconds.toFixed(3)}` : baseUrl;
+const buildReencodedVideoStreamUrl = (
+    route: 'remux' | 'transcode',
+    videoId: number,
+    startSeconds: number,
+    audioStreamIndex: number | null
+): string => {
+    const baseUrl = `${getApiV1BaseUrl()}/video/stream/${videoId}/${route}`;
+    const queryParams: string[] = [];
+    if (startSeconds > 0) queryParams.push(`start=${startSeconds.toFixed(3)}`);
+    if (audioStreamIndex !== null) queryParams.push(`audio_stream_index=${audioStreamIndex}`);
+    return queryParams.length > 0 ? `${baseUrl}?${queryParams.join('&')}` : baseUrl;
 };
 
-export const buildTranscodeVideoStreamUrl = (videoId: number, startSeconds: number): string => {
-    const baseUrl = `${getApiV1BaseUrl()}/video/stream/${videoId}/transcode`;
-    return startSeconds > 0 ? `${baseUrl}?start=${startSeconds.toFixed(3)}` : baseUrl;
-};
+export const buildRemuxVideoStreamUrl = (
+    videoId: number,
+    startSeconds: number,
+    audioStreamIndex: number | null = null
+): string => buildReencodedVideoStreamUrl('remux', videoId, startSeconds, audioStreamIndex);
+
+export const buildTranscodeVideoStreamUrl = (
+    videoId: number,
+    startSeconds: number,
+    audioStreamIndex: number | null = null
+): string => buildReencodedVideoStreamUrl('transcode', videoId, startSeconds, audioStreamIndex);
 
 export const isContainerUnplayableByBrowser = (
     format: string | undefined,
