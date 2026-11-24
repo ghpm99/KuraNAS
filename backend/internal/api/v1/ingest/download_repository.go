@@ -6,6 +6,7 @@ import (
 
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/ingest"
+	"nas-go/api/pkg/utils"
 )
 
 // QueuedDownload is a download request about to be recorded: the job that will
@@ -97,4 +98,71 @@ func (r *DownloadRepository) execute(operation string, query string, arguments .
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 	return nil
+}
+
+// ListDownloads returns up to pageSize+1 downloads (the extra row feeds
+// has_next), newest first with id as tiebreak. stateFilter is "", "active" or
+// "finished". file_id is the first active library file at the final path.
+func (r *DownloadRepository) ListDownloads(stateFilter string, page int, pageSize int) ([]DownloadDto, error) {
+	rows, err := r.DbContext.GetDatabase().Query(
+		queries.ListIngestDownloadsQuery, stateFilter, pageSize+1, utils.CalculateOffset(page, pageSize))
+	if err != nil {
+		return nil, fmt.Errorf("ListDownloads: %w", err)
+	}
+	defer rows.Close()
+
+	downloads := []DownloadDto{}
+	for rows.Next() {
+		download, scanErr := scanDownload(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("ListDownloads: %w", scanErr)
+		}
+		downloads = append(downloads, download)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ListDownloads: %w", err)
+	}
+	return downloads, nil
+}
+
+func scanDownload(rows *sql.Rows) (DownloadDto, error) {
+	var (
+		download            DownloadDto
+		jobID               sql.NullInt64
+		title               sql.NullString
+		speedBytesPerSecond sql.NullInt64
+		etaSeconds          sql.NullInt64
+		fileID              sql.NullInt64
+		endedAt             sql.NullTime
+	)
+	err := rows.Scan(
+		&download.ID, &jobID, &download.URL, &title, &download.Preset,
+		&download.TargetRootID, &download.TargetRootName, &download.Subfolder,
+		&download.State, &download.Progress, &speedBytesPerSecond, &etaSeconds,
+		&fileID, &download.Error, &download.CreatedAt, &endedAt,
+	)
+	if err != nil {
+		return DownloadDto{}, err
+	}
+	download.JobID = nullableInt(jobID)
+	download.FileID = nullableInt(fileID)
+	download.ETASeconds = nullableInt(etaSeconds)
+	if title.Valid {
+		download.Title = &title.String
+	}
+	if speedBytesPerSecond.Valid {
+		download.SpeedBytesPerSecond = &speedBytesPerSecond.Int64
+	}
+	if endedAt.Valid {
+		download.EndedAt = &endedAt.Time
+	}
+	return download, nil
+}
+
+func nullableInt(value sql.NullInt64) *int {
+	if !value.Valid {
+		return nil
+	}
+	converted := int(value.Int64)
+	return &converted
 }

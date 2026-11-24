@@ -281,12 +281,13 @@ type AssistantContext struct {
 }
 
 type IngestContext struct {
-	Handler      *ingest.Handler
-	Service      ingest.ServiceInterface
-	YtDlp        *ingest.YtDlpService
-	YtDlpHandler *ingest.YtDlpHandler
-	Notifier     ingest.Notifier
-	Downloads    *ingest.DownloadRepository
+	Handler          *ingest.Handler
+	Service          ingest.ServiceInterface
+	YtDlp            *ingest.YtDlpService
+	YtDlpHandler     *ingest.YtDlpHandler
+	Notifier         ingest.Notifier
+	Downloads        *ingest.DownloadRepository
+	DownloadsHandler *ingest.DownloadsHandler
 }
 
 // newIngestContext builds the server-side media-fetch module: the URL fetch
@@ -297,12 +298,13 @@ func newIngestContext(jobsRepository jobs.RepositoryInterface, downloadRepositor
 	service := ingest.NewService(jobsRepository, downloadRepository)
 	ytdlp := ingest.NewYtDlpService()
 	return &IngestContext{
-		Handler:      ingest.NewHandler(service),
-		Service:      service,
-		YtDlp:        ytdlp,
-		YtDlpHandler: ingest.NewYtDlpHandler(ytdlp),
-		Notifier:     notifier,
-		Downloads:    downloadRepository,
+		Handler:          ingest.NewHandler(service),
+		Service:          service,
+		YtDlp:            ytdlp,
+		YtDlpHandler:     ingest.NewYtDlpHandler(ytdlp),
+		Notifier:         notifier,
+		Downloads:        downloadRepository,
+		DownloadsHandler: ingest.NewDownloadsHandler(ingest.NewDownloadsService(downloadRepository)),
 	}
 }
 

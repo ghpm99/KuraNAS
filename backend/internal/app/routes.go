@@ -685,6 +685,10 @@ func RegisterIngestRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.GET("/targets", context.Ingest.Handler.GetTargetsHandler)
 	group.GET("/presets", context.Ingest.Handler.GetPresetsHandler)
 
+	if context.Ingest.DownloadsHandler != nil {
+		group.GET("/downloads", context.Ingest.DownloadsHandler.ListDownloadsHandler)
+	}
+
 	if context.Ingest.YtDlpHandler != nil {
 		group.GET("/ytdlp/status", context.Ingest.YtDlpHandler.GetStatusHandler)
 		group.POST("/ytdlp/update", context.Ingest.YtDlpHandler.UpdateHandler)

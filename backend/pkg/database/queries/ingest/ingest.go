@@ -24,3 +24,6 @@ var MarkIngestDownloadFailedQuery string
 
 //go:embed mark_ingest_download_canceled.sql
 var MarkIngestDownloadCanceledQuery string
+
+//go:embed list_ingest_downloads.sql
+var ListIngestDownloadsQuery string
