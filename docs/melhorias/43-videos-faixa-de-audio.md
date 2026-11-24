@@ -4,7 +4,7 @@
 
 ## Contexto
 
-Animes costumam ter áudio em japonês e em português no mesmo arquivo. Hoje o player toca sempre a faixa padrão do arquivo; a lista de faixas aparece só nos detalhes. A spec põe a escolha em escopo, com prioridade abaixo das demais regras de reprodução (`06/D-02`).
+Animes costumam ter áudio em japonês e em português no mesmo arquivo. Hoje o player toca sempre a faixa padrão do arquivo, e nenhuma rota lista as faixas de áudio: `/video/metadata/:file_id` traz só `audio_codec` (reconferido em 2026-11-24). As rotas reais são `/video/stream/:file_id/remux|transcode` e `/video/metadata/:file_id` (sem o prefixo `/files`). A spec põe a escolha em escopo, com prioridade abaixo das demais regras de reprodução (`06/D-02`).
 
 ## Objetivo
 
@@ -12,8 +12,8 @@ Trocar a faixa de áudio durante a reprodução e lembrar o idioma escolhido par
 
 ## O que fazer
 
-1. **Backend**: `/files/video/stream/:file_id/remux` e `/transcode` aceitam `audio_stream_index`; o ffmpeg passa a mapear a faixa pedida; índice que não é faixa de áudio do arquivo → `400` com mensagem própria.
-2. **Web — menu "Faixa de áudio"** no player (`RF-09`), visível só quando o vídeo tem mais de uma faixa: lista idioma e título de cada faixa (de `/files/video/metadata/:file_id`), com a atual marcada.
+1. **Backend**: `GET /video/metadata/:file_id/audio-tracks` (ffprobe com cache, no molde das legendas embutidas) lista as faixas; `/video/stream/:file_id/remux` e `/transcode` aceitam `audio_stream_index` (índice no contêiner, `-map 0:<n>`); índice que não é faixa de áudio do arquivo → `400` com mensagem própria.
+2. **Web — menu "Faixa de áudio"** no player (`RF-09`), visível só quando o vídeo tem mais de uma faixa: lista idioma e título de cada faixa (de `/video/metadata/:file_id/audio-tracks`), com a atual marcada.
 3. **Web — troca**: escolher outra faixa recarrega o vídeo pela rota de remux (ou transcode, quando o codec exige) com `audio_stream_index`, retomando na mesma posição e mantendo legenda, volume e velocidade.
 4. **Web — lembrar**: o idioma escolhido fica no dispositivo (`RN-15`); ao abrir outro vídeo que tenha faixa nesse idioma, ela é usada.
 
