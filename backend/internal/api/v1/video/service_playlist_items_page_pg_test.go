@@ -38,7 +38,7 @@ func TestGetPlaylistItemsPageOrdersPaginatesAndReportsStatus_Postgres(t *testing
 		t.Fatalf("setup: %v", setupErr)
 	}
 
-	firstPage, err := service.GetPlaylistItemsPage("tv", playlistID, 1, 2)
+	firstPage, err := service.GetPlaylistItemsPage("tv", playlistID, nil, 1, 2)
 	if err != nil {
 		t.Fatalf("first page: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestGetPlaylistItemsPageOrdersPaginatesAndReportsStatus_Postgres(t *testing
 		t.Fatalf("unexpected statuses: %s, %s", firstPage.Items[0].Status, firstPage.Items[1].Status)
 	}
 
-	lastPage, err := service.GetPlaylistItemsPage("tv", playlistID, 3, 2)
+	lastPage, err := service.GetPlaylistItemsPage("tv", playlistID, nil, 3, 2)
 	if err != nil {
 		t.Fatalf("last page: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestGetPlaylistItemsPageOrdersPaginatesAndReportsStatus_Postgres(t *testing
 		t.Fatalf("unexpected last page pagination: %+v", lastPage.Pagination)
 	}
 
-	if _, err := service.GetPlaylistItemsPage("tv", playlistID+999, 1, 2); err == nil {
+	if _, err := service.GetPlaylistItemsPage("tv", playlistID+999, nil, 1, 2); err == nil {
 		t.Fatalf("expected error for unknown playlist")
 	}
 }

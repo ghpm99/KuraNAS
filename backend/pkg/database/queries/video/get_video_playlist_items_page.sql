@@ -15,9 +15,12 @@ SELECT
     tech.duration_seconds,
     tech.width,
     tech.height,
-    tech.codec_name
+    tech.codec_name,
+    COALESCE(mo.season, vpi.season) AS season,
+    COALESCE(mo.episode, vpi.episode) AS episode
 FROM video_playlist_item vpi
 JOIN home_file hf ON hf.id = vpi.video_id
+LEFT JOIN video_manual_override mo ON mo.file_id = vpi.video_id
 LEFT JOIN LATERAL (
     SELECT
         CASE
@@ -40,5 +43,6 @@ LEFT JOIN LATERAL (
 ) tech ON TRUE
 WHERE vpi.playlist_id = $1
   AND hf.deleted_at IS NULL
+  AND ($4::int IS NULL OR COALESCE(mo.season, vpi.season) = $4::int)
 ORDER BY vpi.order_index, vpi.id
 LIMIT $2 OFFSET $3;

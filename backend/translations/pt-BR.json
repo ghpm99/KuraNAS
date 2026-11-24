@@ -422,6 +422,7 @@
 	"ERROR_REINDEX_ALREADY_RUNNING": "Já existe uma reindexação deste escopo em andamento",
 	"ERROR_INVALID_PAGINATION": "Parâmetros de paginação inválidos",
 	"ERROR_INVALID_CATALOG_SORT": "Parâmetros de ordenação inválidos",
+	"ERROR_VIDEO_INVALID_SEASON": "Parâmetro de temporada inválido",
 	"ERROR_INVALID_REQUEST": "Requisição inválida",
 	"ERROR_INVALID_PATH": "Caminho inválido",
 	"ERROR_TARGET_NOT_DIRECTORY": "O destino precisa ser uma pasta válida",

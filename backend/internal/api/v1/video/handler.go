@@ -10,6 +10,7 @@ import (
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -371,6 +372,18 @@ func parseIncludeItems(rawValue string) (bool, bool) {
 	}
 }
 
+func parseOptionalSeasonQuery(c *gin.Context) (*int, bool) {
+	rawSeason, isPresent := c.GetQuery("season")
+	if !isPresent {
+		return nil, true
+	}
+	season, err := strconv.Atoi(rawSeason)
+	if err != nil || season < 0 {
+		return nil, false
+	}
+	return &season, true
+}
+
 func (h *Handler) GetPlaylistItemsPageHandler(c *gin.Context) {
 	id := utils.ParseInt(c.Param("id"), c)
 	if c.IsAborted() {
@@ -381,13 +394,18 @@ func (h *Handler) GetPlaylistItemsPageHandler(c *gin.Context) {
 	if !isPaginationValid {
 		return
 	}
+	season, isSeasonValid := parseOptionalSeasonQuery(c)
+	if !isSeasonValid {
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_INVALID_SEASON")})
+		return
+	}
 	clientID, isClientIDValid := clientidentity.Resolve(c)
 	if !isClientIDValid {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
 
-	itemsPage, err := h.service.GetPlaylistItemsPage(clientID, id, page, pageSize)
+	itemsPage, err := h.service.GetPlaylistItemsPage(clientID, id, season, page, pageSize)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_NOT_FOUND")})
 		return

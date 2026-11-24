@@ -130,7 +130,7 @@ func TestTechnicalMetadataIsScannedFromEveryVideoListing_Postgres(t *testing.T) 
 	}
 	assertTechnicalMetadata(t, "movies", videosByNameOf(movies))
 
-	playlistPage, err := repository.GetVideoPlaylistItemsPage(playlistID, 10, 0)
+	playlistPage, err := repository.GetVideoPlaylistItemsPage(playlistID, nil, 10, 0)
 	if err != nil {
 		t.Fatalf("playlist page: %v", err)
 	}

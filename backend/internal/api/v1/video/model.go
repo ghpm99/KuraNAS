@@ -53,7 +53,32 @@ type VideoPlaylistItemModel struct {
 	VideoID    int
 	OrderIndex int
 	SourceKind string
+	Season     sql.NullInt64
+	Episode    sql.NullInt64
 	Video      VideoFileModel
+}
+
+type VideoEpisodeOverrideModel struct {
+	VideoID int
+	Season  sql.NullInt64
+	Episode sql.NullInt64
+}
+
+type AutoPlaylistItemForRenumberingModel struct {
+	ItemID           int
+	VideoID          int
+	OrderIndex       int
+	Name             string
+	AutomaticSeason  sql.NullInt64
+	AutomaticEpisode sql.NullInt64
+	OverrideSeason   sql.NullInt64
+	OverrideEpisode  sql.NullInt64
+}
+
+type SeriesPlaylistItemInput struct {
+	VideoID int
+	Season  sql.NullInt64
+	Episode sql.NullInt64
 }
 
 type VideoPlaylistOfVideoModel struct {

@@ -31,6 +31,10 @@ type RepositoryInterface interface {
 	DeleteStaleAutoPlaylists(tx *sql.Tx, keptPlaylistIDs []int) error
 	RenumberPlaylistItems(tx *sql.Tx, playlistID int) error
 	InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, videoIDs []int, sourceKind string) error
+	InsertSeriesPlaylistItems(tx *sql.Tx, playlistID int, items []SeriesPlaylistItemInput, sourceKind string) error
+	GetVideoEpisodeOverrides(videoIDs []int) (map[int]VideoEpisodeOverrideModel, error)
+	GetAutoPlaylistItemsForRenumbering(tx *sql.Tx, playlistID int) ([]AutoPlaylistItemForRenumberingModel, error)
+	UpdatePlaylistItemOrder(tx *sql.Tx, playlistID int, itemIDs []int, orderIndexes []int) error
 	GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error)
 	GetVideoPlaylistsBySection(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
@@ -44,7 +48,7 @@ type RepositoryInterface interface {
 	GetPlaylistDominantFolder(playlistID int) (string, error)
 	CountVideoPlaylistItems(playlistID int) (int, error)
 	GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlaylistItemModel, error)
-	GetVideoPlaylistItemsPage(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error)
+	GetVideoPlaylistItemsPage(playlistID int, season *int, limit int, offset int) ([]VideoPlaylistItemModel, error)
 	ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileModel], error)
 	ListLibraryFolders(query LibraryFolderQuery) ([]LibraryFolderModel, error)
 	ListLibraryFolderVideos(folderPath string, limit int, offset int) ([]VideoFileModel, error)
@@ -97,7 +101,7 @@ type ServiceInterface interface {
 	GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error)
 	FindPlaylistPosterFileID(playlistID int) (int, error)
 	FindMoviePosterFileID(videoID int) (int, error)
-	GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error)
+	GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error)
 	ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileDto], error)
 	ListLibraryFolders(request LibraryFolderRequest) (utils.PaginationResponse[LibraryFolderDto], error)
 	ListLibraryFolderVideos(request LibraryFolderVideosRequest) (utils.PaginationResponse[VideoFileDto], error)

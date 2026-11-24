@@ -19,6 +19,7 @@ func (s *Service) RebuildSmartPlaylists() error {
 
 	// Converter para o formato do engine
 	entries := make([]playlist.VideoEntry, 0, len(videosWithMeta))
+	entriesByVideoID := make(map[int]playlist.VideoEntry, len(videosWithMeta))
 	for _, v := range videosWithMeta {
 		entry := playlist.VideoEntry{
 			ID:         v.ID,
@@ -80,6 +81,7 @@ func (s *Service) RebuildSmartPlaylists() error {
 		}
 
 		entries = append(entries, entry)
+		entriesByVideoID[entry.ID] = entry
 	}
 
 	engineBehavior := s.loadBehaviorEvents()
@@ -91,6 +93,11 @@ func (s *Service) RebuildSmartPlaylists() error {
 
 	// Converter para smart groups e persistir
 	groups := result.ToSmartGroups()
+
+	overrideNumberingByVideoID, err := s.loadEpisodeOverrides(groups)
+	if err != nil {
+		return err
+	}
 
 	return s.withTransaction(func(tx *sql.Tx) error {
 		producedPlaylistIDs := make([]int, 0, len(groups))
@@ -124,7 +131,7 @@ func (s *Service) RebuildSmartPlaylists() error {
 			if err := s.Repository.DeleteAutoPlaylistItems(tx, pl.ID); err != nil {
 				return err
 			}
-			if err := s.Repository.InsertPlaylistItemsWithSource(tx, pl.ID, filtered, "auto"); err != nil {
+			if err := s.insertAutoPlaylistItems(tx, pl.ID, group, filtered, entriesByVideoID, overrideNumberingByVideoID); err != nil {
 				return err
 			}
 			if err := s.Repository.RenumberPlaylistItems(tx, pl.ID); err != nil {
@@ -134,6 +141,22 @@ func (s *Service) RebuildSmartPlaylists() error {
 		return s.Repository.DeleteStaleAutoPlaylists(tx, producedPlaylistIDs)
 	})
 }
+
+func (s *Service) insertAutoPlaylistItems(
+	tx *sql.Tx,
+	playlistID int,
+	group playlist.SmartGroup,
+	videoIDs []int,
+	entriesByVideoID map[int]playlist.VideoEntry,
+	overrideNumberingByVideoID map[int]playlist.EpisodeNumbering,
+) error {
+	if !playlist.IsSeriesLikePlaylist(group.PlaylistType, group.Classification) {
+		return s.Repository.InsertPlaylistItemsWithSource(tx, playlistID, videoIDs, "auto")
+	}
+	seriesItems := buildSeriesPlaylistItems(videoIDs, entriesByVideoID, overrideNumberingByVideoID)
+	return s.Repository.InsertSeriesPlaylistItems(tx, playlistID, seriesItems, "auto")
+}
+
 func (s *Service) GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error) {
 	models, err := s.Repository.GetVideoPlaylists(includeHidden)
 	if err != nil {
@@ -295,12 +318,12 @@ func (s *Service) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
 	return pl.ToDto([]VideoPlaylistItemDto{}), nil
 }
 
-func (s *Service) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
+func (s *Service) GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	if _, err := s.Repository.GetVideoPlaylistByID(playlistID); err != nil {
 		return utils.PaginationResponse[VideoPlaylistItemDto]{}, err
 	}
 
-	items, err := s.Repository.GetVideoPlaylistItemsPage(playlistID, pageSize+1, utils.CalculateOffset(page, pageSize))
+	items, err := s.Repository.GetVideoPlaylistItemsPage(playlistID, season, pageSize+1, utils.CalculateOffset(page, pageSize))
 	if err != nil {
 		return utils.PaginationResponse[VideoPlaylistItemDto]{}, err
 	}

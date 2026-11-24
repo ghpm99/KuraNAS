@@ -481,6 +481,101 @@ func (r *Repository) InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int, v
 	return nil
 }
 
+func (r *Repository) InsertSeriesPlaylistItems(tx *sql.Tx, playlistID int, items []SeriesPlaylistItemInput, sourceKind string) error {
+	if len(items) == 0 {
+		return nil
+	}
+	videoIDs := make([]int64, len(items))
+	seasons := make([]sql.NullInt64, len(items))
+	episodes := make([]sql.NullInt64, len(items))
+	for position, item := range items {
+		videoIDs[position] = int64(item.VideoID)
+		seasons[position] = item.Season
+		episodes[position] = item.Episode
+	}
+	_, err := tx.Exec(
+		queries.InsertSeriesPlaylistItemsQuery,
+		playlistID,
+		pq.Array(videoIDs),
+		sourceKind,
+		pq.Array(seasons),
+		pq.Array(episodes),
+	)
+	if err != nil {
+		return fmt.Errorf("falha ao inserir itens de serie na playlist com source_kind=%s: %w", sourceKind, err)
+	}
+	return nil
+}
+
+func (r *Repository) GetVideoEpisodeOverrides(videoIDs []int) (map[int]VideoEpisodeOverrideModel, error) {
+	overridesByVideoID := map[int]VideoEpisodeOverrideModel{}
+	if len(videoIDs) == 0 {
+		return overridesByVideoID, nil
+	}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, err := tx.Query(queries.GetVideoEpisodeOverridesQuery, pq.Array(videoIDs))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var override VideoEpisodeOverrideModel
+			if err := rows.Scan(&override.VideoID, &override.Season, &override.Episode); err != nil {
+				return err
+			}
+			overridesByVideoID[override.VideoID] = override
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return overridesByVideoID, fmt.Errorf("falha ao buscar correcoes manuais de episodio: %w", err)
+	}
+	return overridesByVideoID, nil
+}
+
+func (r *Repository) GetAutoPlaylistItemsForRenumbering(tx *sql.Tx, playlistID int) ([]AutoPlaylistItemForRenumberingModel, error) {
+	rows, err := tx.Query(queries.GetAutoPlaylistItemsForRenumberingQuery, playlistID)
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar itens automaticos da playlist: %w", err)
+	}
+	defer rows.Close()
+
+	items := []AutoPlaylistItemForRenumberingModel{}
+	for rows.Next() {
+		var item AutoPlaylistItemForRenumberingModel
+		if err := rows.Scan(
+			&item.ItemID,
+			&item.VideoID,
+			&item.OrderIndex,
+			&item.Name,
+			&item.AutomaticSeason,
+			&item.AutomaticEpisode,
+			&item.OverrideSeason,
+			&item.OverrideEpisode,
+		); err != nil {
+			return nil, fmt.Errorf("falha ao ler itens automaticos da playlist: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("falha ao ler itens automaticos da playlist: %w", err)
+	}
+	return items, nil
+}
+
+func (r *Repository) UpdatePlaylistItemOrder(tx *sql.Tx, playlistID int, itemIDs []int, orderIndexes []int) error {
+	if len(itemIDs) == 0 {
+		return nil
+	}
+	_, err := tx.Exec(queries.UpdatePlaylistItemOrderQuery, playlistID, pq.Array(itemIDs), pq.Array(orderIndexes))
+	if err != nil {
+		return fmt.Errorf("falha ao atualizar ordem dos itens da playlist: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) RenumberPlaylistItems(tx *sql.Tx, playlistID int) error {
 	_, err := tx.Exec(queries.RenumberPlaylistItemsQuery, playlistID)
 	if err != nil {
@@ -740,8 +835,8 @@ func (r *Repository) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPlayl
 	return r.queryPlaylistItems(queries.GetVideoPlaylistItemsDetailedQuery, playlistID)
 }
 
-func (r *Repository) GetVideoPlaylistItemsPage(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
-	return r.queryPlaylistItems(queries.GetVideoPlaylistItemsPageQuery, playlistID, limit, offset)
+func (r *Repository) GetVideoPlaylistItemsPage(playlistID int, season *int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
+	return r.queryPlaylistItems(queries.GetVideoPlaylistItemsPageQuery, playlistID, limit, offset, nullableSeasonArgument(season))
 }
 
 func (r *Repository) queryPlaylistItems(query string, arguments ...any) ([]VideoPlaylistItemModel, error) {
@@ -774,6 +869,8 @@ func (r *Repository) queryPlaylistItems(query string, arguments ...any) ([]Video
 				&item.Video.Width,
 				&item.Video.Height,
 				&item.Video.VideoCodec,
+				&item.Season,
+				&item.Episode,
 			); err != nil {
 				return err
 			}
@@ -1100,4 +1197,11 @@ func (r *Repository) ListRecentVideoWatchProgress(limit int) ([]VideoWatchProgre
 	}
 
 	return results, nil
+}
+
+func nullableSeasonArgument(season *int) sql.NullInt64 {
+	if season == nil {
+		return sql.NullInt64{}
+	}
+	return sql.NullInt64{Int64: int64(*season), Valid: true}
 }

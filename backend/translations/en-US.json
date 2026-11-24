@@ -422,6 +422,7 @@
 	"ERROR_REINDEX_ALREADY_RUNNING": "A reindex of this scope is already in progress",
 	"ERROR_INVALID_PAGINATION": "Invalid pagination parameters",
 	"ERROR_INVALID_CATALOG_SORT": "Invalid sort parameters",
+	"ERROR_VIDEO_INVALID_SEASON": "Invalid season parameter",
 	"ERROR_INVALID_REQUEST": "Invalid request",
 	"ERROR_INVALID_PATH": "Invalid path",
 	"ERROR_TARGET_NOT_DIRECTORY": "Target must be a valid directory",

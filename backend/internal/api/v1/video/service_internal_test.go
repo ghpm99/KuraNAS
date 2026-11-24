@@ -186,6 +186,25 @@ func (m *videoRepoMock) InsertPlaylistItemsWithSource(tx *sql.Tx, playlistID int
 	}
 	return nil
 }
+func (m *videoRepoMock) InsertSeriesPlaylistItems(tx *sql.Tx, playlistID int, items []SeriesPlaylistItemInput, sourceKind string) error {
+	if m.insertPlaylistItemsSrcFn != nil {
+		videoIDs := make([]int, 0, len(items))
+		for _, item := range items {
+			videoIDs = append(videoIDs, item.VideoID)
+		}
+		return m.insertPlaylistItemsSrcFn(tx, playlistID, videoIDs, sourceKind)
+	}
+	return nil
+}
+func (m *videoRepoMock) GetVideoEpisodeOverrides(videoIDs []int) (map[int]VideoEpisodeOverrideModel, error) {
+	return map[int]VideoEpisodeOverrideModel{}, nil
+}
+func (m *videoRepoMock) GetAutoPlaylistItemsForRenumbering(tx *sql.Tx, playlistID int) ([]AutoPlaylistItemForRenumberingModel, error) {
+	return nil, nil
+}
+func (m *videoRepoMock) UpdatePlaylistItemOrder(tx *sql.Tx, playlistID int, itemIDs []int, orderIndexes []int) error {
+	return nil
+}
 func (m *videoRepoMock) RenumberPlaylistItems(tx *sql.Tx, playlistID int) error {
 	return nil
 }
@@ -231,7 +250,7 @@ func (m *videoRepoMock) GetVideoPlaylistItemsDetailed(playlistID int) ([]VideoPl
 	}
 	return nil, nil
 }
-func (m *videoRepoMock) GetVideoPlaylistItemsPage(playlistID int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
+func (m *videoRepoMock) GetVideoPlaylistItemsPage(playlistID int, season *int, limit int, offset int) ([]VideoPlaylistItemModel, error) {
 	if m.getVideoPlaylistItemsPageFn != nil {
 		return m.getVideoPlaylistItemsPageFn(playlistID, limit, offset)
 	}
@@ -1360,7 +1379,7 @@ func TestGetPlaylistItemsPageReportsNextPageAndProgress(t *testing.T) {
 		},
 	}
 
-	itemsPage, err := newVideoServiceForTest(t, repo).GetPlaylistItemsPage("client-1", 7, 3, 1)
+	itemsPage, err := newVideoServiceForTest(t, repo).GetPlaylistItemsPage("client-1", 7, nil, 3, 1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1379,14 +1398,14 @@ func TestGetPlaylistItemsPagePropagatesErrors(t *testing.T) {
 	missingPlaylist := &videoRepoMock{getVideoPlaylistByIDFn: func(id int) (VideoPlaylistModel, error) {
 		return VideoPlaylistModel{}, sql.ErrNoRows
 	}}
-	if _, err := newVideoServiceForTest(t, missingPlaylist).GetPlaylistItemsPage("c", 1, 1, 10); err == nil {
+	if _, err := newVideoServiceForTest(t, missingPlaylist).GetPlaylistItemsPage("c", 1, nil, 1, 10); err == nil {
 		t.Fatalf("expected error for missing playlist")
 	}
 
 	failingItems := &videoRepoMock{getVideoPlaylistItemsPageFn: func(int, int, int) ([]VideoPlaylistItemModel, error) {
 		return nil, errors.New("boom")
 	}}
-	if _, err := newVideoServiceForTest(t, failingItems).GetPlaylistItemsPage("c", 1, 1, 10); err == nil {
+	if _, err := newVideoServiceForTest(t, failingItems).GetPlaylistItemsPage("c", 1, nil, 1, 10); err == nil {
 		t.Fatalf("expected error for failing items query")
 	}
 }

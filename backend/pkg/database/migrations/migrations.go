@@ -239,6 +239,9 @@ var CreateTakeoutPhotoSidecarQuery string
 //go:embed queries/0076_add_playlist_rules.sql
 var AddPlaylistRulesQuery string
 
+//go:embed queries/0077_create_video_manual_override.sql
+var CreateVideoManualOverrideQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -432,6 +435,13 @@ func musicMigrationList() {
 			"0030_create_music_artist_clusters_table",
 		},
 		defaultMigrationFunc(AddPlaylistRulesQuery))
+
+	addMigrationRequiring("0077_create_video_manual_override",
+		[]string{
+			"0001_create_home_file_table",
+			"0014_create_video_playback_tables",
+		},
+		defaultMigrationFunc(CreateVideoManualOverrideQuery))
 }
 
 func videoMigrationList() {

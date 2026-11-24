@@ -221,7 +221,7 @@ func (s *compositeSpec) IsSatisfiedBy(v VideoEntry) bool {
 // ---------------------------------------------------------------------------
 
 func defaultClassificationRules() []ClassificationRule {
-	episodeRe := regexp.MustCompile(`(?i)` + tokenStart + `(?:` + seasonEpisodeBody + `|` + crossEpisodeBody + `|` + keywordEpisodeBody + `|season\s?\d+\s*episode\s?\d+)` + tokenEnd)
+	episodeRe := regexp.MustCompile(`(?i)` + tokenStart + `(?:` + seasonEpisodeBody + `|` + crossEpisodeBody + `|` + keywordEpisodeBody + `|` + longFormEpisodeBody + `)` + tokenEnd)
 	courseRe := regexp.MustCompile(`(?i)(?:aula|lesson|lecture|module|modulo)\s*\d+`)
 
 	return []ClassificationRule{
@@ -311,11 +311,12 @@ func defaultClassificationRules() []ClassificationRule {
 // ---------------------------------------------------------------------------
 
 const (
-	tokenStart         = `(?:^|[^\p{L}\p{N}])`
-	tokenEnd           = `(?:$|[^\p{L}\p{N}])`
-	seasonEpisodeBody  = `s\d{1,2}\s?e\d{1,3}`
-	crossEpisodeBody   = `\d{1,2}x\d{1,3}`
-	keywordEpisodeBody = `(?:ep|episode|epis[oó]dio|cap|cap[ií]tulo)\.?\s?\d+`
+	tokenStart          = `(?:^|[^\p{L}\p{N}])`
+	tokenEnd            = `(?:$|[^\p{L}\p{N}])`
+	seasonEpisodeBody   = `s(\d{1,2})\s?e(\d{1,3})`
+	crossEpisodeBody    = `(\d{1,2})x(\d{1,3})`
+	longFormEpisodeBody = `season\s?(\d+)\s*episode\s?(\d+)`
+	keywordEpisodeBody  = `(?:ep|episode|epis[oó]dio|cap|cap[ií]tulo)\.?\s?(\d+)`
 )
 
 var (

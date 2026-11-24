@@ -158,7 +158,7 @@ func TestPlaylistItemsAndContinueWatchingExposeStarred_Postgres(t *testing.T) {
 		"playlist items":          func() ([]VideoPlaylistItemModel, error) { return repository.GetPlaylistItems(playlistID) },
 		"playlist items detailed": func() ([]VideoPlaylistItemModel, error) { return repository.GetVideoPlaylistItemsDetailed(playlistID) },
 		"playlist items page": func() ([]VideoPlaylistItemModel, error) {
-			return repository.GetVideoPlaylistItemsPage(playlistID, 10, 0)
+			return repository.GetVideoPlaylistItemsPage(playlistID, nil, 10, 0)
 		},
 	}
 	for source, readItems := range playlistItemReaders {

@@ -84,7 +84,7 @@ func (m *videoHandlerServiceMock) GetPlaylistHeaderByID(id int) (VideoPlaylistDt
 	}
 	return VideoPlaylistDto{ID: id, Name: "header", ItemCount: 5, Items: []VideoPlaylistItemDto{}}, nil
 }
-func (m *videoHandlerServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
+func (m *videoHandlerServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	if playlistID == 404 {
 		return utils.PaginationResponse[VideoPlaylistItemDto]{}, errors.New("missing")
 	}
@@ -199,7 +199,7 @@ func (m *videoHandlerErrServiceMock) GetPlaylistByID(clientID string, id int) (V
 func (m *videoHandlerErrServiceMock) GetPlaylistHeaderByID(id int) (VideoPlaylistDto, error) {
 	return VideoPlaylistDto{}, errors.New("playlist missing")
 }
-func (m *videoHandlerErrServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
+func (m *videoHandlerErrServiceMock) GetPlaylistItemsPage(clientID string, playlistID int, season *int, page int, pageSize int) (utils.PaginationResponse[VideoPlaylistItemDto], error) {
 	return utils.PaginationResponse[VideoPlaylistItemDto]{}, errors.New("items failed")
 }
 func (m *videoHandlerErrServiceMock) ListLibraryVideos(request LibraryVideosRequest) (utils.PaginationResponse[VideoFileDto], error) {

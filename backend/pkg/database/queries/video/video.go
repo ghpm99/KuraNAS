@@ -222,3 +222,15 @@ var GetPlaylistDominantFolderQuery string
 
 //go:embed list_subtitle_files_by_name_prefix.sql
 var ListSubtitleFilesByNamePrefixQuery string
+
+//go:embed insert_series_playlist_items.sql
+var InsertSeriesPlaylistItemsQuery string
+
+//go:embed get_video_episode_overrides.sql
+var GetVideoEpisodeOverridesQuery string
+
+//go:embed get_auto_playlist_items_for_renumbering.sql
+var GetAutoPlaylistItemsForRenumberingQuery string
+
+//go:embed update_playlist_item_order.sql
+var UpdatePlaylistItemOrderQuery string

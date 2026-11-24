@@ -48,6 +48,8 @@ type VideoPlaylistItemDto struct {
 	Video       VideoFileDto `json:"video"`
 	Status      string       `json:"status"`
 	ProgressPct float64      `json:"progress_pct"`
+	Season      *int         `json:"season"`
+	Episode     *int         `json:"episode"`
 }
 
 type VideoPlaylistOfVideoDto struct {
@@ -218,6 +220,8 @@ func (m *VideoPlaylistItemModel) ToDto(status string, progressPct float64) Video
 		Video:       m.Video.ToDto(),
 		Status:      status,
 		ProgressPct: progressPct,
+		Season:      nullableInt(m.Season),
+		Episode:     nullableInt(m.Episode),
 	}
 }
 
