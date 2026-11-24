@@ -2,6 +2,7 @@ package documenttext
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"nas-go/api/pkg/database"
@@ -25,7 +26,7 @@ func NewRepository(dbContext *database.DbContext) *Repository {
 func (repository *Repository) ListPendingIndexing(afterFileID int, limit int) ([]PendingDocument, error) {
 	pendingDocuments := []PendingDocument{}
 	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
-		rows, err := tx.Query(queries.SelectPendingIndexingQuery, pq.Array(utils.DocumentTextFormats), afterFileID, limit)
+		rows, err := tx.Query(queries.SelectPendingIndexingQuery, pq.Array(IndexableFormats()), afterFileID, limit)
 		if err != nil {
 			return err
 		}
@@ -52,6 +53,11 @@ func (repository *Repository) UpsertDocumentText(documentText DocumentTextModel)
 		storedError = documentText.ErrorCode
 	}
 
+	var storedFailureReason any
+	if documentText.FailureReason != "" {
+		storedFailureReason = documentText.FailureReason
+	}
+
 	err := repository.DbContext.ExecTx(func(tx *sql.Tx) error {
 		_, err := tx.Exec(
 			queries.UpsertDocumentTextQuery,
@@ -61,6 +67,9 @@ func (repository *Repository) UpsertDocumentText(documentText DocumentTextModel)
 			documentText.Truncated,
 			documentText.SourceUpdatedAt,
 			storedError,
+			documentText.State,
+			documentText.IndexedBytes,
+			storedFailureReason,
 		)
 		return err
 	})
@@ -94,4 +103,40 @@ func (repository *Repository) SearchDocuments(termPatterns utils.SearchTermPatte
 		return nil, fmt.Errorf("documenttext: search documents: %w", err)
 	}
 	return matches, nil
+}
+
+// FindDocumentForIndexing returns the active file when it has a document
+// format (07/RN-01) and whether it exists.
+func (repository *Repository) FindDocumentForIndexing(fileID int) (PendingDocument, bool, error) {
+	var document PendingDocument
+	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.SelectDocumentForIndexingQuery, fileID, pq.Array(DocumentFormats())).
+			Scan(&document.FileID, &document.Path, &document.Format, &document.Size, &document.UpdatedAt)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return PendingDocument{}, false, nil
+	}
+	if err != nil {
+		return PendingDocument{}, false, fmt.Errorf("documenttext: find document: %w", err)
+	}
+	return document, true, nil
+}
+
+// FindIndexState returns the indexing state of an active document; a document
+// without a row, or with a row older than the file, is queued.
+func (repository *Repository) FindIndexState(fileID int) (IndexStateModel, bool, error) {
+	var indexState IndexStateModel
+	var failureReason sql.NullString
+	err := repository.DbContext.QueryTx(func(tx *sql.Tx) error {
+		return tx.QueryRow(queries.SelectIndexStateQuery, fileID, pq.Array(DocumentFormats())).
+			Scan(&indexState.State, &indexState.IndexedBytes, &failureReason)
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return IndexStateModel{}, false, nil
+	}
+	if err != nil {
+		return IndexStateModel{}, false, fmt.Errorf("documenttext: find index state: %w", err)
+	}
+	indexState.FailureReason = failureReason.String
+	return indexState, true, nil
 }

@@ -12,3 +12,9 @@ var SelectPendingIndexingQuery string
 
 //go:embed search_documents.sql
 var SearchDocumentsQuery string
+
+//go:embed select_document_for_indexing.sql
+var SelectDocumentForIndexingQuery string
+
+//go:embed select_index_state.sql
+var SelectIndexStateQuery string

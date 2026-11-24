@@ -14,7 +14,7 @@ import (
 const (
 	MaxFileSizeBytes   = 50 << 20
 	MaxReadBytes       = 2 << 20
-	MaxStoredTextBytes = 200 << 10
+	MaxStoredTextBytes = 2 << 20
 )
 
 const (
@@ -66,6 +66,8 @@ func Extract(ctx context.Context, path string, format string) (Result, error) {
 		return extractPDFText(ctx, path)
 	case normalizedFormat == ".docx":
 		return extractDocxText(ctx, path)
+	case normalizedFormat == ".odt":
+		return extractOdtText(ctx, path)
 	case slices.Contains(utils.MarkupTextFormats, normalizedFormat):
 		return extractMarkupText(path, fileInfo.Size())
 	default:

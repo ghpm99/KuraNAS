@@ -242,6 +242,9 @@ var AddPlaylistRulesQuery string
 //go:embed queries/0077_create_video_manual_override.sql
 var CreateVideoManualOverrideQuery string
 
+//go:embed queries/0078_add_document_text_index_state.sql
+var AddDocumentTextIndexStateQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -442,6 +445,10 @@ func musicMigrationList() {
 			"0014_create_video_playback_tables",
 		},
 		defaultMigrationFunc(CreateVideoManualOverrideQuery))
+
+	addMigrationRequiring("0078_add_document_text_index_state",
+		[]string{"0057_create_document_text_table"},
+		defaultMigrationFunc(AddDocumentTextIndexStateQuery))
 }
 
 func videoMigrationList() {

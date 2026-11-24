@@ -202,7 +202,7 @@ func TestExtractDocxNotAZipFails(t *testing.T) {
 func TestExtractDocxStopsAtStoredTextLimit(t *testing.T) {
 	var documentXML strings.Builder
 	documentXML.WriteString(`<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>`)
-	for paragraph := 0; paragraph < 5000; paragraph++ {
+	for paragraph := 0; paragraph < 30000; paragraph++ {
 		documentXML.WriteString("<w:p><w:r><w:t>" + strings.Repeat("palavra ", 10) + "</w:t></w:r></w:p>")
 	}
 	documentXML.WriteString(`</w:body></w:document>`)
@@ -322,5 +322,41 @@ func TestExtractPDFStopsWhenContextExpires(t *testing.T) {
 	_, err := extractPDFText(expiredContext, path)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
+const openDocumentContentXML = `<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:h>Título</text:h><text:p>Contrato de <text:span>locação</text:span></text:p><text:p>Segunda<text:tab/>linha<text:line-break/>quebra</text:p></office:text></office:body></office:document-content>`
+
+func TestExtractOdtCollectsOpenDocumentText(t *testing.T) {
+	result, err := extractFixture(t, "contract.odt", buildDocx(t, openDocumentContentXML, "content.xml"))
+	if err != nil {
+		t.Fatalf("Extract returned error: %v", err)
+	}
+	if result.Text != "Título\nContrato de locação\nSegunda linha\nquebra" {
+		t.Fatalf("unexpected odt text %q", result.Text)
+	}
+}
+
+func TestExtractOdtWithoutContentFails(t *testing.T) {
+	_, err := extractFixture(t, "broken.odt", buildDocx(t, openDocumentContentXML, "other.xml"))
+	if !errors.Is(err, errOdtContentMissing) || ErrorCode(err) != "extract_failed" {
+		t.Fatalf("expected missing content, got %v", err)
+	}
+}
+
+func TestExtractOdtNotAZipFails(t *testing.T) {
+	_, err := extractFixture(t, "fake.odt", []byte("not a zip"))
+	if err == nil || ErrorCode(err) != "extract_failed" {
+		t.Fatalf("expected extract_failed, got %v", err)
+	}
+}
+
+func TestExtractLegacyBinaryFormatsAreUnsupported(t *testing.T) {
+	for _, name := range []string{"a.doc", "a.rtf", "a.xls", "a.xlsx", "a.ods", "a.ppt", "a.pptx", "a.odp", "a.epub"} {
+		_, err := extractFixture(t, name, []byte("x"))
+		if !errors.Is(err, ErrUnsupportedFormat) {
+			t.Fatalf("%s: expected unsupported format, got %v", name, err)
+		}
 	}
 }

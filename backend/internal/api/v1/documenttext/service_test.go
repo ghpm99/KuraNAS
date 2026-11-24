@@ -10,6 +10,10 @@ import (
 )
 
 type recordingRepository struct {
+	document     PendingDocument
+	isFound      bool
+	indexState   IndexStateModel
+	findErr      error
 	matches      []DocumentMatchModel
 	err          error
 	gotPatterns  utils.SearchTermPatterns
@@ -20,6 +24,14 @@ type recordingRepository struct {
 
 func (repository *recordingRepository) ListPendingIndexing(int, int) ([]PendingDocument, error) {
 	return nil, nil
+}
+
+func (repository *recordingRepository) FindDocumentForIndexing(int) (PendingDocument, bool, error) {
+	return repository.document, repository.isFound, repository.findErr
+}
+
+func (repository *recordingRepository) FindIndexState(int) (IndexStateModel, bool, error) {
+	return repository.indexState, repository.isFound, repository.findErr
 }
 
 func (repository *recordingRepository) UpsertDocumentText(DocumentTextModel) error { return nil }

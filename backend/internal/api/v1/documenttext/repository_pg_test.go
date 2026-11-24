@@ -42,8 +42,13 @@ func seedDocumentFile(t *testing.T, dbContext *database.DbContext, name string, 
 
 func storeText(t *testing.T, repository *Repository, fileID int, text string, sourceUpdatedAt time.Time, errorCode string) {
 	t.Helper()
+	state := StateIndexed
+	if errorCode != "" {
+		state = StateFailed
+	}
 	err := repository.UpsertDocumentText(DocumentTextModel{
 		FileID: fileID, ExtractedText: text, TextLength: len([]rune(text)), SourceUpdatedAt: sourceUpdatedAt, ErrorCode: errorCode,
+		State: state, IndexedBytes: int64(len(text)), FailureReason: errorCode,
 	})
 	if err != nil {
 		t.Fatalf("upsert: %v", err)

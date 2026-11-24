@@ -21,12 +21,25 @@ type stubService struct {
 	gotPage   int
 	gotSize   int
 	wasCalled bool
+
+	indexState      IndexStateDto
+	jobID           int
+	reindexedFileID int
 }
 
 func (service *stubService) SearchDocuments(query string, page int, pageSize int) (utils.PaginationResponse[DocumentSearchResultDto], error) {
 	service.wasCalled = true
 	service.gotQuery, service.gotPage, service.gotSize = query, page, pageSize
 	return service.page, service.err
+}
+
+func (service *stubService) GetIndexState(fileID int) (IndexStateDto, error) {
+	return service.indexState, service.err
+}
+
+func (service *stubService) ReindexDocument(fileID int) (int, error) {
+	service.reindexedFileID = fileID
+	return service.jobID, service.err
 }
 
 func (service *stubService) SearchTopDocuments(string, int) ([]DocumentSearchResultDto, error) {

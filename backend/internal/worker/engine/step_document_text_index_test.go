@@ -21,6 +21,16 @@ type fakeDocumentTextRepository struct {
 	listErr      error
 	upsertErr    error
 	stored       []documenttext.DocumentTextModel
+	documents    map[int]documenttext.PendingDocument
+}
+
+func (repository *fakeDocumentTextRepository) FindDocumentForIndexing(fileID int) (documenttext.PendingDocument, bool, error) {
+	document, isFound := repository.documents[fileID]
+	return document, isFound, nil
+}
+
+func (repository *fakeDocumentTextRepository) FindIndexState(int) (documenttext.IndexStateModel, bool, error) {
+	return documenttext.IndexStateModel{}, false, nil
 }
 
 func (repository *fakeDocumentTextRepository) ListPendingIndexing(afterFileID int, limit int) ([]documenttext.PendingDocument, error) {

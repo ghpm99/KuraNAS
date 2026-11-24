@@ -2,6 +2,16 @@ package documenttext
 
 import "time"
 
+const (
+	StateIndexed  = "indexed"
+	StatePartial  = "partial"
+	StateNameOnly = "name_only"
+	StateQueued   = "queued"
+	StateFailed   = "failed"
+)
+
+const FailureReasonNoText = "no_text"
+
 type DocumentTextModel struct {
 	FileID          int
 	ExtractedText   string
@@ -9,6 +19,15 @@ type DocumentTextModel struct {
 	Truncated       bool
 	SourceUpdatedAt time.Time
 	ErrorCode       string
+	State           string
+	IndexedBytes    int64
+	FailureReason   string
+}
+
+type IndexStateModel struct {
+	State         string
+	IndexedBytes  int64
+	FailureReason string
 }
 
 type PendingDocument struct {

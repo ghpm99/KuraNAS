@@ -10,7 +10,7 @@ var PlainTextFormats = []string{
 	".java", ".kt", ".c", ".h", ".cpp", ".hpp", ".cs", ".rb", ".php", ".rs", ".swift", ".lua", ".vue", ".gradle",
 }
 
-var RichDocumentFormats = []string{".pdf", ".docx"}
+var RichDocumentFormats = []string{".pdf", ".docx", ".odt"}
 
 var DocumentTextFormats = slices.Concat(PlainTextFormats, MarkupTextFormats, RichDocumentFormats)
 

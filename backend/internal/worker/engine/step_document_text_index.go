@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -38,7 +39,19 @@ func executeDocumentTextIndexStep(workerContext *WorkerContext, step jobs.StepMo
 		return ErrStepSkipped
 	}
 
-	outcome, err := indexPendingDocuments(workerContext.DocumentTextRepository)
+	payload, err := parseStepFilePayload(step.Payload)
+	if err != nil {
+		return err
+	}
+
+	indexDocuments := indexPendingDocuments
+	if payload.FileID > 0 {
+		indexDocuments = func(repository documenttext.RepositoryInterface) (documentTextIndexOutcome, error) {
+			return indexSingleDocument(repository, payload.FileID)
+		}
+	}
+
+	outcome, err := indexDocuments(workerContext.DocumentTextRepository)
 	if err != nil {
 		return err
 	}
@@ -48,6 +61,34 @@ func executeDocumentTextIndexStep(workerContext *WorkerContext, step jobs.StepMo
 		return ErrStepSkipped
 	}
 	return nil
+}
+
+func parseStepFilePayload(rawPayload []byte) (StepFilePayload, error) {
+	var payload StepFilePayload
+	if len(rawPayload) == 0 {
+		return payload, nil
+	}
+	if err := json.Unmarshal(rawPayload, &payload); err != nil {
+		return payload, fmt.Errorf("document text index: decode payload: %w", err)
+	}
+	return payload, nil
+}
+
+func indexSingleDocument(repository documenttext.RepositoryInterface, fileID int) (documentTextIndexOutcome, error) {
+	pendingDocument, isFound, err := repository.FindDocumentForIndexing(fileID)
+	if err != nil {
+		return documentTextIndexOutcome{}, fmt.Errorf("document text index: find document %d: %w", fileID, err)
+	}
+	if !isFound {
+		return documentTextIndexOutcome{}, nil
+	}
+
+	if err := repository.UpsertDocumentText(buildDocumentText(pendingDocument)); err != nil {
+		applog.Warn("document text store failed",
+			"file_id", pendingDocument.FileID, "path", pendingDocument.Path, "error", err.Error())
+		return documentTextIndexOutcome{failed: 1}, nil
+	}
+	return documentTextIndexOutcome{indexed: 1}, nil
 }
 
 func indexPendingDocuments(repository documenttext.RepositoryInterface) (documentTextIndexOutcome, error) {
@@ -88,22 +129,49 @@ func buildDocumentText(pendingDocument documenttext.PendingDocument) documenttex
 	}
 
 	if pendingDocument.Size > doctext.MaxFileSizeBytes {
-		documentText.ErrorCode = doctext.ErrorCodeTooLarge
-		return documentText
+		return withoutExtractedText(documentText, doctext.ErrorCodeTooLarge)
 	}
 
 	result, err := extractWithTimeout(pendingDocument)
 	if err != nil {
-		documentText.ErrorCode = doctext.ErrorCode(err)
 		applog.Warn("document text extraction failed",
-			"file_id", pendingDocument.FileID, "path", pendingDocument.Path, "code", documentText.ErrorCode, "error", err.Error())
+			"file_id", pendingDocument.FileID, "path", pendingDocument.Path, "code", doctext.ErrorCode(err), "error", err.Error())
+		return withoutExtractedText(documentText, doctext.ErrorCode(err))
+	}
+
+	if result.Text == "" {
+		documentText.State = documenttext.StateNameOnly
+		documentText.FailureReason = documenttext.FailureReasonNoText
 		return documentText
 	}
 
 	documentText.ExtractedText = result.Text
 	documentText.TextLength = len([]rune(result.Text))
+	documentText.IndexedBytes = int64(len(result.Text))
 	documentText.Truncated = result.Truncated
+	documentText.State = documenttext.StateIndexed
+	if result.Truncated {
+		documentText.State = documenttext.StatePartial
+	}
 	return documentText
+}
+
+func withoutExtractedText(documentText documenttext.DocumentTextModel, errorCode string) documenttext.DocumentTextModel {
+	documentText.ErrorCode = errorCode
+	documentText.FailureReason = errorCode
+	documentText.State = documenttext.StateFailed
+	if isNameOnlyErrorCode(errorCode) {
+		documentText.State = documenttext.StateNameOnly
+	}
+	return documentText
+}
+
+func isNameOnlyErrorCode(errorCode string) bool {
+	switch errorCode {
+	case doctext.ErrorCodeTooLarge, doctext.ErrorCodeEncrypted, doctext.ErrorCodeUnsupportedFormat:
+		return true
+	}
+	return false
 }
 
 type documentExtraction struct {
@@ -169,4 +237,23 @@ func enqueueDocumentTextIndexIfDocument(workerContext *WorkerContext, persistedF
 	if err := enqueueDocumentTextIndexJob(workerContext); err != nil {
 		applog.Warn("failed to enqueue document text index job", "path", persistedFile.Path, "error", err.Error())
 	}
+}
+
+func documentReindexKey(fileID int) string {
+	return fmt.Sprintf("%s:%d", documentTextIndexJobPath, fileID)
+}
+
+func buildDocumentReindexPlan(fileID int) (PlannedJob, error) {
+	payload, err := marshalPayload(StepFilePayload{FileID: fileID})
+	if err != nil {
+		return PlannedJob{}, fmt.Errorf("marshal document reindex payload: %w", err)
+	}
+	return PlannedJob{
+		Type:     job.JobTypeDocumentTextIndex,
+		Priority: job.JobPriorityNormal,
+		Scope:    job.JobScope{FileID: &fileID, ReindexKey: documentReindexKey(fileID)},
+		Steps: []PlannedStep{
+			{Key: "index", Type: job.StepTypeDocumentTextIndex, MaxAttempts: 1, Payload: payload},
+		},
+	}, nil
 }

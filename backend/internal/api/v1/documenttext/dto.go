@@ -12,3 +12,15 @@ type DocumentSearchResultDto struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 	Snippet    string    `json:"snippet"`
 }
+
+type IndexStateDto struct {
+	FileID       int    `json:"file_id"`
+	State        string `json:"state"`
+	IndexedBytes int64  `json:"indexed_bytes"`
+	Reason       string `json:"reason"`
+	Error        string `json:"error"`
+}
+
+type ReindexJobDto struct {
+	JobID int `json:"job_id"`
+}

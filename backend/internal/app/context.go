@@ -319,7 +319,7 @@ func NewContext(db *sql.DB) *AppContext {
 	videoContext := newVideoContext(dbContext, loggerService, fileContext.Service, fileContext.RecentFileService)
 	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
-	documentTextContext := newDocumentTextContext(dbContext)
+	documentTextContext := newDocumentTextContext(dbContext, jobsContext.Repository)
 	searchContext := newSearchContext(dbContext, aiService, documentTextContext.Service)
 	notificationContext := newNotificationContext(dbContext)
 	librariesContext := newLibrariesContext(dbContext, loggerService)
@@ -623,9 +623,9 @@ func newNotificationContext(dbContext *database.DbContext) *NotificationContext 
 	}
 }
 
-func newDocumentTextContext(dbContext *database.DbContext) *DocumentTextContext {
+func newDocumentTextContext(dbContext *database.DbContext, jobsRepository jobs.RepositoryInterface) *DocumentTextContext {
 	repository := documenttext.NewRepository(dbContext)
-	service := documenttext.NewService(repository)
+	service := documenttext.NewServiceWithReindexer(repository, engine.NewDocumentReindexLauncher(jobsRepository))
 	handler := documenttext.NewHandler(service)
 
 	return &DocumentTextContext{
