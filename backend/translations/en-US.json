@@ -1779,6 +1779,8 @@
 	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Invalid subfolder: it must stay inside the chosen library",
 	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "The jobs subsystem is unavailable",
 	"ERROR_DOWNLOAD_ENQUEUE": "Could not enqueue the download",
+	"ERROR_DOWNLOAD_INVALID_STATE_FILTER": "Invalid state filter: use active or finished",
+	"ERROR_DOWNLOAD_LIST": "Could not list downloads",
 	"DOWNLOAD_PRESET_AUDIO_MP3": "Audio (MP3)",
 	"DOWNLOAD_PRESET_VIDEO_1080": "Video (up to 1080p, MP4)",
 	"DOWNLOAD_PRESET_VIDEO_BEST": "Video (best quality, MP4)",

@@ -1779,6 +1779,8 @@
 	"ERROR_DOWNLOAD_INVALID_SUBFOLDER": "Subpasta inválida: ela precisa ficar dentro da biblioteca escolhida",
 	"ERROR_DOWNLOAD_JOBS_UNAVAILABLE": "O subsistema de tarefas está indisponível",
 	"ERROR_DOWNLOAD_ENQUEUE": "Não foi possível enfileirar o download",
+	"ERROR_DOWNLOAD_INVALID_STATE_FILTER": "Filtro de estado inválido: use active ou finished",
+	"ERROR_DOWNLOAD_LIST": "Não foi possível listar os downloads",
 	"DOWNLOAD_PRESET_AUDIO_MP3": "Áudio (MP3)",
 	"DOWNLOAD_PRESET_VIDEO_1080": "Vídeo (até 1080p, MP4)",
 	"DOWNLOAD_PRESET_VIDEO_BEST": "Vídeo (melhor qualidade, MP4)",
