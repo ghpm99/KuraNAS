@@ -154,3 +154,16 @@ func TestPresetsResponseFieldNames(t *testing.T) {
 		}
 	}
 }
+
+func TestFetchResponseFieldNames(t *testing.T) {
+	router := newTestRouter(&fakeService{fetchResponse: FetchResponseDto{JobID: 7, DownloadID: 12}})
+	rec := doRequest(router, http.MethodPost, "/ingest/fetch", `{"url":"https://x.test/v","preset":"audio_mp3","target_root":"/srv"}`)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("expected 202, got %d", rec.Code)
+	}
+	body := decodeJSONObject(t, rec)
+	assertExactFieldNames(t, body, []string{"download_id", "job_id"})
+	if body["job_id"] != float64(7) || body["download_id"] != float64(12) {
+		t.Fatalf("unexpected values: %v", body)
+	}
+}

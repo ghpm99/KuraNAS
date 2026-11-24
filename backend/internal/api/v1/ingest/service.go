@@ -24,49 +24,48 @@ const (
 const MaxURLLength = 2048
 
 type Service struct {
-	jobsRepo jobEnqueuer
+	jobsRepo      jobEnqueuer
+	downloadsRepo downloadRecorder
 }
 
-func NewService(jobsRepo jobEnqueuer) *Service {
-	return &Service{jobsRepo: jobsRepo}
+func NewService(jobsRepo jobEnqueuer, downloadsRepo downloadRecorder) *Service {
+	return &Service{jobsRepo: jobsRepo, downloadsRepo: downloadsRepo}
 }
 
-// Fetch validates the request and enqueues a background yt-dlp download. It
-// returns the job id so the caller can track progress through the jobs API.
-func (s *Service) Fetch(request FetchRequestDto) (int, error) {
+// Fetch validates the request, records it as a queued download and enqueues a
+// background yt-dlp job for it, all in one transaction. It returns the job id
+// to track progress and the id of the recorded download.
+func (s *Service) Fetch(request FetchRequestDto) (FetchResponseDto, error) {
 	rawURL := strings.TrimSpace(request.URL)
 	if len(rawURL) > MaxURLLength {
-		return 0, ErrURLTooLong
+		return FetchResponseDto{}, ErrURLTooLong
 	}
 	if !isFetchableURL(rawURL) {
-		return 0, ErrInvalidURL
+		return FetchResponseDto{}, ErrInvalidURL
 	}
 	if _, ok := ResolvePreset(request.Preset); !ok {
-		return 0, ErrInvalidPreset
+		return FetchResponseDto{}, ErrInvalidPreset
 	}
-	outputDir, err := resolveTarget(roots.Enabled(), request.TargetRoot, request.Subfolder)
+	enabledRoots := roots.Enabled()
+	outputDir, err := resolveTarget(enabledRoots, request.TargetRoot, request.Subfolder)
 	if err != nil {
-		return 0, err
+		return FetchResponseDto{}, err
 	}
-	if s.jobsRepo == nil {
-		return 0, ErrJobsUnavailable
+	if s.jobsRepo == nil || s.downloadsRepo == nil {
+		return FetchResponseDto{}, ErrJobsUnavailable
+	}
+	targetRoot := findRootByPath(enabledRoots, request.TargetRoot)
+	subfolder, err := relativeSubfolder(targetRoot.Path, outputDir)
+	if err != nil {
+		return FetchResponseDto{}, err
 	}
 
-	stepPayload, err := json.Marshal(RemoteFetchStepPayload{
-		URL:       rawURL,
-		Preset:    request.Preset,
-		OutputDir: outputDir,
-		Binary:    resolveYtDlpBinary(),
-	})
-	if err != nil {
-		return 0, err
-	}
 	scope, err := json.Marshal(map[string]any{"url": rawURL, "preset": request.Preset, "target": outputDir})
 	if err != nil {
-		return 0, err
+		return FetchResponseDto{}, err
 	}
 
-	var jobID int
+	var response FetchResponseDto
 	err = database.ExecOptionalTx(s.jobsRepo.GetDbContext(), func(tx *sql.Tx) error {
 		created, createErr := s.jobsRepo.CreateJob(tx, jobs.JobModel{
 			Type:            remoteFetchJobType,
@@ -77,6 +76,27 @@ func (s *Service) Fetch(request FetchRequestDto) (int, error) {
 		})
 		if createErr != nil {
 			return createErr
+		}
+		downloadID, recordErr := s.downloadsRepo.CreateQueuedDownload(tx, QueuedDownload{
+			JobID:          created.ID,
+			URL:            rawURL,
+			Preset:         request.Preset,
+			TargetRootID:   targetRoot.ID,
+			TargetRootName: targetRoot.Label,
+			Subfolder:      subfolder,
+		})
+		if recordErr != nil {
+			return recordErr
+		}
+		stepPayload, payloadErr := json.Marshal(RemoteFetchStepPayload{
+			DownloadID: downloadID,
+			URL:        rawURL,
+			Preset:     request.Preset,
+			OutputDir:  outputDir,
+			Binary:     resolveYtDlpBinary(),
+		})
+		if payloadErr != nil {
+			return payloadErr
 		}
 		_, stepErr := s.jobsRepo.CreateStep(tx, jobs.StepModel{
 			JobID:       created.ID,
@@ -91,13 +111,34 @@ func (s *Service) Fetch(request FetchRequestDto) (int, error) {
 		if stepErr != nil {
 			return stepErr
 		}
-		jobID = created.ID
+		response = FetchResponseDto{JobID: created.ID, DownloadID: downloadID}
 		return nil
 	})
 	if err != nil {
-		return 0, err
+		return FetchResponseDto{}, err
 	}
-	return jobID, nil
+	return response, nil
+}
+
+func findRootByPath(enabled []roots.Root, rawPath string) roots.Root {
+	cleanPath := filepath.Clean(strings.TrimSpace(rawPath))
+	for _, root := range enabled {
+		if root.Path == cleanPath {
+			return root
+		}
+	}
+	return roots.Root{}
+}
+
+func relativeSubfolder(rootPath, outputDir string) (string, error) {
+	relative, err := filepath.Rel(rootPath, outputDir)
+	if err != nil {
+		return "", ErrInvalidSubfolder
+	}
+	if relative == "." {
+		return "", nil
+	}
+	return relative, nil
 }
 
 // ListTargets exposes the enabled storage roots as save destinations.

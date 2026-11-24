@@ -11,16 +11,16 @@ import (
 )
 
 type fakeService struct {
-	fetchID       int
+	fetchResponse FetchResponseDto
 	fetchErr      error
 	targets       []TargetDto
 	presets       []PresetDto
 	capturedFetch *FetchRequestDto
 }
 
-func (s *fakeService) Fetch(req FetchRequestDto) (int, error) {
+func (s *fakeService) Fetch(req FetchRequestDto) (FetchResponseDto, error) {
 	s.capturedFetch = &req
-	return s.fetchID, s.fetchErr
+	return s.fetchResponse, s.fetchErr
 }
 func (s *fakeService) ListTargets() []TargetDto { return s.targets }
 func (s *fakeService) ListPresets() []PresetDto { return s.presets }
@@ -44,7 +44,7 @@ func doRequest(router *gin.Engine, method, path, body string) *httptest.Response
 }
 
 func TestFetchHandlerSuccess(t *testing.T) {
-	router := newTestRouter(&fakeService{fetchID: 7})
+	router := newTestRouter(&fakeService{fetchResponse: FetchResponseDto{JobID: 7, DownloadID: 12}})
 	rec := doRequest(router, http.MethodPost, "/ingest/fetch", `{"url":"https://x.test/v","preset":"audio_mp3","target_root":"/srv","subfolder":"m"}`)
 
 	if rec.Code != http.StatusAccepted {
@@ -54,8 +54,8 @@ func TestFetchHandlerSuccess(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if resp.JobID != 7 {
-		t.Fatalf("expected job id 7, got %d", resp.JobID)
+	if resp.JobID != 7 || resp.DownloadID != 12 {
+		t.Fatalf("expected job_id 7 and download_id 12, got %+v", resp)
 	}
 }
 
@@ -64,7 +64,7 @@ func TestFetchHandlerSuccess(t *testing.T) {
 // and asserts every field. A json tag drift fails here instead of silently
 // dropping a field of the download request in production.
 func TestFetchHandlerDecodesPayload(t *testing.T) {
-	service := &fakeService{fetchID: 7}
+	service := &fakeService{fetchResponse: FetchResponseDto{JobID: 7, DownloadID: 12}}
 	router := newTestRouter(service)
 
 	rec := doRequest(router, http.MethodPost, "/ingest/fetch", `{"url":"https://x.test/v","preset":"audio_mp3","target_root":"/srv","subfolder":"musicas"}`)

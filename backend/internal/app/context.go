@@ -292,8 +292,8 @@ type IngestContext struct {
 // (enqueued as a background yt-dlp job) plus the yt-dlp binary lifecycle
 // (version status, verified manual update, and the update-available checker
 // that raises a notification).
-func newIngestContext(jobsRepository jobs.RepositoryInterface, notifier ingest.Notifier) *IngestContext {
-	service := ingest.NewService(jobsRepository)
+func newIngestContext(jobsRepository jobs.RepositoryInterface, downloadRepository *ingest.DownloadRepository, notifier ingest.Notifier) *IngestContext {
+	service := ingest.NewService(jobsRepository, downloadRepository)
 	ytdlp := ingest.NewYtDlpService()
 	return &IngestContext{
 		Handler:      ingest.NewHandler(service),
@@ -345,7 +345,7 @@ func NewContext(db *sql.DB) *AppContext {
 	emailContext := newEmailContext(dbContext, jobsContext.Repository, aiService)
 	takeoutContext := newTakeoutContext(dbContext, loggerService, librariesContext.Service, jobsContext.Repository, notificationContext.Service)
 	distributionContext := newDistributionContext()
-	ingestContext := newIngestContext(jobsContext.Repository, notificationContext.Service)
+	ingestContext := newIngestContext(jobsContext.Repository, ingest.NewDownloadRepository(dbContext), notificationContext.Service)
 	updateService := updater.NewService()
 	updateHandler := updater.NewHandler(updateService, loggerService)
 	assistantAgent := buildAssistantAgent(aiService, searchContext.Service)

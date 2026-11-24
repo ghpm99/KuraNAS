@@ -9,7 +9,7 @@ import (
 
 // ServiceInterface is the mocking boundary the handler depends on.
 type ServiceInterface interface {
-	Fetch(request FetchRequestDto) (int, error)
+	Fetch(request FetchRequestDto) (FetchResponseDto, error)
 	ListTargets() []TargetDto
 	ListPresets() []PresetDto
 }
@@ -27,4 +27,9 @@ type jobEnqueuer interface {
 	GetDbContext() *database.DbContext
 	CreateJob(tx *sql.Tx, job jobs.JobModel) (jobs.JobModel, error)
 	CreateStep(tx *sql.Tx, step jobs.StepModel) (jobs.StepModel, error)
+}
+
+// downloadRecorder persists the download request inside the enqueue transaction.
+type downloadRecorder interface {
+	CreateQueuedDownload(tx *sql.Tx, download QueuedDownload) (int, error)
 }

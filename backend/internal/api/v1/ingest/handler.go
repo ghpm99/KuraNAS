@@ -26,7 +26,7 @@ func (h *Handler) FetchHandler(c *gin.Context) {
 		return
 	}
 
-	jobID, err := h.service.Fetch(request)
+	fetchResponse, err := h.service.Fetch(request)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidURL):
@@ -48,7 +48,7 @@ func (h *Handler) FetchHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusAccepted, FetchResponseDto{JobID: jobID})
+	c.JSON(http.StatusAccepted, fetchResponse)
 }
 
 // GetTargetsHandler lists the enabled storage roots a download can be saved to.

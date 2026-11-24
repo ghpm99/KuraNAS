@@ -39,6 +39,15 @@ func (r *fakeJobsRepo) CreateStep(tx *sql.Tx, step jobs.StepModel) (jobs.StepMod
 	return step, nil
 }
 
+type fakeDownloadsRepo struct {
+	recorded QueuedDownload
+}
+
+func (r *fakeDownloadsRepo) CreateQueuedDownload(tx *sql.Tx, download QueuedDownload) (int, error) {
+	r.recorded = download
+	return 9, nil
+}
+
 func seedRoot(t *testing.T) roots.Root {
 	t.Helper()
 	root := roots.Root{ID: 1, Path: filepath.Clean(t.TempDir()), Label: "Midia", Enabled: true}
@@ -50,9 +59,10 @@ func seedRoot(t *testing.T) roots.Root {
 func TestFetchSuccessEnqueuesJobAndStep(t *testing.T) {
 	root := seedRoot(t)
 	repo := &fakeJobsRepo{}
-	service := NewService(repo)
+	downloads := &fakeDownloadsRepo{}
+	service := NewService(repo, downloads)
 
-	jobID, err := service.Fetch(FetchRequestDto{
+	response, err := service.Fetch(FetchRequestDto{
 		URL:        "https://youtu.be/abc123",
 		Preset:     "audio_mp3",
 		TargetRoot: root.Path,
@@ -61,8 +71,8 @@ func TestFetchSuccessEnqueuesJobAndStep(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Fetch returned error: %v", err)
 	}
-	if jobID != 42 {
-		t.Fatalf("expected job id 42, got %d", jobID)
+	if response.JobID != 42 || response.DownloadID != 9 {
+		t.Fatalf("expected job 42 and download 9, got %+v", response)
 	}
 	if repo.createdJob.Type != remoteFetchJobType {
 		t.Fatalf("expected job type %q, got %q", remoteFetchJobType, repo.createdJob.Type)
@@ -79,6 +89,13 @@ func TestFetchSuccessEnqueuesJobAndStep(t *testing.T) {
 	if payload.OutputDir != wantDir {
 		t.Fatalf("expected output dir %q, got %q", wantDir, payload.OutputDir)
 	}
+	wantRecord := QueuedDownload{JobID: 42, URL: "https://youtu.be/abc123", Preset: "audio_mp3", TargetRootID: root.ID, TargetRootName: root.Label, Subfolder: "musicas"}
+	if downloads.recorded != wantRecord {
+		t.Fatalf("recorded %+v, want %+v", downloads.recorded, wantRecord)
+	}
+	if payload.DownloadID != 9 {
+		t.Fatalf("expected download id 9 in payload, got %d", payload.DownloadID)
+	}
 	if payload.Binary == "" {
 		t.Fatalf("expected a binary in the payload")
 	}
@@ -86,7 +103,7 @@ func TestFetchSuccessEnqueuesJobAndStep(t *testing.T) {
 
 func TestFetchValidationErrors(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(&fakeJobsRepo{})
+	service := NewService(&fakeJobsRepo{}, &fakeDownloadsRepo{})
 
 	cases := []struct {
 		name    string
@@ -110,7 +127,7 @@ func TestFetchValidationErrors(t *testing.T) {
 
 func TestFetchJobsUnavailable(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(nil)
+	service := NewService(nil, nil)
 	_, err := service.Fetch(FetchRequestDto{URL: "https://x.test/v", Preset: "audio_mp3", TargetRoot: root.Path})
 	if !errors.Is(err, ErrJobsUnavailable) {
 		t.Fatalf("expected ErrJobsUnavailable, got %v", err)
@@ -119,7 +136,7 @@ func TestFetchJobsUnavailable(t *testing.T) {
 
 func TestFetchPropagatesRepoError(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(&fakeJobsRepo{jobErr: errors.New("db down")})
+	service := NewService(&fakeJobsRepo{jobErr: errors.New("db down")}, &fakeDownloadsRepo{})
 	if _, err := service.Fetch(FetchRequestDto{URL: "https://x.test/v", Preset: "audio_mp3", TargetRoot: root.Path}); err == nil {
 		t.Fatal("expected an error when CreateJob fails")
 	}
@@ -161,7 +178,7 @@ func TestResolveTarget(t *testing.T) {
 
 func TestListTargetsAndPresets(t *testing.T) {
 	root := seedRoot(t)
-	service := NewService(&fakeJobsRepo{})
+	service := NewService(&fakeJobsRepo{}, &fakeDownloadsRepo{})
 
 	targets := service.ListTargets()
 	if len(targets) != 1 || targets[0].Path != root.Path {
@@ -191,7 +208,7 @@ func TestResolvePresetUnknown(t *testing.T) {
 func TestFetchRejectsAURLBeyondTheMaximumLength(t *testing.T) {
 	oversizedURL := "https://x.test/" + strings.Repeat("a", MaxURLLength)
 
-	_, err := NewService(nil).Fetch(FetchRequestDto{URL: oversizedURL, Preset: "audio_mp3"})
+	_, err := NewService(nil, nil).Fetch(FetchRequestDto{URL: oversizedURL, Preset: "audio_mp3"})
 
 	if !errors.Is(err, ErrURLTooLong) {
 		t.Fatalf("expected ErrURLTooLong, got %v", err)

@@ -248,6 +248,9 @@ var AddDocumentTextIndexStateQuery string
 //go:embed queries/0079_add_capture_failure_reason.sql
 var AddCaptureFailureReasonQuery string
 
+//go:embed queries/0080_create_ingest_download_table.sql
+var CreateIngestDownloadTableQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -580,4 +583,10 @@ func takeoutMigrationList() {
 
 	addMigration("0075_create_takeout_photo_sidecar",
 		defaultMigrationFunc(CreateTakeoutPhotoSidecarQuery))
+}
+
+func ingestMigrationList() {
+	addMigrationRequiring("0080_create_ingest_download_table",
+		[]string{"0016_create_worker_job_tables"},
+		defaultMigrationFunc(CreateIngestDownloadTableQuery))
 }

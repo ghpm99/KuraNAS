@@ -105,6 +105,7 @@ func initMigrationList() {
 	storageRootsMigrationList()
 	emailMigrationList()
 	takeoutMigrationList()
+	ingestMigrationList()
 }
 
 // migrationRunLockKey identifies the advisory lock that serializes migration

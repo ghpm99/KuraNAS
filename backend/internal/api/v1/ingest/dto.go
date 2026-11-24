@@ -12,7 +12,8 @@ type FetchRequestDto struct {
 // FetchResponseDto is returned by POST /ingest/fetch. The download runs in a
 // background job; the caller tracks progress through the jobs API.
 type FetchResponseDto struct {
-	JobID int `json:"job_id"`
+	JobID      int `json:"job_id"`
+	DownloadID int `json:"download_id"`
 }
 
 // TargetDto is one enabled storage root the download can be saved into.
