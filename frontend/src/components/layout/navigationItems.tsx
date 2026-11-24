@@ -3,6 +3,7 @@ import {
     BookImage,
     Bot,
     DownloadCloud,
+    FileText,
     Film,
     House,
     Info,
@@ -71,6 +72,12 @@ export const navigationItems: NavigationItem[] = [
         icon: <Videotape size={20} />,
         labelKey: 'NAV_VIDEOS',
         descriptionKey: 'VIDEO_SECTION_HOME_DESCRIPTION',
+    },
+    {
+        href: appRoutes.documents,
+        icon: <FileText size={20} />,
+        labelKey: 'NAV_DOCUMENTS',
+        descriptionKey: 'DOCUMENTS_PAGE_DESCRIPTION',
     },
     {
         href: appRoutes.assistant,

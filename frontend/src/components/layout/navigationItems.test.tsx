@@ -17,6 +17,15 @@ describe('navigationItems', () => {
         expect(vacuumItem?.descriptionKey).toBe('VACUUM_PAGE_DESCRIPTION');
     });
 
+    it('lists documents right after videos with its own translation keys', () => {
+        const itemRoutes = navigationItems.map((item) => item.href);
+        const documentsPosition = itemRoutes.indexOf(appRoutes.documents);
+
+        expect(itemRoutes[documentsPosition - 1]).toBe(appRoutes.videos);
+        expect(navigationItems[documentsPosition]?.labelKey).toBe('NAV_DOCUMENTS');
+        expect(navigationItems[documentsPosition]?.descriptionKey).toBe('DOCUMENTS_PAGE_DESCRIPTION');
+    });
+
     it('has no repeated destination', () => {
         const itemRoutes = navigationItems.map((item) => item.href);
 

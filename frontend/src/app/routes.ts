@@ -13,6 +13,7 @@ export const appRoutes = {
     images: '/images',
     music: '/music',
     videos: '/videos',
+    documents: '/documents',
     assistant: '/assistant',
     takeout: '/takeout',
     captures: '/captures',
