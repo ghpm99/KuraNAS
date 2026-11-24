@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { searchDocuments } from '@/service/documents';
 import type { DocumentSearchResult } from '@/service/documents';
 import { extractBackendErrorMessage } from '@/features/files/fileActions/bulkOutcome';
+import { getNextPageNumber } from '@/shared/pagination/getNextPageNumber';
 import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { listingStaleTimeMs } from '@/components/providers/queryFreshness';
 
@@ -23,8 +24,7 @@ const useDocumentSearchResults = ({ query, isEnabled }: DocumentSearchScope) => 
                 signal,
             }),
         initialPageParam: 1,
-        getNextPageParam: (lastPage) =>
-            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
+        getNextPageParam: getNextPageNumber,
         enabled: isEnabled && query !== '',
         staleTime: listingStaleTimeMs,
     });

@@ -4,7 +4,7 @@ import { getDuplicateGroupsPage } from '@/service/analytics';
 import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import type { DuplicateCategory, DuplicateGroupDetail } from '@/types/analytics';
-import { getNextPageNumber } from '@/components/analytics/getNextPageNumber';
+import { getNextPageNumber } from '@/shared/pagination/getNextPageNumber';
 
 const duplicateGroupsPageSize = 50;
 

@@ -4,7 +4,7 @@ import type { FileData } from '@/features/files/providers/fileProvider/fileConte
 import { getLargestFilesPage } from '@/service/files';
 import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
-import { getNextPageNumber } from '@/components/analytics/getNextPageNumber';
+import { getNextPageNumber } from '@/shared/pagination/getNextPageNumber';
 
 const largestFilesPageSize = 50;
 

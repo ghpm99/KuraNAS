@@ -13,6 +13,7 @@ const documentResult: DocumentSearchResult = {
     size: 1536,
     updated_at: '2026-03-04T10:00:00Z',
     snippet: 'definiu o orcamento anual',
+    page: null,
 };
 
 const renderResults = (props: React.ComponentProps<typeof DocumentSearchResults>) =>
