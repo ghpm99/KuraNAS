@@ -433,6 +433,7 @@
 	"ERROR_DOCUMENT_SEARCH_FAILED": "Failed to search document contents.",
 	"ERROR_DOCUMENT_NOT_FOUND": "Document not found.",
 	"ERROR_DOCUMENT_INDEX_STATE_FAILED": "Failed to read the document indexing state.",
+	"ERROR_DOCUMENT_TEXT_FAILED": "Failed to read the document text.",
 	"ERROR_DOCUMENT_LIST_FAILED": "Failed to list documents.",
 	"ERROR_DOCUMENT_INVALID_FORMAT": "Invalid document format filter",
 	"ERROR_DOCUMENT_INVALID_FOLDER": "Invalid folder filter",

@@ -433,6 +433,7 @@
 	"ERROR_DOCUMENT_SEARCH_FAILED": "Falha ao buscar no conteúdo dos documentos.",
 	"ERROR_DOCUMENT_NOT_FOUND": "Documento não encontrado.",
 	"ERROR_DOCUMENT_INDEX_STATE_FAILED": "Falha ao consultar a situação da indexação do documento.",
+	"ERROR_DOCUMENT_TEXT_FAILED": "Falha ao ler o texto do documento.",
 	"ERROR_DOCUMENT_LIST_FAILED": "Falha ao listar os documentos.",
 	"ERROR_DOCUMENT_INVALID_FORMAT": "Filtro de formato de documento inválido",
 	"ERROR_DOCUMENT_INVALID_FOLDER": "Filtro de pasta inválido",
