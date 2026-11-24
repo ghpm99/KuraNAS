@@ -204,6 +204,7 @@ type VideoContext struct {
 	Handler            *video.Handler
 	SummaryHandler     *video.VideoSummaryHandler
 	AudioTrackHandler  *video.AudioTrackHandler
+	RemuxStartHandler  *video.RemuxStartHandler
 	RemuxHandler       *video.RemuxHandler
 	TranscodeHandler   *video.TranscodeHandler
 	SubtitleHandler    *video.SubtitleHandler
@@ -561,6 +562,7 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	transcodeHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	return &VideoContext{
 		AudioTrackHandler:  video.NewAudioTrackHandler(filesService, audioTrackService),
+		RemuxStartHandler:  video.NewFFprobeRemuxStartHandler(filesService),
 		RemuxHandler:       remuxHandler,
 		TranscodeHandler:   transcodeHandler,
 		SubtitleHandler:    subtitleHandler,

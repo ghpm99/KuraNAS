@@ -443,6 +443,9 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Video.AudioTrackHandler != nil {
 		router.GET("/video/metadata/:file_id/audio-tracks", context.Video.AudioTrackHandler.ListAudioTracksHandler)
 	}
+	if context.Video.RemuxStartHandler != nil {
+		router.GET("/video/stream/:file_id/remux/start", context.Video.RemuxStartHandler.GetRemuxStartHandler)
+	}
 	if context.Video.RemuxHandler != nil {
 		router.GET("/video/stream/:file_id/remux", context.Video.RemuxHandler.StreamRemuxedVideoHandler)
 	}

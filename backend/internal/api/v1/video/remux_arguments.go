@@ -17,7 +17,7 @@ func IsRemuxableVideoCodec(codecName string) bool {
 func BuildRemuxArguments(sourcePath string, startSeconds float64, audioStreamIndex int) []string {
 	arguments := []string{"-hide_banner", "-loglevel", "error"}
 	if startSeconds > 0 {
-		arguments = append(arguments, "-ss", formatSeconds(startSeconds))
+		arguments = append(arguments, "-ss", formatSeconds(startSeconds+remuxKeyframeSeekNudgeSeconds))
 	}
 	arguments = append(arguments, "-i", sourcePath, "-map", "0:v:0")
 	arguments = append(arguments, buildAudioMapArguments(audioStreamIndex)...)

@@ -77,7 +77,7 @@ func TestRemuxHandlerPipesRunnerOutputWithFragmentedMp4Arguments(t *testing.T) {
 		t.Fatalf("unexpected headers %v", recorder.Header())
 	}
 	joinedArguments := strings.Join(receivedArguments, " ")
-	expectedFragments := []string{"-ss 12.500 -i ", "-map 0:v:0", "-map 0:a:0?", "-c copy", "-movflags frag_keyframe+empty_moov+default_base_moof", "-f mp4", "pipe:1"}
+	expectedFragments := []string{"-ss 13.000 -i ", "-map 0:v:0", "-map 0:a:0?", "-c copy", "-movflags frag_keyframe+empty_moov+default_base_moof", "-f mp4", "pipe:1"}
 	for _, fragment := range expectedFragments {
 		if !strings.Contains(joinedArguments, fragment) {
 			t.Fatalf("missing %q in ffmpeg arguments %s", fragment, joinedArguments)
