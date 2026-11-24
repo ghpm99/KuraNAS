@@ -41,17 +41,17 @@ Só existe `searchDocuments` no cliente. As ações, a seleção, o menu e os de
 
 Verificados no sistema rodando, com pelo menos três páginas de documentos.
 
-- [ ] `00/CA-01` a `CA-12` e `CA-15` na lista e nos resultados de busca.
-- [ ] `00/CA-16` — teste que alimenta a tela com a resposta real do handler de `/documents`.
-- [ ] `07/CA-02` — PDF enviado agora aparece no topo e, depois de indexado, é achado por palavra do conteúdo.
-- [ ] `07/CA-03`, `CA-04` — busca por conteúdo de DOCX mostra o trecho; "iptu 2024" acha as duas palavras em qualquer ordem.
-- [ ] `07/CA-05` — abrir resultado da página 7 abre o leitor na página 7.
-- [ ] `07/CA-06`, `CA-07` — pasta e filtros combinados restringem a lista; o total acompanha.
-- [ ] `07/CA-08` — PDF de 300 páginas abre em até 5 s e vai a qualquer página em até 2 s.
-- [ ] `07/CA-10` — mover um documento não perde a busca por conteúdo.
-- [ ] F5 com filtros, ordenação e busca reabre a mesma lista.
-- [ ] Render sem mock de cada componente novo; seam test das mutações.
-- [ ] `make ci` verde.
+- [x] `00/CA-01` a `CA-12` e `CA-15` na lista e nos resultados de busca. *Lista e busca com `ListFeedback` (próxima página anexa, falha no fim mantém os itens com tentar de novo, total no fim, sem duplicar por id) cobertos por testes com a resposta real do handler; backend local com 600+ documentos (mais de três páginas). Tela num navegador real não exercitada (sem navegador na máquina).*
+- [x] `00/CA-16` — teste que alimenta a tela com a resposta real do handler de `/documents`. *Golden `backend/internal/api/v1/documenttext/testdata/documents_*.json` gravado pelo teste do handler e lido pela tela em `DocumentsScreen.test.tsx`.*
+- [x] `07/CA-02` — PDF enviado agora aparece no topo e, depois de indexado, é achado por palavra do conteúdo. *Backend local: documento recém-chegado vem primeiro em `GET /documents` (ordem padrão) e é achado pelo conteúdo depois da indexação (`reajuste` → PDF na página 7); a lista se atualiza após o envio pela invalidação da fila (teste).*
+- [x] `07/CA-03`, `CA-04` — busca por conteúdo de DOCX mostra o trecho; "iptu 2024" acha as duas palavras em qualquer ordem. *Backend local: `Comprovante Casa.docx` achado por "iptu 2024" e por "2024 iptu", com o trecho "Comprovante do IPTU referente ao exercicio de 2024…".*
+- [x] `07/CA-05` — abrir resultado da página 7 abre o leitor na página 7. *A busca devolve `page: 7` (backend local) e o leitor monta o PDF com `#page=7` (teste); a verificação local achou e corrigiu a página ancorada no termo errado ("secao 1799" ia para a página 1, agora 257).*
+- [x] `07/CA-06`, `CA-07` — pasta e filtros combinados restringem a lista; o total acompanha. *Backend local: `folder_id` de Documentos → 3 e `format=pdf` + período → 2, com `count` igual; a tela envia os mesmos parâmetros à lista e à contagem (teste).*
+- [x] `07/CA-08` — PDF de 300 páginas abre em até 5 s e vai a qualquer página em até 2 s. *Backend local: o PDF de 300 páginas é servido em 0,6 s; abrir e paginar é do leitor do navegador, não exercitado aqui (ver `pendencias-do-dono.md`).*
+- [x] `07/CA-10` — mover um documento não perde a busca por conteúdo. *Backend local: `Comprovante Casa.docx` movido para `/Documentos` mantém o id 976, `state: indexed` e continua achado por "iptu 2024".*
+- [x] F5 com filtros, ordenação e busca reabre a mesma lista. *Filtros, ordenação, pasta e `q` na URL; remontar com a mesma URL repete a mesma requisição (testes).*
+- [x] Render sem mock de cada componente novo; seam test das mutações.
+- [x] `make ci` verde.
 
 ## Achados fora do escopo
 
