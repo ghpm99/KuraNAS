@@ -2380,5 +2380,10 @@
 	"DOCUMENTS_FOLDERS_EXPAND": "Expandir {{name}}",
 	"DOCUMENTS_FOLDERS_COLLAPSE": "Recolher {{name}}",
 	"DOCUMENTS_FOLDERS_NOT_CONFIGURED": "A pasta de documentos não está configurada. Configure-a nas configurações para filtrar por pasta.",
-	"DOCUMENTS_FOLDERS_OPEN_SETTINGS": "Abrir configurações"
+	"DOCUMENTS_FOLDERS_OPEN_SETTINGS": "Abrir configurações",
+	"DOCUMENTS_SEARCH_PLACEHOLDER": "Buscar por nome ou conteúdo",
+	"DOCUMENTS_SEARCH_RESULTS": "Resultados da busca de documentos",
+	"DOCUMENTS_SEARCH_PAGE": "Página {{page}}",
+	"DOCUMENTS_SEARCH_EMPTY_TITLE": "Nenhum documento encontrado",
+	"DOCUMENTS_SEARCH_EMPTY_DESCRIPTION": "Nenhum documento tem esse texto no nome ou no conteúdo. Tente outras palavras ou limpe os filtros."
 }
