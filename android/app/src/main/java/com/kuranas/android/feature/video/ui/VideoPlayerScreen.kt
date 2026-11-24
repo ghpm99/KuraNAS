@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.video.ui
 
+import android.content.Context
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -26,10 +27,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.annotation.OptIn
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
@@ -45,14 +48,7 @@ fun VideoPlayerScreen(
     viewModel: VideoPlayerViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    val player = remember {
-        // Capturas vêm de streams (H.264 High@L5.1); o decoder de hardware do
-        // dispositivo pode recusar o nível (NO_EXCEEDS_CAPABILITIES). O fallback
-        // permite cair para o decoder de software quando o hardware não inicializa.
-        val renderersFactory = DefaultRenderersFactory(context)
-            .setEnableDecoderFallback(true)
-        ExoPlayer.Builder(context, renderersFactory).build()
-    }
+    val player = remember { playerFallingBackToSoftwareDecoder(context) }
     var playbackError by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(player) {
@@ -152,3 +148,9 @@ private fun Player.toPlayerProgress() = PlayerProgress(
     durationMs = duration,
     isPlaying = isPlaying,
 )
+
+@OptIn(UnstableApi::class)
+private fun playerFallingBackToSoftwareDecoder(context: Context): ExoPlayer {
+    val renderersFactory = DefaultRenderersFactory(context).setEnableDecoderFallback(true)
+    return ExoPlayer.Builder(context, renderersFactory).build()
+}
