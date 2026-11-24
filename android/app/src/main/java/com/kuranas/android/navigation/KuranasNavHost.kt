@@ -45,6 +45,7 @@ import com.kuranas.android.feature.music.ui.MusicPlaylistScreen
 import com.kuranas.android.feature.music.ui.MusicScreen
 import com.kuranas.android.feature.notifications.ui.NotificationsScreen
 import com.kuranas.android.feature.search.ui.SearchScreen
+import com.kuranas.android.feature.cameraupload.ui.CameraUploadScreen
 import com.kuranas.android.feature.settings.ui.SettingsScreen
 import com.kuranas.android.feature.transfers.ui.TransfersIndicatorViewModel
 import com.kuranas.android.feature.transfers.ui.TransfersScreen
@@ -196,6 +197,12 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
         composable(AppRoute.TRANSFERS) {
             TransfersScreen(onNavigateBack = { navController.popBackStack() })
         }
+        composable(AppRoute.CAMERA_UPLOAD) {
+            CameraUploadScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOpenTransfers = { navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true } },
+            )
+        }
         composable(AppRoute.VIDEO_LIBRARY) {
             VideoLibraryScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -296,7 +303,9 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                 )
                 SwipePage.DIARY -> DiaryScreen()
                 SwipePage.NOTIFICATIONS -> NotificationsScreen()
-                SwipePage.SETTINGS -> SettingsScreen()
+                SwipePage.SETTINGS -> SettingsScreen(
+                    onOpenCameraUpload = { navController.navigate(AppRoute.CAMERA_UPLOAD) { launchSingleTop = true } },
+                )
             }
         }
             MiniPlayer(

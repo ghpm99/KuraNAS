@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.files.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,10 +89,11 @@ private fun ShareResult(phase: UploadPhase.Queued, onViewTransfers: () -> Unit, 
 }
 
 @Composable
-private fun ColumnScope.DestinationChooser(
-    selectedFileCount: Int,
+internal fun ColumnScope.DestinationChooser(
+    selectedFileCount: Int?,
     lastDestination: UploadDestination?,
     onConfirm: (UploadDestination, Boolean) -> Unit,
+    @StringRes confirmLabelRes: Int = R.string.upload_share_send_to,
     viewModel: FilesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -111,11 +113,13 @@ private fun ColumnScope.DestinationChooser(
     val subfolders = state.files.filter { it.isDir }
     LoadMoreOnNearEnd(listState, subfolders.size, state.hasMore, viewModel::loadMore)
 
-    Text(
-        pluralStringResource(R.plurals.upload_share_selected_count, selectedFileCount, selectedFileCount),
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(bottom = 8.dp),
-    )
+    if (selectedFileCount != null) {
+        Text(
+            pluralStringResource(R.plurals.upload_share_selected_count, selectedFileCount, selectedFileCount),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+    }
     if (currentFolder != null) {
         TextButton(onClick = viewModel::navigateUp) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -141,18 +145,20 @@ private fun ColumnScope.DestinationChooser(
             }
         }
     }
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable { shouldAlwaysSendHere = !shouldAlwaysSendHere },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = shouldAlwaysSendHere, onCheckedChange = { shouldAlwaysSendHere = it })
-        Text(stringResource(R.string.upload_always_send_here))
+    if (selectedFileCount != null) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { shouldAlwaysSendHere = !shouldAlwaysSendHere },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(checked = shouldAlwaysSendHere, onCheckedChange = { shouldAlwaysSendHere = it })
+            Text(stringResource(R.string.upload_always_send_here))
+        }
     }
     Button(
         onClick = { onConfirm(currentDestination, shouldAlwaysSendHere) },
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
     ) {
-        Text(stringResource(R.string.upload_share_send_to, destinationLabel(currentDestination)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(stringResource(confirmLabelRes, destinationLabel(currentDestination)), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.settings.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
@@ -46,7 +48,7 @@ import com.kuranas.android.ui.theme.StatusNegative
 import com.kuranas.android.ui.theme.StatusPositive
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onOpenCameraUpload: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showForgetDialog by remember { mutableStateOf(false) }
 
@@ -103,6 +105,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             Text(stringResource(R.string.settings_direct_upload_stop))
                         }
                     }
+                }
+            }
+
+            item {
+                Column(modifier = Modifier.fillMaxWidth().glass(GlassLevel.Flat).clickable(onClick = onOpenCameraUpload).padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Default.PhotoCamera, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                        Text(stringResource(R.string.camera_upload_entry), style = MaterialTheme.typography.titleMedium)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(stringResource(R.string.camera_upload_entry_description), style = MaterialTheme.typography.bodySmall)
                 }
             }
 
