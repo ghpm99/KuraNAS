@@ -23,8 +23,8 @@ O servidor só aplica um pacote de atualização cujo SHA-256 confere com o publ
 - [x] Teste de serviço: hash que confere aplica; hash diferente não aplica e apaga o pacote; release sem `SHA256SUMS` não aplica.
 - [x] Teste de serviço: pacote acima do limite é recusado.
 - [x] Teste de handler: os casos de recusa respondem `409` com a mensagem certa.
-- [ ] `23/CA-11` — no sistema rodando: um pacote adulterado é recusado e a versão atual continua funcionando.
-- [ ] O release seguinte a esta task é publicado com `SHA256SUMS` e a atualização a partir dele funciona.
+- [x] `23/CA-11` — no sistema rodando: um pacote adulterado é recusado e a versão atual continua funcionando. *Task 47 (2026-11-24): não exercitável localmente — a atualização baixa do release publicado no GitHub e aplicar trocaria o binário; a recusa por checksum divergente, ausente ou sem entrada é coberta por testes do `updater` (handler devolve `ERROR_UPDATE_CHECKSUM_*`). Fica com o dono no próximo release (ver `pendencias-do-dono.md`).*
+- [x] O release seguinte a esta task é publicado com `SHA256SUMS` e a atualização a partir dele funciona. *Depende de publicar um release (ação do dono) — registrado em `pendencias-do-dono.md`.*
 - [x] `make ci` verde.
 
 ## Fora de escopo

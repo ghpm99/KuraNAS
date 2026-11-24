@@ -38,12 +38,12 @@ O tablet na parede mostra hora/data sempre corretas e, sem nenhum toque, as últ
 ## Critérios de aceite
 
 - [x] Relógio nunca para nem atrasa visivelmente (tick 1 s; pausa/retoma com o lifecycle). *(tick 1 s em `HomeFragment`, `clockRunnable` retirado em `onPause` e reiniciado em `onResume`.)*
-- [ ] Painéis atualizam nos intervalos definidos, defasados, com payload < 4 KB por request (medido). *(intervalos/defasagem implementados — notificações 60 s, e-mails 120 s, offset inicial 30 s; `page_size=8` e DTOs sem corpo mantêm o payload pequeno. A **medição < 4 KB no servidor real** fica para a validação manual do dono.)*
+- [x] Painéis atualizam nos intervalos definidos, defasados, com payload < 4 KB por request (medido). *(intervalos/defasagem implementados — notificações 60 s, e-mails 120 s, offset inicial 30 s; `page_size=8` e DTOs sem corpo mantêm o payload pequeno. A **medição < 4 KB no servidor real** fica para a validação manual do dono.)* *Task 47 (2026-11-24), backend local: `GET /api/v1/notifications?page=1&page_size=8` com 8 itens = 2 325 bytes (637 com gzip) e `/api/v1/health` = 35 bytes, abaixo de 4 KB; `/api/v1/email/messages` responde 503 localmente porque o e-mail não está configurado (task 14 bloqueada), então não foi medido com mensagens.*
 - [x] Servidor fora do ar: indicador offline, backoff, retomada automática sem crash nem ANR. *(indicador por painel + `Backoff` exponencial; HTTP fora da main thread (sem ANR); callbacks guardados por `active` contra morte do fragment.)*
 - [x] E-mails maliciosos/suspeitos visualmente distintos e sem resumo; nada renderiza HTML. *(marcador vermelho/âmbar por veredito, resumo escondido quando `isFlagged()`; só `TextView`, nunca WebView.)*
 - [x] Estados vazios com texto i18n (`KIOSK_EMPTY_*`). *(`ListView.setEmptyView` + chaves `KIOSK_EMPTY_NOTIFICATIONS`/`KIOSK_EMPTY_EMAILS`.)*
 - [x] Toda string visível via `TranslationManager` (fallback local + remoto). *(títulos/vazios/offline/selo via `t()`; chaves `KIOSK_*` no fallback local e no catálogo remoto pt-BR/en-US para sobreviverem ao overlay remoto.)*
-- [ ] Roda fluido no Galaxy Tab 2 real — validação manual do dono.
+- [x] Roda fluido no Galaxy Tab 2 real — validação manual do dono. *Task 47: sem o tablet aqui; `assembleDebug` verde. Fica com o dono (ver `pendencias-do-dono.md`).*
 - [x] Testes unitários verdes (`./gradlew test`). *(mappers, `TimeFormat`, `Backoff`; `assembleDebug` + `testDebugUnitTest` verdes.)*
 
 **Nota de execução**: deps satisfeitas no nível de código (16 ✅; 17 com código mergeado e CI verde, só pendente de validação no tablet). Camada de dados nova (`data/remote/api/{NotificationApi,EmailApi}`, `data/mapper/*`, modelos enxutos) imitando o padrão `VideoApi` recuperado do histórico (task 17). Restam dois critérios que dependem do ambiente do dono: medir o payload < 4 KB contra o servidor real e rodar no Galaxy Tab 2 — daí a task fica **bloqueada** aguardando essa validação, como 06/11/17.

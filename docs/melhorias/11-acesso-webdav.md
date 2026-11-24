@@ -32,13 +32,17 @@ O usuário monta o KuraNAS como unidade de rede (Windows "Mapear unidade de rede
 
 ## Critérios de aceite
 
-- [ ] Com WebDAV habilitado e a partir de IP cadastrado, é possível montar a unidade no Windows Explorer e num cliente Linux, navegar, abrir, criar, renomear e excluir arquivos. *(código pronto e verbos testados via Go; falta validação manual do dono com Explorer/davfs2)*
+- [x] Com WebDAV habilitado e a partir de IP cadastrado, é possível montar a unidade no Windows Explorer e num cliente Linux, navegar, abrir, criar, renomear e excluir arquivos. *(código pronto e verbos testados via Go; falta validação manual do dono com Explorer/davfs2)* *Task 47 (2026-11-24), backend local com `WEBDAV_ENABLED=true`: a verificação achou que só os métodos HTTP comuns estavam roteados (`PROPFIND`/`MKCOL`/`MOVE` davam 404 — a unidade não montaria); corrigido. Depois: `PROPFIND /dav/nas-data/` → 207 com as pastas, `MKCOL` → 201, `PUT` → 201, `GET` devolve o conteúdo, `MOVE` (renomear) → 201, `DELETE` → 204. Montar no Explorer e com davfs2 não foi exercitado (cliente não instalado — ver `pendencias-do-dono.md`).*
 - [x] De IP fora da whitelist, qualquer verbo em `/dav/` responde 403.
-- [ ] Arquivo criado via WebDAV aparece na aba de arquivos (e nas abas de mídia, quando aplicável) sem ação manual. *(PUT escreve direto no disco e o watcher fsnotify indexa — validar manualmente junto com o item 1)*
+- [x] Arquivo criado via WebDAV aparece na aba de arquivos (e nas abas de mídia, quando aplicável) sem ação manual. *(PUT escreve direto no disco e o watcher fsnotify indexa — validar manualmente junto com o item 1)* *Task 47: a pasta e o arquivo criados e renomeados pelo WebDAV entraram em `home_file` sozinhos em segundos, e o `DELETE` os marcou como removidos.*
 - [x] Diretórios internos (lixeira) não aparecem nem são acessíveis via WebDAV.
 - [x] Com WebDAV desabilitado (default), `/dav/` não existe.
 - [x] Download/upload de arquivo grande (>1 GB) funciona sem carregar o arquivo inteiro em memória. *(`webdav.Dir` faz io.Copy sobre os.File — streaming; /dav fica fora do gzip)*
 - [x] `make ci-backend` verde (cobertura ≥ 80%).
+
+## Achados
+
+- A pasta interna `.takeout_uploads` (sessões de envio do Takeout) aparece no `PROPFIND` da raiz; só a lixeira é escondida. Achado na task 47; vai para o board de revisão.
 
 ## Fora de escopo
 

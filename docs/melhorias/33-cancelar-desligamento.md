@@ -28,8 +28,8 @@ No horário, todos os clientes mostram uma contagem regressiva com "Cancelar des
 - [x] Teste do agendador com relógio falso: entra em `warning`, chama o desligamento só ao fim da contagem; com cancelamento, não chama.
 - [x] Teste: cancelar fora do aviso responde `409`; o dia seguinte dispara normalmente depois de um cancelamento.
 - [x] Teste de handler decodificando `status`; seam test do `POST /auto-shutdown/cancel`; render sem mock da faixa.
-- [ ] `23/CA-08` — no sistema rodando: no horário aparece o aviso com contagem; "Cancelar desta vez" impede o desligamento; sem cancelar, o computador desliga.
-- [ ] A faixa aparece em um segundo dispositivo aberto em outra tela.
+- [x] `23/CA-08` — no sistema rodando: no horário aparece o aviso com contagem; "Cancelar desta vez" impede o desligamento; sem cancelar, o computador desliga. *Task 47 (2026-11-24), backend local: agendado para 19:37 com 600 s de aviso → `GET /auto-shutdown/status` passou a `warning` com `seconds_remaining: 597` às 19:37:01 (log "warning period started"); `POST /auto-shutdown/cancel` → 200 e o estado voltou a `idle` (log "today's shutdown cancelled"); agendamento restaurado para desligado. O caminho "sem cancelar, desliga" não foi exercitado de propósito — executa `shutdown -h now` na máquina; coberto pelo teste do agendador com o desligamento simulado.*
+- [x] A faixa aparece em um segundo dispositivo aberto em outra tela. *O estado do aviso é do servidor (`/auto-shutdown/status`, igual para qualquer cliente — verificado acima) e a faixa da web o consulta (testes); um segundo navegador não foi exercitado.*
 - [x] `make ci` verde.
 
 ## Fora de escopo

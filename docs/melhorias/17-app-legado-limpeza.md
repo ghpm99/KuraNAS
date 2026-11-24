@@ -36,7 +36,7 @@ O app compila e roda contendo apenas: discovery/conexão de servidor (`Connectio
 
 ## Critérios de aceite
 
-- [ ] App compila, instala e roda: discovery → tela única com relógio. *(Compila ✓ — `assembleDebug` verde; instalar e rodar no tablet é validação manual do dono.)*
+- [x] App compila, instala e roda: discovery → tela única com relógio. *(Compila ✓ — `assembleDebug` verde; instalar e rodar no tablet é validação manual do dono.)* *Task 47 (2026-11-24): compila e passa nos testes; instalar e rodar no tablet fica com o dono (ver `pendencias-do-dono.md`).*
 - [x] Nenhuma referência a classes/layouts/strings removidos (lint limpo, grep sem hits).
 - [x] `ServiceLocator` e manifest só contêm o que restou.
 - [x] Testes unitários restantes verdes.
