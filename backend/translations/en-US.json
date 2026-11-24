@@ -798,6 +798,8 @@
 	"ERROR_VIDEO_SUBTITLE_TOO_LARGE": "Subtitle file is too large",
 	"ERROR_VIDEO_SUBTITLE_UNSUPPORTED": "File is not a supported subtitle",
 	"ERROR_VIDEO_PLAYBACK_NOT_FOUND": "No active playback session found",
+	"ERROR_VIDEO_INVALID_AUDIO_STREAM": "The given audio stream does not exist in this video",
+	"ERROR_VIDEO_AUDIO_TRACKS_UNAVAILABLE": "ffprobe is not available on the server, audio track listing is unavailable",
 	"ERROR_VIDEO_INVALID_REQUEST": "Invalid video request",
 	"ERROR_VIDEO_INVALID_LIBRARY_FILTER": "Invalid video library filter",
 	"ERROR_VIDEO_OPERATION_FAILED": "Failed to process video request",

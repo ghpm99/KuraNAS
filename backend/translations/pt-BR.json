@@ -798,6 +798,8 @@
 	"ERROR_VIDEO_SUBTITLE_TOO_LARGE": "Arquivo de legenda grande demais",
 	"ERROR_VIDEO_SUBTITLE_UNSUPPORTED": "O arquivo nao e uma legenda suportada",
 	"ERROR_VIDEO_PLAYBACK_NOT_FOUND": "Nenhuma sessao de reproducao ativa encontrada",
+	"ERROR_VIDEO_INVALID_AUDIO_STREAM": "O stream de audio informado nao existe neste video",
+	"ERROR_VIDEO_AUDIO_TRACKS_UNAVAILABLE": "O ffprobe nao esta disponivel no servidor, a listagem de faixas de audio esta indisponivel",
 	"ERROR_VIDEO_INVALID_REQUEST": "Requisicao de video invalida",
 	"ERROR_VIDEO_INVALID_LIBRARY_FILTER": "Filtro inválido na biblioteca de vídeos",
 	"ERROR_VIDEO_OPERATION_FAILED": "Falha ao processar a requisicao de video",
