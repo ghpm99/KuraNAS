@@ -329,4 +329,12 @@
     <string name="access_denied_ip_unknown">O servidor não informou o IP deste aparelho.</string>
     <string name="access_denied_copy_ip">Copiar IP</string>
     <string name="access_denied_retry">Tentar de novo</string>
+    <string name="nav_documents">Documentos</string>
+    <string name="documents_empty_state">Nenhum documento ainda</string>
+    <string name="documents_starred">Favorito</string>
+    <string name="documents_size_and_date">%1$s · %2$s</string>
+    <plurals name="documents_total">
+        <item quantity="one">%d documento</item>
+        <item quantity="other">%d documentos</item>
+    </plurals>
 </resources>

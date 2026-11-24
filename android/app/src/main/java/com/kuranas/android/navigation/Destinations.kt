@@ -49,6 +49,7 @@ object AppRoute {
     const val MUSIC = "music"
     const val VIDEO = "video"
     const val MORE = "more"
+    const val DOCUMENTS = "documents"
     const val FAVORITES = "favorites"
     const val SEARCH = "search"
     const val TRASH = "trash"

@@ -331,4 +331,12 @@
     <string name="access_denied_ip_unknown">The server did not report this device\'s IP.</string>
     <string name="access_denied_copy_ip">Copy IP</string>
     <string name="access_denied_retry">Try again</string>
+    <string name="nav_documents">Documents</string>
+    <string name="documents_empty_state">No documents yet</string>
+    <string name="documents_starred">Favorite</string>
+    <string name="documents_size_and_date">%1$s · %2$s</string>
+    <plurals name="documents_total">
+        <item quantity="one">%d document</item>
+        <item quantity="other">%d documents</item>
+    </plurals>
 </resources>

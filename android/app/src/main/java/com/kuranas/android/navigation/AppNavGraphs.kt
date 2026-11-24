@@ -15,6 +15,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.kuranas.android.feature.cameraupload.ui.CameraUploadScreen
 import com.kuranas.android.feature.diary.ui.DiaryScreen
+import com.kuranas.android.feature.documents.ui.DocumentsScreen
 import com.kuranas.android.feature.files.ui.FOLDER_ID_ARGUMENT
 import com.kuranas.android.feature.files.ui.FOLDER_NAME_ARGUMENT
 import com.kuranas.android.feature.files.ui.FavoritesScreen
@@ -192,6 +193,7 @@ private fun NavGraphBuilder.videoGraph(navController: NavHostController) {
 private fun NavGraphBuilder.moreGraph(navController: NavHostController) {
     navigation(startDestination = BottomTab.MORE.startRoute, route = BottomTab.MORE.graphRoute) {
         composable(AppRoute.MORE) { MoreDestination(navController) }
+        composable(AppRoute.DOCUMENTS) { DocumentsScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.FAVORITES) {
             FavoritesScreen(
                 onNavigateBack = { navController.popBackStack() },

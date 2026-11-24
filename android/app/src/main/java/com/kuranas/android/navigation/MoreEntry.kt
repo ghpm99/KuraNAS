@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.kuranas.android.R
 
 enum class MoreEntry(val route: String, @StringRes val labelRes: Int, val icon: ImageVector) {
+    DOCUMENTS(AppRoute.DOCUMENTS, R.string.nav_documents, Icons.Filled.Description),
     FAVORITES(AppRoute.FAVORITES, R.string.nav_favorites, Icons.Filled.Star),
     SEARCH(AppRoute.SEARCH, R.string.nav_search, Icons.Filled.Search),
     TRANSFERS(AppRoute.TRANSFERS, R.string.nav_transfers, Icons.Filled.SwapVert),

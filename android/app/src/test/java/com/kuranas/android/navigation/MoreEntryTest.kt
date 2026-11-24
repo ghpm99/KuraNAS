@@ -9,6 +9,7 @@ class MoreEntryTest {
     fun `more lists only existing screens in the specified order`() {
         assertEquals(
             listOf(
+                AppRoute.DOCUMENTS,
                 AppRoute.FAVORITES,
                 AppRoute.SEARCH,
                 AppRoute.TRANSFERS,
