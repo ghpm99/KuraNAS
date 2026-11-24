@@ -30,7 +30,7 @@ func capturingRunner(receivedArguments *[]string) RemuxRunner {
 }
 
 func TestBuildTranscodeArgumentsUsesH264AacFragmentedMp4(t *testing.T) {
-	joinedArguments := strings.Join(BuildTranscodeArguments("/media/movie.mkv", 12.5, 0, 2160), " ")
+	joinedArguments := strings.Join(BuildTranscodeArguments("/media/movie.mkv", 12.5, 0, 2160, defaultAudioStreamIndex), " ")
 
 	expectedFragments := []string{
 		"-ss 12.500 -i /media/movie.mkv", "-map 0:v:0", "-map 0:a:0?",
@@ -46,7 +46,7 @@ func TestBuildTranscodeArgumentsUsesH264AacFragmentedMp4(t *testing.T) {
 }
 
 func TestBuildTranscodeArgumentsOmitsSeekWhenStartIsZero(t *testing.T) {
-	if strings.Contains(strings.Join(BuildTranscodeArguments("/a.mkv", 0, 0, 720), " "), "-ss") {
+	if strings.Contains(strings.Join(BuildTranscodeArguments("/a.mkv", 0, 0, 720, defaultAudioStreamIndex), " "), "-ss") {
 		t.Fatal("unexpected -ss")
 	}
 }

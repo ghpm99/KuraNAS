@@ -32,6 +32,7 @@ type RemuxHandler struct {
 	remuxSlots       conversionSlots
 	logService       logger.LoggerServiceInterface
 	playbackAccess   *playbackAccessTracker
+	audioTracks      AudioTrackServiceInterface
 }
 
 func NewRemuxHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, runRemux RemuxRunner, isRemuxerPresent func() bool, maxConcurrentRemuxes int, logService logger.LoggerServiceInterface) *RemuxHandler {
@@ -53,6 +54,10 @@ func (handler *RemuxHandler) UseSharedPlaybackAccess(shared *SharedPlaybackAcces
 	handler.playbackAccess = shared.tracker
 }
 
+func (handler *RemuxHandler) UseAudioTracks(audioTracks AudioTrackServiceInterface) {
+	handler.audioTracks = audioTracks
+}
+
 func NewFFmpegRemuxHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, logService logger.LoggerServiceInterface) *RemuxHandler {
 	return NewRemuxHandler(fileSource, codecSource, RunFFmpegRemux, IsFFmpegInstalled, defaultMaxConcurrentRemuxes, logService)
 }
@@ -64,7 +69,8 @@ func (handler *RemuxHandler) StreamRemuxedVideoHandler(c *gin.Context) {
 		return
 	}
 	startSeconds, startErr := strconv.ParseFloat(c.DefaultQuery("start", "0"), 64)
-	if startErr != nil || startSeconds < 0 {
+	audioStreamIndex, isAudioStreamIndexValid := parseAudioStreamIndex(c)
+	if startErr != nil || startSeconds < 0 || !isAudioStreamIndexValid {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
@@ -96,6 +102,10 @@ func (handler *RemuxHandler) StreamRemuxedVideoHandler(c *gin.Context) {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_REMUX_UNAVAILABLE")})
 		return
 	}
+	if !isRequestedAudioStreamAvailable(c, handler.audioTracks, videoFile, audioStreamIndex) {
+		accessLog.fail(errors.New("audio stream not available"))
+		return
+	}
 	if !handler.tryAcquireSlot() {
 		c.Header("Retry-After", "5")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_REMUX_BUSY")})
@@ -104,7 +114,7 @@ func (handler *RemuxHandler) StreamRemuxedVideoHandler(c *gin.Context) {
 	defer handler.releaseSlot()
 
 	responseStream := &remuxResponseWriter{context: c}
-	runErr := handler.runRemux(c.Request.Context(), BuildRemuxArguments(sourcePath, startSeconds), responseStream)
+	runErr := handler.runRemux(c.Request.Context(), BuildRemuxArguments(sourcePath, startSeconds, audioStreamIndex), responseStream)
 	if c.Request.Context().Err() != nil {
 		accessLog.succeed()
 		return

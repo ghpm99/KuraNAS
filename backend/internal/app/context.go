@@ -203,6 +203,7 @@ type MusicContext struct {
 type VideoContext struct {
 	Handler            *video.Handler
 	SummaryHandler     *video.VideoSummaryHandler
+	AudioTrackHandler  *video.AudioTrackHandler
 	RemuxHandler       *video.RemuxHandler
 	TranscodeHandler   *video.TranscodeHandler
 	SubtitleHandler    *video.SubtitleHandler
@@ -551,11 +552,15 @@ func newVideoContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	transcodeHandler := video.NewFFmpegTranscodeHandler(filesService, summaryService, logger)
 	subtitleHandler := video.NewSubtitleHandler(filesService, video.NewSubtitleService(video.NewSubtitleRepository(dbContext)))
 	subtitleHandler.UseEmbeddedSubtitles(video.NewEmbeddedSubtitleService())
+	audioTrackService := video.NewAudioTrackService()
+	remuxHandler.UseAudioTracks(audioTrackService)
+	transcodeHandler.UseAudioTracks(audioTrackService)
 	sharedPlaybackAccess := video.NewSharedPlaybackAccess()
 	handler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	remuxHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	transcodeHandler.UseSharedPlaybackAccess(sharedPlaybackAccess)
 	return &VideoContext{
+		AudioTrackHandler:  video.NewAudioTrackHandler(filesService, audioTrackService),
 		RemuxHandler:       remuxHandler,
 		TranscodeHandler:   transcodeHandler,
 		SubtitleHandler:    subtitleHandler,

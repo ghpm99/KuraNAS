@@ -14,15 +14,14 @@ func IsRemuxableVideoCodec(codecName string) bool {
 	return remuxableVideoCodecs[strings.ToLower(strings.TrimSpace(codecName))]
 }
 
-func BuildRemuxArguments(sourcePath string, startSeconds float64) []string {
+func BuildRemuxArguments(sourcePath string, startSeconds float64, audioStreamIndex int) []string {
 	arguments := []string{"-hide_banner", "-loglevel", "error"}
 	if startSeconds > 0 {
 		arguments = append(arguments, "-ss", formatSeconds(startSeconds))
 	}
+	arguments = append(arguments, "-i", sourcePath, "-map", "0:v:0")
+	arguments = append(arguments, buildAudioMapArguments(audioStreamIndex)...)
 	return append(arguments,
-		"-i", sourcePath,
-		"-map", "0:v:0",
-		"-map", "0:a:0?",
 		"-c", "copy",
 		"-movflags", "frag_keyframe+empty_moov+default_base_moof",
 		"-f", "mp4",

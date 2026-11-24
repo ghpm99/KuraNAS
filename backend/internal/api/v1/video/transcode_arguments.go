@@ -26,15 +26,14 @@ func buildTranscodeScaleFilter(requestedHeight int, sourceHeight int) string {
 	return "scale=-2:min(" + strconv.Itoa(targetHeight) + "\\,ih)"
 }
 
-func BuildTranscodeArguments(sourcePath string, startSeconds float64, requestedHeight int, sourceHeight int) []string {
+func BuildTranscodeArguments(sourcePath string, startSeconds float64, requestedHeight int, sourceHeight int, audioStreamIndex int) []string {
 	arguments := []string{"-hide_banner", "-loglevel", "error"}
 	if startSeconds > 0 {
 		arguments = append(arguments, "-ss", formatSeconds(startSeconds))
 	}
+	arguments = append(arguments, "-i", sourcePath, "-map", "0:v:0")
+	arguments = append(arguments, buildAudioMapArguments(audioStreamIndex)...)
 	return append(arguments,
-		"-i", sourcePath,
-		"-map", "0:v:0",
-		"-map", "0:a:0?",
 		"-c:v", "libx264",
 		"-preset", "veryfast",
 		"-crf", "23",

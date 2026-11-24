@@ -23,6 +23,7 @@ type TranscodeHandler struct {
 	transcodeSlots      conversionSlots
 	logService          logger.LoggerServiceInterface
 	playbackAccess      *playbackAccessTracker
+	audioTracks         AudioTrackServiceInterface
 }
 
 func NewTranscodeHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, runTranscode RemuxRunner, isTranscoderPresent func() bool, maxConcurrentTranscodes int, logService logger.LoggerServiceInterface) *TranscodeHandler {
@@ -44,6 +45,10 @@ func (handler *TranscodeHandler) UseSharedPlaybackAccess(shared *SharedPlaybackA
 	handler.playbackAccess = shared.tracker
 }
 
+func (handler *TranscodeHandler) UseAudioTracks(audioTracks AudioTrackServiceInterface) {
+	handler.audioTracks = audioTracks
+}
+
 func NewFFmpegTranscodeHandler(fileSource RemuxFileSource, codecSource RemuxCodecSource, logService logger.LoggerServiceInterface) *TranscodeHandler {
 	return NewTranscodeHandler(fileSource, codecSource, RunFFmpegRemux, IsFFmpegInstalled, defaultMaxConcurrentTranscodes, logService)
 }
@@ -56,7 +61,8 @@ func (handler *TranscodeHandler) StreamTranscodedVideoHandler(c *gin.Context) {
 	}
 	startSeconds, startErr := strconv.ParseFloat(c.DefaultQuery("start", "0"), 64)
 	requestedHeight, heightErr := strconv.Atoi(c.DefaultQuery("height", "0"))
-	if startErr != nil || startSeconds < 0 || heightErr != nil || requestedHeight < 0 {
+	audioStreamIndex, isAudioStreamIndexValid := parseAudioStreamIndex(c)
+	if startErr != nil || startSeconds < 0 || !isAudioStreamIndexValid || heightErr != nil || requestedHeight < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
 		return
 	}
@@ -83,6 +89,10 @@ func (handler *TranscodeHandler) StreamTranscodedVideoHandler(c *gin.Context) {
 		c.JSON(http.StatusNotImplemented, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_TRANSCODE_UNAVAILABLE")})
 		return
 	}
+	if !isRequestedAudioStreamAvailable(c, handler.audioTracks, videoFile, audioStreamIndex) {
+		accessLog.fail(errors.New("audio stream not available"))
+		return
+	}
 	if !handler.transcodeSlots.tryAcquire() {
 		c.Header("Retry-After", "5")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": i18n.GetMessage("ERROR_VIDEO_TRANSCODE_BUSY")})
@@ -90,7 +100,7 @@ func (handler *TranscodeHandler) StreamTranscodedVideoHandler(c *gin.Context) {
 	}
 	defer handler.transcodeSlots.release()
 
-	arguments := BuildTranscodeArguments(sourcePath, startSeconds, requestedHeight, handler.findSourceHeight(fileID))
+	arguments := BuildTranscodeArguments(sourcePath, startSeconds, requestedHeight, handler.findSourceHeight(fileID), audioStreamIndex)
 	responseStream := &remuxResponseWriter{context: c}
 	runErr := handler.runTranscode(c.Request.Context(), arguments, responseStream)
 	if c.Request.Context().Err() != nil {

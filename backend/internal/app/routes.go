@@ -440,6 +440,9 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	if context.Video.SummaryHandler != nil {
 		router.GET("/video/metadata/:file_id", context.Video.SummaryHandler.GetVideoSummaryHandler)
 	}
+	if context.Video.AudioTrackHandler != nil {
+		router.GET("/video/metadata/:file_id/audio-tracks", context.Video.AudioTrackHandler.ListAudioTracksHandler)
+	}
 	if context.Video.RemuxHandler != nil {
 		router.GET("/video/stream/:file_id/remux", context.Video.RemuxHandler.StreamRemuxedVideoHandler)
 	}

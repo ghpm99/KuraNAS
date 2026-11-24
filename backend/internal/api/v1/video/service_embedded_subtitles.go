@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"time"
 
 	"golang.org/x/sync/singleflight"
@@ -15,8 +14,6 @@ import (
 	files "nas-go/api/internal/api/v1/files"
 	"nas-go/api/pkg/applog"
 )
-
-const maxCachedSubtitleTrackLists = 512
 
 var (
 	ErrEmbeddedSubtitleNotFound = errors.New("embedded subtitle track not found")
@@ -40,10 +37,7 @@ type EmbeddedSubtitleService struct {
 	extractRunner SubtitleExtractRunner
 	timeout       func() time.Duration
 
-	trackListsMutex sync.Mutex
-	trackLists      map[embeddedSubtitleVersion][]EmbeddedSubtitleTrack
-
-	probeFlights   singleflight.Group
+	trackLists     *trackProbeCache[EmbeddedSubtitleTrack]
 	extractFlights singleflight.Group
 }
 
@@ -56,7 +50,7 @@ func NewEmbeddedSubtitleServiceWithRunners(probeRunner SubtitleProbeRunner, extr
 		probeRunner:   probeRunner,
 		extractRunner: extractRunner,
 		timeout:       ffmpegTimeout,
-		trackLists:    map[embeddedSubtitleVersion][]EmbeddedSubtitleTrack{},
+		trackLists:    newTrackProbeCache[EmbeddedSubtitleTrack](),
 	}
 }
 
@@ -148,26 +142,9 @@ func videoSubtitleTemporaryPattern(videoID int, streamIndex int) string {
 }
 
 func (s *EmbeddedSubtitleService) loadTracks(videoFile files.FileDto) ([]EmbeddedSubtitleTrack, error) {
-	version := versionOfVideo(videoFile)
-	if tracks, isCached := s.cachedTracks(version); isCached {
-		return tracks, nil
-	}
-	flightKey := fmt.Sprintf("%d:%d:%d", version.fileID, version.updatedAt, version.size)
-	probedTracks, err, _ := s.probeFlights.Do(flightKey, func() (any, error) {
-		if tracks, isCached := s.cachedTracks(version); isCached {
-			return tracks, nil
-		}
-		tracks, err := s.probeTracks(videoFile)
-		if err != nil {
-			return nil, err
-		}
-		s.storeTracks(version, tracks)
-		return tracks, nil
+	return s.trackLists.load(videoFile, func() ([]EmbeddedSubtitleTrack, error) {
+		return s.probeTracks(videoFile)
 	})
-	if err != nil {
-		return nil, err
-	}
-	return probedTracks.([]EmbeddedSubtitleTrack), nil
 }
 
 func (s *EmbeddedSubtitleService) probeTracks(videoFile files.FileDto) ([]EmbeddedSubtitleTrack, error) {
@@ -185,20 +162,4 @@ func (s *EmbeddedSubtitleService) probeTracks(videoFile files.FileDto) ([]Embedd
 		applog.Debug("video: image-based embedded subtitle tracks skipped", "video_id", videoFile.ID, "skipped", skippedTrackCount)
 	}
 	return tracks, nil
-}
-
-func (s *EmbeddedSubtitleService) cachedTracks(version embeddedSubtitleVersion) ([]EmbeddedSubtitleTrack, bool) {
-	s.trackListsMutex.Lock()
-	defer s.trackListsMutex.Unlock()
-	tracks, isCached := s.trackLists[version]
-	return tracks, isCached
-}
-
-func (s *EmbeddedSubtitleService) storeTracks(version embeddedSubtitleVersion, tracks []EmbeddedSubtitleTrack) {
-	s.trackListsMutex.Lock()
-	defer s.trackListsMutex.Unlock()
-	if len(s.trackLists) >= maxCachedSubtitleTrackLists {
-		s.trackLists = map[embeddedSubtitleVersion][]EmbeddedSubtitleTrack{}
-	}
-	s.trackLists[version] = tracks
 }
