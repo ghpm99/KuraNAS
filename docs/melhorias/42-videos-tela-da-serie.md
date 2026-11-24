@@ -46,6 +46,12 @@ O backend não guarda temporada nem episódio de arquivos (só de capturas, em `
 - [ ] Testes: ordenação e overrides contra Postgres real; seam test das mutações; render sem mock da tela.
 - [ ] `make ci` verde.
 
+## Andamento (2026-11-24)
+
+- Backend B1–B3 commitados: temporada e episódio, correções, ordem, `?season`, `seasons` e `resume` no cabeçalho (só com `include_items=false`, que é o que o Android usa), `PUT …/watched`.
+- Verificado no backend local (pastas `nas-data/Videos/teste-task42-ep` e `teste-task42-temporadas`, playlists 19 e 20): `Ep 1`…`Ep 24` na ordem 1..24; `Anime.Teste.S02E03.1080p.x264.mp4` = T2E3; `seasons` 10+10 e `resume` em modo `start`.
+- **Parado no passo F1 (tela da série na web)**: o agente foi interrompido por limite de uso; o que ele deixou no working tree não foi revisado nem commitado — conferir com `git status` e refazer o F1 a partir daqui. Faltam F1, F2 (ações e diálogos de correção), CA-10 no player, 42.1 e 42.2, e `make ci`.
+
 ## Sub-itens
 
 - [ ] **42.1** — o dedup do motor de playlists (`deduplicateCandidates`, sobreposição > 80% com o candidato de maior pontuação) deixa a playlist "mixed" (`random:smart_mix`, até 20 itens) engolir uma série pequena (≤ 12 episódios) num acervo pequeno: a série não vira playlist e não aparece em Séries. Achado no passo B1; afeta `06/CA-07` em bibliotecas pequenas. Playlists de série não devem ser descartadas por sobreposição com playlists de mistura. No passo B3, séries de 6 e 10 episódios também não viraram playlist (só a partir de 15–16).
