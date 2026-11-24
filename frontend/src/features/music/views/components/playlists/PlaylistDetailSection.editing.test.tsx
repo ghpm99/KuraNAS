@@ -60,13 +60,15 @@ describe('PlaylistDetailSection editing', () => {
         expect(() =>
             renderDetail({ onRenamePlaylist: undefined, onMoveTrack: undefined })
         ).not.toThrow();
-        expect(screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_EDIT' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_EDIT' })
+        ).not.toBeInTheDocument();
         expect(screen.queryAllByRole('button', { name: 'MUSIC_PLAYLIST_MOVE_UP' })).toHaveLength(0);
     });
 
     it('renames through the edit dialog and closes it once saved', () => {
-        const onRenamePlaylist = jest.fn((_name: string, _description: string, onSaved: () => void) =>
-            onSaved()
+        const onRenamePlaylist = jest.fn(
+            (_name: string, _description: string, onSaved: () => void) => onSaved()
         );
         renderDetail({ onRenamePlaylist });
 
@@ -96,7 +98,9 @@ describe('PlaylistDetailSection editing', () => {
 
     it('keeps the last loaded track movable down while more pages exist', () => {
         const { onMoveTrack } = renderDetail({ hasNextPage: true });
-        const lastMoveDown = screen.getAllByRole('button', { name: 'MUSIC_PLAYLIST_MOVE_DOWN' })[2]!;
+        const lastMoveDown = screen.getAllByRole('button', {
+            name: 'MUSIC_PLAYLIST_MOVE_DOWN',
+        })[2]!;
 
         fireEvent.click(lastMoveDown);
 
@@ -127,7 +131,45 @@ describe('PlaylistDetailSection editing', () => {
     it('does not offer editing or reordering for suggestions and automatic playlists', () => {
         renderDetail({ playlist: { ...userPlaylist, is_ai_generated: true } });
 
-        expect(screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_EDIT' })).not.toBeInTheDocument();
+        expect(
+            screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_EDIT' })
+        ).not.toBeInTheDocument();
         expect(screen.queryAllByRole('button', { name: 'MUSIC_PLAYLIST_MOVE_UP' })).toHaveLength(0);
+    });
+});
+
+describe('PlaylistDetailSection rule playlist', () => {
+    const rulePlaylist = {
+        ...userPlaylist,
+        kind: 'rule',
+        rules: {
+            match: 'any',
+            genres: ['rock'],
+            artists: [],
+            albums: [],
+            folders: [],
+            year_from: null,
+            year_to: null,
+            favorites_only: false,
+        },
+    } as Playlist;
+
+    it('shows the criteria, hides reorder controls and keeps remove', () => {
+        const props = renderDetail({ playlist: rulePlaylist });
+
+        expect(screen.getByTestId('playlist-rule-criteria')).toBeInTheDocument();
+        expect(screen.getByText('rock')).toBeInTheDocument();
+        expect(screen.queryByLabelText('MUSIC_PLAYLIST_MOVE_UP')).not.toBeInTheDocument();
+        expect(screen.getByText('Alpha').closest('li')).toHaveAttribute('draggable', 'false');
+        expect(document.querySelectorAll('.remove-btn')).toHaveLength(3);
+
+        fireEvent.click(document.querySelectorAll('.remove-btn')[0]!);
+        expect(props.onRemoveTrack).toHaveBeenCalledWith(10);
+    });
+
+    it('does not show criteria for manual playlists', () => {
+        renderDetail();
+
+        expect(screen.queryByTestId('playlist-rule-criteria')).not.toBeInTheDocument();
     });
 });

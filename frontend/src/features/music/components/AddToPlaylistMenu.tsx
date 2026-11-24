@@ -94,7 +94,10 @@ const AddToPlaylistMenu = ({ fileId, anchorEl, onClose }: AddToPlaylistMenuProps
     const playlists =
         data?.pages
             ?.flatMap((page) => page.items ?? [])
-            .filter((playlist) => !playlist.is_system && !playlist.is_ai_generated) ?? [];
+            .filter(
+                (playlist) =>
+                    !playlist.is_system && !playlist.is_ai_generated && playlist.kind !== 'rule'
+            ) ?? [];
     const hasSearch = playlistSearch !== '';
     const menuItems = [
         <MenuItem

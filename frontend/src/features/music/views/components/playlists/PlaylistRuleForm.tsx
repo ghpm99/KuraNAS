@@ -4,16 +4,20 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { useQuery } from '@tanstack/react-query';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import useDebouncedValue from '@/components/hooks/useDebouncedValue/useDebouncedValue';
-import { getMusicAlbums, getMusicArtists, getMusicFolders, getMusicGenres } from '@/service/music';
 import { previewPlaylistRule } from '@/service/playlist';
 import { PlaylistRules } from '@/types/playlist';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
-import PlaylistRuleOptionsField, { PlaylistRuleOption } from './PlaylistRuleOptionsField';
+import PlaylistRuleOptionsField from './PlaylistRuleOptionsField';
+import {
+    loadAlbumOptions,
+    loadArtistOptions,
+    loadFolderOptions,
+    loadGenreOptions,
+    useRuleOptions,
+} from './usePlaylistRuleOptions';
 import { hasPlaylistRuleCriteria } from '@/features/music/providers/playlistsProvider/playlistRuleCriteria';
 
-const OPTIONS_PAGE_SIZE = 500;
 const PREVIEW_DEBOUNCE_MS = 300;
-const OPTIONS_STALE_TIME_MS = 60_000;
 
 type PlaylistRuleFormProps = {
     rules: PlaylistRules;
@@ -25,37 +29,6 @@ const parseYear = (text: string): number | null => {
     const year = Number(text);
     return text.trim() === '' || !Number.isInteger(year) ? null : year;
 };
-
-const useRuleOptions = (sourceName: string, loadOptions: () => Promise<PlaylistRuleOption[]>) =>
-    useQuery({
-        queryKey: ['playlist-rule-options', sourceName],
-        queryFn: loadOptions,
-        staleTime: OPTIONS_STALE_TIME_MS,
-    });
-
-const loadGenreOptions = async () =>
-    ((await getMusicGenres(1, OPTIONS_PAGE_SIZE)).items ?? []).map((genre) => ({
-        value: genre.key,
-        label: genre.genre,
-    }));
-
-const loadArtistOptions = async () =>
-    ((await getMusicArtists(1, OPTIONS_PAGE_SIZE)).items ?? []).map((artist) => ({
-        value: artist.key,
-        label: artist.artist,
-    }));
-
-const loadAlbumOptions = async () =>
-    ((await getMusicAlbums(1, OPTIONS_PAGE_SIZE)).items ?? []).map((album) => ({
-        value: album.key,
-        label: album.artist ? `${album.album} - ${album.artist}` : album.album,
-    }));
-
-const loadFolderOptions = async () =>
-    ((await getMusicFolders(1, OPTIONS_PAGE_SIZE)).items ?? []).map((folder) => ({
-        value: folder.folder,
-        label: folder.folder,
-    }));
 
 export default function PlaylistRuleForm({ rules, errorField, onChange }: PlaylistRuleFormProps) {
     const { t } = useI18n();

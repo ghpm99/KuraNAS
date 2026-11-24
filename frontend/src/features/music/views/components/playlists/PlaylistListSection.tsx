@@ -94,7 +94,11 @@ export default function PlaylistListSection({
             )}
 
             {suggestedPlaylists.length > 0 && (
-                <Box component="section" aria-label={t('MUSIC_PLAYLISTS_SUGGESTIONS')} sx={{ mt: 2 }}>
+                <Box
+                    component="section"
+                    aria-label={t('MUSIC_PLAYLISTS_SUGGESTIONS')}
+                    sx={{ mt: 2 }}
+                >
                     <Typography variant="h6" fontWeight={700} sx={{ p: 1 }}>
                         {t('MUSIC_PLAYLISTS_SUGGESTIONS')}
                     </Typography>

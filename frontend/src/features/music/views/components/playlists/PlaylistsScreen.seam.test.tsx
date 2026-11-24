@@ -83,6 +83,26 @@ describe('features/music/PlaylistsScreen editing (seam)', () => {
                             is_ai_generated: true,
                             track_count: 5,
                         },
+                        {
+                            id: 5,
+                            name: 'Rock rule',
+                            description: '',
+                            is_system: false,
+                            is_auto: false,
+                            is_ai_generated: false,
+                            kind: 'rule',
+                            rules: {
+                                match: 'any',
+                                genres: ['rock'],
+                                artists: [],
+                                albums: [],
+                                folders: [],
+                                year_from: null,
+                                year_to: null,
+                                favorites_only: false,
+                            },
+                            track_count: 2,
+                        },
                     ],
                     pagination,
                 },
@@ -96,7 +116,7 @@ describe('features/music/PlaylistsScreen editing (seam)', () => {
         renderScreen('/');
         await screen.findByText('Mix');
 
-        fireEvent.click(screen.getByRole('button', { name: 'DELETE' }));
+        fireEvent.click(screen.getAllByRole('button', { name: 'DELETE' })[0]!);
         expect(mockedApi.delete).not.toHaveBeenCalled();
         fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'DELETE' }));
 
@@ -152,7 +172,26 @@ describe('features/music/PlaylistsScreen editing (seam)', () => {
 
         await screen.findByText('Alpha');
 
-        expect(screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_EDIT' })).not.toBeInTheDocument();
-        expect(screen.queryAllByRole('button', { name: 'MUSIC_PLAYLIST_MOVE_DOWN' })).toHaveLength(0);
+        expect(
+            screen.queryByRole('button', { name: 'MUSIC_PLAYLIST_EDIT' })
+        ).not.toBeInTheDocument();
+        expect(screen.queryAllByRole('button', { name: 'MUSIC_PLAYLIST_MOVE_DOWN' })).toHaveLength(
+            0
+        );
+    });
+
+    it('removes a track of a rule playlist with a DELETE of the track path and no reorder', async () => {
+        renderScreen('/?playlist=5');
+        await screen.findByText('Alpha');
+
+        expect(screen.queryAllByRole('button', { name: 'MUSIC_PLAYLIST_MOVE_DOWN' })).toHaveLength(
+            0
+        );
+        fireEvent.click(document.querySelectorAll('.remove-btn')[0]!);
+
+        await waitFor(() =>
+            expect(mockedApi.delete).toHaveBeenCalledWith('/music/playlists/5/tracks/10')
+        );
+        expect(mockedApi.put).not.toHaveBeenCalled();
     });
 });

@@ -10,6 +10,7 @@ import {
 import { Play, Tag } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import CollectionContextMenu from '@/features/music/components/contextMenu/CollectionContextMenu';
+import CreateRulePlaylistFromGenreButton from '@/features/music/components/genrePlaylist/CreateRulePlaylistFromGenreButton';
 import RenameGenreButton from '@/features/music/components/genreRename/RenameGenreButton';
 import CategoryHeader from '@/features/music/components/CategoryHeader';
 import { createGenrePlaybackContext } from '@/features/music/components/playbackContext';
@@ -336,12 +337,15 @@ function GenreTracksView({ genreKey, onBack, onRenamed }: GenreTracksViewProps) 
                 onShuffleAll={() => void queueGenreTracks(undefined, true)}
                 actions={
                     summary && (
-                        <RenameGenreButton
-                            genreKey={genreKey}
-                            genreName={summary.name}
-                            trackCount={summary.track_count}
-                            onRenamed={onRenamed}
-                        />
+                        <>
+                            <CreateRulePlaylistFromGenreButton genreKey={genreKey} />
+                            <RenameGenreButton
+                                genreKey={genreKey}
+                                genreName={summary.name}
+                                trackCount={summary.track_count}
+                                onRenamed={onRenamed}
+                            />
+                        </>
                     )
                 }
             />

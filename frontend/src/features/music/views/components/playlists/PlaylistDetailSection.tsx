@@ -21,6 +21,7 @@ import { getPlaylistQueue } from '@/service/playlist';
 import { findStartIndex, queueToTracks } from '@/features/music/components/musicQueueTracks';
 import { shuffleItems } from '@/utils/shuffleItems';
 import PlaylistEditDialog from './PlaylistEditDialog';
+import PlaylistRuleCriteriaSummary from './PlaylistRuleCriteriaSummary';
 import PlaylistTrackMoveButtons from './PlaylistTrackMoveButtons';
 
 type PlaylistDetailSectionProps = {
@@ -76,7 +77,8 @@ export default function PlaylistDetailSection({
     const canRemoveTracks = !playlist.is_system && !playlist.is_auto;
     const isUserPlaylist = canRemoveTracks && !playlist.is_ai_generated;
     const canRename = isUserPlaylist && onRenamePlaylist !== undefined;
-    const canReorder = isUserPlaylist && onMoveTrack !== undefined;
+    const isRulePlaylist = playlist.kind === 'rule';
+    const canReorder = isUserPlaylist && !isRulePlaylist && onMoveTrack !== undefined;
 
     const moveTrackToIndex = (fileId: number, fromIndex: number, toIndex: number) => {
         if (!onMoveTrack || fromIndex === toIndex) return;
@@ -148,6 +150,8 @@ export default function PlaylistDetailSection({
                 />
             )}
 
+            {isRulePlaylist && <PlaylistRuleCriteriaSummary rules={playlist.rules} />}
+
             {isLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                     <CircularProgress />
@@ -158,7 +162,7 @@ export default function PlaylistDetailSection({
                     color="text.secondary"
                     sx={{ textAlign: 'center', p: 4 }}
                 >
-                    {t('MUSIC_PLAYLIST_EMPTY')}
+                    {t(isRulePlaylist ? 'MUSIC_PLAYLIST_RULE_EMPTY' : 'MUSIC_PLAYLIST_EMPTY')}
                 </Typography>
             ) : (
                 <List sx={{ width: '100%' }}>

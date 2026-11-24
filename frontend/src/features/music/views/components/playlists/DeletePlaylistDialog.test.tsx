@@ -6,7 +6,11 @@ describe('DeletePlaylistDialog', () => {
     it('renders without a pending playlist and without any backend', () => {
         expect(() =>
             renderWithoutBackend(
-                <DeletePlaylistDialog playlistName={null} onConfirm={jest.fn()} onCancel={jest.fn()} />
+                <DeletePlaylistDialog
+                    playlistName={null}
+                    onConfirm={jest.fn()}
+                    onCancel={jest.fn()}
+                />
             )
         ).not.toThrow();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

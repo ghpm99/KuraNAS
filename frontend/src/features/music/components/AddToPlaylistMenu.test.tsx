@@ -45,7 +45,11 @@ describe('components/music/AddToPlaylistMenu', () => {
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         return render(
             <QueryClientProvider client={client}>
-                <AddToPlaylistMenu fileId={props?.fileId ?? 5} anchorEl={anchor} onClose={onClose} />
+                <AddToPlaylistMenu
+                    fileId={props?.fileId ?? 5}
+                    anchorEl={anchor}
+                    onClose={onClose}
+                />
             </QueryClientProvider>
         );
     };
@@ -212,5 +216,20 @@ describe('components/music/AddToPlaylistMenu', () => {
         fireEvent.click(screen.getAllByRole('button')[0]!);
 
         expect(await screen.findByText('My Playlist')).toBeInTheDocument();
+    });
+
+    it('does not offer rule playlists as targets', async () => {
+        mockGetPlaylists.mockResolvedValue({
+            items: [
+                userPlaylist(10, 'Manual One'),
+                { ...userPlaylist(13, 'By Rule'), kind: 'rule' },
+            ],
+            pagination: paginationOf(1, false),
+        });
+
+        renderMenu();
+
+        expect(await screen.findByText('Manual One')).toBeInTheDocument();
+        expect(screen.queryByText('By Rule')).not.toBeInTheDocument();
     });
 });

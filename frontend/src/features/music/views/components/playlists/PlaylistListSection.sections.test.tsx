@@ -46,7 +46,9 @@ describe('PlaylistListSection sections and deletion', () => {
 
         const suggestions = screen.getByRole('region', { name: 'MUSIC_PLAYLISTS_SUGGESTIONS' });
         expect(within(suggestions).getByText('Chill mix')).toBeInTheDocument();
-        expect(within(suggestions).queryByRole('button', { name: 'DELETE' })).not.toBeInTheDocument();
+        expect(
+            within(suggestions).queryByRole('button', { name: 'DELETE' })
+        ).not.toBeInTheDocument();
         expect(screen.getByText('Road trip').closest('section')).toBeNull();
         expect(screen.getAllByRole('button', { name: 'DELETE' })).toHaveLength(1);
     });
