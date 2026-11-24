@@ -5,6 +5,7 @@ import { getApiV1BaseUrl } from '@/service/apiUrl';
 import type { VideoPlaylistItemDto } from '@/service/videoPlayback';
 import { parseEpisode } from '../useVideoPlaylistDetail';
 import VideoStarButton from '../../VideoStarButton';
+import VideoCorrectionMenu from './VideoCorrectionMenu';
 import VideoWatchedToggleButton from './VideoWatchedToggleButton';
 import { formatVideoDuration } from './formatVideoDuration';
 import styles from '../videoContent.module.css';
@@ -85,6 +86,13 @@ export default function VideoEpisodeRow({
                 videoId={episode.video.id}
                 videoName={episode.video.name}
                 isStarred={episode.video.starred}
+            />
+            <VideoCorrectionMenu
+                fileId={episode.video.id}
+                fileName={episode.video.name}
+                canCorrectEpisode
+                season={episode.season}
+                episode={episode.episode}
             />
             {onSetWatched && (
                 <VideoWatchedToggleButton

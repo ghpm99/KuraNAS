@@ -2,6 +2,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { getVideoMoviePosterUrl, type VideoFileDto } from '@/service/videoPlayback';
 import VideoStarButton from '../../VideoStarButton';
+import VideoCorrectionMenu from '../components/VideoCorrectionMenu';
 import VideoMediaBadges from '../components/VideoMediaBadges';
 import { useLocalPoster } from '../useLocalPoster';
 import styles from './VideoMovieBrowser.module.css';
@@ -50,6 +51,9 @@ function VideoMovieCard({ movie, onPlayVideo }: VideoMovieCardProps) {
                 isStarred={movie.starred}
                 placement="overlay"
             />
+            <div className={styles.movieCorrectionMenu}>
+                <VideoCorrectionMenu fileId={movie.id} fileName={movie.name} />
+            </div>
         </div>
     );
 }

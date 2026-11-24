@@ -29,6 +29,9 @@ import {
     reorderVideoPlaylist,
     setVideoPlaylistHidden,
     setVideoWatched,
+    setVideoPlaylistWatched,
+    setVideoClassification,
+    setVideoEpisode,
     startVideoPlayback,
     updateVideoPlaybackState,
     updateVideoPlaylistName,
@@ -222,6 +225,37 @@ describe('service/videoPlayback', () => {
         expect(mockedApi.put).toHaveBeenNthCalledWith(3, '/video/playlists/3', {
             name: 'Minha lista',
         });
+    });
+
+    it('marks a series or one of its seasons watched with the exact body', async () => {
+        mockedApi.put.mockResolvedValue({});
+
+        await setVideoPlaylistWatched(4, true);
+        await setVideoPlaylistWatched(4, false, 2);
+
+        expect(mockedApi.put).toHaveBeenNthCalledWith(1, '/video/playlists/4/watched', {
+            watched: true,
+        });
+        expect(mockedApi.put).toHaveBeenNthCalledWith(2, '/video/playlists/4/watched', {
+            watched: false,
+            season: 2,
+        });
+    });
+
+    it('sets and clears the manual classification and episode of a file', async () => {
+        mockedApi.put.mockResolvedValue({});
+
+        await setVideoClassification(9, 'series');
+        await setVideoClassification(9, null);
+        await setVideoEpisode(9, 2, 5);
+        await setVideoEpisode(9, null, null);
+
+        expect(mockedApi.put.mock.calls).toEqual([
+            ['/video/library/files/9/classification', { classification: 'series' }],
+            ['/video/library/files/9/classification', { classification: null }],
+            ['/video/library/files/9/episode', { season: 2, episode: 5 }],
+            ['/video/library/files/9/episode', { season: null, episode: null }],
+        ]);
     });
 
     it('marks a video watched or unwatched through the progress endpoint', async () => {

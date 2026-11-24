@@ -75,3 +75,16 @@
     font-weight: 600;
     overflow-wrap: anywhere;
 }
+
+.movieCorrectionMenu {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.75);
+    color: #f8fafc;
+}
+
+.movieCorrectionMenu button {
+    color: inherit;
+}

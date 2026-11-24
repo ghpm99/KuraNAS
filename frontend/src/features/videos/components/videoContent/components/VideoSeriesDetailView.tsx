@@ -8,8 +8,9 @@ import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMe
 import { getVideoPlaylistPosterUrl, type VideoPlaylistDto } from '@/service/videoPlayback';
 import { useVideoSeriesDetail } from '../useVideoSeriesDetail';
 import VideoEpisodeRow from './VideoEpisodeRow';
-import VideoHidePlaylistButton from './VideoHidePlaylistButton';
+import VideoHideSeriesButton from './VideoHideSeriesButton';
 import VideoSeriesResumeButton from './VideoSeriesResumeButton';
+import VideoSeriesWatchedActions from './VideoSeriesWatchedActions';
 import styles from '../videoContent.module.css';
 
 type VideoSeriesDetailViewProps = {
@@ -103,7 +104,14 @@ export default function VideoSeriesDetailView({
                     </div>
                     <div className={styles.detailHeroActions}>
                         <VideoSeriesResumeButton resume={resume} onOpenVideo={onOpenVideo} />
-                        <VideoHidePlaylistButton
+                        <VideoSeriesWatchedActions
+                            playlistId={playlist.id}
+                            playlistName={playlist.name}
+                            seasons={seasons}
+                            selectedSeason={selectedSeason}
+                        />
+                        <VideoHideSeriesButton
+                            seriesName={playlist.name}
                             isChanging={isChangingVisibility}
                             onHide={onHide}
                         />
@@ -173,6 +181,13 @@ export default function VideoSeriesDetailView({
                                 />
                             ))}
                         </div>
+                        {!episodesQuery.hasNextPage && (
+                            <p className={styles.listTotal}>
+                                {t('VIDEO_SERIES_SEASON_TOTAL', {
+                                    count: String(selectedSeasonEpisodeCount),
+                                })}
+                            </p>
+                        )}
                     </ListFeedback>
                 )}
             </section>

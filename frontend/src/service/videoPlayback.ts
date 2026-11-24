@@ -207,6 +207,42 @@ export const setVideoWatched = async (videoId: number, watched: boolean): Promis
     await apiBase.put(`/video/progress/${videoId}/watched`, { watched });
 };
 
+export type VideoManualClassification = 'series' | 'movie' | 'personal' | 'clip' | 'other';
+
+export const videoManualClassifications: VideoManualClassification[] = [
+    'series',
+    'movie',
+    'personal',
+    'clip',
+    'other',
+];
+
+export const setVideoPlaylistWatched = async (
+    playlistId: number,
+    watched: boolean,
+    season?: number
+): Promise<void> => {
+    await apiBase.put(
+        `/video/playlists/${playlistId}/watched`,
+        season === undefined ? { watched } : { watched, season }
+    );
+};
+
+export const setVideoClassification = async (
+    fileId: number,
+    classification: VideoManualClassification | null
+): Promise<void> => {
+    await apiBase.put(`/video/library/files/${fileId}/classification`, { classification });
+};
+
+export const setVideoEpisode = async (
+    fileId: number,
+    season: number | null,
+    episode: number | null
+): Promise<void> => {
+    await apiBase.put(`/video/library/files/${fileId}/episode`, { season, episode });
+};
+
 export const getVideoPlaylists = async (includeHidden = false): Promise<VideoPlaylistDto[]> => {
     const response = await apiBase.get<VideoPlaylistDto[]>('/video/playlists/', {
         params: { include_hidden: includeHidden },
