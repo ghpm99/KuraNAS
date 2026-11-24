@@ -2,37 +2,31 @@ package com.kuranas.android.navigation
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.kuranas.android.R
 
-enum class SwipePage(@StringRes val labelRes: Int, val icon: ImageVector) {
-    HOME(R.string.nav_home, Icons.Filled.Home),
-    FILES(R.string.nav_files, Icons.Filled.Folder),
-    FAVORITES(R.string.nav_favorites, Icons.Filled.Star),
-    TRASH(R.string.nav_trash, Icons.Filled.Delete),
-    MUSIC(R.string.nav_music, Icons.Filled.MusicNote),
-    VIDEO(R.string.nav_videos, Icons.Filled.VideoLibrary),
-    IMAGES(R.string.nav_images, Icons.Filled.PhotoLibrary),
-    SEARCH(R.string.nav_search, Icons.Filled.Search),
-    DIARY(R.string.nav_diary, Icons.Filled.Book),
-    NOTIFICATIONS(R.string.nav_notifications, Icons.Filled.Notifications),
-    SETTINGS(R.string.nav_settings, Icons.Filled.Settings),
+enum class BottomTab(
+    val graphRoute: String,
+    val startRoute: String,
+    @StringRes val labelRes: Int,
+    val icon: ImageVector,
+) {
+    HOME("tab-home", AppRoute.HOME, R.string.nav_home, Icons.Filled.Home),
+    FILES("tab-files", AppRoute.FILES, R.string.nav_files, Icons.Filled.Folder),
+    IMAGES("tab-images", AppRoute.IMAGES, R.string.nav_images, Icons.Filled.PhotoLibrary),
+    MUSIC("tab-music", AppRoute.MUSIC, R.string.nav_music, Icons.Filled.MusicNote),
+    VIDEO("tab-video", AppRoute.VIDEO, R.string.nav_videos, Icons.Filled.VideoLibrary),
+    MORE("tab-more", AppRoute.MORE, R.string.nav_more, Icons.Filled.MoreHoriz),
 }
 
 object AppRoute {
     const val FILE_DETAIL = "file/{id}?name={name}"
-    // Navegação sem argumento (mini-player, telas de música) cai no default trackId=-1.
     const val MUSIC_PLAYER = "music-player"
     const val MUSIC_PLAYER_ROUTE = "music-player?trackId={trackId}"
     const val VIDEO_PLAYER = "video-player/{id}?playlistId={playlistId}"
@@ -49,7 +43,18 @@ object AppRoute {
     const val CAMERA_UPLOAD = "camera-upload"
     const val JOBS = "jobs"
     const val JOB_DETAIL = "jobs/{id}"
-    const val ANALYTICS = "analytics"
+    const val HOME = "home"
+    const val FILES = "files"
+    const val IMAGES = "images"
+    const val MUSIC = "music"
+    const val VIDEO = "video"
+    const val MORE = "more"
+    const val FAVORITES = "favorites"
+    const val SEARCH = "search"
+    const val TRASH = "trash"
+    const val NOTIFICATIONS = "notifications"
+    const val DIARY = "diary"
+    const val SETTINGS = "settings"
 
     fun fileDetail(id: String, name: String = "") =
         "file/$id?name=${android.net.Uri.encode(name)}"
@@ -60,7 +65,6 @@ object AppRoute {
     fun imageViewer(id: String) = "image-viewer/$id"
     fun musicArtist(key: String) = "music/artist/$key"
     fun musicAlbum(key: String) = "music/album/$key"
-    // A pasta é um caminho com barras; codifica para virar um único argumento de rota.
     fun musicFolder(key: String) = "music/folder/${android.net.Uri.encode(key)}"
     fun musicPlaylist(id: Int) = "music/playlist/$id"
     fun videoPlaylist(id: Int) = "video/playlist/$id"

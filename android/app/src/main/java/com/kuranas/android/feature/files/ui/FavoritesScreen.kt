@@ -1,5 +1,7 @@
 package com.kuranas.android.feature.files.ui
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,6 +42,7 @@ import com.kuranas.android.feature.files.data.StarredSort
 
 @Composable
 fun FavoritesScreen(
+    onNavigateBack: () -> Unit,
     onOpenFolder: (String, String) -> Unit,
     onOpenImage: (String) -> Unit,
     onOpenVideo: (String) -> Unit,
@@ -64,7 +67,7 @@ fun FavoritesScreen(
         contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
-            KNHeader(title = stringResource(R.string.nav_favorites))
+            KNHeader(title = stringResource(R.string.nav_favorites), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
             KindChips(selected = state.kind, onSelect = viewModel::selectKind)
             SortChips(selected = state.sort, onSelect = viewModel::selectSort)
             val errorMessage = state.error

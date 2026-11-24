@@ -17,12 +17,13 @@
     <string name="nav_trash">Lixeira</string>
     <string name="nav_music">Música</string>
     <string name="nav_videos">Vídeos</string>
-    <string name="nav_images">Imagens</string>
+    <string name="nav_images">Fotos</string>
     <string name="nav_search">Busca</string>
     <string name="nav_diary">Diário</string>
     <string name="nav_notifications">Notificações</string>
-    <string name="nav_settings">Config</string>
-    <string name="drawer_section_navigation">Navegação</string>
+    <string name="nav_settings">Configurações</string>
+    <string name="nav_more">Mais</string>
+    <string name="nav_jobs">Tarefas</string>
 
     <!-- Connection -->
     <string name="connection_connect_to_server">Conectar ao servidor</string>

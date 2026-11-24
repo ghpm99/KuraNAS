@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -46,7 +47,7 @@ import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.diary.data.DiaryEntryDto
 
 @Composable
-fun DiaryScreen(viewModel: DiaryViewModel = hiltViewModel()) {
+fun DiaryScreen(onNavigateBack: () -> Unit, viewModel: DiaryViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
@@ -62,7 +63,7 @@ fun DiaryScreen(viewModel: DiaryViewModel = hiltViewModel()) {
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
-            KNHeader(title = stringResource(R.string.nav_diary))
+            KNHeader(title = stringResource(R.string.nav_diary), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
             when {
                 state.isLoading -> LoadingView()
                 state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)

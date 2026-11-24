@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Folder
@@ -60,7 +61,7 @@ import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrashScreen(viewModel: TrashViewModel = hiltViewModel()) {
+fun TrashScreen(onNavigateBack: () -> Unit, viewModel: TrashViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     LoadMoreOnNearEnd(listState, state.items.size, state.hasMore, viewModel::loadMore)
@@ -84,6 +85,7 @@ fun TrashScreen(viewModel: TrashViewModel = hiltViewModel()) {
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp)) {
             KNHeader(
                 title = stringResource(R.string.nav_trash),
+                leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack,
                 trailingIcon = if (canEmptyTrash) Icons.Default.DeleteSweep else null,
                 trailingContentDescription = stringResource(R.string.trash_empty_action),
                 onTrailingClick = viewModel::requestEmptyTrash,

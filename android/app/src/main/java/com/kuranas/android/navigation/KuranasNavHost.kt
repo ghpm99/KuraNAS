@@ -1,61 +1,42 @@
 package com.kuranas.android.navigation
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavType
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.kuranas.android.core.ui.components.KNFrame
 import com.kuranas.android.core.ui.components.LoadingView
 import com.kuranas.android.feature.connection.ui.ConnectionScreen
-import com.kuranas.android.feature.diary.ui.DiaryScreen
-import com.kuranas.android.feature.files.ui.FavoritesScreen
-import com.kuranas.android.feature.trash.ui.TrashScreen
-import com.kuranas.android.feature.files.ui.FileViewerScreen
-import com.kuranas.android.feature.files.ui.FOLDER_ID_ARGUMENT
-import com.kuranas.android.feature.files.ui.FOLDER_NAME_ARGUMENT
-import com.kuranas.android.feature.files.ui.FilesScreen
-import com.kuranas.android.feature.home.ui.HomeScreen
-import com.kuranas.android.feature.images.ui.ImageViewerScreen
-import com.kuranas.android.feature.images.ui.ImagesScreen
 import com.kuranas.android.feature.music.ui.MiniPlayer
-import com.kuranas.android.feature.music.ui.MusicAlbumScreen
-import com.kuranas.android.feature.music.ui.MusicArtistScreen
-import com.kuranas.android.feature.music.ui.MusicFolderScreen
-import com.kuranas.android.feature.music.ui.MusicPlayerScreen
-import com.kuranas.android.feature.music.ui.MusicPlaylistScreen
-import com.kuranas.android.feature.music.ui.MusicScreen
-import com.kuranas.android.feature.notifications.ui.NotificationsScreen
-import com.kuranas.android.feature.search.ui.SearchScreen
-import com.kuranas.android.feature.cameraupload.ui.CameraUploadScreen
-import com.kuranas.android.feature.settings.ui.SettingsScreen
+import com.kuranas.android.feature.notifications.ui.NotificationsIndicatorViewModel
 import com.kuranas.android.feature.transfers.ui.TransfersIndicatorViewModel
-import com.kuranas.android.feature.transfers.ui.TransfersScreen
-import com.kuranas.android.feature.video.ui.VideoLibraryScreen
-import com.kuranas.android.feature.video.ui.VideoPlayerScreen
-import com.kuranas.android.feature.video.ui.VideoPlaylistScreen
-import com.kuranas.android.feature.video.ui.VideoScreen
-import kotlinx.coroutines.launch
-
-private const val ROUTE_HOME = "home"
+import com.kuranas.android.ui.theme.BgCanvas
 
 @Composable
 fun KuranasRoot(
@@ -78,243 +59,99 @@ fun KuranasRoot(
 @Composable
 private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandled: () -> Unit) {
     val navController = rememberNavController()
+    val activityOwner = LocalActivity.current as ComponentActivity
+    val transfersIndicatorViewModel: TransfersIndicatorViewModel = hiltViewModel(activityOwner)
+    val notificationsIndicatorViewModel: NotificationsIndicatorViewModel = hiltViewModel(activityOwner)
+    val activeTransfersCount by transfersIndicatorViewModel.activeCount.collectAsStateWithLifecycle()
+    val unreadNotificationsCount by notificationsIndicatorViewModel.unreadCount.collectAsStateWithLifecycle()
+
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = currentBackStackEntry?.destination
+    val currentRoute = currentDestination?.route
+    val selectedTab = currentDestination?.let(::tabOf)
+    val isAtTabRoot = currentRoute != null && currentRoute == selectedTab?.startRoute
 
     LaunchedEffect(shouldOpenTransfers) {
         if (!shouldOpenTransfers) return@LaunchedEffect
-        navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true }
+        navController.openTransfers()
         onOpenTransfersHandled()
     }
 
-    NavHost(navController = navController, startDestination = ROUTE_HOME, modifier = Modifier.fillMaxSize()) {
-        composable(ROUTE_HOME) { AppPagerHost(navController) }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == AppRoute.MORE) notificationsIndicatorViewModel.refresh()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsIndicatorViewModel.refresh() }
 
-        composable(
-            route = AppRoute.MUSIC_PLAYER_ROUTE,
-            arguments = listOf(navArgument("trackId") { type = NavType.IntType; defaultValue = -1 }),
-        ) {
-            MusicPlayerScreen(onNavigateBack = { navController.popBackStack() })
+    BackHandler(enabled = shouldBackReturnToHome(selectedTab, isAtTabRoot)) {
+        navController.openTab(BottomTab.HOME)
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            NavHost(
+                navController = navController,
+                startDestination = BottomTab.HOME.graphRoute,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                tabGraphs(navController)
+                topLevelRoutes(navController)
+            }
+            if (isBottomBarVisible(currentRoute)) {
+                MiniPlayer(
+                    onExpand = { navController.navigate(AppRoute.MUSIC_PLAYER) },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
+                )
+            }
         }
-        composable(
-            route = AppRoute.FILE_DETAIL,
-            arguments = listOf(
-                navArgument("id") { type = NavType.StringType },
-                navArgument("name") { type = NavType.StringType; defaultValue = "" },
-            ),
-        ) {
-            FileViewerScreen(
-                fileId = it.arguments?.getString("id") ?: "",
-                fileName = it.arguments?.getString("name") ?: "",
-                onNavigateBack = { navController.popBackStack() },
-            )
-        }
-        composable(
-            route = AppRoute.VIDEO_PLAYER,
-            arguments = listOf(
-                navArgument("id") { type = NavType.StringType },
-                navArgument("playlistId") { type = NavType.IntType; defaultValue = AppRoute.NO_PLAYLIST_ARGUMENT },
-            ),
-        ) {
-            VideoPlayerScreen(
-                videoId = it.arguments?.getString("id") ?: "",
-                playlistId = it.arguments?.getInt("playlistId")?.takeIf { id -> id != AppRoute.NO_PLAYLIST_ARGUMENT },
-                onNavigateBack = { navController.popBackStack() },
-            )
-        }
-        composable(
-            route = AppRoute.IMAGE_VIEWER,
-            arguments = listOf(navArgument("id") { type = NavType.StringType }),
-        ) {
-            ImageViewerScreen(
-                fileId = it.arguments?.getString("id") ?: "",
-                onNavigateBack = { navController.popBackStack() },
-            )
-        }
-        composable(
-            route = AppRoute.MUSIC_ARTIST,
-            arguments = listOf(navArgument("key") { type = NavType.StringType }),
-        ) {
-            MusicArtistScreen(
-                artistKey = it.arguments?.getString("key") ?: "",
-                onNavigateBack = { navController.popBackStack() },
-                onPlayTrack = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-            )
-        }
-        composable(
-            route = AppRoute.MUSIC_ALBUM,
-            arguments = listOf(navArgument("key") { type = NavType.StringType }),
-        ) {
-            MusicAlbumScreen(
-                albumKey = it.arguments?.getString("key") ?: "",
-                onNavigateBack = { navController.popBackStack() },
-                onPlayTrack = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-            )
-        }
-        composable(
-            route = AppRoute.MUSIC_FOLDER,
-            arguments = listOf(navArgument("key") { type = NavType.StringType }),
-        ) {
-            MusicFolderScreen(
-                folderKey = it.arguments?.getString("key") ?: "",
-                onNavigateBack = { navController.popBackStack() },
-                onPlayTrack = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-            )
-        }
-        composable(
-            route = AppRoute.MUSIC_PLAYLIST,
-            arguments = listOf(navArgument("id") { type = NavType.IntType }),
-        ) {
-            MusicPlaylistScreen(
-                playlistId = it.arguments?.getInt("id") ?: 0,
-                onNavigateBack = { navController.popBackStack() },
-                onPlayTrack = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-            )
-        }
-        composable(
-            route = AppRoute.VIDEO_PLAYLIST,
-            arguments = listOf(navArgument("id") { type = NavType.IntType }),
-        ) {
-            VideoPlaylistScreen(
-                playlistId = it.arguments?.getInt("id") ?: 0,
-                onNavigateBack = { navController.popBackStack() },
-                onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id, it.arguments?.getInt("id"))) },
-            )
-        }
-        composable(
-            route = AppRoute.FILES_FOLDER,
-            arguments = listOf(
-                navArgument(FOLDER_ID_ARGUMENT) { type = NavType.StringType },
-                navArgument(FOLDER_NAME_ARGUMENT) { type = NavType.StringType; defaultValue = "" },
-            ),
-        ) {
-            FilesScreen(
-                onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
-                onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
-                onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
-                onOpenTransfers = { navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true } },
-            )
-        }
-        composable(AppRoute.TRANSFERS) {
-            TransfersScreen(onNavigateBack = { navController.popBackStack() })
-        }
-        composable(AppRoute.CAMERA_UPLOAD) {
-            CameraUploadScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onOpenTransfers = { navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true } },
-            )
-        }
-        composable(AppRoute.VIDEO_LIBRARY) {
-            VideoLibraryScreen(
-                onNavigateBack = { navController.popBackStack() },
-                onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
+        if (isBottomBarVisible(currentRoute)) {
+            AppBottomBar(
+                selectedTab = selectedTab ?: BottomTab.MORE,
+                isAtTabRoot = isAtTabRoot,
+                activeTransfersCount = activeTransfersCount,
+                unreadNotificationsCount = unreadNotificationsCount,
+                navController = navController,
             )
         }
     }
 }
 
 @Composable
-private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
-    val pages = SwipePage.entries
-    val pagerState = rememberPagerState(pageCount = { pages.size })
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    val transfersIndicatorViewModel: TransfersIndicatorViewModel = hiltViewModel()
-    val activeTransfersCount by transfersIndicatorViewModel.activeCount.collectAsStateWithLifecycle()
-
-    fun goToPage(page: SwipePage) {
-        scope.launch { pagerState.animateScrollToPage(page.ordinal) }
-    }
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        gesturesEnabled = pagerState.currentPage == 0 || drawerState.isOpen,
-        drawerContent = {
-            KNDrawer(
-                current = pagerState.currentPage,
-                onSelect = { index ->
-                    scope.launch {
-                        drawerState.close()
-                        pagerState.scrollToPage(index)
+private fun AppBottomBar(
+    selectedTab: BottomTab,
+    isAtTabRoot: Boolean,
+    activeTransfersCount: Int,
+    unreadNotificationsCount: Int,
+    navController: NavHostController,
+) {
+    NavigationBar(containerColor = BgCanvas) {
+        BottomTab.entries.forEach { tab ->
+            val label = stringResource(tab.labelRes)
+            val isSelected = tab == selectedTab
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = {
+                    if (isSelected && !isAtTabRoot) {
+                        navController.popBackStack(tab.startRoute, inclusive = false)
+                        return@NavigationBarItem
+                    }
+                    navController.openTab(tab)
+                },
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (hasBadge(tab, activeTransfersCount, unreadNotificationsCount)) Badge()
+                        },
+                    ) {
+                        Icon(tab.icon, contentDescription = null)
                     }
                 },
-                onForget = { /* handled in SettingsScreen */ },
-                activeTransfersCount = activeTransfersCount,
-                onOpenTransfers = {
-                    scope.launch {
-                        drawerState.close()
-                        navController.navigate(AppRoute.TRANSFERS)
-                    }
-                },
-            )
-        },
-    ) {
-        Box(Modifier.fillMaxSize()) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = 1,
-        ) { index ->
-            when (pages[index]) {
-                SwipePage.HOME -> HomeScreen(
-                    onOpenMenu = { scope.launch { drawerState.open() } },
-                    onOpenFiles = { goToPage(SwipePage.FILES) },
-                    onOpenMusic = { goToPage(SwipePage.MUSIC) },
-                    onOpenVideo = { goToPage(SwipePage.VIDEO) },
-                    onOpenImages = { goToPage(SwipePage.IMAGES) },
-                    onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
-                    onOpenVideoFile = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
-                    onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
-                )
-                SwipePage.FILES -> FilesScreen(
-                    onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
-                    onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
-                    onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
-                    onOpenTransfers = { navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true } },
-                )
-                SwipePage.FAVORITES -> FavoritesScreen(
-                    onOpenFolder = { id, name -> navController.navigate(AppRoute.filesFolder(id, name)) },
-                    onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
-                    onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
-                    onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
-                )
-                SwipePage.TRASH -> TrashScreen()
-                SwipePage.MUSIC -> MusicScreen(
-                    onOpenPlayer = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-                    onOpenArtist = { key -> navController.navigate(AppRoute.musicArtist(key)) },
-                    onOpenAlbum = { key -> navController.navigate(AppRoute.musicAlbum(key)) },
-                    onOpenPlaylist = { id -> navController.navigate(AppRoute.musicPlaylist(id)) },
-                    onOpenFolder = { key -> navController.navigate(AppRoute.musicFolder(key)) },
-                )
-                SwipePage.VIDEO -> VideoScreen(
-                    onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                    onOpenPlaylist = { id -> navController.navigate(AppRoute.videoPlaylist(id)) },
-                    onOpenLibrary = { navController.navigate(AppRoute.VIDEO_LIBRARY) },
-                )
-                SwipePage.IMAGES -> ImagesScreen(
-                    onOpenImage = { id -> navController.navigate(AppRoute.imageViewer(id)) },
-                )
-                SwipePage.SEARCH -> SearchScreen(
-                    onOpenFile = { id -> navController.navigate(AppRoute.fileDetail(id)) },
-                    onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
-                    onPlayVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
-                )
-                SwipePage.DIARY -> DiaryScreen()
-                SwipePage.NOTIFICATIONS -> NotificationsScreen()
-                SwipePage.SETTINGS -> SettingsScreen(
-                    onOpenCameraUpload = { navController.navigate(AppRoute.CAMERA_UPLOAD) { launchSingleTop = true } },
-                )
-            }
-        }
-            MiniPlayer(
-                onExpand = { navController.navigate(AppRoute.MUSIC_PLAYER) },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                label = { Text(label) },
             )
         }
     }
 }
+
+private fun tabOf(destination: NavDestination): BottomTab? =
+    BottomTab.entries.firstOrNull { tab -> destination.hierarchy.any { it.route == tab.graphRoute } }

@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.files.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -106,6 +107,7 @@ fun FilesScreen(
         uploadViewModel.sendPicked(pickedUris, UploadDestination(openFolder?.second, openFolder?.first.orEmpty()))
     }
     var newFolderName by remember { mutableStateOf("") }
+    BackHandler(enabled = state.breadcrumb.isNotEmpty(), onBack = viewModel::navigateUp)
     val listState = rememberSaveable(state.breadcrumb.lastOrNull()?.second, saver = LazyListState.Saver) { LazyListState() }
     LoadMoreOnNearEnd(listState, state.files.size, state.hasMore, viewModel::loadMore)
 

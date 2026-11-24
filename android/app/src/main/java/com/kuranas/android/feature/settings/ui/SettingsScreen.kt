@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.settings.ui
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,12 +49,12 @@ import com.kuranas.android.ui.theme.StatusNegative
 import com.kuranas.android.ui.theme.StatusPositive
 
 @Composable
-fun SettingsScreen(onOpenCameraUpload: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onNavigateBack: () -> Unit, onOpenCameraUpload: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showForgetDialog by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.settings_title))
+        KNHeader(title = stringResource(R.string.settings_title), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
 
         if (state.isLoading) {
             LoadingView()

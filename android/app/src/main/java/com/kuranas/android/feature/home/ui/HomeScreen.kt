@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -50,7 +49,6 @@ import com.kuranas.android.core.ui.components.glass
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    onOpenMenu: () -> Unit,
     onOpenFiles: () -> Unit,
     onOpenMusic: () -> Unit,
     onOpenVideo: () -> Unit,
@@ -72,11 +70,7 @@ fun HomeScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(
-            title = stringResource(R.string.nav_home),
-            leadingIcon = Icons.Default.Menu,
-            onLeadingClick = onOpenMenu,
-        )
+        KNHeader(title = stringResource(R.string.nav_home))
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = viewModel::refresh,

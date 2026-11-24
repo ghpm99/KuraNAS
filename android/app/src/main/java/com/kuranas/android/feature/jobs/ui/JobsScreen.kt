@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.jobs.ui
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,11 +46,11 @@ import com.kuranas.android.ui.theme.StatusNegative
 import com.kuranas.android.ui.theme.StatusPositive
 
 @Composable
-fun JobsScreen(viewModel: JobsViewModel = hiltViewModel()) {
+fun JobsScreen(onNavigateBack: () -> Unit, viewModel: JobsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.jobs_title), trailingIcon = Icons.Default.Refresh, onTrailingClick = viewModel::load)
+        KNHeader(title = stringResource(R.string.jobs_title), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack, trailingIcon = Icons.Default.Refresh, onTrailingClick = viewModel::load)
         when {
             state.isLoading -> LoadingView()
             state.error != null -> ErrorView(state.error!!, onRetry = viewModel::load)

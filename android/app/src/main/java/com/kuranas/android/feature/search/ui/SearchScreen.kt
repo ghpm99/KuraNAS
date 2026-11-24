@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.search.ui
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,7 @@ import com.kuranas.android.feature.search.data.SearchFileDto
 
 @Composable
 fun SearchScreen(
+    onNavigateBack: () -> Unit,
     onOpenFile: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
     onPlayVideo: (String) -> Unit,
@@ -49,7 +51,7 @@ fun SearchScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        KNHeader(title = stringResource(R.string.nav_search))
+        KNHeader(title = stringResource(R.string.nav_search), leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack)
         TextField(
             value = state.query,
             onValueChange = viewModel::onQueryChange,

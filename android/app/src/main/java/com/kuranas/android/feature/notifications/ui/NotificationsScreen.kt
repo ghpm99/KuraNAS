@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -36,12 +37,13 @@ import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.notifications.data.NotificationDto
 
 @Composable
-fun NotificationsScreen(viewModel: NotificationsViewModel = hiltViewModel()) {
+fun NotificationsScreen(onNavigateBack: () -> Unit, viewModel: NotificationsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         KNHeader(
             title = stringResource(R.string.nav_notifications),
+            leadingIcon = Icons.AutoMirrored.Filled.ArrowBack, onLeadingClick = onNavigateBack,
             trailingIcon = Icons.Default.DoneAll,
             onTrailingClick = viewModel::markAllAsRead,
         )
