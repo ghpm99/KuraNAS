@@ -249,3 +249,12 @@ var GetGenreTrackSourcesQuery string
 
 //go:embed count_active_tracks_by_genre_key.sql
 var CountActiveTracksByGenreKeyQuery string
+
+//go:embed count_playlist_rule_tracks.sql
+var CountPlaylistRuleTracksQuery string
+
+//go:embed create_rule_playlist.sql
+var CreateRulePlaylistQuery string
+
+//go:embed update_playlist_rules.sql
+var UpdatePlaylistRulesQuery string

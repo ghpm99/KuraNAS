@@ -36,7 +36,7 @@ func newCatalogTestEnvironment(t *testing.T) *catalogTestEnvironment {
 	dbContext := testutil.NewPostgresDB(t, "kuranas_music_it")
 
 	truncateErr := dbContext.ExecTx(func(tx *sql.Tx) error {
-		_, err := tx.Exec(`TRUNCATE playlist_track, playlist, player_state, audio_metadata_override, audio_metadata, home_file RESTART IDENTITY CASCADE`)
+		_, err := tx.Exec(`TRUNCATE playlist_rule_exclusion, playlist_track, playlist, player_state, audio_metadata_override, audio_metadata, home_file RESTART IDENTITY CASCADE`)
 		return err
 	})
 	if truncateErr != nil {

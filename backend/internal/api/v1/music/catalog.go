@@ -8,6 +8,7 @@ const (
 
 const (
 	PlaylistKindManual    = "manual"
+	PlaylistKindRule      = "rule"
 	PlaylistKindSystem    = "system"
 	PlaylistKindAutomatic = "automatic"
 	PlaylistKindAI        = "ai"

@@ -14,7 +14,10 @@ type RepositoryInterface interface {
 	GetPlaylists(page int, pageSize int, nameSearch string) (utils.PaginationResponse[PlaylistModel], error)
 	GetPlaylistByID(id int) (PlaylistModel, error)
 	CreatePlaylist(tx *sql.Tx, name string, description string, isSystem bool) (PlaylistModel, error)
+	CreateRulePlaylist(tx *sql.Tx, name string, description string, rules PlaylistRules) (PlaylistModel, error)
 	UpdatePlaylist(tx *sql.Tx, id int, name string, description string) (PlaylistModel, error)
+	UpdatePlaylistRules(tx *sql.Tx, id int, rules PlaylistRules) error
+	CountPlaylistRuleTracks(rules PlaylistRules, playlistID *int) (PlaylistRuleTotals, error)
 	DeletePlaylist(tx *sql.Tx, id int) error
 	GetPlaylistTracks(playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackModel], error)
 	AddPlaylistTrack(tx *sql.Tx, playlistID int, fileID int) (PlaylistTrackModel, error)
@@ -105,6 +108,7 @@ type ServiceInterface interface {
 	CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error)
 	UpdatePlaylist(id int, req UpdatePlaylistRequest) (PlaylistDto, error)
 	DeletePlaylist(id int) error
+	PreviewPlaylistRules(rules PlaylistRules) (PlaylistRulePreviewDto, error)
 	GetPlaylistTracks(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error)
 	AddPlaylistTrack(playlistID int, fileID int) (PlaylistTrackDto, error)
 	RemovePlaylistTrack(playlistID int, fileID int) error

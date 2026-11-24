@@ -236,6 +236,9 @@ var AddAudioMetadataCatalogKeysVersionQuery string
 //go:embed queries/0075_create_takeout_photo_sidecar.sql
 var CreateTakeoutPhotoSidecarQuery string
 
+//go:embed queries/0076_add_playlist_rules.sql
+var AddPlaylistRulesQuery string
+
 func defaultMigrationFunc(query string) func(tx *sql.Tx) error {
 	return func(tx *sql.Tx) error {
 		_, err := tx.Exec(query)
@@ -421,6 +424,14 @@ func musicMigrationList() {
 	addMigrationRequiring("0074_add_audio_metadata_catalog_keys_version",
 		[]string{"0073_create_audio_metadata_override"},
 		defaultMigrationFunc(AddAudioMetadataCatalogKeysVersionQuery))
+
+	addMigrationRequiring("0076_add_playlist_rules",
+		[]string{
+			"0001_create_home_file_table",
+			"0011_create_playlist_table",
+			"0030_create_music_artist_clusters_table",
+		},
+		defaultMigrationFunc(AddPlaylistRulesQuery))
 }
 
 func videoMigrationList() {

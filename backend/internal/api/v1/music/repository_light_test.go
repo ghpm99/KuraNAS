@@ -57,8 +57,8 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistsQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
-			AddRow(1, "p", "d", false, now, now, 3, false))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated", "kind", "rules", "total_length_seconds"}).
+			AddRow(1, "p", "d", false, now, now, 3, false, "manual", nil, 0.0))
 	mock.ExpectRollback()
 	playlists, err := repo.GetPlaylists(1, 10, "")
 	if err != nil || len(playlists.Items) != 1 {
@@ -68,8 +68,8 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetPlaylistByIDQuery)).
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
-			AddRow(1, "p", "d", false, now, now, 3, false))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated", "kind", "rules", "total_length_seconds"}).
+			AddRow(1, "p", "d", false, now, now, 3, false, "manual", nil, 0.0))
 	mock.ExpectRollback()
 	if p, err := repo.GetPlaylistByID(1); err != nil || p.ID != 1 {
 		t.Fatalf("GetPlaylistByID failed p=%+v err=%v", p, err)
@@ -77,8 +77,8 @@ func TestMusicRepositoryBasicsAndReads(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetNowPlayingQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
-			AddRow(2, "now", "queue", true, now, now, 1, false))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated", "kind", "rules", "total_length_seconds"}).
+			AddRow(2, "now", "queue", true, now, now, 1, false, "system", nil, 0.0))
 	mock.ExpectRollback()
 	if p, err := repo.GetNowPlaying(); err != nil || p.ID != 2 {
 		t.Fatalf("GetNowPlaying failed p=%+v err=%v", p, err)
@@ -237,8 +237,8 @@ func TestMusicRepositoryArtistClustersAndAIPlaylists(t *testing.T) {
 	// List materialized AI playlists.
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.GetAIPlaylistsQuery)).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated"}).
-			AddRow(7, "Classic Rock", "", false, now, now, 12, true))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "description", "is_system", "created_at", "updated_at", "track_count", "is_ai_generated", "kind", "rules", "total_length_seconds"}).
+			AddRow(7, "Classic Rock", "", false, now, now, 12, true, "ai", nil, 0.0))
 	mock.ExpectRollback()
 	aiPlaylists, err := repo.GetAIPlaylists()
 	if err != nil || len(aiPlaylists) != 1 || !aiPlaylists[0].IsAIGenerated {

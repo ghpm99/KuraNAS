@@ -92,6 +92,10 @@ type PlaylistModel struct {
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	TrackCount    int
+
+	Kind               string
+	Rules              *PlaylistRules
+	TotalLengthSeconds float64
 }
 
 // ArtistClusterModel is the persisted assignment of one artist to one

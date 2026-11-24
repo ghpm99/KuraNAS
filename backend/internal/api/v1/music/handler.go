@@ -40,7 +40,12 @@ func logEntry(name, description string, c *gin.Context) logger.LoggerModel {
 }
 
 func respondMusicError(c *gin.Context, err error) {
+	var validationError *fieldValidationError
 	switch {
+	case errors.As(err, &validationError):
+		respondRefusedField(c, validationError.Field, validationError.MessageKey)
+	case errors.Is(err, ErrPlaylistRulesNotAllowed):
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_PLAYLIST_RULES_NOT_ALLOWED"), "field": "rules"})
 	case errors.Is(err, sql.ErrNoRows):
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_MUSIC_NOT_FOUND")})
 	case errors.Is(err, ErrTrackAlreadyInPlaylist):
@@ -128,6 +133,27 @@ func (handler *Handler) CreatePlaylistHandler(c *gin.Context) {
 
 	handler.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusCreated, playlist)
+}
+
+func (handler *Handler) PreviewPlaylistRulesHandler(c *gin.Context) {
+	loggerModel, _ := handler.logService.CreateLog(logEntry("PreviewPlaylistRules", "Previewing playlist rule", c), nil)
+
+	var rules PlaylistRules
+	if err := c.ShouldBindJSON(&rules); err != nil {
+		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_INVALID_REQUEST")})
+		return
+	}
+
+	preview, err := handler.service.PreviewPlaylistRules(rules)
+	if err != nil {
+		handler.logService.CompleteWithErrorLog(loggerModel, err)
+		respondMusicError(c, err)
+		return
+	}
+
+	handler.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, preview)
 }
 
 func (handler *Handler) UpdatePlaylistHandler(c *gin.Context) {

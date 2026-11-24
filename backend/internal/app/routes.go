@@ -339,6 +339,7 @@ func RegisterMusicRoutes(router *gin.RouterGroup, context *AppContext) {
 
 	playlists.GET("/", context.Music.Handler.GetPlaylistsHandler)
 	playlists.POST("/", context.Music.Handler.CreatePlaylistHandler)
+	playlists.POST("/rules/preview", context.Music.Handler.PreviewPlaylistRulesHandler)
 	playlists.GET("/now-playing", context.Music.Handler.GetNowPlayingHandler)
 	playlists.GET("/system", context.Music.Handler.GetAutomaticPlaylistsHandler)
 	playlists.GET("/:id", context.Music.Handler.GetPlaylistByIDHandler)

@@ -103,17 +103,16 @@ func (r *Repository) GetPlaylists(page int, pageSize int, nameSearch string) (ut
 		defer rows.Close()
 
 		for rows.Next() {
-			var playlist PlaylistModel
-			if err := rows.Scan(
-				&playlist.ID, &playlist.Name, &playlist.Description,
-				&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-				&playlist.TrackCount, &playlist.IsAIGenerated,
-			); err != nil {
+			playlist, err := scanPlaylist(rows)
+			if err != nil {
 				return err
 			}
 			paginationResponse.Items = append(paginationResponse.Items, playlist)
 		}
-		return nil
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return applyPlaylistRuleTotals(tx, paginationResponse.Items)
 	})
 
 	if err != nil {
@@ -224,12 +223,16 @@ func (r *Repository) GetPlaylistByID(id int) (PlaylistModel, error) {
 	var playlist PlaylistModel
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		row := tx.QueryRow(queries.GetPlaylistByIDQuery, id)
-		return row.Scan(
-			&playlist.ID, &playlist.Name, &playlist.Description,
-			&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-			&playlist.TrackCount, &playlist.IsAIGenerated,
-		)
+		scannedPlaylist, err := scanPlaylist(tx.QueryRow(queries.GetPlaylistByIDQuery, id))
+		if err != nil {
+			return err
+		}
+		playlistsToTotal := []PlaylistModel{scannedPlaylist}
+		if err := applyPlaylistRuleTotals(tx, playlistsToTotal); err != nil {
+			return err
+		}
+		playlist = playlistsToTotal[0]
+		return nil
 	})
 
 	if err != nil {
@@ -244,6 +247,10 @@ func (r *Repository) CreatePlaylist(tx *sql.Tx, name string, description string,
 	playlist.Name = name
 	playlist.Description = description
 	playlist.IsSystem = isSystem
+	playlist.Kind = PlaylistKindManual
+	if isSystem {
+		playlist.Kind = PlaylistKindSystem
+	}
 
 	err := tx.QueryRow(queries.CreatePlaylistQuery, name, description, isSystem).Scan(
 		&playlist.ID, &playlist.CreatedAt, &playlist.UpdatedAt,
@@ -433,12 +440,9 @@ func (r *Repository) GetNowPlaying() (PlaylistModel, error) {
 	var playlist PlaylistModel
 
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		row := tx.QueryRow(queries.GetNowPlayingQuery)
-		return row.Scan(
-			&playlist.ID, &playlist.Name, &playlist.Description,
-			&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-			&playlist.TrackCount, &playlist.IsAIGenerated,
-		)
+		var err error
+		playlist, err = scanPlaylist(tx.QueryRow(queries.GetNowPlayingQuery))
+		return err
 	})
 
 	if err != nil {
@@ -536,12 +540,8 @@ func (r *Repository) GetAIPlaylists() ([]PlaylistModel, error) {
 		defer rows.Close()
 
 		for rows.Next() {
-			var playlist PlaylistModel
-			if err := rows.Scan(
-				&playlist.ID, &playlist.Name, &playlist.Description,
-				&playlist.IsSystem, &playlist.CreatedAt, &playlist.UpdatedAt,
-				&playlist.TrackCount, &playlist.IsAIGenerated,
-			); err != nil {
+			playlist, err := scanPlaylist(rows)
+			if err != nil {
 				return err
 			}
 			results = append(results, playlist)
@@ -561,6 +561,7 @@ func (r *Repository) CreateAIPlaylist(tx *sql.Tx, name string, description strin
 		Name:          name,
 		Description:   description,
 		IsAIGenerated: true,
+		Kind:          PlaylistKindAI,
 	}
 
 	err := tx.QueryRow(queries.CreateAIPlaylistQuery, name, description).Scan(

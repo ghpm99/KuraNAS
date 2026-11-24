@@ -49,6 +49,9 @@ func (m *musicHandlerServiceMock) UpdatePlaylist(id int, req UpdatePlaylistReque
 	return PlaylistDto{ID: id, Name: req.Name}, nil
 }
 func (m *musicHandlerServiceMock) DeletePlaylist(id int) error { return nil }
+func (m *musicHandlerServiceMock) PreviewPlaylistRules(rules PlaylistRules) (PlaylistRulePreviewDto, error) {
+	return PlaylistRulePreviewDto{TrackCount: 7}, nil
+}
 func (m *musicHandlerServiceMock) GetPlaylistTracks(clientID string, playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackDto], error) {
 	return utils.PaginationResponse[PlaylistTrackDto]{Items: []PlaylistTrackDto{{ID: 1}}}, nil
 }

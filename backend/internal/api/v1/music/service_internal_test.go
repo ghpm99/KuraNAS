@@ -13,38 +13,42 @@ import (
 type musicRepoMock struct {
 	db *database.DbContext
 
-	getPlaylistsFn         func(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error)
-	getPlaylistByIDFn      func(id int) (PlaylistModel, error)
-	createPlaylistFn       func(tx *sql.Tx, name string, description string, isSystem bool) (PlaylistModel, error)
-	updatePlaylistFn       func(tx *sql.Tx, id int, name string, description string) (PlaylistModel, error)
-	deletePlaylistFn       func(tx *sql.Tx, id int) error
-	getPlaylistTracksFn    func(playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackModel], error)
-	addPlaylistTrackFn     func(tx *sql.Tx, playlistID int, fileID int) (PlaylistTrackModel, error)
-	removePlaylistTrackFn  func(tx *sql.Tx, playlistID int, fileID int) error
-	reorderPlaylistTrackFn func(tx *sql.Tx, playlistID int, fileID int, position int) error
-	getNowPlayingFn        func() (PlaylistModel, error)
-	getPlayerStateFn       func(clientID string) (PlayerStateModel, error)
-	upsertPlayerStateFn    func(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
-	replacePlayerQueueFn   func(clientID string, fileIDs []int, currentIndex int) error
-	playerQueueEntries     []MusicQueueEntryModel
-	playerQueueIndex       int
-	playerQueueFailure     error
-	searchLibraryTracksFn  func(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
-	getLibraryTracksFn     func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
-	getLibrarySummaryFn    func() (MusicLibrarySummaryDto, error)
-	getArtistGroupsFn      func(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error)
-	getAlbumGroupsFn       func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
-	getGenreGroupsFn       func(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
-	getFolderGroupsFn      func(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
-	getTrackIDsByArtistFn  func(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
-	getTrackIDsByAlbumFn   func(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
-	getTrackIDsByGenreFn   func(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
-	getTrackIDsByFolderFn  func(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error)
-	getRecentFileIDsFn     func(limit int) ([]int, error)
-	getFavoriteFileIDsFn   func(limit int) ([]int, error)
-	getClusterInputsFn     func() ([]artistClusterInput, error)
-	getFileIDsByArtistsFn  func(artistKeys []string) ([]int, error)
-	getLibraryFilesByIDsFn func(fileIDs []int) ([]files.FileModel, error)
+	getPlaylistsFn    func(page int, pageSize int) (utils.PaginationResponse[PlaylistModel], error)
+	getPlaylistByIDFn func(id int) (PlaylistModel, error)
+	createPlaylistFn  func(tx *sql.Tx, name string, description string, isSystem bool) (PlaylistModel, error)
+	updatePlaylistFn  func(tx *sql.Tx, id int, name string, description string) (PlaylistModel, error)
+	deletePlaylistFn  func(tx *sql.Tx, id int) error
+
+	createRulePlaylistFn      func(tx *sql.Tx, name string, description string, rules PlaylistRules) (PlaylistModel, error)
+	updatePlaylistRulesFn     func(tx *sql.Tx, id int, rules PlaylistRules) error
+	countPlaylistRuleTracksFn func(rules PlaylistRules, playlistID *int) (PlaylistRuleTotals, error)
+	getPlaylistTracksFn       func(playlistID int, page int, pageSize int) (utils.PaginationResponse[PlaylistTrackModel], error)
+	addPlaylistTrackFn        func(tx *sql.Tx, playlistID int, fileID int) (PlaylistTrackModel, error)
+	removePlaylistTrackFn     func(tx *sql.Tx, playlistID int, fileID int) error
+	reorderPlaylistTrackFn    func(tx *sql.Tx, playlistID int, fileID int, position int) error
+	getNowPlayingFn           func() (PlaylistModel, error)
+	getPlayerStateFn          func(clientID string) (PlayerStateModel, error)
+	upsertPlayerStateFn       func(tx *sql.Tx, state PlayerStateModel) (PlayerStateModel, error)
+	replacePlayerQueueFn      func(clientID string, fileIDs []int, currentIndex int) error
+	playerQueueEntries        []MusicQueueEntryModel
+	playerQueueIndex          int
+	playerQueueFailure        error
+	searchLibraryTracksFn     func(searchText string, page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getLibraryTracksFn        func(page int, pageSize int) (utils.PaginationResponse[files.FileModel], error)
+	getLibrarySummaryFn       func() (MusicLibrarySummaryDto, error)
+	getArtistGroupsFn         func(page int, pageSize int) (utils.PaginationResponse[MusicArtistGroupDto], error)
+	getAlbumGroupsFn          func(page int, pageSize int) (utils.PaginationResponse[MusicAlbumGroupDto], error)
+	getGenreGroupsFn          func(page int, pageSize int) (utils.PaginationResponse[MusicGenreGroupDto], error)
+	getFolderGroupsFn         func(page int, pageSize int) (utils.PaginationResponse[MusicFolderGroupDto], error)
+	getTrackIDsByArtistFn     func(artistKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getTrackIDsByAlbumFn      func(albumKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getTrackIDsByGenreFn      func(genreKey string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getTrackIDsByFolderFn     func(folderPath string, page int, pageSize int) (utils.PaginationResponse[int], error)
+	getRecentFileIDsFn        func(limit int) ([]int, error)
+	getFavoriteFileIDsFn      func(limit int) ([]int, error)
+	getClusterInputsFn        func() ([]artistClusterInput, error)
+	getFileIDsByArtistsFn     func(artistKeys []string) ([]int, error)
+	getLibraryFilesByIDsFn    func(fileIDs []int) ([]files.FileModel, error)
 
 	queueEntries     []MusicQueueEntryModel
 	queueFailure     error
@@ -93,6 +97,24 @@ func (m *musicRepoMock) UpdatePlaylist(tx *sql.Tx, id int, name string, descript
 		return m.updatePlaylistFn(tx, id, name, description)
 	}
 	return PlaylistModel{}, nil
+}
+func (m *musicRepoMock) CreateRulePlaylist(tx *sql.Tx, name string, description string, rules PlaylistRules) (PlaylistModel, error) {
+	if m.createRulePlaylistFn != nil {
+		return m.createRulePlaylistFn(tx, name, description, rules)
+	}
+	return PlaylistModel{}, nil
+}
+func (m *musicRepoMock) UpdatePlaylistRules(tx *sql.Tx, id int, rules PlaylistRules) error {
+	if m.updatePlaylistRulesFn != nil {
+		return m.updatePlaylistRulesFn(tx, id, rules)
+	}
+	return nil
+}
+func (m *musicRepoMock) CountPlaylistRuleTracks(rules PlaylistRules, playlistID *int) (PlaylistRuleTotals, error) {
+	if m.countPlaylistRuleTracksFn != nil {
+		return m.countPlaylistRuleTracksFn(rules, playlistID)
+	}
+	return PlaylistRuleTotals{}, nil
 }
 func (m *musicRepoMock) DeletePlaylist(tx *sql.Tx, id int) error {
 	if m.deletePlaylistFn != nil {
@@ -362,7 +384,7 @@ func TestMusicService_PlaylistsCRUD(t *testing.T) {
 		t.Fatalf("expected create success, err=%v", err)
 	}
 	updated, err := svc.UpdatePlaylist(10, UpdatePlaylistRequest{Name: "up", Description: "desc"})
-	if err != nil || updated.Name != "up" {
+	if err != nil || updated.ID != 10 {
 		t.Fatalf("expected update success, err=%v", err)
 	}
 }

@@ -18,6 +18,9 @@ type PlaylistDto struct {
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 	TrackCount    int       `json:"track_count"`
+
+	Rules              *PlaylistRules `json:"rules"`
+	TotalLengthSeconds float64        `json:"total_length_seconds"`
 }
 
 type PlaylistTrackDto struct {
@@ -28,13 +31,15 @@ type PlaylistTrackDto struct {
 }
 
 type CreatePlaylistRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
+	Name        string         `json:"name" binding:"required"`
+	Description string         `json:"description"`
+	Rules       *PlaylistRules `json:"rules"`
 }
 
 type UpdatePlaylistRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
+	Name        string         `json:"name" binding:"required"`
+	Description string         `json:"description"`
+	Rules       *PlaylistRules `json:"rules"`
 }
 
 type AddTrackRequest struct {
@@ -93,14 +98,6 @@ func (m *PlayerStateModel) ToDto() PlayerStateDto {
 }
 
 func (m *PlaylistModel) ToDto() PlaylistDto {
-	kind := PlaylistKindManual
-	switch {
-	case m.IsAIGenerated:
-		kind = PlaylistKindAI
-	case m.IsSystem:
-		kind = PlaylistKindSystem
-	}
-
 	return PlaylistDto{
 		ID:            m.ID,
 		Name:          m.Name,
@@ -108,11 +105,14 @@ func (m *PlaylistModel) ToDto() PlaylistDto {
 		IsSystem:      m.IsSystem,
 		IsAuto:        false,
 		IsAIGenerated: m.IsAIGenerated,
-		Kind:          kind,
+		Kind:          m.Kind,
 		SourceKey:     "",
 		CreatedAt:     m.CreatedAt,
 		UpdatedAt:     m.UpdatedAt,
 		TrackCount:    m.TrackCount,
+
+		Rules:              m.Rules,
+		TotalLengthSeconds: m.TotalLengthSeconds,
 	}
 }
 

@@ -58,6 +58,10 @@ func (s *Service) GetPlaylistByID(id int) (PlaylistDto, error) {
 }
 
 func (s *Service) CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error) {
+	if req.Rules != nil {
+		return s.createRulePlaylist(req)
+	}
+
 	var result PlaylistModel
 
 	err := s.withTransaction(func(tx *sql.Tx) error {
@@ -76,27 +80,85 @@ func (s *Service) CreatePlaylist(req CreatePlaylistRequest) (PlaylistDto, error)
 	return result.ToDto(), nil
 }
 
+func (s *Service) createRulePlaylist(req CreatePlaylistRequest) (PlaylistDto, error) {
+	rules, validationError := validatedPlaylistRules(*req.Rules)
+	if validationError != nil {
+		return PlaylistDto{}, validationError
+	}
+
+	var createdPlaylistID int
+	err := s.withTransaction(func(tx *sql.Tx) error {
+		playlist, err := s.Repository.CreateRulePlaylist(tx, req.Name, req.Description, rules)
+		if err != nil {
+			return err
+		}
+		createdPlaylistID = playlist.ID
+		return nil
+	})
+	if err != nil {
+		return PlaylistDto{}, fmt.Errorf("erro ao criar playlist por regra: %w", err)
+	}
+
+	return s.GetPlaylistByID(createdPlaylistID)
+}
+
+func (s *Service) PreviewPlaylistRules(rules PlaylistRules) (PlaylistRulePreviewDto, error) {
+	sanitizedRules, validationError := validatedPlaylistRules(rules)
+	if validationError != nil {
+		return PlaylistRulePreviewDto{}, validationError
+	}
+
+	totals, err := s.Repository.CountPlaylistRuleTracks(sanitizedRules, nil)
+	if err != nil {
+		return PlaylistRulePreviewDto{}, err
+	}
+	return PlaylistRulePreviewDto{TrackCount: totals.TrackCount}, nil
+}
+
 func (s *Service) UpdatePlaylist(id int, req UpdatePlaylistRequest) (PlaylistDto, error) {
 	if id < 0 {
 		return PlaylistDto{}, ErrAutoPlaylistReadOnly
 	}
 
-	var result PlaylistModel
+	rules, err := s.rulesToStoreOnUpdate(id, req.Rules)
+	if err != nil {
+		return PlaylistDto{}, err
+	}
 
-	err := s.withTransaction(func(tx *sql.Tx) error {
-		playlist, err := s.Repository.UpdatePlaylist(tx, id, req.Name, req.Description)
-		if err != nil {
+	err = s.withTransaction(func(tx *sql.Tx) error {
+		if _, err := s.Repository.UpdatePlaylist(tx, id, req.Name, req.Description); err != nil {
 			return err
 		}
-		result = playlist
-		return nil
+		if rules == nil {
+			return nil
+		}
+		return s.Repository.UpdatePlaylistRules(tx, id, *rules)
 	})
-
 	if err != nil {
 		return PlaylistDto{}, fmt.Errorf("erro ao atualizar playlist: %w", err)
 	}
 
-	return result.ToDto(), nil
+	return s.GetPlaylistByID(id)
+}
+
+func (s *Service) rulesToStoreOnUpdate(playlistID int, requestedRules *PlaylistRules) (*PlaylistRules, error) {
+	if requestedRules == nil {
+		return nil, nil
+	}
+
+	playlist, err := s.Repository.GetPlaylistByID(playlistID)
+	if err != nil {
+		return nil, err
+	}
+	if playlist.Kind != PlaylistKindRule {
+		return nil, ErrPlaylistRulesNotAllowed
+	}
+
+	rules, validationError := validatedPlaylistRules(*requestedRules)
+	if validationError != nil {
+		return nil, validationError
+	}
+	return &rules, nil
 }
 
 func (s *Service) DeletePlaylist(id int) error {
