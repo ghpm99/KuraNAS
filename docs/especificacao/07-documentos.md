@@ -85,11 +85,13 @@ Biblioteca de documentos (lista, filtros, ordenação), busca por nome e por con
 | GET | `/documents/count` | total do filtro |
 | GET | `/documents/:file_id/index-state` | situação da indexação do texto (RN-07) |
 | POST | `/documents/:file_id/reindex` | reindexar o texto (RF-11) → `202` com `job_id` |
+| GET | `/documents/:file_id/text` | texto extraído para o leitor dos demais formatos (RF-10) |
 
 - **Parâmetros de `/documents` e `/documents/count`**: `format` (`pdf`, `text`, `spreadsheet`, `presentation`, `image`, `other`), `folder_id` (inclui subpastas — RF-05), `modified_from` e `modified_to` (data ISO), `favorites_only` (`true`), `index_state` (`indexed`, `partial`, `name_only`, `queued`, `failed`). `/documents` aceita ainda `page`, `page_size`, `sort` (`modified_at` — padrão —, `name`, `size`, `created_at`) e `order`. Valor inválido → `400` ([00/RN-52](00-padroes-transversais.md)).
 - **Item de `/documents`** (envelope de [00 §10](00-padroes-transversais.md)): `id`, `name`, `format`, `parent_path` (caminho lógico da pasta), `size`, `modified_at`, `created_at`, `starred`, `index_state`.
 - **`/documents/count`**: `{"total": 1234}`.
 - **`/documents/:file_id/index-state`**: `{"state": "partial", "indexed_bytes": 2097152, "reason": "", "error": ""}`; `reason` diz por que o texto não foi indexado quando `state` é `name_only` ou `failed` (`encrypted` — protegido por senha, `no_text` — digitalizado, `too_large`, `unsupported_format`, `binary`, `timeout`, `unreadable`); `error` é a mensagem traduzida quando `state` é `failed`.
+- **`/documents/:file_id/text`**: `{"text": "...", "is_partial": false}` — o texto já extraído pela indexação (até o limite de RN-04), sem nova extração; documento sem texto → `text` vazio; não documento → `404`.
 - **`/documents/search`** (já existe) passa a aceitar os mesmos filtros de `/documents` e cada resultado ganha `snippet` (trecho com o termo, quando o achado foi no conteúdo) e `page` (número da página no PDF, `null` quando não se aplica) — RF-02, RF-08.
 - A árvore de pastas de RF-05 usa `/files/tree` a partir da pasta de documentos (`/libraries`); não há endpoint próprio.
 
