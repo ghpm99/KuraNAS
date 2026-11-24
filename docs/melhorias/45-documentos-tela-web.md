@@ -53,6 +53,10 @@ Verificados no sistema rodando, com pelo menos três páginas de documentos.
 - [ ] Render sem mock de cada componente novo; seam test das mutações.
 - [ ] `make ci` verde.
 
+## Achados fora do escopo
+
+- `POST /files/move` responde `{"path": "/home/.../nas-data/Documentos/..."}` com o caminho do disco, não o caminho lógico — o mesmo defeito corrigido nas respostas do envio (task 35). Achado na verificação local de `07/CA-10`; vai para o board de revisão de Arquivos.
+
 ## Fora de escopo
 
 - OCR (`07/D-01`), etiquetas (`07/D-02`).
