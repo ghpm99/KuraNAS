@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { VideoPlaylistDto } from '@/service/videoPlayback';
 import VideoContextDetailView from './VideoContextDetailView';
-import VideoSeriesDetailView from './VideoSeriesDetailView';
 
 jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
     useVideoStarToggle: () => ({ toggleStar: jest.fn(), isStarTogglePending: false }),
@@ -124,111 +123,7 @@ describe('video detail views', () => {
         expect(onOpenVideo).toHaveBeenCalledWith(91);
     });
 
-    it('renders series detail with multiple seasons and toggles the selected season', () => {
-        render(
-            <VideoSeriesDetailView
-                playlist={{
-                    id: 11,
-                    name: 'Showcase',
-                    type: 'series',
-                    source_path: '/series/showcase',
-                    is_hidden: false,
-                    is_auto: true,
-                    group_mode: 'prefix',
-                    classification: 'series',
-                    item_count: 2,
-                    cover_video_id: 101,
-                    created_at: '2026-03-14T00:00:00Z',
-                    updated_at: '2026-03-14T00:00:00Z',
-                    last_played_at: null,
-                    items: [
-                        {
-                            id: 1,
-                            order_index: 0,
-                            source_kind: 'auto',
-                            status: 'completed',
-                            progress_pct: 100,
-                            video: {
-                                id: 101,
-                                name: 'Showcase S01E01.mkv',
-                                path: '/series/showcase/s01e01.mkv',
-                                parent_path: '/series/showcase',
-                                format: 'mkv',
-                                size: 80,
-                            },
-                        },
-                        {
-                            id: 2,
-                            order_index: 1,
-                            source_kind: 'auto',
-                            status: 'not_started',
-                            progress_pct: 0,
-                            video: {
-                                id: 102,
-                                name: 'Showcase S02E01.mkv',
-                                path: '/series/showcase/s02e01.mkv',
-                                parent_path: '/series/showcase',
-                                format: 'mkv',
-                                size: 82,
-                            },
-                        },
-                    ],
-                }}
-                onBack={jest.fn()}
-                onOpenVideo={jest.fn()}
-            />
-        );
-
-        expect(screen.getByRole('button', { name: 'Temporada 2' })).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', { name: 'Temporada 2' }));
-        expect(screen.getByText('1 de 2 concluidos')).toBeInTheDocument();
-    });
-
-    it('falls back to a single synthetic season when episode numbering is missing', () => {
-        render(
-            <VideoSeriesDetailView
-                playlist={{
-                    id: 12,
-                    name: 'Unsorted Series',
-                    type: 'series',
-                    source_path: '/series/unsorted',
-                    is_hidden: false,
-                    is_auto: true,
-                    group_mode: 'prefix',
-                    classification: 'series',
-                    item_count: 1,
-                    cover_video_id: null,
-                    created_at: '2026-03-14T00:00:00Z',
-                    updated_at: '2026-03-14T00:00:00Z',
-                    last_played_at: null,
-                    items: [
-                        {
-                            id: 3,
-                            order_index: 0,
-                            source_kind: 'manual',
-                            status: 'not_started',
-                            progress_pct: 0,
-                            video: {
-                                id: 103,
-                                name: 'Pilot.mkv',
-                                path: '/series/unsorted/pilot.mkv',
-                                parent_path: '/series/unsorted',
-                                format: 'mkv',
-                                size: 70,
-                            },
-                        },
-                    ],
-                }}
-                onBack={jest.fn()}
-                onOpenVideo={jest.fn()}
-            />
-        );
-
-        expect(screen.getByText('Temporada 1')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /Reproduzir/i })).toBeInTheDocument();
-    });
-
-    it('hides the playlist from the context and series detail views', () => {
+    it('hides the playlist from the context detail view', () => {
         const playlist: VideoPlaylistDto = {
             id: 9,
             name: 'Loose Clips',
@@ -246,9 +141,8 @@ describe('video detail views', () => {
             items: [],
         };
         const onHideContext = jest.fn();
-        const onHideSeries = jest.fn();
 
-        const { unmount } = render(
+        render(
             <VideoContextDetailView
                 playlist={playlist}
                 onBack={jest.fn()}
@@ -258,17 +152,5 @@ describe('video detail views', () => {
         );
         fireEvent.click(screen.getByRole('button', { name: /VIDEO_HIDE_PLAYLIST/ }));
         expect(onHideContext).toHaveBeenCalledTimes(1);
-        unmount();
-
-        render(
-            <VideoSeriesDetailView
-                playlist={playlist}
-                onBack={jest.fn()}
-                onOpenVideo={jest.fn()}
-                onHide={onHideSeries}
-            />
-        );
-        fireEvent.click(screen.getByRole('button', { name: /VIDEO_HIDE_PLAYLIST/ }));
-        expect(onHideSeries).toHaveBeenCalledTimes(1);
     });
 });

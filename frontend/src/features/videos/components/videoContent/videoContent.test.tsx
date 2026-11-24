@@ -21,6 +21,7 @@ const mockRemoveVideoFromPlaylist = jest.fn();
 const mockReorderVideoPlaylist = jest.fn();
 const mockUpdateVideoPlaylistName = jest.fn();
 const mockGetVideoPlaybackState = jest.fn();
+const mockGetVideoSeriesHeader = jest.fn();
 
 jest.mock('@/service/videoPlayback', () => ({
     getVideoPlaylistPosterUrl: (playlistId: number) => `/poster/playlists/${playlistId}`,
@@ -39,6 +40,7 @@ jest.mock('@/service/videoPlayback', () => ({
     reorderVideoPlaylist: (...args: any[]) => mockReorderVideoPlaylist(...args),
     updateVideoPlaylistName: (...args: any[]) => mockUpdateVideoPlaylistName(...args),
     getVideoPlaybackState: (...args: any[]) => mockGetVideoPlaybackState(...args),
+    getVideoSeriesHeader: (...args: any[]) => mockGetVideoSeriesHeader(...args),
     searchVideoPlaylists: jest.fn(),
     getVideoPlaylistsByVideo: jest.fn(),
 }));
@@ -142,6 +144,8 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
                 return `${params?.completed ?? 0} de ${params?.count ?? 0} concluidos`;
             }
             if (key === 'VIDEO_DETAIL_COLLECTION_META') return `${params?.count ?? 0} itens`;
+            if (key === 'VIDEO_SERIES_CONTINUE')
+                return `Continuar T${params?.season}E${params?.episode}`;
             if (key === 'VIDEO_DETAIL_SEASON_LABEL')
                 return `Temporada ${params?.season ?? ''}`.trim();
             if (key === 'VIDEO_DETAIL_SEASON_DESCRIPTION')
@@ -395,6 +399,23 @@ beforeEach(() => {
         if (subKey === 'continue-watching') return { data: continueWatchingData };
         if (subKey === 'home-catalog') return { data: homeCatalogData, isLoading: false };
         if (subKey === 'playback-state') return { data: playbackData };
+        if (subKey === 'series-header') {
+            return {
+                data: {
+                    seasons: [{ season: 1, episode_count: 2, watched_count: 1 }],
+                    resume: {
+                        video_id: 31,
+                        season: 1,
+                        episode: 2,
+                        position_seconds: 10,
+                        mode: 'continue',
+                    },
+                },
+                isSuccess: true,
+                isPending: false,
+                isError: false,
+            };
+        }
         return { data: undefined, isLoading: false };
     });
     mockUseInfiniteQuery.mockImplementation((options: any) => {
@@ -441,6 +462,7 @@ beforeEach(() => {
                     ],
                 },
                 isLoading: selectedPlaylistLoading,
+                isPending: selectedPlaylistLoading,
                 isFetchingNextPage: false,
                 hasNextPage: false,
                 fetchNextPage: jest.fn(),
@@ -603,9 +625,9 @@ describe('components/videos/videoContent', () => {
         render(<VideoContent />);
         expect(screen.getByText('Temporada 1')).toBeInTheDocument();
         expect(screen.getAllByText('Show').length).toBeGreaterThan(0);
-        expect(screen.getByText('Retomar agora')).toBeInTheDocument();
+        expect(screen.getByText('Continuar T1E2')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: /Retomar agora/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Continuar T1E2/i }));
         expect(mockNavigate).toHaveBeenCalledWith(
             '/video/31?playlist=1&from=%2Fvideos%2Fseries%2Fplaylist-one',
             {
@@ -621,8 +643,8 @@ describe('components/videos/videoContent', () => {
 
         render(<VideoContent />);
 
-        expect(mockGetVideoPlaylistItemsPage).toHaveBeenCalledWith(99, 1, 50);
-        expect(mockGetVideoPlaylistItemsPage).not.toHaveBeenCalledWith(1, 1, 50);
+        expect(mockGetVideoSeriesHeader).toHaveBeenCalledWith(99);
+        expect(mockGetVideoSeriesHeader).not.toHaveBeenCalledWith(1);
     });
 
     it('falls back to the name slug when the playlist id is not in the url', () => {
@@ -632,7 +654,7 @@ describe('components/videos/videoContent', () => {
 
         render(<VideoContent />);
 
-        expect(mockGetVideoPlaylistItemsPage).toHaveBeenCalledWith(99, 1, 50);
+        expect(mockGetVideoSeriesHeader).toHaveBeenCalledWith(99);
     });
 
     it('renders folder detail branch and actions', () => {

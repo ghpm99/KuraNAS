@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import VideoContextDetailView from './VideoContextDetailView';
 import VideoPlaylistDetailView from './VideoPlaylistDetailView';
-import VideoSeriesDetailView from './VideoSeriesDetailView';
 import type { VideoPlaylistDto, VideoPlaylistItemDto } from '@/service/videoPlayback';
 
 jest.mock('@/features/videos/hooks/useVideoStarToggle/useVideoStarToggle', () => ({
@@ -46,7 +45,6 @@ const buildPlaylist = (items: VideoPlaylistItemDto[], itemCount: number): VideoP
 });
 
 const firstPageItems = [buildItem(0, 'Show S01E01.mkv'), buildItem(1, 'Show S01E02.mkv')];
-const secondPageItems = [buildItem(2, 'Show S02E01.mkv'), buildItem(3, 'Show S02E02.mkv')];
 
 const renderPlaylistView = (
     playlist: VideoPlaylistDto,
@@ -74,20 +72,6 @@ describe('detail views item paging', () => {
                 playlist: VideoPlaylistDto,
                 paging: { hasMoreItems?: boolean; onLoadMoreItems?: () => void }
             ) => renderPlaylistView(playlist, paging),
-        ],
-        [
-            'series',
-            (
-                playlist: VideoPlaylistDto,
-                paging: { hasMoreItems?: boolean; onLoadMoreItems?: () => void }
-            ) => (
-                <VideoSeriesDetailView
-                    playlist={playlist}
-                    onBack={jest.fn()}
-                    onOpenVideo={jest.fn()}
-                    {...paging}
-                />
-            ),
         ],
         [
             'context',
@@ -118,60 +102,4 @@ describe('detail views item paging', () => {
             expect(onLoadMoreItems).toHaveBeenCalledTimes(1);
         }
     );
-
-    it('series view groups seasons incrementally as further pages arrive', () => {
-        const buildSeries = (items: VideoPlaylistItemDto[]) => (
-            <VideoSeriesDetailView
-                playlist={buildPlaylist(items, 4)}
-                onBack={jest.fn()}
-                onOpenVideo={jest.fn()}
-                hasMoreItems={items.length < 4}
-                onLoadMoreItems={jest.fn()}
-            />
-        );
-        const { rerender } = render(buildSeries(firstPageItems));
-
-        expect(screen.queryByRole('button', { name: /VIDEO_DETAIL_SEASON_LABEL/ })).toBeNull();
-        expect(screen.getByText('S01E01')).toBeInTheDocument();
-        expect(screen.queryByText('S02E01')).not.toBeInTheDocument();
-
-        rerender(buildSeries([...firstPageItems, ...secondPageItems]));
-
-        expect(screen.queryAllByRole('button', { name: 'LOAD_MORE' })).toHaveLength(0);
-        const seasonChips = screen
-            .getAllByRole('button')
-            .filter((button) => button.textContent === 'VIDEO_DETAIL_SEASON_LABEL');
-        expect(seasonChips).toHaveLength(2);
-
-        fireEvent.click(seasonChips[1] as HTMLElement);
-
-        expect(screen.getByText('S02E01')).toBeInTheDocument();
-        expect(screen.queryByText('S01E01')).not.toBeInTheDocument();
-    });
-
-    it('series view keeps appending episodes to the season already open', () => {
-        const pageOne = [buildItem(0, 'Show S01E01.mkv'), buildItem(1, 'Show S01E02.mkv')];
-        const pageTwo = [buildItem(2, 'Show S01E03.mkv')];
-        const { rerender } = render(
-            <VideoSeriesDetailView
-                playlist={buildPlaylist(pageOne, 3)}
-                onBack={jest.fn()}
-                onOpenVideo={jest.fn()}
-                hasMoreItems
-            />
-        );
-
-        expect(screen.queryByText('S01E03')).not.toBeInTheDocument();
-
-        rerender(
-            <VideoSeriesDetailView
-                playlist={buildPlaylist([...pageOne, ...pageTwo], 3)}
-                onBack={jest.fn()}
-                onOpenVideo={jest.fn()}
-            />
-        );
-
-        expect(screen.getByText('S01E03')).toBeInTheDocument();
-        expect(screen.getByText('S01E01')).toBeInTheDocument();
-    });
 });

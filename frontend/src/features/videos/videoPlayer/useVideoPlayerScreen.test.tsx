@@ -455,4 +455,68 @@ describe('features/videos/videoPlayer/useVideoPlayerScreen', () => {
         expect(result.current.originBadgeLabel).toBe('Videos');
         expect(result.current.contextDescription).toBe('From Videos');
     });
+
+    describe('server order across seasons (06/RN-17, CA-10)', () => {
+        const buildSeasonItem = (
+            order: number,
+            season: number,
+            episode: number,
+            videoId: number
+        ) => ({
+            id: 200 + order,
+            order_index: order,
+            source_kind: 'auto' as const,
+            status: 'not_started' as const,
+            progress_pct: 0,
+            season,
+            episode,
+            video: {
+                id: videoId,
+                name: `release-${videoId}.mkv`,
+                format: 'mkv',
+                path: '',
+                parent_path: '/library/my-show',
+                size: 1,
+            },
+        });
+        const seasonItems = [
+            buildSeasonItem(0, 1, 1, 41),
+            buildSeasonItem(1, 1, 2, 42),
+            buildSeasonItem(2, 2, 1, 43),
+            buildSeasonItem(3, 2, 2, 44),
+        ];
+
+        const renderOnVideo = (videoId: number) => {
+            const currentVideo = seasonItems.find((item) => item.video.id === videoId)?.video;
+            mockUseVideoPlayer.mockReturnValue(
+                buildPlayerState({
+                    currentVideo,
+                    playlist: buildPlaylist({ item_count: 4, items: seasonItems }),
+                })
+            );
+            return renderHook(() => useVideoPlayerScreen());
+        };
+
+        it('opens the first episode of the next season from the last episode of a season', () => {
+            const { result } = renderOnVideo(42);
+
+            expect(result.current.hasNextVideo).toBe(true);
+            expect(result.current.nextItem?.video.id).toBe(43);
+            expect(result.current.nextItem?.season).toBe(2);
+            expect(result.current.nextItem?.episode).toBe(1);
+        });
+
+        it('goes back across the season boundary', () => {
+            const { result } = renderOnVideo(43);
+
+            expect(result.current.hasPreviousVideo).toBe(true);
+        });
+
+        it('disables next on the last episode of the series', () => {
+            const { result } = renderOnVideo(44);
+
+            expect(result.current.hasNextVideo).toBe(false);
+            expect(result.current.nextItem).toBeNull();
+        });
+    });
 });

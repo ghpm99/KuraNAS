@@ -1,6 +1,8 @@
 import {
     getHiddenVideoPlaylists,
     getVideoPlaylistById,
+    getVideoPlaylistItemsPage,
+    getVideoSeriesHeader,
     getVideoPlaylistsByVideo,
     getVideoPlaylistsBySection,
     searchVideoPlaylists,
@@ -16,6 +18,9 @@ export const videoQueryKeys = {
         ['video', 'playlists', 'section', section, pageSize] as const,
     playlistDetail: (playlistId?: number) => ['video', 'playlist-detail', playlistId] as const,
     playlistItems: (playlistId?: number) => ['video', 'playlist-items', playlistId] as const,
+    seriesHeader: (playlistId?: number) => ['video', 'series-header', playlistId] as const,
+    seasonEpisodes: (playlistId?: number, season?: number) =>
+        ['video', 'playlist-items', playlistId, 'season', season] as const,
     hiddenPlaylists: (pageSize: number) => ['video', 'playlists', 'hidden', pageSize] as const,
     playlistSearch: (query: string) => ['video', 'playlists', 'search', query] as const,
     homeCatalog: ['video', 'home-catalog'] as const,
@@ -82,6 +87,31 @@ export const useVideoSectionPlaylists = (
         queryKey: videoQueryKeys.sectionPlaylists(section, pageSize),
         enabled: isEnabled,
         queryFn: ({ pageParam }) => getVideoPlaylistsBySection(section, pageParam, pageSize),
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) =>
+            lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,
+    });
+};
+
+export const useVideoSeriesHeader = (playlistId?: number) => {
+    return useQuery({
+        queryKey: videoQueryKeys.seriesHeader(playlistId),
+        queryFn: () => getVideoSeriesHeader(playlistId as number),
+        enabled: Boolean(playlistId),
+    });
+};
+
+export const useVideoSeasonEpisodes = (
+    playlistId: number | undefined,
+    season: number | undefined,
+    pageSize: number,
+    isEnabled: boolean
+) => {
+    return useInfiniteQuery({
+        queryKey: videoQueryKeys.seasonEpisodes(playlistId, season),
+        enabled: Boolean(playlistId) && isEnabled,
+        queryFn: ({ pageParam }) =>
+            getVideoPlaylistItemsPage(playlistId as number, pageParam, pageSize, season),
         initialPageParam: 1,
         getNextPageParam: (lastPage) =>
             lastPage?.pagination?.has_next ? lastPage.pagination.page + 1 : undefined,

@@ -1031,12 +1031,14 @@ describe('VideoContentProvider', () => {
     });
 
     it('exposes selectedPlaylistFailure when the playlist detail fails', async () => {
-        mockGetVideoPlaylists.mockResolvedValue([createPlaylist({ id: 7, name: 'Show' })]);
+        mockGetVideoPlaylists.mockResolvedValue([
+            createPlaylist({ id: 7, name: 'Show', classification: 'personal' }),
+        ]);
         mockGetVideoPlaylistItemsPage.mockRejectedValueOnce({
             response: { data: { error: 'detail down' } },
         });
         const { result } = renderHook(() => useVideoContentProvider(), {
-            wrapper: createWrapper(['/videos/series/show?playlist=7']),
+            wrapper: createWrapper(['/videos/personal/show?playlist=7']),
         });
 
         await waitFor(() => expect(result.current.selectedPlaylistFailure).not.toBeNull());
@@ -1101,6 +1103,18 @@ describe('VideoContentProvider', () => {
             expect(mockGetVideoPlaylistsBySection).toHaveBeenCalledTimes(callsBefore);
         });
 
+        it('does not fetch the generic items page for a series playlist', async () => {
+            mockGetVideoPlaylists.mockResolvedValue(seriesFixtures(3));
+
+            const { result } = renderHook(() => useVideoContentProvider(), {
+                wrapper: createWrapper(['/videos/series/show-2?playlist=2']),
+            });
+
+            await waitFor(() => expect(result.current.selectedPlaylistSummary?.id).toBe(2));
+
+            expect(mockGetVideoPlaylistItemsPage).not.toHaveBeenCalled();
+        });
+
         it('takes the header from a loaded page without fetching the playlist by id', async () => {
             mockGetVideoPlaylists.mockResolvedValue(seriesFixtures(3));
 
@@ -1116,7 +1130,7 @@ describe('VideoContentProvider', () => {
         it('fetches the header by id when the playlist is in no loaded page', async () => {
             mockGetVideoPlaylists.mockResolvedValue(seriesFixtures(30));
             mockGetVideoPlaylistById.mockResolvedValue(
-                createPlaylist({ id: 99, name: 'Deep Show' })
+                createPlaylist({ id: 99, name: 'Deep Show', classification: 'movie' })
             );
 
             const { result } = renderHook(() => useVideoContentProvider(), {

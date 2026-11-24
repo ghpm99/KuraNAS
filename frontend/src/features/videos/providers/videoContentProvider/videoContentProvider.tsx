@@ -348,9 +348,13 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
     });
     const selectedPlaylistSummary = loadedPlaylistForSelection ?? playlistHeaderQuery.data ?? null;
 
+    const isSelectedPlaylistSeries =
+        selectedPlaylistSummary?.classification === 'series' ||
+        selectedPlaylistSummary?.classification === 'anime';
+
     const selectedPlaylistQuery = useInfiniteQuery({
         queryKey: videoQueryKeys.playlistItems(selectedPlaylistSummary?.id),
-        enabled: Boolean(selectedPlaylistSummary?.id),
+        enabled: Boolean(selectedPlaylistSummary?.id) && !isSelectedPlaylistSeries,
         queryFn: ({ pageParam = 1 }) =>
             getVideoPlaylistItemsPage(
                 selectedPlaylistSummary?.id ?? 0,
@@ -404,6 +408,7 @@ export function VideoContentProvider({ children }: { children: ReactNode }) {
         await Promise.all([
             queryClient.invalidateQueries({ queryKey: videoQueryKeys.playlists }),
             queryClient.invalidateQueries({ queryKey: ['video', 'playlist-detail'] }),
+            queryClient.invalidateQueries({ queryKey: ['video', 'series-header'] }),
             queryClient.invalidateQueries({ queryKey: ['video', 'playlist-items'] }),
             queryClient.invalidateQueries({
                 queryKey: ['video', 'playlists-of-video'],

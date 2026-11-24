@@ -41,6 +41,8 @@ export interface VideoPlaylistItemDto {
     video: VideoFileDto;
     status: 'not_started' | 'in_progress' | 'completed';
     progress_pct: number;
+    season?: number | null;
+    episode?: number | null;
 }
 
 export interface VideoPlaylistDto {
@@ -58,6 +60,27 @@ export interface VideoPlaylistDto {
     updated_at: string;
     last_played_at: string | null;
     items: VideoPlaylistItemDto[];
+}
+
+export interface VideoSeriesSeasonDto {
+    season: number;
+    episode_count: number;
+    watched_count: number;
+}
+
+export type VideoSeriesResumeMode = 'continue' | 'start' | 'rewatch';
+
+export interface VideoSeriesResumeDto {
+    video_id: number;
+    season: number | null;
+    episode: number | null;
+    position_seconds: number;
+    mode: VideoSeriesResumeMode;
+}
+
+export interface VideoSeriesHeaderDto extends Omit<VideoPlaylistDto, 'items'> {
+    seasons?: VideoSeriesSeasonDto[] | null;
+    resume?: VideoSeriesResumeDto | null;
 }
 
 export interface VideoPlaybackStateDto {
@@ -240,14 +263,27 @@ export const getVideoPlaylistById = async (playlistId: number): Promise<VideoPla
     return response.data;
 };
 
+export const getVideoSeriesHeader = async (playlistId: number): Promise<VideoSeriesHeaderDto> => {
+    const response = await apiBase.get<VideoSeriesHeaderDto>(`/video/playlists/${playlistId}`, {
+        params: { include_items: false },
+    });
+    return response.data;
+};
+
 export const getVideoPlaylistItemsPage = async (
     playlistId: number,
     page: number,
-    pageSize: number
+    pageSize: number,
+    season?: number
 ): Promise<Pagination<VideoPlaylistItemDto>> => {
     const response = await apiBase.get<Pagination<VideoPlaylistItemDto>>(
         `/video/playlists/${playlistId}/items`,
-        { params: { page, page_size: pageSize } }
+        {
+            params:
+                season === undefined
+                    ? { page, page_size: pageSize }
+                    : { page, page_size: pageSize, season },
+        }
     );
     return response.data;
 };

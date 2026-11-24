@@ -1,27 +1,28 @@
-import { ArrowLeft, Play } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { CircularProgress } from '@mui/material';
+import ErrorState from '@/components/errorState/errorState';
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { getApiV1BaseUrl } from '@/service/apiUrl';
-import { type VideoPlaylistDto } from '@/service/videoPlayback';
-import { useVideoPlaylistDetail } from '../useVideoPlaylistDetail';
-import VideoDetailListItem from './VideoDetailListItem';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
+import { getVideoPlaylistPosterUrl, type VideoPlaylistDto } from '@/service/videoPlayback';
+import { useVideoSeriesDetail } from '../useVideoSeriesDetail';
+import VideoEpisodeRow from './VideoEpisodeRow';
 import VideoHidePlaylistButton from './VideoHidePlaylistButton';
-import LoadMoreSentinel from '@/components/loadMoreSentinel/loadMoreSentinel';
+import VideoSeriesResumeButton from './VideoSeriesResumeButton';
 import styles from '../videoContent.module.css';
 
 type VideoSeriesDetailViewProps = {
-    playlist: VideoPlaylistDto;
+    playlist: Pick<VideoPlaylistDto, 'id' | 'name' | 'item_count'>;
     onBack: () => void;
     onOpenVideo: (videoId: number) => void;
     isChangingVisibility?: boolean;
     onHide?: () => void;
     onSetWatched?: (videoId: number, watched: boolean) => void;
-    hasMoreItems?: boolean;
-    isFetchingMoreItems?: boolean;
-    onLoadMoreItems?: () => void;
 };
 
-const apiBase = `${getApiV1BaseUrl()}/files`;
+const heroPosterWidth = 1280;
+const heroPosterHeight = 720;
 
 export default function VideoSeriesDetailView({
     playlist,
@@ -30,41 +31,50 @@ export default function VideoSeriesDetailView({
     isChangingVisibility = false,
     onHide,
     onSetWatched,
-    hasMoreItems,
-    isFetchingMoreItems,
-    onLoadMoreItems,
 }: VideoSeriesDetailViewProps) {
     const { t } = useI18n();
-    const { groupedSeasons, completedCount, orderedItems, resumeItem } =
-        useVideoPlaylistDetail(playlist);
-    const [selectedSeasonKey, setSelectedSeasonKey] = useState('');
-    const resolvedSeasonKey =
-        groupedSeasons.find((group) => group.key === selectedSeasonKey)?.key ??
-        groupedSeasons[0]?.key ??
-        '';
+    const {
+        headerQuery,
+        seasons,
+        resume,
+        selectedSeason,
+        selectSeason,
+        episodesQuery,
+        episodes,
+        totalEpisodes,
+        watchedEpisodes,
+        selectedSeasonEpisodeCount,
+    } = useVideoSeriesDetail(playlist.id);
+    const retryEpisodes = useRetryFailedPage(episodesQuery);
 
-    const visibleSeasons =
-        groupedSeasons.length > 0
-            ? groupedSeasons.filter((group) => group.key === resolvedSeasonKey)
-            : [
-                  {
-                      key: 'season-1',
-                      label: '1',
-                      items: orderedItems,
-                  },
-              ];
-    const coverId = resumeItem?.video.id ?? playlist.cover_video_id ?? orderedItems[0]?.video.id;
+    if (headerQuery.isError) {
+        return (
+            <div className={styles.page}>
+                <button type="button" className={styles.backBtn} onClick={onBack}>
+                    <ArrowLeft size={16} />
+                    <span>{t('VIDEO_BACK_TO_VIDEOS')}</span>
+                </button>
+                <ErrorState
+                    title={t('VIDEO_SECTION_LOAD_ERROR', { section: playlist.name })}
+                    backendMessage={extractBackendErrorMessage(headerQuery.error)}
+                    onRetry={() => void headerQuery.refetch()}
+                />
+            </div>
+        );
+    }
+
+    const episodeTotal = totalEpisodes || playlist.item_count;
+    const progressPercent = episodeTotal > 0 ? (watchedEpisodes / episodeTotal) * 100 : 0;
+    const isLoadingEpisodes = headerQuery.isPending || episodesQuery.isPending;
 
     return (
         <div className={styles.page}>
             <section className={styles.hero}>
-                {coverId && (
-                    <img
-                        className={styles.heroImage}
-                        src={`${apiBase}/video-thumbnail/${coverId}?width=1280&height=720`}
-                        alt={playlist.name}
-                    />
-                )}
+                <img
+                    className={styles.heroImage}
+                    src={getVideoPlaylistPosterUrl(playlist.id, heroPosterWidth, heroPosterHeight)}
+                    alt={playlist.name}
+                />
                 <div className={styles.heroShade} />
                 <div className={styles.heroContent}>
                     <button type="button" className={styles.backBtn} onClick={onBack}>
@@ -75,24 +85,24 @@ export default function VideoSeriesDetailView({
                     <h2 className={styles.heroTitle}>{playlist.name}</h2>
                     <p className={styles.heroMeta}>
                         {t('VIDEO_DETAIL_SERIES_PROGRESS', {
-                            completed: String(completedCount),
-                            count: String(playlist.item_count),
+                            completed: String(watchedEpisodes),
+                            count: String(episodeTotal),
                         })}
                     </p>
+                    <div
+                        className={styles.progressTrack}
+                        role="progressbar"
+                        aria-valuenow={Math.round(progressPercent)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                    >
+                        <div
+                            className={styles.progressFill}
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </div>
                     <div className={styles.detailHeroActions}>
-                        <button
-                            type="button"
-                            className={styles.actionBtnPrimary}
-                            onClick={() => resumeItem && onOpenVideo(resumeItem.video.id)}
-                            disabled={!resumeItem}
-                        >
-                            <Play size={16} />
-                            <span>
-                                {resumeItem?.status === 'in_progress'
-                                    ? t('VIDEO_DETAIL_RESUME_ACTION')
-                                    : t('VIDEO_PLAY')}
-                            </span>
-                        </button>
+                        <VideoSeriesResumeButton resume={resume} onOpenVideo={onOpenVideo} />
                         <VideoHidePlaylistButton
                             isChanging={isChangingVisibility}
                             onHide={onHide}
@@ -101,54 +111,71 @@ export default function VideoSeriesDetailView({
                 </div>
             </section>
 
-            {groupedSeasons.length > 1 && (
+            {seasons.length > 1 && (
                 <section className={styles.sectionBlock}>
                     <div className={styles.seasonSelector}>
-                        {groupedSeasons.map((group) => (
+                        {seasons.map((season) => (
                             <button
-                                key={group.key}
+                                key={season.season}
                                 type="button"
+                                aria-pressed={season.season === selectedSeason}
                                 className={
-                                    group.key === resolvedSeasonKey
+                                    season.season === selectedSeason
                                         ? styles.seasonChipActive
                                         : styles.seasonChip
                                 }
-                                onClick={() => setSelectedSeasonKey(group.key)}
+                                onClick={() => selectSeason(season.season)}
                             >
-                                {t('VIDEO_DETAIL_SEASON_LABEL', { season: group.label })}
+                                {t('VIDEO_DETAIL_SEASON_LABEL', { season: String(season.season) })}
                             </button>
                         ))}
                     </div>
                 </section>
             )}
 
-            {visibleSeasons.map((group) => (
-                <section key={group.key} className={styles.sectionBlock}>
+            <section className={styles.sectionBlock}>
+                {selectedSeason !== undefined && (
                     <div className={styles.sectionHeader}>
-                        <h2>{t('VIDEO_DETAIL_SEASON_LABEL', { season: group.label })}</h2>
+                        <h2>
+                            {t('VIDEO_DETAIL_SEASON_LABEL', { season: String(selectedSeason) })}
+                        </h2>
                         <p>
                             {t('VIDEO_DETAIL_SEASON_DESCRIPTION', {
-                                count: String(group.items.length),
+                                count: String(selectedSeasonEpisodeCount),
                             })}
                         </p>
                     </div>
-                    <div className={styles.detailListStack}>
-                        {group.items.map((item) => (
-                            <VideoDetailListItem
-                                key={item.id}
-                                item={item}
-                                onOpenVideo={onOpenVideo}
-                                onSetWatched={onSetWatched}
-                            />
-                        ))}
+                )}
+                {isLoadingEpisodes ? (
+                    <div className={styles.loadingState}>
+                        <CircularProgress size={28} aria-label={t('LOADING')} />
                     </div>
-                </section>
-            ))}
-            <LoadMoreSentinel
-                hasNextPage={hasMoreItems}
-                isFetchingNextPage={isFetchingMoreItems}
-                fetchNextPage={onLoadMoreItems}
-            />
+                ) : (
+                    <ListFeedback
+                        isEmpty={episodes.length === 0}
+                        isError={episodesQuery.isError}
+                        isNextPageError={episodesQuery.isFetchNextPageError}
+                        errorTitle={t('VIDEO_SECTION_LOAD_ERROR', { section: playlist.name })}
+                        errorMessage={extractBackendErrorMessage(episodesQuery.error)}
+                        onRetry={retryEpisodes}
+                        hasNextPage={episodesQuery.hasNextPage}
+                        isFetchingNextPage={episodesQuery.isFetchingNextPage}
+                        onLoadMore={() => void episodesQuery.fetchNextPage()}
+                        emptyState={null}
+                    >
+                        <div className={styles.detailListStack}>
+                            {episodes.map((episode) => (
+                                <VideoEpisodeRow
+                                    key={episode.id}
+                                    episode={episode}
+                                    onOpenVideo={onOpenVideo}
+                                    onSetWatched={onSetWatched}
+                                />
+                            ))}
+                        </div>
+                    </ListFeedback>
+                )}
+            </section>
         </div>
     );
 }

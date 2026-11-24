@@ -41,7 +41,7 @@ const playlist = {
     is_hidden: false,
     is_auto: true,
     group_mode: 'folder',
-    classification: 'series',
+    classification: 'personal',
     item_count: 2,
     cover_video_id: 10,
     created_at: '2026-01-01T00:00:00Z',

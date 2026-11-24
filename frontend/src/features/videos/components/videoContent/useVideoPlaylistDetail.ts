@@ -9,12 +9,6 @@ export type VideoDetailItem = VideoPlaylistItemDto & {
     episodeNumber: number | null;
 };
 
-export type VideoSeasonGroup = {
-    key: string;
-    label: string;
-    items: VideoDetailItem[];
-};
-
 type ParsedEpisode = {
     displayTitle: string;
     seasonNumber: number | null;
@@ -26,7 +20,7 @@ const extensionPattern = /\.[^/.]+$/;
 const whitespacePattern = /[._-]+/g;
 const spaceCollapsePattern = /\s+/g;
 
-const parseEpisode = (name: string): ParsedEpisode => {
+export const parseEpisode = (name: string): ParsedEpisode => {
     const cleanName = name.replace(extensionPattern, '');
 
     const seasonEpisode = parseSeasonEpisode(cleanName);
@@ -59,14 +53,24 @@ const parseEpisode = (name: string): ParsedEpisode => {
     };
 };
 
+const buildSequenceLabel = (seasonNumber: number | null, episodeNumber: number | null): string =>
+    episodeNumber === null || episodeNumber <= 0
+        ? ''
+        : `S${String(seasonNumber ?? 1).padStart(2, '0')}E${String(episodeNumber).padStart(2, '0')}`;
+
 export const buildVideoPlaylistDetail = (playlist: VideoPlaylistDto) => {
     const orderedItems = [...playlist.items]
         .sort((a, b) => a.order_index - b.order_index || a.id - b.id)
         .map((item) => {
             const parsed = parseEpisode(item.video.name);
+            const seasonNumber = item.season ?? parsed.seasonNumber;
+            const episodeNumber = item.episode ?? parsed.episodeNumber;
             return {
                 ...item,
-                ...parsed,
+                displayTitle: parsed.displayTitle,
+                seasonNumber,
+                episodeNumber,
+                sequenceLabel: buildSequenceLabel(seasonNumber, episodeNumber),
             };
         });
 
@@ -79,30 +83,8 @@ export const buildVideoPlaylistDetail = (playlist: VideoPlaylistDto) => {
         null;
     const hasEpisodeData = orderedItems.some((item) => item.episodeNumber !== null);
 
-    const groupedSeasons = hasEpisodeData
-        ? orderedItems.reduce<VideoSeasonGroup[]>((groups, item) => {
-              const seasonNumber = item.seasonNumber ?? 1;
-              const key = `season-${seasonNumber}`;
-              const existingGroup = groups.find((group) => group.key === key);
-              if (existingGroup) {
-                  existingGroup.items.push(item);
-                  return groups;
-              }
-
-              return [
-                  ...groups,
-                  {
-                      key,
-                      label: String(seasonNumber),
-                      items: [item],
-                  },
-              ];
-          }, [])
-        : [];
-
     return {
         orderedItems,
-        groupedSeasons,
         completedCount,
         hasEpisodeData,
         resumeItem,

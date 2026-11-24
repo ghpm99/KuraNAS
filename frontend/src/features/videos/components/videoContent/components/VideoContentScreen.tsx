@@ -91,6 +91,21 @@ export default function VideoContentScreen() {
     } = useVideoContentProvider();
 
     if (selectedPlaylistSummary) {
+        if (
+            selectedPlaylistSummary.classification === 'series' ||
+            selectedPlaylistSummary.classification === 'anime'
+        ) {
+            return (
+                <VideoSeriesDetailView
+                    playlist={selectedPlaylistSummary}
+                    isChangingVisibility={isChangingPlaylistVisibility}
+                    onHide={hideSelectedPlaylist}
+                    onBack={clearSelectedPlaylist}
+                    onOpenVideo={openPlaylistVideo}
+                    onSetWatched={setVideoWatched}
+                />
+            );
+        }
         if (selectedPlaylistFailure) {
             return (
                 <div className={styles.page}>
@@ -110,25 +125,6 @@ export default function VideoContentScreen() {
                     <CircularProgress size={40} />
                     <Typography variant="h6">{t('VIDEO_LOADING_PLAYLIST')}</Typography>
                 </div>
-            );
-        }
-
-        if (
-            selectedPlaylistDetail.classification === 'series' ||
-            selectedPlaylistDetail.classification === 'anime'
-        ) {
-            return (
-                <VideoSeriesDetailView
-                    playlist={selectedPlaylistDetail}
-                    isChangingVisibility={isChangingPlaylistVisibility}
-                    onHide={hideSelectedPlaylist}
-                    onBack={clearSelectedPlaylist}
-                    onOpenVideo={openPlaylistVideo}
-                    onSetWatched={setVideoWatched}
-                    hasMoreItems={hasMoreSelectedPlaylistItems}
-                    isFetchingMoreItems={isFetchingMoreSelectedPlaylistItems}
-                    onLoadMoreItems={loadMoreSelectedPlaylistItems}
-                />
             );
         }
 
