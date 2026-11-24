@@ -27,6 +27,10 @@ Trocar a faixa de áudio durante a reprodução e lembrar o idioma escolhido par
 - [ ] Testes: montagem dos argumentos do ffmpeg com e sem o índice; teste do handler para o `400`; render sem mock do menu.
 - [ ] `make ci` verde.
 
+## Sub-itens
+
+- [ ] **43.1** — o remux (`-ss` antes de `-i` com `-c copy`) começa no quadro-chave anterior ao `start`, mas a web trata o fluxo como se começasse exatamente em `start` (`remuxOffsetSecondsRef`). Com quadros-chave espaçados (MKV de teste com GOP de 10 s: `start=10` entrega os 30 s inteiros; `start=15` entrega a partir de 10 s), a posição exibida e o ponto de retomada erram até um GOP — fura a tolerância de 2 s do primeiro critério e afeta o avançar/retroceder (`06/RN-07`) em geral. Achado na verificação local da task 43; já existia antes dela. Caminho provável: o servidor localiza o quadro-chave ≤ `start` (ffprobe) e informa o início real ao cliente, ou o remux reposiciona com corte preciso.
+
 ## Fora de escopo
 
 - Trocar a faixa sem recarregar o fluxo (exigiria streaming adaptativo, fora de escopo em 06 §4).
