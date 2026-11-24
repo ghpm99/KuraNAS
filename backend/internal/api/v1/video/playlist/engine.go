@@ -172,8 +172,7 @@ func (e *PlaylistEngine) deduplicateCandidates(candidates []PlaylistCandidate) [
 		return candidates
 	}
 
-	// Ja estao ordenados por TotalScore descrescente
-	removed := map[int]bool{}
+	removed := mixCandidatesOverlappingSeries(candidates)
 
 	for i := 0; i < len(candidates); i++ {
 		if removed[i] {
@@ -207,6 +206,33 @@ func (e *PlaylistEngine) deduplicateCandidates(candidates []PlaylistCandidate) [
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+func mixCandidatesOverlappingSeries(candidates []PlaylistCandidate) map[int]bool {
+	removedMixes := map[int]bool{}
+	for mixIndex, mix := range candidates {
+		if mix.PlaylistType != "mixed" {
+			continue
+		}
+		mixVideoIDs := videoIDSet(mix)
+		for _, other := range candidates {
+			if isSeriesLikeCandidate(other) && overlapPercent(mixVideoIDs, videoIDSet(other)) > 0.8 {
+				removedMixes[mixIndex] = true
+				break
+			}
+		}
+	}
+	return removedMixes
+}
+
+func isSeriesLikeCandidate(candidate PlaylistCandidate) bool {
+	if candidate.PlaylistType == "series" {
+		return true
+	}
+	if candidate.Strategy == "sequential_series" || candidate.Strategy == "captured_series" {
+		return true
+	}
+	return candidate.Classification == ClassSeries || candidate.Classification == ClassAnime
+}
 
 func videoIDSet(c PlaylistCandidate) map[int]bool {
 	s := make(map[int]bool, len(c.Videos))
