@@ -286,6 +286,7 @@ type IngestContext struct {
 	YtDlp        *ingest.YtDlpService
 	YtDlpHandler *ingest.YtDlpHandler
 	Notifier     ingest.Notifier
+	Downloads    *ingest.DownloadRepository
 }
 
 // newIngestContext builds the server-side media-fetch module: the URL fetch
@@ -301,6 +302,7 @@ func newIngestContext(jobsRepository jobs.RepositoryInterface, downloadRepositor
 		YtDlp:        ytdlp,
 		YtDlpHandler: ingest.NewYtDlpHandler(ytdlp),
 		Notifier:     notifier,
+		Downloads:    downloadRepository,
 	}
 }
 

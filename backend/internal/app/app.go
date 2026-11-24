@@ -176,6 +176,9 @@ func InitializeApp() (*Application, error) {
 	if appContext.Captures != nil {
 		workerFileContext.CapturesService = appContext.Captures.Service
 	}
+	if appContext.Ingest != nil && appContext.Ingest.Downloads != nil {
+		workerFileContext.DownloadRecorder = appContext.Ingest.Downloads
+	}
 
 	startWorkersFn(workerFileContext, 200)
 

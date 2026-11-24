@@ -10,8 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,10 +19,6 @@ import (
 	"nas-go/api/internal/config"
 	"nas-go/api/pkg/i18n"
 )
-
-// downloadProgressRe extracts the percentage from a yt-dlp `[download]` line
-// (e.g. "[download]  45.6% of 12.3MiB at ...").
-var downloadProgressRe = regexp.MustCompile(`(\d{1,3}(?:\.\d+)?)%`)
 
 // remoteFetchTimeout tells how long one download may run before it is killed.
 var remoteFetchTimeout = config.IngestFetchTimeout
@@ -43,31 +37,35 @@ var tempArtifactExts = []string{".part", ".ytdl", ".temp", ".tmp"}
 // normal metadata/checksum/thumbnail/persist pipeline indexes them — so this
 // step owns only the download + placement, nothing about indexing.
 func executeRemoteFetchStep(workerContext *WorkerContext, step jobs.StepModel) error {
-	fetchErr := runRemoteFetch(workerContext, step)
-	notifyRemoteFetchOutcome(workerContext, step, fetchErr)
-	return fetchErr
-}
-
-func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 	payload, err := decodeRemoteFetchPayload(step.Payload)
 	if err != nil {
 		return err
 	}
+	record := newDownloadRecord(workerContext, payload.DownloadID)
+	record.markRunning()
+	outcome, fetchErr := runRemoteFetch(workerContext, step, payload, record)
+	record.finish(fetchErr, outcome)
+	notifyRemoteFetchOutcome(workerContext, step, fetchErr)
+	return fetchErr
+}
+
+func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel, payload ingestapi.RemoteFetchStepPayload, record downloadRecord) (remoteFetchOutcome, error) {
+	var outcome remoteFetchOutcome
 
 	presetArgs, ok := ingestapi.ResolvePreset(payload.Preset)
 	if !ok {
-		return fmt.Errorf("remote fetch: unknown preset %q", payload.Preset)
+		return outcome, fmt.Errorf("remote fetch: unknown preset %q", payload.Preset)
 	}
 	if strings.TrimSpace(payload.OutputDir) == "" {
-		return fmt.Errorf("remote fetch: output dir is required")
+		return outcome, fmt.Errorf("remote fetch: output dir is required")
 	}
 	if err := os.MkdirAll(payload.OutputDir, 0o755); err != nil {
-		return fmt.Errorf("remote fetch: create output dir: %w", err)
+		return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_DESTINATION_UNAVAILABLE", fmt.Errorf("remote fetch: create output dir: %w", err))
 	}
 
 	tmpDir, err := os.MkdirTemp("", "kuranas-fetch-")
 	if err != nil {
-		return fmt.Errorf("remote fetch: temp dir: %w", err)
+		return outcome, fmt.Errorf("remote fetch: temp dir: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -87,13 +85,13 @@ func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 	cmd.WaitDelay = killedDownloadPipeGrace
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("remote fetch: stdout pipe: %w", err)
+		return outcome, fmt.Errorf("remote fetch: stdout pipe: %w", err)
 	}
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("remote fetch: start yt-dlp: %w", err)
+		return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_TOOL_UNAVAILABLE", fmt.Errorf("remote fetch: start yt-dlp: %w", err))
 	}
 
 	scanner := bufio.NewScanner(stdout)
@@ -101,12 +99,17 @@ func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 	lastReported := -1
 	lastReportAt := time.Time{}
 	for scanner.Scan() {
-		if pct, ok := parseDownloadProgress(scanner.Text()); ok {
-			if shouldReportProgress(pct, lastReported, lastReportAt) {
-				reportStepProgress(workerContext, step, pct)
-				lastReported = pct
-				lastReportAt = time.Now()
-			}
+		outputLine := scanner.Text()
+		if title, ok := parseDownloadDestinationTitle(outputLine); ok {
+			record.reportTitle(title)
+			continue
+		}
+		progress, ok := parseDownloadProgressLine(outputLine)
+		if ok && shouldReportProgress(progress.Percent, lastReported, lastReportAt) {
+			reportStepProgress(workerContext, step, progress.Percent)
+			record.reportProgress(progress)
+			lastReported = progress.Percent
+			lastReportAt = time.Now()
 		}
 	}
 
@@ -114,25 +117,27 @@ func runRemoteFetch(workerContext *WorkerContext, step jobs.StepModel) error {
 
 	if err := cmd.Wait(); err != nil {
 		if jobContext.Err() != nil {
-			return ErrStepCanceled
+			return outcome, ErrStepCanceled
 		}
 		if downloadContext.Err() != nil {
-			return fmt.Errorf("remote fetch: download exceeded the %s limit", downloadTimeout)
+			return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_TIMEOUT", fmt.Errorf("remote fetch: download exceeded the %s limit", downloadTimeout))
 		}
 		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return fmt.Errorf("remote fetch: yt-dlp failed: %s", withoutServerPaths(lastLine(msg), tmpDir, payload.OutputDir))
+			return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_TOOL_FAILED", fmt.Errorf("remote fetch: yt-dlp failed: %s", withoutServerPaths(lastLine(msg), tmpDir, payload.OutputDir)))
 		}
-		return fmt.Errorf("remote fetch: yt-dlp failed: %w", err)
+		return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_TOOL_FAILED", fmt.Errorf("remote fetch: yt-dlp failed: %w", err))
 	}
 
-	moved, err := moveFetchedFiles(tmpDir, payload.OutputDir)
+	movedPaths, err := moveFetchedFiles(tmpDir, payload.OutputDir)
 	if err != nil {
-		return fmt.Errorf("remote fetch: move output: %s", withoutServerPaths(err.Error(), tmpDir, payload.OutputDir))
+		return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_DESTINATION_UNAVAILABLE", fmt.Errorf("remote fetch: move output: %s", withoutServerPaths(err.Error(), tmpDir, payload.OutputDir)))
 	}
-	if moved == 0 {
-		return fmt.Errorf("remote fetch: yt-dlp produced no output file")
+	if len(movedPaths) == 0 {
+		return outcome, failedBecause("INGEST_DOWNLOAD_ERROR_NO_OUTPUT_FILE", fmt.Errorf("remote fetch: yt-dlp produced no output file"))
 	}
-	return nil
+	outcome.finalPath = movedPaths[0]
+	outcome.title = titleFromFileName(filepath.Base(outcome.finalPath))
+	return outcome, nil
 }
 
 // discardOutputLeftUnread keeps the download from stalling on a full pipe when
@@ -193,37 +198,14 @@ func buildYtDlpArgs(presetArgs []string, outputDir, url string) []string {
 	return args
 }
 
-// parseDownloadProgress reads the integer percent out of a yt-dlp download line.
-func parseDownloadProgress(line string) (int, bool) {
-	if !strings.Contains(line, "[download]") {
-		return 0, false
-	}
-	match := downloadProgressRe.FindStringSubmatch(line)
-	if match == nil {
-		return 0, false
-	}
-	value, err := strconv.ParseFloat(match[1], 64)
-	if err != nil {
-		return 0, false
-	}
-	pct := int(value)
-	if pct < 0 {
-		pct = 0
-	}
-	if pct > 100 {
-		pct = 100
-	}
-	return pct, true
-}
-
 // moveFetchedFiles moves every finished file from srcDir into dstDir, skipping
-// hidden files and in-flight temp artifacts. It returns how many files moved.
-func moveFetchedFiles(srcDir, dstDir string) (int, error) {
+// hidden files and in-flight temp artifacts. It returns where each file landed.
+func moveFetchedFiles(srcDir, dstDir string) ([]string, error) {
 	entries, err := os.ReadDir(srcDir)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	moved := 0
+	var movedPaths []string
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -232,12 +214,13 @@ func moveFetchedFiles(srcDir, dstDir string) (int, error) {
 		if strings.HasPrefix(name, ".") || isTempArtifact(name) {
 			continue
 		}
-		if err := moveFile(filepath.Join(srcDir, name), unoccupiedPath(dstDir, name)); err != nil {
-			return moved, err
+		landedPath := unoccupiedPath(dstDir, name)
+		if err := moveFile(filepath.Join(srcDir, name), landedPath); err != nil {
+			return movedPaths, err
 		}
-		moved++
+		movedPaths = append(movedPaths, landedPath)
 	}
-	return moved, nil
+	return movedPaths, nil
 }
 
 // unoccupiedPath returns where fileName can land inside dir without replacing

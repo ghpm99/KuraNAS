@@ -13,6 +13,7 @@ import (
 	emailapi "nas-go/api/internal/api/v1/email"
 	"nas-go/api/internal/api/v1/files"
 	imagedom "nas-go/api/internal/api/v1/image"
+	ingestapi "nas-go/api/internal/api/v1/ingest"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/music"
@@ -64,6 +65,7 @@ type WorkerContext struct {
 	TieringService          tieringapi.WorkerInterface
 	EmailService            emailapi.WorkerInterface
 	CapturesService         CapturePromoter
+	DownloadRecorder        ingestapi.DownloadRecorderInterface
 	TakeoutImports          takeout.ImportRecorderInterface
 	TakeoutSidecarRecorder  takeout.SidecarRecorderInterface
 	TakeoutSidecars         takeout.SidecarFinderInterface

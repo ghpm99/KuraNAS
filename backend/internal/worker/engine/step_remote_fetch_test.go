@@ -60,27 +60,6 @@ func TestBuildYtDlpArgs(t *testing.T) {
 	}
 }
 
-func TestParseDownloadProgress(t *testing.T) {
-	cases := []struct {
-		line    string
-		wantPct int
-		wantOK  bool
-	}{
-		{"[download]   0.0% of 10MiB", 0, true},
-		{"[download]  45.6% of 10MiB at 1MiB/s", 45, true},
-		{"[download] 100% of 10MiB", 100, true},
-		{"[info] something else", 0, false},
-		{"no marker 50%", 0, false},
-		{"[download] no percent here", 0, false},
-	}
-	for _, tc := range cases {
-		pct, ok := parseDownloadProgress(tc.line)
-		if ok != tc.wantOK || (ok && pct != tc.wantPct) {
-			t.Errorf("parseDownloadProgress(%q) = (%d,%v), want (%d,%v)", tc.line, pct, ok, tc.wantPct, tc.wantOK)
-		}
-	}
-}
-
 func TestIsTempArtifact(t *testing.T) {
 	for _, name := range []string{"video.mp4.part", "audio.m4a.ytdl", "x.TEMP", "y.tmp"} {
 		if !isTempArtifact(name) {
@@ -107,12 +86,12 @@ func TestMoveFetchedFilesSkipsTempAndHidden(t *testing.T) {
 	write(src, "song.mp3.part")
 	write(src, ".hidden")
 
-	moved, err := moveFetchedFiles(src, dst)
+	movedPaths, err := moveFetchedFiles(src, dst)
 	if err != nil {
 		t.Fatalf("moveFetchedFiles: %v", err)
 	}
-	if moved != 1 {
-		t.Fatalf("expected 1 moved, got %d", moved)
+	if len(movedPaths) != 1 {
+		t.Fatalf("expected 1 moved, got %d", len(movedPaths))
 	}
 	if _, err := os.Stat(filepath.Join(dst, "song.mp3")); err != nil {
 		t.Fatalf("finished file not moved: %v", err)
@@ -302,9 +281,9 @@ func TestMoveFetchedFilesKeepsWhatIsAlreadyInTheLibrary(t *testing.T) {
 	writeTextFile(filepath.Join(libraryDir, "clip (2).mp4"), "second download")
 	writeTextFile(filepath.Join(downloadDir, "clip.mp4"), "third download")
 
-	movedCount, err := moveFetchedFiles(downloadDir, libraryDir)
-	if err != nil || movedCount != 1 {
-		t.Fatalf("expected one file moved, got count=%d err=%v", movedCount, err)
+	movedPaths, err := moveFetchedFiles(downloadDir, libraryDir)
+	if err != nil || len(movedPaths) != 1 {
+		t.Fatalf("expected one file moved, got count=%d err=%v", len(movedPaths), err)
 	}
 
 	if readTextFile(filepath.Join(libraryDir, "clip.mp4")) != "first download" ||
