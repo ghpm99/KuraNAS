@@ -193,7 +193,12 @@ private fun NavGraphBuilder.videoGraph(navController: NavHostController) {
 private fun NavGraphBuilder.moreGraph(navController: NavHostController) {
     navigation(startDestination = BottomTab.MORE.startRoute, route = BottomTab.MORE.graphRoute) {
         composable(AppRoute.MORE) { MoreDestination(navController) }
-        composable(AppRoute.DOCUMENTS) { DocumentsScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable(AppRoute.DOCUMENTS) {
+            DocumentsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOpenInViewer = { id, name -> navController.openFile(id.toString(), name) },
+            )
+        }
         composable(AppRoute.FAVORITES) {
             FavoritesScreen(
                 onNavigateBack = { navController.popBackStack() },
