@@ -36,16 +36,16 @@ Tudo no domínio `documenttext` (extensão que importa `files`; `files` não pas
 
 ## Critérios de aceite
 
-- [ ] `07/CA-01` — documentos em pastas e raízes diferentes aparecem todos em `GET /documents`; `GET /documents/count` confere.
-- [ ] `07/CA-11` — um `.go` e um `.log` não aparecem.
-- [ ] Filtrar por `format=pdf` e por período devolve só o que atende aos dois; o total do filtro confere.
-- [ ] `folder_id` devolve os documentos da pasta e das subpastas.
-- [ ] Ordenar por `size` decrescente põe o maior documento da biblioteca em primeiro, com `page_size=1`.
-- [ ] Um PDF digitalizado aparece com `index_state=name_only`; um DOCX de 5 MB de texto, com `partial`.
-- [ ] Um resultado de busca achado na página 7 de um PDF traz `page: 7` e o trecho.
-- [ ] Documento na lixeira não aparece.
-- [ ] Testes contra Postgres real para cada consulta; teste de handler decodificando a resposta real e fixando os nomes de campo.
-- [ ] `make ci-backend` verde (cobertura ≥ 80 %).
+- [x] `07/CA-01` — documentos em pastas e raízes diferentes aparecem todos em `GET /documents`; `GET /documents/count` confere. *Backend local: documentos de `/Documentos/teste-task44` e `/teste-paginacao-task20` na mesma lista, `count` = 603; duas raízes cobertas por teste Postgres (`roots.Set`).*
+- [x] `07/CA-11` — um `.go` e um `.log` não aparecem. *Backend local: `main.go` e `servidor.log` (indexados para a busca de conteúdo) não aparecem na lista, na contagem da pasta (3) nem na busca.*
+- [x] Filtrar por `format=pdf` e por período devolve só o que atende aos dois; o total do filtro confere. *Backend local: `format=pdf&modified_from=modified_to=2026-11-24` → os 2 PDFs de teste, `count` = 2.*
+- [x] `folder_id` devolve os documentos da pasta e das subpastas. *Backend local: `folder_id` de `/Documentos` → 3 (os da subpasta `teste-task44`); irmã de mesmo prefixo excluída em teste Postgres.*
+- [x] Ordenar por `size` decrescente põe o maior documento da biblioteca em primeiro, com `page_size=1`. *Backend local: `sort=size&order=desc&page_size=1` → `Relatorio Grande.docx` (22 784 bytes, o maior).*
+- [x] Um PDF digitalizado aparece com `index_state=name_only`; um DOCX de 5 MB de texto, com `partial`. *Backend local: `Recibo Digitalizado.pdf` (só imagem) → `name_only`, `reason: no_text`; `Relatorio Grande.docx` (~5 MB de texto) → `partial`, `indexed_bytes` 2 097 152.*
+- [x] Um resultado de busca achado na página 7 de um PDF traz `page: 7` e o trecho. *Backend local: PDF de 9 páginas com "reajuste" só na 7 → `page: 7`, trecho com o termo; busca por "recibo" acha o digitalizado pelo nome, trecho vazio e `page: null`.*
+- [x] Documento na lixeira não aparece. *Backend local: mandar `Relatorio Grande.docx` para a lixeira derruba a contagem da pasta de 3 para 2 e o tira da busca; restaurar volta a 3.*
+- [x] Testes contra Postgres real para cada consulta; teste de handler decodificando a resposta real e fixando os nomes de campo.
+- [x] `make ci-backend` verde (cobertura ≥ 80 %).
 
 ## Fora de escopo
 
