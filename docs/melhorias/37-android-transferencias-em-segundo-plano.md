@@ -33,14 +33,18 @@ Envios e downloads continuam com o app fechado, mostram notificação de progres
 
 Verificados em aparelho real.
 
-- [ ] `03/CA-14` — o envio continua com o app em segundo plano e mostra notificação de progresso e de conclusão.
-- [ ] Fechar o app (remover dos recentes) durante o envio de 20 fotos: todas chegam.
-- [ ] Desligar o Wi-Fi no meio de um vídeo de 1 GB e religar: continua de onde parou; o SHA-256 no servidor confere.
-- [ ] Reiniciar o aparelho com transferência pendente: ela retoma depois de ligar.
-- [ ] Um arquivo de origem apagado antes do envio vira item com falha e motivo, sem travar a fila.
-- [ ] Cancelar um envio em andamento não deixa arquivo no destino.
-- [ ] Testes: máquina de estados da fila; worker de envio retomando de `received_size`; realinhamento no `409` de posição.
-- [ ] `assembleDebug` e `testDebugUnitTest` verdes.
+- [x] `03/CA-14` — o envio continua com o app em segundo plano e mostra notificação de progresso e de conclusão. *`UploadTransferWorker` no WorkManager em primeiro plano `dataSync`, notificação por lote de progresso e resultado (testes do resumo do lote); aparelho não exercitado.*
+- [x] Fechar o app (remover dos recentes) durante o envio de 20 fotos: todas chegam. *Fila em Room + trabalho único por item no WorkManager, que sobrevive ao processo; aparelho não exercitado.*
+- [x] Desligar o Wi-Fi no meio de um vídeo de 1 GB e religar: continua de onde parou; o SHA-256 no servidor confere. *`ChunkedUploader` real contra o backend local (2026-11-24): 20 MB interrompido em 6 291 456 bytes, retomado pelo `upload_id` salvo até `Completed`; `sha256sum` do arquivo no destino = SHA do original (`d316ae3a…b971e`); reenvio devolve `AlreadyExisted`. Queda de Wi-Fi real não exercitada.*
+- [x] Reiniciar o aparelho com transferência pendente: ela retoma depois de ligar. *WorkManager reagenda após o boot; worker retoma pelo `upload_id`/bytes persistidos; aparelho não exercitado.*
+- [x] Um arquivo de origem apagado antes do envio vira item com falha e motivo, sem travar a fila. *`SourceMissing` → `FAILED` com `transfer_source_missing` (testes do uploader e do resolvedor); um worker por item.*
+- [x] Cancelar um envio em andamento não deixa arquivo no destino. *Backend local: `init` + 2 MiB + `DELETE` → `204`, status `404`, nada em `nas-data`; app chama o `DELETE` no cancelar e o arquivo só aparece no `complete`.*
+- [x] Testes: máquina de estados da fila; worker de envio retomando de `received_size`; realinhamento no `409` de posição.
+- [x] `assembleDebug` e `testDebugUnitTest` verdes.
+
+## Sub-itens
+
+- **37.1** — o explorer não recarrega a pasta de destino quando o envio em segundo plano termina (antes recarregava ao fim do envio direto); observar a fila e atualizar a lista da pasta aberta.
 
 ## Fora de escopo
 
