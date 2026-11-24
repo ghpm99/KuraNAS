@@ -2251,5 +2251,22 @@
 	"ANALYTICS_DUPLICATES_RESULT_TITLE": "Deletion result",
 	"ANALYTICS_DUPLICATES_RESULT_TRASHED": "{{count}} copy(ies) moved to the Trash.",
 	"ANALYTICS_DUPLICATES_RESULT_FAILED": "{{count}} copy(ies) could not be deleted:",
-	"ANALYTICS_DUPLICATES_RESULT_FAILURE_ITEM": "{{path}}: {{message}}"
+	"ANALYTICS_DUPLICATES_RESULT_FAILURE_ITEM": "{{path}}: {{message}}",
+	"MUSIC_PLAYLIST_KIND_LABEL": "Playlist type",
+	"MUSIC_PLAYLIST_KIND_MANUAL": "Manual",
+	"MUSIC_PLAYLIST_KIND_RULE": "By rule",
+	"MUSIC_PLAYLIST_RULE_MATCH_ANY": "Any criterion",
+	"MUSIC_PLAYLIST_RULE_MATCH_ALL": "All criteria",
+	"MUSIC_PLAYLIST_RULE_GENRES": "Genres",
+	"MUSIC_PLAYLIST_RULE_ARTISTS": "Artists",
+	"MUSIC_PLAYLIST_RULE_ALBUMS": "Albums",
+	"MUSIC_PLAYLIST_RULE_FOLDERS": "Folders",
+	"MUSIC_PLAYLIST_RULE_YEAR_FROM": "From year",
+	"MUSIC_PLAYLIST_RULE_YEAR_TO": "To year",
+	"MUSIC_PLAYLIST_RULE_FAVORITES_ONLY": "Favorites only",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_IDLE": "Choose at least one criterion to see how many tracks the rule selects",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_LOADING": "Counting tracks...",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_COUNT": "{{count}} track(s) in the playlist",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_FAILED": "Failed to count the rule tracks",
+	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Failed to load the options"
 }

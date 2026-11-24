@@ -2251,5 +2251,22 @@
 	"ANALYTICS_DUPLICATES_RESULT_TITLE": "Resultado da exclusão",
 	"ANALYTICS_DUPLICATES_RESULT_TRASHED": "{{count}} cópia(s) enviada(s) para a Lixeira.",
 	"ANALYTICS_DUPLICATES_RESULT_FAILED": "{{count}} cópia(s) não foram excluídas:",
-	"ANALYTICS_DUPLICATES_RESULT_FAILURE_ITEM": "{{path}}: {{message}}"
+	"ANALYTICS_DUPLICATES_RESULT_FAILURE_ITEM": "{{path}}: {{message}}",
+	"MUSIC_PLAYLIST_KIND_LABEL": "Tipo de playlist",
+	"MUSIC_PLAYLIST_KIND_MANUAL": "Manual",
+	"MUSIC_PLAYLIST_KIND_RULE": "Por regra",
+	"MUSIC_PLAYLIST_RULE_MATCH_ANY": "Qualquer critério",
+	"MUSIC_PLAYLIST_RULE_MATCH_ALL": "Todos os critérios",
+	"MUSIC_PLAYLIST_RULE_GENRES": "Gêneros",
+	"MUSIC_PLAYLIST_RULE_ARTISTS": "Artistas",
+	"MUSIC_PLAYLIST_RULE_ALBUMS": "Álbuns",
+	"MUSIC_PLAYLIST_RULE_FOLDERS": "Pastas",
+	"MUSIC_PLAYLIST_RULE_YEAR_FROM": "Ano inicial",
+	"MUSIC_PLAYLIST_RULE_YEAR_TO": "Ano final",
+	"MUSIC_PLAYLIST_RULE_FAVORITES_ONLY": "Só favoritas",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_IDLE": "Escolha ao menos um critério para ver quantas faixas a regra seleciona",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_LOADING": "Contando faixas...",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_COUNT": "{{count}} faixa(s) na playlist",
+	"MUSIC_PLAYLIST_RULE_PREVIEW_FAILED": "Falha ao contar as faixas da regra",
+	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Falha ao carregar as opções"
 }
