@@ -1289,6 +1289,8 @@
 	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
 	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
 	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture",
+	"CAPTURE_PROMOTION_FAILED_REMUX": "Converting the video to a player-compatible format failed. The received file was kept for another attempt.",
+	"CAPTURE_PROMOTION_FAILED_MOVE": "Could not move the video into the library. The received file was kept for another attempt.",
 	"NOTIFICATION_STARTUP_SCAN_FAILED_TITLE": "Startup scan failed",
 	"NOTIFICATION_FILE_SCAN_STARTED_TITLE": "File scan started",
 	"NOTIFICATION_FILE_SCAN_COMPLETED_TITLE": "File scan completed",
