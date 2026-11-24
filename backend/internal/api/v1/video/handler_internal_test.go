@@ -48,6 +48,12 @@ func (m *videoHandlerServiceMock) SetVideoWatched(clientID string, videoID int, 
 	return nil
 }
 func (m *videoHandlerServiceMock) RebuildSmartPlaylists() error { return nil }
+func (m *videoHandlerServiceMock) SetVideoClassification(fileID int, classification *string) (VideoClassificationDto, error) {
+	return VideoClassificationDto{}, nil
+}
+func (m *videoHandlerServiceMock) SetVideoEpisode(fileID int, season *int, episode *int) (VideoEpisodeDto, error) {
+	return VideoEpisodeDto{}, nil
+}
 func (m *videoHandlerServiceMock) FindPlaylistPosterFileID(playlistID int) (int, error) {
 	return 0, ErrPosterNotFound
 }

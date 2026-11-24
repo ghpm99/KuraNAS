@@ -3,6 +3,8 @@ package video
 import (
 	"database/sql"
 	"errors"
+	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/singleflight"
 
@@ -18,6 +20,10 @@ type Service struct {
 	FallbackRegistry   thumbnailFallbackRegistry
 
 	masterFrameFlights singleflight.Group
+
+	rebuildMutex       sync.Mutex
+	isRebuildScheduled atomic.Bool
+	pendingRebuilds    sync.WaitGroup
 }
 
 type videoItemProgress struct {

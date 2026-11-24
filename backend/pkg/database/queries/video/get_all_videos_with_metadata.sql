@@ -16,12 +16,13 @@ SELECT
     vm.audio_channels,
     vm.audio_codec,
     vm.audio_sample_rate,
-    vm.classification,
+    COALESCE(CASE vmo.classification WHEN 'other' THEN 'program' ELSE vmo.classification END, vm.classification),
     cap.title,
     cap.season,
     cap.episode
 FROM home_file hf
 LEFT JOIN video_metadata vm ON hf.id = vm.file_id
+LEFT JOIN video_manual_override vmo ON vmo.file_id = hf.id
 LEFT JOIN LATERAL (
     SELECT c.title, c.season, c.episode
     FROM captures c

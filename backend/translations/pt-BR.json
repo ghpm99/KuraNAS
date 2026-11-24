@@ -423,6 +423,8 @@
 	"ERROR_INVALID_PAGINATION": "Parâmetros de paginação inválidos",
 	"ERROR_INVALID_CATALOG_SORT": "Parâmetros de ordenação inválidos",
 	"ERROR_VIDEO_INVALID_SEASON": "Parâmetro de temporada inválido",
+	"ERROR_VIDEO_INVALID_CLASSIFICATION": "Classificação de vídeo inválida",
+	"ERROR_VIDEO_INVALID_EPISODE": "Número de episódio inválido",
 	"ERROR_INVALID_REQUEST": "Requisição inválida",
 	"ERROR_INVALID_PATH": "Caminho inválido",
 	"ERROR_TARGET_NOT_DIRECTORY": "O destino precisa ser uma pasta válida",

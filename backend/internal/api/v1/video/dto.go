@@ -245,3 +245,24 @@ func (m *VideoPlaybackStateModel) ToDto() VideoPlaybackStateDto {
 	}
 	return dto
 }
+
+type SetVideoClassificationRequest struct {
+	Classification *string `json:"classification"`
+}
+
+type SetVideoEpisodeRequest struct {
+	Season  *int `json:"season"`
+	Episode *int `json:"episode"`
+}
+
+type VideoClassificationDto struct {
+	FileID         int    `json:"file_id"`
+	Classification string `json:"classification"`
+	IsOverride     bool   `json:"is_override"`
+}
+
+type VideoEpisodeDto struct {
+	FileID  int  `json:"file_id"`
+	Season  *int `json:"season"`
+	Episode *int `json:"episode"`
+}

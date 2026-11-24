@@ -11,6 +11,9 @@ import (
 )
 
 func (s *Service) RebuildSmartPlaylists() error {
+	s.rebuildMutex.Lock()
+	defer s.rebuildMutex.Unlock()
+
 	// Buscar videos com metadados enriquecidos
 	videosWithMeta, err := s.Repository.GetAllVideosWithMetadata()
 	if err != nil {

@@ -34,15 +34,20 @@ LEFT JOIN LATERAL (
                 latest.file_id = hf.id
         )
 ) tech ON TRUE
+LEFT JOIN video_manual_override vmo ON vmo.file_id = hf.id
 WHERE
     hf.format = ANY($1)
     AND hf.deleted_at IS NULL
-    AND EXISTS (
-        SELECT 1
-        FROM video_metadata vm
-        WHERE vm.file_id = hf.id
-          AND vm.classification = $2
-    )
+    AND CASE
+        WHEN vmo.classification IS NOT NULL THEN
+            CASE vmo.classification WHEN 'other' THEN 'program' ELSE vmo.classification END = $2
+        ELSE EXISTS (
+            SELECT 1
+            FROM video_metadata vm
+            WHERE vm.file_id = hf.id
+              AND vm.classification = $2
+        )
+    END
 ORDER BY
     hf.updated_at DESC, hf.id DESC
 LIMIT $3

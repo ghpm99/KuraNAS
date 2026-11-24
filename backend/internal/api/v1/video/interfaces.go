@@ -35,6 +35,12 @@ type RepositoryInterface interface {
 	GetVideoEpisodeOverrides(videoIDs []int) (map[int]VideoEpisodeOverrideModel, error)
 	GetAutoPlaylistItemsForRenumbering(tx *sql.Tx, playlistID int) ([]AutoPlaylistItemForRenumberingModel, error)
 	UpdatePlaylistItemOrder(tx *sql.Tx, playlistID int, itemIDs []int, orderIndexes []int) error
+	UpsertVideoClassificationOverride(tx *sql.Tx, fileID int, classification sql.NullString) error
+	UpsertVideoEpisodeOverride(tx *sql.Tx, fileID int, season sql.NullInt64, episode sql.NullInt64) error
+	DeleteEmptyVideoManualOverride(tx *sql.Tx, fileID int) error
+	GetVideoClassificationState(fileID int) (VideoClassificationStateModel, error)
+	GetVideoEpisodeState(fileID int) (VideoEpisodeStateModel, error)
+	GetAutoSeriesPlaylistIDsByVideo(videoID int) ([]int, error)
 	GetPlaylistExclusions(playlistID int) (map[int]bool, error)
 	GetVideoPlaylists(includeHidden bool) ([]VideoPlaylistModel, error)
 	GetVideoPlaylistsBySection(filter PlaylistSectionFilter, limit int, offset int) ([]VideoPlaylistModel, error)
@@ -91,6 +97,8 @@ type ServiceInterface interface {
 	GetContinueWatching(clientID string, limit int) ([]ContinueWatchingItemDto, error)
 	SetVideoWatched(clientID string, videoID int, isWatched bool) error
 	RebuildSmartPlaylists() error
+	SetVideoClassification(fileID int, classification *string) (VideoClassificationDto, error)
+	SetVideoEpisode(fileID int, season *int, episode *int) (VideoEpisodeDto, error)
 	GetPlaylists(includeHidden bool) ([]VideoPlaylistDto, error)
 	GetPlaylistsBySection(request PlaylistSectionRequest) (utils.PaginationResponse[VideoPlaylistDto], error)
 	SearchPlaylists(request PlaylistSearchRequest) (utils.PaginationResponse[VideoPlaylistDto], error)

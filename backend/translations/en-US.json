@@ -423,6 +423,8 @@
 	"ERROR_INVALID_PAGINATION": "Invalid pagination parameters",
 	"ERROR_INVALID_CATALOG_SORT": "Invalid sort parameters",
 	"ERROR_VIDEO_INVALID_SEASON": "Invalid season parameter",
+	"ERROR_VIDEO_INVALID_CLASSIFICATION": "Invalid video classification",
+	"ERROR_VIDEO_INVALID_EPISODE": "Invalid episode number",
 	"ERROR_INVALID_REQUEST": "Invalid request",
 	"ERROR_INVALID_PATH": "Invalid path",
 	"ERROR_TARGET_NOT_DIRECTORY": "Target must be a valid directory",

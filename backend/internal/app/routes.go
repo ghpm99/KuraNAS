@@ -474,6 +474,8 @@ func RegisterVideoRoutes(router *gin.RouterGroup, context *AppContext) {
 	router.GET("/video/movies/:file_id/poster", context.Video.Handler.GetMoviePosterHandler)
 	router.GET("/video/continue", context.Video.Handler.GetContinueWatchingHandler)
 	router.PUT("/video/progress/:file_id/watched", context.Video.Handler.SetVideoWatchedHandler)
+	library.PUT("/files/:file_id/classification", context.Video.Handler.SetVideoClassificationHandler)
+	library.PUT("/files/:file_id/episode", context.Video.Handler.SetVideoEpisodeHandler)
 
 	playlists.GET("/", context.Video.Handler.GetPlaylistsHandler)
 	playlists.GET("", context.Video.Handler.GetPlaylistsHandler)

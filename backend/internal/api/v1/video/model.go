@@ -199,3 +199,16 @@ type VideoPendingClassification struct {
 	Duration   string
 	Height     int
 }
+
+type VideoClassificationStateModel struct {
+	OverrideClassification  sql.NullString
+	AutomaticClassification sql.NullString
+}
+
+type VideoEpisodeStateModel struct {
+	Name             string
+	OverrideSeason   sql.NullInt64
+	OverrideEpisode  sql.NullInt64
+	AutomaticSeason  sql.NullInt64
+	AutomaticEpisode sql.NullInt64
+}

@@ -234,3 +234,21 @@ var GetAutoPlaylistItemsForRenumberingQuery string
 
 //go:embed update_playlist_item_order.sql
 var UpdatePlaylistItemOrderQuery string
+
+//go:embed upsert_video_classification_override.sql
+var UpsertVideoClassificationOverrideQuery string
+
+//go:embed upsert_video_episode_override.sql
+var UpsertVideoEpisodeOverrideQuery string
+
+//go:embed delete_empty_video_manual_override.sql
+var DeleteEmptyVideoManualOverrideQuery string
+
+//go:embed get_video_classification_state.sql
+var GetVideoClassificationStateQuery string
+
+//go:embed get_video_episode_state.sql
+var GetVideoEpisodeStateQuery string
+
+//go:embed get_auto_series_playlist_ids_by_video.sql
+var GetAutoSeriesPlaylistIDsByVideoQuery string

@@ -1409,3 +1409,18 @@ func TestGetPlaylistItemsPagePropagatesErrors(t *testing.T) {
 		t.Fatalf("expected error for failing items query")
 	}
 }
+
+func (m *videoRepoMock) UpsertVideoClassificationOverride(tx *sql.Tx, fileID int, classification sql.NullString) error {
+	return nil
+}
+func (m *videoRepoMock) UpsertVideoEpisodeOverride(tx *sql.Tx, fileID int, season sql.NullInt64, episode sql.NullInt64) error {
+	return nil
+}
+func (m *videoRepoMock) DeleteEmptyVideoManualOverride(tx *sql.Tx, fileID int) error { return nil }
+func (m *videoRepoMock) GetVideoClassificationState(fileID int) (VideoClassificationStateModel, error) {
+	return VideoClassificationStateModel{}, nil
+}
+func (m *videoRepoMock) GetVideoEpisodeState(fileID int) (VideoEpisodeStateModel, error) {
+	return VideoEpisodeStateModel{}, nil
+}
+func (m *videoRepoMock) GetAutoSeriesPlaylistIDsByVideo(videoID int) ([]int, error) { return nil, nil }
