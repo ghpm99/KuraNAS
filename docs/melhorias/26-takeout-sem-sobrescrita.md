@@ -24,7 +24,7 @@ Toda foto e todo vídeo do zip chega ao servidor, na pasta de origem, sem sobres
 - [x] Teste do extrator: mesmo nome, mesma pasta, conteúdo diferente gera o segundo com ` (2)`.
 - [x] Teste do extrator: extrair o mesmo zip duas vezes não cria nem regrava arquivo; a segunda contagem é toda "já existente".
 - [x] Teste do extrator: entrada com `../` e link simbólico são ignorados e contados.
-- [ ] `13/CA-03`, `CA-04`, `CA-09` — no sistema rodando, com um zip real de Takeout.
+- [x] `13/CA-03`, `CA-04`, `CA-09` — no sistema rodando, com um zip real de Takeout. *Task 47 (2026-11-24), backend local, zip montado no formato do Takeout (`Takeout/Google Fotos/<álbum>/…` com sidecars JSON e um `.html`) enviado por `/takeout/upload/init|chunk|complete`: as duas `IMG_0001.png` de "Viagem 2019" e "Natal 2020" foram importadas em `Imagens/takeout/<álbum>/` com conteúdos e datas próprios (CA-03); o resumo (`takeout_import` 4) deu 3 entradas = 2 importadas + 1 ignorada (CA-09); o mesmo zip de novo (import 5) deu 0 importadas, 2 já existentes, 1 ignorada, sem duplicar arquivo (CA-04). Um zip real exportado do Google não foi usado. As rotas de histórico `GET /takeout/imports` ainda não existem (spec 13 §8, "A criar").*
 - [x] A notificação de falha não contém erro interno nem caminho do servidor.
 - [x] `make ci-backend` verde (cobertura ≥ 80 %).
 

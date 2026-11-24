@@ -33,9 +33,9 @@ Reindexar uma pasta, uma raiz ou tudo inicia um job daquele escopo, mostra o and
 
 - [x] Teste de handler: os três escopos devolvem `job_id`; escopo inválido `400`; pasta inexistente `404`; segundo pedido do mesmo escopo em andamento `409`.
 - [x] Teste do worker: o job de pasta não visita arquivos fora dela.
-- [ ] `21/CA-11` — no sistema rodando: "Reindexar esta pasta" reindexa só aquela pasta, mostra progresso e a listagem se atualiza ao concluir.
-- [ ] `16/CA-09` — "Reindexar" no Analytics inicia um job visível em `GET /jobs`.
-- [ ] `21/CA-08` — reindexar não remove estrelas, playlists, álbuns, progresso nem metadados corrigidos.
+- [x] `21/CA-11` — no sistema rodando: "Reindexar esta pasta" reindexa só aquela pasta, mostra progresso e a listagem se atualiza ao concluir. *Task 47 (2026-11-24), backend local: `POST /indexing/reindex {"scope":"folder","folder_id":988}` → `202 {"job_id":6291}`, cujas etapas (`scan_filesystem`, `diff_against_db`, `mark_deleted`, `fill_missing_stages`) têm só o caminho `Imagens/teste-task47`; o job é acompanhável em `/jobs/:id` e a listagem da pasta traz o arquivo novo ao concluir. Barra de progresso na tela não exercitada (sem navegador).*
+- [x] `16/CA-09` — "Reindexar" no Analytics inicia um job visível em `GET /jobs`. *Task 47 (2026-11-24), backend local: `{"scope":"all"}` → job 6286 (`reindex_folder`), listado em `GET /jobs?type=reindex_folder`; repetir enquanto não há outro em andamento abre novo job.*
+- [x] `21/CA-08` — reindexar não remove estrelas, playlists, álbuns, progresso nem metadados corrigidos. *Task 47 (2026-11-24), backend local: antes e depois de reindexar tudo: 200 estrelas, 2 playlists de música (uma manual com 1 faixa e uma por regra), 6 correções de metadados de música, 1 correção de episódio (o vídeo 958 continua como T1E11) e 31 linhas de progresso de vídeo (11 assistidos) — tudo igual.*
 - [x] Seam test de cada chamada nova no frontend; consumidores de `POST /files/update` conferidos (web; Android e plugin não usam).
 - [x] `make ci` verde.
 

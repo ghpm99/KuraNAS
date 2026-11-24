@@ -27,7 +27,7 @@ Uma alteração por item.
 - [x] Teste do pipeline: com `generate_previews` desligada, um arquivo novo é registrado e não gera etapa de miniatura; religada, volta a gerar.
 - [x] O mesmo para `extract_metadata` e `index_document_text`.
 - [x] Teste: `scan_interval_hours` muda o intervalo usado pelo agendador; 0 e 169 são recusados com `400`.
-- [ ] `21/CA-12` — no sistema rodando: desligar "gerar miniaturas" faz um arquivo novo aparecer sem miniatura; religar volta a gerar.
+- [x] `21/CA-12` — no sistema rodando: desligar "gerar miniaturas" faz um arquivo novo aparecer sem miniatura; religar volta a gerar. *Task 47 (2026-11-24), backend local: `PUT /configuration/settings` com `generate_previews=false` → `Imagens/teste-task47/sem-miniatura.jpg` indexado com as etapas persist, checksum e metadata, sem `thumbnail`; religado → `com-miniatura.jpg` ganhou também `thumbnail` (completed). Preferência restaurada para ligada.*
 - [x] "Varrer ao iniciar" não aparece mais na tela; `GET /configuration/settings` ainda devolve `scan_on_startup`.
 - [x] Seam test do `PUT /configuration/settings` com as chaves novas; render sem mock da seção.
 - [x] `make ci` verde.
