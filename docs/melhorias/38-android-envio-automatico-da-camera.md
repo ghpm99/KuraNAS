@@ -22,6 +22,14 @@ Com a opção ligada, toda foto e todo vídeo novo da câmera chega ao servidor 
 8. **Situação** (`RN-17`): última sincronização, pendentes, falhas, e "Sincronizar agora".
 9. O app nunca apaga nada do aparelho (`D-03`), e apagar no aparelho não apaga no servidor.
 
+## Decisões de desenho (2026-11-24)
+
+- **Destino**: `target_folder_id` da pasta escolhida (padrão: raiz, `D-02`) + `relative_path` = prefixo (padrão `Fotos/Celular`) + `AAAA/MM` pela `DATE_TAKEN` (cai para `DATE_ADDED`). O servidor cria as subpastas; a fila da task 37 passa a carregar `relative_path` por item.
+- **Não reenvio** (`RN-14`): tabela local `camera_uploads` por id da mídia no `MediaStore` (com o `transfer_id`); a seleção ignora o que já consta. Depois de reinstalar, o registro some, mas o envio manda `checksum` e o mesmo nome para o mesmo `AAAA/MM`, e o servidor responde `already_exists` — conta como enviado.
+- **Ponto de partida** (`RN-15`): "só a partir de agora" grava como marca o `DATE_ADDED` do momento em que ligou; "tudo" grava zero. A seleção lista câmera (`DCIM/Camera` ou `BUCKET_DISPLAY_NAME` da câmera) mais nova que a marca e ausente do registro.
+- **Execução**: `CameraSyncWorker` periódico de 15 min (restrições: rede sem medição se "só no Wi-Fi", carregando se "só carregando") mais um trabalho único com `ContentUriTrigger` em `MediaStore.Images/Video.Media.EXTERNAL_CONTENT_URI`, reagendado a cada execução. Fora de casa (`/api/v1/health` do servidor lembrado não responde `ok`) encerra com sucesso, sem retentar (`RN-16`).
+- **Origem do envio**: `Uri` do `MediaStore`, lido com a permissão de mídia (sem cópia).
+
 ## Critérios de aceite
 
 Verificados em aparelho real.
