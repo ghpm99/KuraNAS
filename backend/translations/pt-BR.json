@@ -2336,5 +2336,8 @@
 	"DOCUMENTS_STARRED": "Favorito",
 	"DOCUMENTS_LOAD_ERROR": "Não foi possível carregar os documentos",
 	"DOCUMENTS_EMPTY_TITLE": "Nenhum documento encontrado",
-	"DOCUMENTS_EMPTY_DESCRIPTION": "Envie documentos para o servidor ou configure a pasta de documentos nas configurações para que eles apareçam aqui."
+	"DOCUMENTS_EMPTY_DESCRIPTION": "Envie documentos para o servidor ou configure a pasta de documentos nas configurações para que eles apareçam aqui.",
+	"DOCUMENTS_VIEW_SWITCH": "Alternar visualização de documentos",
+	"DOCUMENTS_VIEW_GRID": "Grade",
+	"DOCUMENTS_VIEW_LIST": "Lista"
 }

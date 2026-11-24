@@ -2336,5 +2336,8 @@
 	"DOCUMENTS_STARRED": "Starred",
 	"DOCUMENTS_LOAD_ERROR": "Could not load the documents",
 	"DOCUMENTS_EMPTY_TITLE": "No documents found",
-	"DOCUMENTS_EMPTY_DESCRIPTION": "Upload documents to the server or configure the documents folder in settings so they show up here."
+	"DOCUMENTS_EMPTY_DESCRIPTION": "Upload documents to the server or configure the documents folder in settings so they show up here.",
+	"DOCUMENTS_VIEW_SWITCH": "Switch documents view",
+	"DOCUMENTS_VIEW_GRID": "Grid",
+	"DOCUMENTS_VIEW_LIST": "List"
 }
