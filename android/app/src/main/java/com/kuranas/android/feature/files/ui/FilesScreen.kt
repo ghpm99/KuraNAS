@@ -94,6 +94,7 @@ fun FilesScreen(
     onOpenVideo: (String) -> Unit,
     onPlayAudio: (String) -> Unit,
     onOpenFile: (String, String) -> Unit,
+    onOpenTransfers: () -> Unit,
     viewModel: FilesViewModel = hiltViewModel(),
     uploadViewModel: UploadViewModel = hiltViewModel(),
 ) {
@@ -103,10 +104,6 @@ fun FilesScreen(
         if (pickedUris.isEmpty()) return@rememberLauncherForActivityResult
         val openFolder = state.breadcrumb.lastOrNull()
         uploadViewModel.sendPicked(pickedUris, UploadDestination(openFolder?.second, openFolder?.first.orEmpty()))
-    }
-    val finishedUpload = uploadState.phase as? UploadPhase.Finished
-    LaunchedEffect(finishedUpload) {
-        if (finishedUpload != null) viewModel.refresh()
     }
     var newFolderName by remember { mutableStateOf("") }
     val listState = rememberSaveable(state.breadcrumb.lastOrNull()?.second, saver = LazyListState.Saver) { LazyListState() }
@@ -231,7 +228,10 @@ fun FilesScreen(
 
     UploadDialog(
         phase = uploadState.phase,
-        onRetryFailed = uploadViewModel::retryFailed,
+        onViewTransfers = {
+            uploadViewModel.dismissResult()
+            onOpenTransfers()
+        },
         onDismiss = uploadViewModel::dismissResult,
     )
 

@@ -190,6 +190,7 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
                 onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
                 onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
                 onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
+                onOpenTransfers = { navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true } },
             )
         }
         composable(AppRoute.TRANSFERS) {
@@ -263,6 +264,7 @@ private fun AppPagerHost(navController: androidx.navigation.NavHostController) {
                     onOpenVideo = { id -> navController.navigate(AppRoute.videoPlayer(id)) },
                     onPlayAudio = { id -> navController.navigate(AppRoute.musicPlayer(id.toIntOrNull() ?: -1)) },
                     onOpenFile = { id, name -> navController.navigate(AppRoute.fileDetail(id, name)) },
+                    onOpenTransfers = { navController.navigate(AppRoute.TRANSFERS) { launchSingleTop = true } },
                 )
                 SwipePage.FAVORITES -> FavoritesScreen(
                     onOpenFolder = { id, name -> navController.navigate(AppRoute.filesFolder(id, name)) },

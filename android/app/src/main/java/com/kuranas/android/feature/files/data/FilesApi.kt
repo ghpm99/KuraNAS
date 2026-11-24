@@ -5,17 +5,13 @@ import com.kuranas.android.core.network.PaginationDto
 import com.kuranas.android.core.network.mimeTypeForFormat
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.Header
-import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.Part
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -55,14 +51,6 @@ interface FilesApi {
 
     @GET("api/v1/files/duplicate-files")
     suspend fun getDuplicateFiles(): DuplicateFilesDto
-
-    @Multipart
-    @POST("api/v1/files/upload")
-    suspend fun uploadFile(
-        @Part files: MultipartBody.Part,
-        @Part("target_folder_id") targetFolderId: RequestBody,
-        @Part("on_conflict") onConflict: RequestBody,
-    ): UploadResponseDto
 
     @POST("api/v1/files/folder")
     suspend fun createFolder(@Body body: CreateFolderRequest)
@@ -138,22 +126,6 @@ data class DuplicateFileDto(
     val size: Long = 0,
     val copies: Int = 0,
     val paths: List<String> = emptyList(),
-)
-
-@Serializable
-data class UploadResponseDto(
-    val message: String = "",
-    val uploaded: List<String> = emptyList(),
-    @SerialName("job_id") val jobId: Int = 0,
-    val files: List<UploadedFileDto> = emptyList(),
-)
-
-@Serializable
-data class UploadedFileDto(
-    val name: String = "",
-    val path: String = "",
-    val status: String = "",
-    val error: String = "",
 )
 
 @Serializable

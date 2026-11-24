@@ -213,15 +213,16 @@
     <string name="action_close">Fechar</string>
     <string name="upload_action">Enviar arquivos</string>
     <string name="upload_unnamed_file">arquivo</string>
-    <string name="upload_progress_count">Enviando %1$d de %2$d</string>
-    <string name="upload_summary_title">Envio concluído</string>
-    <string name="upload_summary_uploaded">Enviados: %1$d</string>
-    <string name="upload_summary_renamed">Mantidos os dois (renomeados): %1$d</string>
-    <string name="upload_summary_skipped">Ignorados: %1$d</string>
-    <string name="upload_summary_failed">Com falha: %1$d</string>
-    <string name="upload_failure_line">%1$s: %2$s</string>
-    <string name="upload_failure_no_server">Não foi possível alcançar o servidor. Verifique a conexão e tente de novo.</string>
-    <string name="upload_retry_failed">Tentar de novo</string>
+    <plurals name="upload_queued_count">
+        <item quantity="one">%1$d arquivo na fila de envio</item>
+        <item quantity="other">%1$d arquivos na fila de envio</item>
+    </plurals>
+    <string name="upload_nothing_queued">Nenhum arquivo pôde entrar na fila</string>
+    <string name="upload_unreadable_title">Não foi possível ler:</string>
+    <string name="upload_unreadable_line">%1$s: não foi possível ler o arquivo</string>
+    <string name="upload_view_transfers">Ver transferências</string>
+    <string name="upload_dismiss">OK</string>
+    <string name="upload_preparing">Preparando arquivos</string>
     <string name="upload_share_title">Enviar para o KuraNAS</string>
     <plurals name="upload_share_selected_count">
         <item quantity="one">%1$d arquivo selecionado</item>

@@ -49,11 +49,12 @@ import com.kuranas.android.core.ui.components.glass
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.UploadDestination
 
-/** Tela do alvo de compartilhamento: escolha de destino, progresso e resumo do envio. */
+/** Tela do alvo de compartilhamento: escolha de destino e confirmação da fila de envio. */
 @Composable
 fun ShareTargetScreen(
     selectedFileCount: Int,
     onClose: () -> Unit,
+    onViewTransfers: () -> Unit,
     uploadViewModel: UploadViewModel = hiltViewModel(),
 ) {
     val uploadState by uploadViewModel.state.collectAsStateWithLifecycle()
@@ -67,26 +68,21 @@ fun ShareTargetScreen(
                 lastDestination = phase.lastDestination,
                 onConfirm = uploadViewModel::confirmDestination,
             )
-            is UploadPhase.Sending -> UploadProgressContent(phase, modifier = Modifier.fillMaxWidth().padding(16.dp))
-            is UploadPhase.Finished -> ShareResult(
-                phase = phase,
-                onRetryFailed = uploadViewModel::retryFailed,
-                onClose = onClose,
-            )
+            UploadPhase.Preparing -> UploadPreparingContent(modifier = Modifier.fillMaxWidth().padding(16.dp))
+            is UploadPhase.Queued -> ShareResult(phase = phase, onViewTransfers = onViewTransfers, onClose = onClose)
         }
     }
 }
 
 @Composable
-private fun ShareResult(phase: UploadPhase.Finished, onRetryFailed: () -> Unit, onClose: () -> Unit) {
+private fun ShareResult(phase: UploadPhase.Queued, onViewTransfers: () -> Unit, onClose: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(stringResource(R.string.upload_summary_title), style = MaterialTheme.typography.titleMedium)
-        UploadSummaryContent(phase.summary)
+        UploadQueuedContent(phase)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (phase.summary.hasFailures) {
-                Button(onClick = onRetryFailed) { Text(stringResource(R.string.upload_retry_failed)) }
+            if (phase.queuedCount > 0) {
+                Button(onClick = onViewTransfers) { Text(stringResource(R.string.upload_view_transfers)) }
             }
-            TextButton(onClick = onClose) { Text(stringResource(R.string.action_close)) }
+            TextButton(onClick = onClose) { Text(stringResource(R.string.upload_dismiss)) }
         }
     }
 }

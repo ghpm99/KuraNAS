@@ -2,15 +2,13 @@ package com.kuranas.android.feature.files.ui
 
 import android.net.Uri
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import com.kuranas.android.core.network.AppResult
-import com.kuranas.android.feature.files.data.FilesRepository
-import com.kuranas.android.feature.files.data.SelectedFile
 import com.kuranas.android.feature.files.data.UploadDestination
 import com.kuranas.android.feature.files.data.UploadDestinationStore
-import com.kuranas.android.feature.files.data.UploadResponseDto
-import com.kuranas.android.feature.files.data.UploadedFileDto
+import com.kuranas.android.feature.transfers.data.upload.TransferRepository
+import com.kuranas.android.feature.transfers.data.upload.UploadRequestItem
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,12 +22,12 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadViewModelTest {
@@ -37,12 +35,16 @@ class UploadViewModelTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
-    private val repository = mockk<FilesRepository>()
+    private val transferRepository = mockk<TransferRepository>()
     private val storeScope = CoroutineScope(Dispatchers.IO + Job())
     private lateinit var store: UploadDestinationStore
 
-    private val sharedUris = listOf(mockk<Uri>(), mockk<Uri>(), mockk<Uri>())
-    private val selectedFiles = sharedUris.mapIndexed { index, uri -> SelectedFile(uri, "photo$index.jpg", 1000L + index) }
+    private val uris = listOf("photo0.jpg", "photo1.jpg", "photo2.jpg").map { name ->
+        mockk<Uri> { every { lastPathSegment } returns name }
+    }
+    private val pickedItems = uris.mapIndexed { index, uri ->
+        UploadRequestItem("photo$index.jpg", 1000L + index, sourceUri = "content://picked/$index")
+    }
     private val photosFolder = UploadDestination("42", "Fotos")
 
     @Before
@@ -50,7 +52,9 @@ class UploadViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         val preferencesFile = File(temporaryFolder.newFolder(), "upload.preferences_pb")
         store = UploadDestinationStore(PreferenceDataStoreFactory.create(scope = storeScope) { preferencesFile })
-        coEvery { repository.describeSelection(sharedUris) } returns selectedFiles
+        uris.forEachIndexed { index, uri -> coEvery { transferRepository.persistPickedUri(uri) } returns pickedItems[index] }
+        uris.forEachIndexed { index, uri -> coEvery { transferRepository.stageSharedUri(uri) } returns stagedFile(index).absolutePath }
+        coEvery { transferRepository.enqueueUploads(any(), any()) } returns "batch"
     }
 
     @After
@@ -58,13 +62,19 @@ class UploadViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun newViewModel() = UploadViewModel(repository, UploadBatchRunner(repository), store)
+    private val stagedFiles = mutableMapOf<Int, File>()
 
-    private fun response(status: String, name: String, error: String = "") =
-        AppResult.Success(UploadResponseDto(message = "ok", files = listOf(UploadedFileDto(name, "/data/$name", status, error))))
+    private fun stagedFile(index: Int): File = stagedFiles.getOrPut(index) {
+        File(temporaryFolder.newFolder(), "photo$index.jpg").apply { writeBytes(ByteArray(10 + index)) }
+    }
 
-    private suspend fun UploadViewModel.awaitFinished(): UploadPhase.Finished =
-        state.first { it.phase is UploadPhase.Finished }.phase as UploadPhase.Finished
+    private fun stagedItem(index: Int) =
+        UploadRequestItem("photo$index.jpg", 10L + index, stagedFilePath = stagedFile(index).absolutePath)
+
+    private fun newViewModel() = UploadViewModel(transferRepository, store)
+
+    private suspend fun UploadViewModel.awaitQueued(): UploadPhase.Queued =
+        state.first { it.phase is UploadPhase.Queued }.phase as UploadPhase.Queued
 
     private suspend fun UploadViewModel.awaitChoosing(): UploadPhase.ChoosingDestination =
         state.first { it.phase is UploadPhase.ChoosingDestination }.phase as UploadPhase.ChoosingDestination
@@ -73,148 +83,125 @@ class UploadViewModelTest {
     fun `sharing opens the destination choice with no preselection on the first use`() = runTest {
         val viewModel = newViewModel()
 
-        viewModel.receiveShared(sharedUris)
+        viewModel.receiveShared(uris)
 
         assertNull(viewModel.awaitChoosing().lastDestination)
     }
 
     @Test
-    fun `sending all files reports N of N progress and a clean summary`() = runTest {
-        val progressSeen = mutableListOf<UploadPhase.Sending>()
+    fun `explorer picks are persisted and enqueued with the chosen destination`() = runTest {
         val viewModel = newViewModel()
-        coEvery { repository.uploadFile(any(), "42") } coAnswers {
-            progressSeen += viewModel.state.value.phase as UploadPhase.Sending
-            response("uploaded", firstArg<SelectedFile>().name)
-        }
-        viewModel.receiveShared(sharedUris)
-        viewModel.awaitChoosing()
 
-        viewModel.confirmDestination(photosFolder, shouldAlwaysSendHere = false)
-        val finished = viewModel.awaitFinished()
+        viewModel.sendPicked(uris, photosFolder)
+        val queued = viewModel.awaitQueued()
 
-        assertEquals(
-            listOf(
-                UploadPhase.Sending(1, 3, "photo0.jpg"),
-                UploadPhase.Sending(2, 3, "photo1.jpg"),
-                UploadPhase.Sending(3, 3, "photo2.jpg"),
-            ),
-            progressSeen,
-        )
-        assertEquals(UploadSummary(uploadedCount = 3), finished.summary)
+        assertEquals(UploadPhase.Queued(3, emptyList()), queued)
+        coVerify { transferRepository.enqueueUploads(pickedItems, photosFolder) }
+        coVerify(exactly = 0) { transferRepository.stageSharedUri(any()) }
+        assertEquals(photosFolder, store.lastDestination.first())
     }
 
     @Test
-    fun `one failed file does not stop the others and the summary names it with the server reason`() = runTest {
+    fun `shared files are staged and enqueued after the destination is confirmed`() = runTest {
         val viewModel = newViewModel()
-        coEvery { repository.uploadFile(selectedFiles[0], "42") } returns response("renamed", "photo0.jpg")
-        coEvery { repository.uploadFile(selectedFiles[1], "42") } returns response("failed", "photo1.jpg", "Falha ao gravar o arquivo")
-        coEvery { repository.uploadFile(selectedFiles[2], "42") } returns response("uploaded", "photo2.jpg")
-        viewModel.receiveShared(sharedUris)
+        viewModel.receiveShared(uris)
         viewModel.awaitChoosing()
 
         viewModel.confirmDestination(photosFolder, shouldAlwaysSendHere = false)
-        val summary = viewModel.awaitFinished().summary
+        val queued = viewModel.awaitQueued()
 
-        assertEquals(1, summary.uploadedCount)
-        assertEquals(1, summary.renamedCount)
-        assertEquals(
-            listOf(UploadFailure(selectedFiles[1], UploadFailureReason.ServerMessage("Falha ao gravar o arquivo"))),
-            summary.failures,
-        )
-        coVerify(exactly = 3) { repository.uploadFile(any(), "42") }
+        assertEquals(UploadPhase.Queued(3, emptyList()), queued)
+        coVerify { transferRepository.enqueueUploads(listOf(stagedItem(0), stagedItem(1), stagedItem(2)), photosFolder) }
+        coVerify(exactly = 0) { transferRepository.persistPickedUri(any()) }
     }
 
     @Test
-    fun `without a server the batch stops, every file is kept as failed and retry resends them`() = runTest {
+    fun `one unreadable shared file does not block the others and is reported by name`() = runTest {
+        coEvery { transferRepository.stageSharedUri(uris[1]) } throws IOException("gone")
         val viewModel = newViewModel()
-        coEvery { repository.uploadFile(any(), "42") } returns AppResult.Error("Sem conexão com o servidor")
-        viewModel.receiveShared(sharedUris)
+        viewModel.receiveShared(uris)
         viewModel.awaitChoosing()
 
         viewModel.confirmDestination(photosFolder, shouldAlwaysSendHere = false)
-        val failed = viewModel.awaitFinished()
+        val queued = viewModel.awaitQueued()
 
-        assertEquals(selectedFiles, failed.summary.failures.map { it.file })
-        assertTrue(failed.summary.failures.all { it.reason == UploadFailureReason.NoServer })
-        coVerify(exactly = 1) { repository.uploadFile(any(), any()) }
-
-        coEvery { repository.uploadFile(any(), "42") } coAnswers { response("uploaded", firstArg<SelectedFile>().name) }
-        viewModel.retryFailed()
-        val retried = viewModel.state.first { (it.phase as? UploadPhase.Finished)?.summary?.hasFailures == false }.phase as UploadPhase.Finished
-
-        assertEquals(3, retried.summary.uploadedCount)
-        coVerify { repository.uploadFile(selectedFiles[2], "42") }
+        assertEquals(UploadPhase.Queued(2, listOf("photo1.jpg")), queued)
+        coVerify { transferRepository.enqueueUploads(listOf(stagedItem(0), stagedItem(2)), photosFolder) }
     }
 
     @Test
-    fun `a forbidden response shows the server message as it came and keeps the files for retry`() = runTest {
+    fun `an explorer pick refused by the provider is reported and the others are enqueued`() = runTest {
+        coEvery { transferRepository.persistPickedUri(uris[0]) } throws SecurityException("denied")
         val viewModel = newViewModel()
-        coEvery { repository.uploadFile(any(), "42") } returns AppResult.Error("IP não autorizado", code = 403)
-        viewModel.receiveShared(sharedUris)
-        viewModel.awaitChoosing()
 
-        viewModel.confirmDestination(photosFolder, shouldAlwaysSendHere = false)
-        val finished = viewModel.awaitFinished()
+        viewModel.sendPicked(uris, photosFolder)
+        val queued = viewModel.awaitQueued()
 
-        assertTrue(finished.summary.failures.all { it.reason == UploadFailureReason.ServerMessage("IP não autorizado") })
-        assertEquals(3, finished.summary.failures.size)
-        coVerify(exactly = 1) { repository.uploadFile(any(), any()) }
+        assertEquals(UploadPhase.Queued(2, listOf("photo0.jpg")), queued)
+        coVerify { transferRepository.enqueueUploads(listOf(pickedItems[1], pickedItems[2]), photosFolder) }
+    }
+
+    @Test
+    fun `when nothing is readable nothing is enqueued and every name is reported`() = runTest {
+        uris.forEach { coEvery { transferRepository.persistPickedUri(it) } throws IOException("gone") }
+        val viewModel = newViewModel()
+
+        viewModel.sendPicked(uris, photosFolder)
+        val queued = viewModel.awaitQueued()
+
+        assertEquals(UploadPhase.Queued(0, listOf("photo0.jpg", "photo1.jpg", "photo2.jpg")), queued)
+        coVerify(exactly = 0) { transferRepository.enqueueUploads(any(), any()) }
     }
 
     @Test
     fun `always send here is stored and the next share goes straight to that folder`() = runTest {
-        coEvery { repository.uploadFile(any(), "42") } coAnswers { response("uploaded", firstArg<SelectedFile>().name) }
         val firstShare = newViewModel()
-        firstShare.receiveShared(sharedUris)
+        firstShare.receiveShared(uris)
         firstShare.awaitChoosing()
         firstShare.confirmDestination(photosFolder, shouldAlwaysSendHere = true)
-        firstShare.awaitFinished()
+        firstShare.awaitQueued()
 
         assertEquals(photosFolder, store.alwaysSendDestination.first())
 
         val nextShare = newViewModel()
-        nextShare.receiveShared(sharedUris)
-        val finished = nextShare.awaitFinished()
+        nextShare.receiveShared(uris)
+        val queued = nextShare.awaitQueued()
 
-        assertEquals(photosFolder, finished.destination)
-        assertEquals(3, finished.summary.uploadedCount)
-        coVerify(exactly = 6) { repository.uploadFile(any(), "42") }
+        assertEquals(3, queued.queuedCount)
+        coVerify(exactly = 2) { transferRepository.enqueueUploads(any(), photosFolder) }
     }
 
     @Test
     fun `clearing the direct destination makes the next share ask again, preselecting the last folder`() = runTest {
-        coEvery { repository.uploadFile(any(), "42") } coAnswers { response("uploaded", firstArg<SelectedFile>().name) }
         val firstShare = newViewModel()
-        firstShare.receiveShared(sharedUris)
+        firstShare.receiveShared(uris)
         firstShare.awaitChoosing()
         firstShare.confirmDestination(photosFolder, shouldAlwaysSendHere = true)
-        firstShare.awaitFinished()
+        firstShare.awaitQueued()
 
         store.clearAlwaysSendDestination()
         val nextShare = newViewModel()
-        nextShare.receiveShared(sharedUris)
+        nextShare.receiveShared(uris)
 
         assertEquals(photosFolder, nextShare.awaitChoosing().lastDestination)
     }
 
     @Test
-    fun `sending to the root uploads with a null folder id`() = runTest {
-        coEvery { repository.uploadFile(any(), null) } coAnswers { response("uploaded", firstArg<SelectedFile>().name) }
+    fun `sending to the root enqueues with the root destination`() = runTest {
         val viewModel = newViewModel()
 
-        viewModel.sendPicked(sharedUris, UploadDestination.Root)
-        val finished = viewModel.awaitFinished()
+        viewModel.sendPicked(uris, UploadDestination.Root)
+        viewModel.awaitQueued()
 
-        assertEquals(3, finished.summary.uploadedCount)
+        coVerify { transferRepository.enqueueUploads(pickedItems, UploadDestination.Root) }
         assertEquals(UploadDestination.Root, store.lastDestination.first())
     }
 
     @Test
-    fun `dismissing the result returns to idle`() = runTest {
-        coEvery { repository.uploadFile(any(), null) } coAnswers { response("uploaded", firstArg<SelectedFile>().name) }
+    fun `dismissing the confirmation returns to idle`() = runTest {
         val viewModel = newViewModel()
-        viewModel.sendPicked(sharedUris, UploadDestination.Root)
-        viewModel.awaitFinished()
+        viewModel.sendPicked(uris, UploadDestination.Root)
+        viewModel.awaitQueued()
 
         viewModel.dismissResult()
 

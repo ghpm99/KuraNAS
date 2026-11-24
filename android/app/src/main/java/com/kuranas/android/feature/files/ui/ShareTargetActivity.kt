@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import com.kuranas.android.core.ui.components.KNFrame
 import com.kuranas.android.feature.files.data.sharedUris
+import com.kuranas.android.feature.transfers.ui.TransfersIntents
 import com.kuranas.android.ui.theme.KuranasTheme
 import dagger.hilt.android.AndroidEntryPoint
 
-/** Alvo de "Compartilhar" do sistema (ACTION_SEND e ACTION_SEND_MULTIPLE): escolhe o destino e envia. */
+/** Alvo de "Compartilhar" do sistema (ACTION_SEND e ACTION_SEND_MULTIPLE): escolhe o destino e enfileira o envio. */
 @AndroidEntryPoint
 class ShareTargetActivity : ComponentActivity() {
 
@@ -33,10 +34,16 @@ class ShareTargetActivity : ComponentActivity() {
                     ShareTargetScreen(
                         selectedFileCount = sharedUris.size,
                         onClose = ::finish,
+                        onViewTransfers = ::openTransfersAndFinish,
                         uploadViewModel = uploadViewModel,
                     )
                 }
             }
         }
+    }
+
+    private fun openTransfersAndFinish() {
+        startActivity(TransfersIntents.openTransfers(this))
+        finish()
     }
 }
