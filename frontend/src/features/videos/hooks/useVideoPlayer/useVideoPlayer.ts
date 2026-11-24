@@ -5,6 +5,7 @@ import {
     updateVideoPlaybackState,
     type UpdateVideoPlaybackStateRequest,
     VideoPlaybackSessionDto,
+    getVideoRemuxStartSeconds,
     getVideoAudioTracks,
     type VideoAudioTrackDto,
 } from '@/service/videoPlayback';
@@ -37,6 +38,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Status = 'waiting' | 'playing' | 'paused' | 'stopped';
+
+const REMUX_START_TOLERANCE_SECONDS = 0.25;
 
 type StreamMode = 'direct' | 'remux' | 'transcode';
 
@@ -197,27 +200,36 @@ const useVideoPlayer = ({
         };
     }, [currentVideoIdForAudioTracks, requestAudioTracks]);
 
-    const loadStreamSource = useCallback(
-        (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => {
+    const applyStreamSource = useCallback(
+        (
+            videoToPlayId: number,
+            seekSeconds: number,
+            streamMode: StreamMode,
+            sourceStartSeconds: number
+        ) => {
             const videoElement = videoRef.current;
             if (!videoElement) return;
             setPlaybackError(null);
             applyPreferencesToVideo(videoElement);
             streamModeRef.current = streamMode;
             if (streamMode === 'remux' || streamMode === 'transcode') {
-                remuxOffsetSecondsRef.current = seekSeconds;
+                remuxOffsetSecondsRef.current = sourceStartSeconds;
                 videoElement.src =
                     streamMode === 'remux'
                         ? buildRemuxVideoStreamUrl(
                               videoToPlayId,
-                              seekSeconds,
+                              sourceStartSeconds,
                               audioStreamIndexRef.current
                           )
                         : buildTranscodeVideoStreamUrl(
                               videoToPlayId,
-                              seekSeconds,
+                              sourceStartSeconds,
                               audioStreamIndexRef.current
                           );
+                const secondsToSkipInsideSource = seekSeconds - sourceStartSeconds;
+                if (secondsToSkipInsideSource > REMUX_START_TOLERANCE_SECONDS) {
+                    videoElement.currentTime = secondsToSkipInsideSource;
+                }
                 setCurrentTime(seekSeconds);
             } else {
                 remuxOffsetSecondsRef.current = null;
@@ -247,6 +259,25 @@ const useVideoPlayer = ({
                 });
         },
         [applyPreferencesToVideo]
+    );
+
+    const loadStreamSource = useCallback(
+        (videoToPlayId: number, seekSeconds: number, streamMode: StreamMode) => {
+            if (!videoRef.current) return;
+            sourceRequestCounterRef.current += 1;
+            const sourceRequest = sourceRequestCounterRef.current;
+            if (streamMode !== 'remux' || seekSeconds <= 0) {
+                applyStreamSource(videoToPlayId, seekSeconds, streamMode, seekSeconds);
+                return;
+            }
+            getVideoRemuxStartSeconds(videoToPlayId, seekSeconds)
+                .catch(() => seekSeconds)
+                .then((remuxStartSeconds) => {
+                    if (sourceRequest !== sourceRequestCounterRef.current) return;
+                    applyStreamSource(videoToPlayId, seekSeconds, streamMode, remuxStartSeconds);
+                });
+        },
+        [applyStreamSource]
     );
 
     useEffect(() => {

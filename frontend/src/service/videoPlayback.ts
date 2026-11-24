@@ -500,6 +500,17 @@ export const getVideoAudioTracks = async (videoFileId: number): Promise<VideoAud
     return Array.isArray(audioTracks) ? audioTracks : [];
 };
 
+export const getVideoRemuxStartSeconds = async (
+    videoFileId: number,
+    atSeconds: number
+): Promise<number> => {
+    const response = await apiBase.get<{ start_seconds: number }>(
+        `/video/stream/${videoFileId}/remux/start`,
+        { params: { at: atSeconds } }
+    );
+    return response.data.start_seconds;
+};
+
 export const isEmbeddedSubtitle = (subtitle: VideoSubtitleDto): boolean =>
     subtitle.source === 'embedded';
 

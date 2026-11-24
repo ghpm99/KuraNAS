@@ -10,6 +10,10 @@ const mockStartVideoPlayback = jest.fn();
 const mockNextVideoPlayback = jest.fn();
 const mockGetVideoAudioTracks = jest.fn();
 
+const mockGetVideoRemuxStartSeconds = jest.fn((_videoId: number, atSeconds: number) =>
+    Promise.resolve(atSeconds)
+);
+
 jest.mock('@/service/playerStateFlush', () => ({
     flushVideoPlaybackState: jest.fn(),
 }));
@@ -20,6 +24,8 @@ jest.mock('@/service/videoPlayback', () => ({
     nextVideoPlayback: (...args: any[]) => mockNextVideoPlayback(...args),
     updateVideoPlaybackState: jest.fn().mockResolvedValue({}),
     getVideoAudioTracks: (...args: any[]) => mockGetVideoAudioTracks(...args),
+    getVideoRemuxStartSeconds: (...args: [number, number]) =>
+        mockGetVideoRemuxStartSeconds(...args),
 }));
 
 const japaneseAndPortugueseTracks = [
@@ -105,7 +111,7 @@ describe('hooks/useVideoPlayer audio track', () => {
         const { result } = await startPlayback(fakeVideo);
         expect(fakeVideo.src).toContain('/files/video-stream/7');
 
-        act(() => result.current.selectAudioTrack(2));
+        await act(async () => result.current.selectAudioTrack(2));
 
         expect(fakeVideo.src).toMatch(
             /\/video\/stream\/7\/remux\?start=30\.000&audio_stream_index=2$/
@@ -118,9 +124,9 @@ describe('hooks/useVideoPlayer audio track', () => {
     it('keeps the audio index when seeking after the switch', async () => {
         const fakeVideo = createFakeVideo();
         const { result } = await startPlayback(fakeVideo);
-        act(() => result.current.selectAudioTrack(2));
+        await act(async () => result.current.selectAudioTrack(2));
 
-        act(() => result.current.seekTo(120));
+        await act(async () => result.current.seekTo(120));
 
         expect(fakeVideo.src).toMatch(
             /\/video\/stream\/7\/remux\?start=120\.000&audio_stream_index=2$/
@@ -130,7 +136,7 @@ describe('hooks/useVideoPlayer audio track', () => {
     it('keeps the audio index when falling back from remux to transcode', async () => {
         const fakeVideo = createFakeVideo();
         const { result } = await startPlayback(fakeVideo);
-        act(() => result.current.selectAudioTrack(2));
+        await act(async () => result.current.selectAudioTrack(2));
 
         await act(async () => {
             result.current.reportPlaybackError('decode');
@@ -142,7 +148,7 @@ describe('hooks/useVideoPlayer audio track', () => {
     it('remembers the language of the chosen track on the device', async () => {
         const { result } = await startPlayback(createFakeVideo());
 
-        act(() => result.current.selectAudioTrack(2));
+        await act(async () => result.current.selectAudioTrack(2));
 
         expect(loadVideoAudioPreferences()).toEqual({ language: 'pt' });
     });

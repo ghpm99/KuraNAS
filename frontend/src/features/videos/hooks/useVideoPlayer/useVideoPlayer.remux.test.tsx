@@ -4,6 +4,10 @@ import useVideoPlayer from './useVideoPlayer';
 const mockStartVideoPlayback = jest.fn();
 const mockUpdateVideoPlaybackState = jest.fn();
 
+const mockGetVideoRemuxStartSeconds = jest.fn((_videoId: number, atSeconds: number) =>
+    Promise.resolve(atSeconds)
+);
+
 jest.mock('@/service/playerStateFlush', () => ({
     flushVideoPlaybackState: jest.fn(),
 }));
@@ -12,6 +16,8 @@ jest.mock('@/service/videoPlayback', () => ({
     ...jest.requireActual('@/service/videoPlayback'),
     startVideoPlayback: (...args: any[]) => mockStartVideoPlayback(...args),
     updateVideoPlaybackState: (...args: any[]) => mockUpdateVideoPlaybackState(...args),
+    getVideoRemuxStartSeconds: (...args: [number, number]) =>
+        mockGetVideoRemuxStartSeconds(...args),
 }));
 
 const makeSession = (format: string, duration = 600, currentTime = 0) => ({
@@ -242,6 +248,98 @@ describe('hooks/useVideoPlayer remux', () => {
             result.current.setCurrentTime(3);
         });
         expect(result.current.currentTime).toBe(123.5);
+    });
+
+    it('asks for the real keyframe start, loads the remux from it and skips the rest inside the fragment', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        mockGetVideoRemuxStartSeconds.mockResolvedValueOnce(10);
+
+        await act(async () => {
+            result.current.seekTo(15);
+        });
+
+        expect(mockGetVideoRemuxStartSeconds).toHaveBeenCalledWith(7, 15);
+        expect(fakeVideo.src).toMatch(/\/video\/stream\/7\/remux\?start=10\.000$/);
+        expect(fakeVideo.currentTime).toBe(5);
+        expect(result.current.currentTime).toBe(15);
+        act(() => {
+            result.current.setCurrentTime(5);
+        });
+        expect(result.current.currentTime).toBe(15);
+    });
+
+    it('does not skip inside the fragment when the keyframe is within the tolerance of the target', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        mockGetVideoRemuxStartSeconds.mockResolvedValueOnce(10);
+
+        await act(async () => {
+            result.current.seekTo(10.2);
+        });
+
+        expect(fakeVideo.src).toMatch(/remux\?start=10\.000$/);
+        expect(fakeVideo.currentTime).toBe(0);
+    });
+
+    it('falls back to loading the remux at the requested position when the start lookup fails', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        mockGetVideoRemuxStartSeconds.mockRejectedValueOnce(new Error('ffprobe missing'));
+
+        await act(async () => {
+            result.current.seekTo(15);
+        });
+
+        expect(fakeVideo.src).toMatch(/remux\?start=15\.000$/);
+        expect(fakeVideo.currentTime).toBe(0);
+        act(() => {
+            result.current.setCurrentTime(2);
+        });
+        expect(result.current.currentTime).toBe(17);
+    });
+
+    it('ignores a start lookup that answers after a newer seek', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        let resolveStaleLookup: (startSeconds: number) => void = () => undefined;
+        mockGetVideoRemuxStartSeconds.mockReturnValueOnce(
+            new Promise<number>((resolve) => {
+                resolveStaleLookup = resolve;
+            })
+        );
+        mockGetVideoRemuxStartSeconds.mockResolvedValueOnce(20);
+
+        await act(async () => {
+            result.current.seekTo(15);
+            result.current.seekTo(25);
+        });
+        await act(async () => {
+            resolveStaleLookup(10);
+        });
+
+        expect(fakeVideo.src).toMatch(/remux\?start=20\.000$/);
+    });
+
+    it('does not ask for a keyframe start when seeking in transcode mode', async () => {
+        mockStartVideoPlayback.mockResolvedValue(makeSession('mkv'));
+        const fakeVideo = createFakeVideo(() => '');
+        const { result } = await startPlayback(fakeVideo);
+        await act(async () => {
+            result.current.reportPlaybackError('unsupported');
+        });
+        mockGetVideoRemuxStartSeconds.mockClear();
+
+        await act(async () => {
+            result.current.seekTo(15);
+        });
+
+        expect(mockGetVideoRemuxStartSeconds).not.toHaveBeenCalled();
+        expect(fakeVideo.src).toMatch(/transcode\?start=15\.000$/);
     });
 
     it('keeps the metadata duration in remux mode and ignores the loaded total', async () => {

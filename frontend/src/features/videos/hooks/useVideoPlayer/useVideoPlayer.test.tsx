@@ -7,6 +7,10 @@ const mockPreviousVideoPlayback = jest.fn();
 const mockUpdateVideoPlaybackState = jest.fn();
 const mockGetApiV1BaseUrl = jest.fn();
 
+const mockGetVideoRemuxStartSeconds = jest.fn((_videoId: number, atSeconds: number) =>
+    Promise.resolve(atSeconds)
+);
+
 jest.mock('@/service/playerStateFlush', () => ({
     flushVideoPlaybackState: jest.fn(),
 }));
@@ -16,6 +20,8 @@ jest.mock('@/service/videoPlayback', () => ({
     nextVideoPlayback: (...args: any[]) => mockNextVideoPlayback(...args),
     previousVideoPlayback: (...args: any[]) => mockPreviousVideoPlayback(...args),
     updateVideoPlaybackState: (...args: any[]) => mockUpdateVideoPlaybackState(...args),
+    getVideoRemuxStartSeconds: (...args: [number, number]) =>
+        mockGetVideoRemuxStartSeconds(...args),
 }));
 
 jest.mock('@/service/apiUrl', () => ({

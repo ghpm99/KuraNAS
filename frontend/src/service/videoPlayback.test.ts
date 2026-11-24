@@ -41,6 +41,7 @@ import {
     getVideoPlaylistPosterUrl,
     getVideoSubtitles,
     getVideoAudioTracks,
+    getVideoRemuxStartSeconds,
     getVideoSubtitleKey,
     type VideoSubtitleDto,
     getVideoSubtitleVttUrl,
@@ -494,5 +495,14 @@ describe('video poster urls', () => {
         (apiBase.get as jest.Mock).mockResolvedValueOnce({ data: {} });
 
         await expect(getVideoAudioTracks(30)).resolves.toEqual([]);
+    });
+
+    it('asks the remux start endpoint for the keyframe at or before the target', async () => {
+        (apiBase.get as jest.Mock).mockResolvedValueOnce({ data: { start_seconds: 10 } });
+
+        await expect(getVideoRemuxStartSeconds(30, 15)).resolves.toBe(10);
+        expect(apiBase.get).toHaveBeenCalledWith('/video/stream/30/remux/start', {
+            params: { at: 15 },
+        });
     });
 });
