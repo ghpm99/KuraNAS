@@ -2,6 +2,7 @@ package com.kuranas.android.feature.files.data.download
 
 import android.net.Uri
 import com.kuranas.android.feature.files.data.FilesApi
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.Dispatcher
@@ -222,5 +223,100 @@ class StreamingDownloaderTest {
 
         assertEquals(listOf<String?>(null), requestedRanges())
         assertEquals("/api/v1/files/download/7", receivedRequests.single().path)
+    }
+
+    private fun resumeAt(offset: Int): DownloadResume {
+        destinationFile.parentFile!!.mkdirs()
+        destinationFile.writeBytes(fileBytes.copyOfRange(0, offset))
+        return DownloadResume(destination, offset.toLong(), "application/pdf")
+    }
+
+    @Test
+    fun `starts at a persisted offset with a range header and appends to the reopened destination`() = runTest {
+        val offset = 1_000_000
+        serve { _, rangeStart -> partialResponse(rangeStart!!) }
+        val progressUpdates = mutableListOf<DownloadProgress>()
+
+        val outcome = downloader.download(request, destinations, resume = resumeAt(offset)) { progressUpdates += it }
+
+        assertEquals(DownloadOutcome.Completed(committedUri, "application/pdf"), outcome)
+        assertEquals(listOf<String?>("bytes=$offset-"), requestedRanges())
+        assertArrayEquals(fileBytes, destinationFile.readBytes())
+        assertTrue(progressUpdates.first().receivedBytes > offset)
+        assertTrue(requestedMimeTypes.isEmpty())
+    }
+
+    @Test
+    fun `restarts from zero when the server ignores the range of a persisted offset`() = runTest {
+        serve { _, _ -> fullResponse() }
+
+        val outcome = downloader.download(request, destinations, resume = resumeAt(1_000_000)) {}
+
+        assertEquals(DownloadOutcome.Completed(committedUri, "application/pdf"), outcome)
+        assertArrayEquals(fileBytes, destinationFile.readBytes())
+    }
+
+    @Test
+    fun `reports the destination reference once before the first progress`() = runTest {
+        serve { _, _ -> fullResponse() }
+        val events = mutableListOf<String>()
+
+        downloader.download(
+            request,
+            destinations,
+            onDestinationReady = { reference, mimeType -> events += "ready:$reference:$mimeType" },
+        ) { if (events.size < 2) events += "progress" }
+
+        assertEquals(listOf("ready:${destinationFile.absolutePath}:application/pdf", "progress"), events)
+    }
+
+    @Test
+    fun `keeps the partial file when the connection is lost and a later resume is expected`() = runTest {
+        serve { attempt, rangeStart ->
+            if (attempt == 1) fullResponse(shouldDisconnect = true) else droppedBeforeAnyByte()
+        }
+
+        val outcome = downloader.download(request, destinations, shouldKeepPartialForLaterResume = true) {}
+
+        assertEquals(DownloadOutcome.Failed(DownloadFailure.ConnectionLost), outcome)
+        assertTrue(destinationFile.exists())
+        assertTrue(destinationFile.length() > 0)
+    }
+
+    @Test
+    fun `a missing persisted destination makes the resumable executor start from zero without a range`() = runTest {
+        serve { _, _ -> fullResponse() }
+        val restorer = mockk<DownloadDestinationRestorer>()
+        every { restorer.restore(any(), any(), any()) } returns null
+        val cacheDestinations = mockk<CacheDownloadDestinations>()
+        every { cacheDestinations.create(any()) } returns destination
+        val executor = ResumableDownloadExecutor(downloader, mockk(), cacheDestinations, restorer)
+        val sharedRequest = request.copy(purpose = DownloadPurpose.SHARE)
+
+        val outcome = executor.execute(sharedRequest, PersistedDownloadDestination("gone", "application/pdf"), { _, _ -> }) {}
+
+        assertEquals(DownloadOutcome.Completed(committedUri, "application/pdf"), outcome)
+        assertEquals(listOf<String?>(null), requestedRanges())
+        assertArrayEquals(fileBytes, destinationFile.readBytes())
+    }
+
+    @Test
+    fun `a restored destination resumes the resumable executor from its written bytes`() = runTest {
+        val offset = 500_000
+        serve { _, rangeStart -> partialResponse(rangeStart!!) }
+        val resume = resumeAt(offset)
+        val restorer = mockk<DownloadDestinationRestorer>()
+        every { restorer.restore(any(), any(), any()) } returns RestoredDownload(resume.destination, offset.toLong())
+        val executor = ResumableDownloadExecutor(downloader, mockk(), mockk(), restorer)
+
+        val outcome = executor.execute(
+            request.copy(purpose = DownloadPurpose.SHARE),
+            PersistedDownloadDestination(destinationFile.absolutePath, "application/pdf"),
+            { _, _ -> },
+        ) {}
+
+        assertEquals(DownloadOutcome.Completed(committedUri, "application/pdf"), outcome)
+        assertEquals(listOf<String?>("bytes=$offset-"), requestedRanges())
+        assertArrayEquals(fileBytes, destinationFile.readBytes())
     }
 }

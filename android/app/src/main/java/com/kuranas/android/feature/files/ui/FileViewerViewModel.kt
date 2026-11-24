@@ -88,7 +88,7 @@ class FileViewerViewModel @Inject constructor(
     fun download() {
         val file = loadedFile.value ?: return
         if (downloadState.value.isInProgress()) return
-        downloadQueue.enqueue(listOf(file.toDownloadRequest(DownloadPurpose.SAVE_TO_DEVICE)))
+        viewModelScope.launch { downloadQueue.enqueue(listOf(file.toDownloadRequest(DownloadPurpose.SAVE_TO_DEVICE))) }
     }
 
     fun openWith() = deliverExternally(DownloadPurpose.OPEN_WITH)

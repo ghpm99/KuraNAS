@@ -16,6 +16,7 @@ data class TransferEntity(
     val remoteFileId: Long? = null,
     val downloadPurpose: String? = null,
     val destinationUri: String? = null,
+    val mimeType: String? = null,
     val totalBytes: Long = -1,
     val transferredBytes: Long = 0,
     val uploadId: String? = null,

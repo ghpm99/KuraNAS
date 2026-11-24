@@ -115,7 +115,7 @@ class FilesViewModel @Inject constructor(
         val selectedIds = navigationState.value.selectedFileIds
         val selectedFiles = state.value.files.filter { it.id in selectedIds && !it.isDir }
         if (selectedFiles.isEmpty()) return
-        downloadQueue.enqueue(selectedFiles.map { it.toDownloadRequest() })
+        viewModelScope.launch { downloadQueue.enqueue(selectedFiles.map { it.toDownloadRequest() }) }
         navigationState.update { it.copy(selectedFileIds = emptySet(), queuedDownloadsCount = selectedFiles.size) }
     }
 

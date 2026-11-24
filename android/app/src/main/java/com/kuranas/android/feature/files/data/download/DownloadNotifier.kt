@@ -22,6 +22,7 @@ interface DownloadNotifier {
     fun showProgress(notificationId: Int, request: DownloadRequest, progress: DownloadProgress)
     fun showCompleted(notificationId: Int, request: DownloadRequest, uri: Uri, mimeType: String)
     fun showFailed(notificationId: Int, request: DownloadRequest, failure: DownloadFailure)
+    fun dismiss(notificationId: Int)
 }
 
 @Singleton
@@ -72,6 +73,11 @@ class SystemDownloadNotifier @Inject constructor(
             .setAutoCancel(true)
             .build()
         notify(notificationId, notification)
+    }
+
+    override fun dismiss(notificationId: Int) {
+        lastPercentByNotificationId.remove(notificationId)
+        notificationManager.cancel(notificationId)
     }
 
     private fun baseNotification(request: DownloadRequest) =

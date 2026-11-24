@@ -6,6 +6,10 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import com.kuranas.android.feature.transfers.data.TransferClock
+import com.kuranas.android.feature.transfers.data.TransferDao
+import com.kuranas.android.feature.transfers.data.download.PersistentDownloadQueue
+import com.kuranas.android.feature.transfers.data.upload.TransferWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,8 +26,16 @@ object DownloadModule {
 
     @Provides
     @Singleton
-    fun provideDownloadQueue(executor: DownloadExecutor, notifier: DownloadNotifier): DownloadQueue =
-        InMemoryDownloadQueue(CoroutineScope(SupervisorJob() + Dispatchers.Default), executor, notifier)
+    fun provideDownloadQueue(
+        transferDao: TransferDao,
+        scheduler: TransferWorkScheduler,
+        clock: TransferClock,
+    ): DownloadQueue = PersistentDownloadQueue(
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        transferDao = transferDao,
+        scheduler = scheduler,
+        clock = clock,
+    )
 }
 
 @Module

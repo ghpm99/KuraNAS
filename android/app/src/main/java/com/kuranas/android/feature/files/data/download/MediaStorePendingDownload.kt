@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.net.Uri
 import android.provider.MediaStore
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.OutputStream
 
@@ -11,10 +12,13 @@ class MediaStorePendingDownload(
     private val contentResolver: ContentResolver,
     private val fileName: String,
     private val mimeType: String,
+    private var entryUri: Uri? = null,
 ) : PendingDownload {
 
     private val collection = downloadCollectionFor(mimeType)
-    private var entryUri: Uri? = null
+
+    override val reference: String?
+        get() = entryUri?.toString()
 
     override fun openOutput(shouldAppend: Boolean): OutputStream {
         val uri = entryUri ?: insertPendingEntry().also { entryUri = it }
@@ -33,6 +37,15 @@ class MediaStorePendingDownload(
         val uri = entryUri ?: return
         entryUri = null
         contentResolver.delete(uri, null, null)
+    }
+
+    fun writtenBytes(): Long? = try {
+        val uri = entryUri ?: return null
+        contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize }
+    } catch (missing: FileNotFoundException) {
+        null
+    } catch (denied: SecurityException) {
+        null
     }
 
     private fun insertPendingEntry(): Uri {

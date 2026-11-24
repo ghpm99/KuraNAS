@@ -13,6 +13,8 @@ import com.kuranas.android.feature.transfers.data.TransferDirection
 import com.kuranas.android.feature.transfers.data.TransferEntity
 import com.kuranas.android.feature.transfers.data.TransferStateMachine
 import com.kuranas.android.feature.transfers.data.TransferTransition
+import com.kuranas.android.feature.transfers.data.download.PartialDownloadDiscarder
+import com.kuranas.android.feature.transfers.data.download.withoutPartialDownload
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -38,6 +40,7 @@ class TransferRepository @Inject constructor(
     private val scheduler: TransferWorkScheduler,
     private val uploadApi: TransferUploadApi,
     private val clock: TransferClock,
+    private val partialDownloadDiscarder: PartialDownloadDiscarder,
 ) {
 
     suspend fun enqueueUploads(items: List<UploadRequestItem>, destination: UploadDestination): String {
@@ -91,19 +94,32 @@ class TransferRepository @Inject constructor(
     }
 
     suspend fun cancel(transferId: Long) {
-        val transfer = transferDao.findById(transferId) ?: return
-        val transition = stateMachine.cancel(transfer) as? TransferTransition.Applied ?: return
-        transferDao.update(transition.transfer)
+        var transferBeforeCancel: TransferEntity? = null
+        val cancelled = transferDao.applyTransition(transferId) { current ->
+            transferBeforeCancel = current
+            cancelledTransition(current)
+        } ?: return
+        val previous = transferBeforeCancel ?: return
         scheduler.cancelWork(transferId)
-        transfer.uploadId?.let { discardServerSession(it) }
-        transfer.stagedFilePath?.let { File(it).parentFile?.deleteRecursively() }
+        if (previous.direction == TransferDirection.DOWNLOAD) partialDownloadDiscarder.discard(previous)
+        cancelled.uploadId?.let { discardServerSession(it) }
+        cancelled.stagedFilePath?.let { File(it).parentFile?.deleteRecursively() }
     }
 
+    private fun cancelledTransition(current: TransferEntity): TransferTransition =
+        when (val transition = stateMachine.cancel(current)) {
+            is TransferTransition.Rejected -> transition
+            is TransferTransition.Applied ->
+                if (current.direction == TransferDirection.DOWNLOAD) {
+                    TransferTransition.Applied(transition.transfer.withoutPartialDownload())
+                } else {
+                    transition
+                }
+        }
+
     suspend fun retry(transferId: Long) {
-        val transfer = transferDao.findById(transferId) ?: return
-        val transition = stateMachine.retry(transfer) as? TransferTransition.Applied ?: return
-        transferDao.update(transition.transfer)
-        scheduler.enqueueUpload(transferId, ExistingWorkPolicy.REPLACE)
+        val queued = transferDao.applyTransition(transferId) { stateMachine.retry(it) } ?: return
+        scheduler.enqueue(transferId, queued.direction, ExistingWorkPolicy.REPLACE)
     }
 
     suspend fun clearFinished() = transferDao.deleteFinished()

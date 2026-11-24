@@ -39,7 +39,7 @@ private class RecordingDownloadQueue : DownloadQueue {
     override val entries: StateFlow<List<DownloadEntry>> = mutableEntries
     val enqueuedRequests = mutableListOf<DownloadRequest>()
 
-    override fun enqueue(requests: List<DownloadRequest>): List<Long> {
+    override suspend fun enqueue(requests: List<DownloadRequest>): List<Long> {
         enqueuedRequests += requests
         val created = requests.mapIndexed { index, request ->
             DownloadEntry((enqueuedRequests.size - requests.size + index + 1).toLong(), request, DownloadState.Queued)

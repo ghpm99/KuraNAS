@@ -16,7 +16,9 @@ object TransferDataModule {
     @Provides
     @Singleton
     fun provideKuranasDatabase(@ApplicationContext context: Context): KuranasDatabase =
-        Room.databaseBuilder(context, KuranasDatabase::class.java, "kuranas.db").build()
+        Room.databaseBuilder(context, KuranasDatabase::class.java, "kuranas.db")
+            .addMigrations(TransferMigrations.FROM_1_TO_2)
+            .build()
 
     @Provides
     @Singleton

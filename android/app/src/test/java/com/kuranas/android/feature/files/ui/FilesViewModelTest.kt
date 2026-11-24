@@ -250,7 +250,7 @@ class FilesViewModelTest {
         viewModel.toggleSelection(first)
         viewModel.downloadSelected()
 
-        verify {
+        coVerify {
             queue.enqueue(
                 listOf(
                     DownloadRequest("2", "primeiro arquivo.pdf", 10),
@@ -275,6 +275,6 @@ class FilesViewModelTest {
         viewModel.downloadSelected()
 
         assertFalse(viewModel.state.value.isSelecting)
-        verify(exactly = 0) { queue.enqueue(any()) }
+        coVerify(exactly = 0) { queue.enqueue(any()) }
     }
 }

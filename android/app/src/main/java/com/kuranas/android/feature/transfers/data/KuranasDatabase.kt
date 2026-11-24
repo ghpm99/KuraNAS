@@ -4,7 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [TransferEntity::class], version = 1, exportSchema = true)
+@Database(entities = [TransferEntity::class], version = 2, exportSchema = true)
 @TypeConverters(TransferConverters::class)
 abstract class KuranasDatabase : RoomDatabase() {
     abstract fun transferDao(): TransferDao

@@ -13,11 +13,15 @@ import retrofit2.Response
 import java.io.IOException
 import java.io.OutputStream
 
+class DownloadResume(val destination: PendingDownload, val receivedBytes: Long, val mimeType: String)
+
 /**
  * Copia `GET /files/download/{id}` em blocos para um [PendingDownload], sem nunca carregar o arquivo na memória.
  * O destino só é criado na primeira resposta bem-sucedida, já com o MIME resolvido. Quedas de conexão retomam
  * com `Range` de onde parou; o download falha após [MAX_FRUITLESS_ATTEMPTS] quedas seguidas sem nenhum byte novo.
  * Em qualquer falha definitiva o destino é descartado, sem deixar arquivo parcial.
+ * Com [DownloadResume] a primeira requisição já continua do byte persistido; com `shouldKeepPartialForLaterResume`
+ * cancelamento e queda de conexão preservam o parcial para uma nova execução retomar.
  */
 class StreamingDownloader(
     private val api: FilesApi,
@@ -28,20 +32,23 @@ class StreamingDownloader(
     suspend fun download(
         request: DownloadRequest,
         destinations: PendingDownloadFactory,
-        onProgress: (DownloadProgress) -> Unit,
+        resume: DownloadResume? = null,
+        shouldKeepPartialForLaterResume: Boolean = false,
+        onDestinationReady: suspend (reference: String, mimeType: String) -> Unit = { _, _ -> },
+        onProgress: suspend (DownloadProgress) -> Unit,
     ): DownloadOutcome = withContext(Dispatchers.IO) {
-        val session = DownloadSession(request, destinations)
+        val session = DownloadSession(request, destinations, resume, shouldKeepPartialForLaterResume, onDestinationReady)
         try {
             transfer(session, onProgress)
         } catch (cancellation: CancellationException) {
-            session.destination?.discard()
+            if (!shouldKeepPartialForLaterResume) session.destination?.discard()
             throw cancellation
         }
     }
 
-    private suspend fun transfer(session: DownloadSession, onProgress: (DownloadProgress) -> Unit): DownloadOutcome {
+    private suspend fun transfer(session: DownloadSession, onProgress: suspend (DownloadProgress) -> Unit): DownloadOutcome {
         var fruitlessAttempts = 0
-        var furthestByte = 0L
+        var furthestByte = session.receivedBytes
         while (true) {
             when (val attempt = runAttempt(session, onProgress)) {
                 AttemptOutcome.Finished -> return commit(session)
@@ -50,7 +57,7 @@ class StreamingDownloader(
                     val madeProgress = session.receivedBytes > furthestByte
                     furthestByte = maxOf(furthestByte, session.receivedBytes)
                     fruitlessAttempts = if (madeProgress) 0 else fruitlessAttempts + 1
-                    if (fruitlessAttempts >= MAX_FRUITLESS_ATTEMPTS) return fail(session, DownloadFailure.ConnectionLost)
+                    if (fruitlessAttempts >= MAX_FRUITLESS_ATTEMPTS) return giveUpOnConnection(session)
                     delay(retryDelayMillis)
                 }
             }
@@ -66,12 +73,17 @@ class StreamingDownloader(
         }
     }
 
+    private fun giveUpOnConnection(session: DownloadSession): DownloadOutcome {
+        if (session.shouldKeepPartialForLaterResume) return DownloadOutcome.Failed(DownloadFailure.ConnectionLost)
+        return fail(session, DownloadFailure.ConnectionLost)
+    }
+
     private fun fail(session: DownloadSession, failure: DownloadFailure): DownloadOutcome {
         session.destination?.discard()
         return DownloadOutcome.Failed(failure)
     }
 
-    private suspend fun runAttempt(session: DownloadSession, onProgress: (DownloadProgress) -> Unit): AttemptOutcome {
+    private suspend fun runAttempt(session: DownloadSession, onProgress: suspend (DownloadProgress) -> Unit): AttemptOutcome {
         val response = try {
             api.downloadFile(session.request.fileId, rangeHeader(session.receivedBytes))
         } catch (failure: IOException) {
@@ -114,7 +126,7 @@ class StreamingDownloader(
         session: DownloadSession,
         shouldAppend: Boolean,
         totalBytes: Long,
-        onProgress: (DownloadProgress) -> Unit,
+        onProgress: suspend (DownloadProgress) -> Unit,
     ): AttemptOutcome {
         val output = try {
             destination.openOutput(shouldAppend)
@@ -122,6 +134,7 @@ class StreamingDownloader(
             return AttemptOutcome.Rejected(DownloadFailure.StorageUnavailable)
         }
         try {
+            announceDestination(session, destination)
             val outcome = copyChunks(body, output, session, totalBytes, onProgress)
             if (outcome == AttemptOutcome.Finished) output.flush()
             return outcome
@@ -132,12 +145,19 @@ class StreamingDownloader(
         }
     }
 
+    private suspend fun announceDestination(session: DownloadSession, destination: PendingDownload) {
+        val reference = destination.reference ?: return
+        if (session.announcedReference == reference) return
+        session.announcedReference = reference
+        session.onDestinationReady(reference, session.mimeType)
+    }
+
     private suspend fun copyChunks(
         body: ResponseBody,
         output: OutputStream,
         session: DownloadSession,
         totalBytes: Long,
-        onProgress: (DownloadProgress) -> Unit,
+        onProgress: suspend (DownloadProgress) -> Unit,
     ): AttemptOutcome {
         val source = body.source()
         val chunk = ByteArray(COPY_CHUNK_BYTES)
@@ -157,10 +177,17 @@ class StreamingDownloader(
         return if (isTruncated) AttemptOutcome.Interrupted else AttemptOutcome.Finished
     }
 
-    private class DownloadSession(val request: DownloadRequest, val destinations: PendingDownloadFactory) {
-        var receivedBytes: Long = 0
-        var mimeType: String = UNKNOWN_MIME_TYPE
-        var destination: PendingDownload? = null
+    private class DownloadSession(
+        val request: DownloadRequest,
+        val destinations: PendingDownloadFactory,
+        resume: DownloadResume?,
+        val shouldKeepPartialForLaterResume: Boolean,
+        val onDestinationReady: suspend (reference: String, mimeType: String) -> Unit,
+    ) {
+        var receivedBytes: Long = resume?.receivedBytes ?: 0
+        var mimeType: String = resume?.mimeType ?: UNKNOWN_MIME_TYPE
+        var destination: PendingDownload? = resume?.destination
+        var announcedReference: String? = null
     }
 
     private class ResumePoint(val isContinuing: Boolean, val totalBytes: Long?)

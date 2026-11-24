@@ -40,9 +40,7 @@ class UploadTransferWorker @AssistedInject constructor(
 
     private suspend fun markRunning(transfer: TransferEntity): TransferEntity? {
         if (transfer.status == TransferStatus.RUNNING) return transfer
-        val transition = stateMachine.start(transfer) as? TransferTransition.Applied ?: return null
-        transferDao.update(transition.transfer)
-        return transition.transfer
+        return transferDao.applyTransition(transfer.id) { stateMachine.start(it) }
     }
 
     private suspend fun uploadWithPersistedProgress(transfer: TransferEntity): UploadOutcome {
@@ -61,10 +59,12 @@ class UploadTransferWorker @AssistedInject constructor(
     }
 
     private suspend fun persistProgress(transferId: Long, uploadId: String, receivedBytes: Long) {
-        val current = requireStillActive(transferId)
-        val progressed = stateMachine.progress(current, receivedBytes) as? TransferTransition.Applied
-            ?: throw TransferCancelledException()
-        transferDao.update(progressed.transfer.copy(uploadId = uploadId))
+        transferDao.applyTransition(transferId) { current ->
+            when (val progressed = stateMachine.progress(current, receivedBytes)) {
+                is TransferTransition.Applied -> TransferTransition.Applied(progressed.transfer.copy(uploadId = uploadId))
+                is TransferTransition.Rejected -> progressed
+            }
+        } ?: throw TransferCancelledException()
     }
 
     private suspend fun requireStillActive(transferId: Long): TransferEntity {
@@ -74,8 +74,6 @@ class UploadTransferWorker @AssistedInject constructor(
     }
 
     private suspend fun finish(transferId: Long, outcome: UploadOutcome): Result {
-        val current = transferDao.findById(transferId) ?: return Result.success()
-        if (!current.status.isActive) return Result.success()
         val resolver = UploadOutcomeResolver(
             stateMachine,
             UploadFailureMessages(
@@ -83,11 +81,14 @@ class UploadTransferWorker @AssistedInject constructor(
                 rejectedWithoutDetail = applicationContext.getString(R.string.transfer_rejected_without_detail),
             ),
         )
-        val resolution = resolver.resolve(current, outcome)
-        val applied = resolution.transition as? TransferTransition.Applied ?: return Result.success()
-        transferDao.update(applied.transfer)
-        if (resolution.shouldRetryLater) return Result.retry()
-        if (applied.transfer.status != TransferStatus.FAILED) deleteStagedFile(applied.transfer)
+        var shouldRetryLater = false
+        val finished = transferDao.applyTransition(transferId) { current ->
+            val resolution = resolver.resolve(current, outcome)
+            shouldRetryLater = resolution.shouldRetryLater
+            resolution.transition
+        } ?: return Result.success()
+        if (shouldRetryLater) return Result.retry()
+        if (finished.status != TransferStatus.FAILED) deleteStagedFile(finished)
         return Result.success()
     }
 

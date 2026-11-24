@@ -10,8 +10,12 @@ import java.io.OutputStream
  * Destino de um download que só passa a existir de forma definitiva em [commit].
  * [openOutput] pode ser chamado de novo para retomar: com [shouldAppend] continua o conteúdo já gravado,
  * sem ele recomeça do zero. [discard] remove tudo o que foi gravado.
+ * [reference] identifica o destino já criado para que outro processo o reabra; é nulo enquanto nada foi criado.
  */
 interface PendingDownload {
+    val reference: String?
+        get() = null
+
     @Throws(IOException::class)
     fun openOutput(shouldAppend: Boolean): OutputStream
 
@@ -29,6 +33,9 @@ class CachedFileDownload(
     private val file: File,
     private val uriForFile: (File) -> Uri,
 ) : PendingDownload {
+
+    override val reference: String
+        get() = file.absolutePath
 
     override fun openOutput(shouldAppend: Boolean): OutputStream {
         file.parentFile?.mkdirs()
