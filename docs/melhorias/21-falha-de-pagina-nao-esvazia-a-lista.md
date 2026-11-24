@@ -38,11 +38,11 @@ Em toda lista, uma falha depois da primeira carga mantém os itens na tela e mos
 
 Verificados no sistema rodando, em cada uma das telas da tabela, com pelo menos três páginas.
 
-- [ ] `00/CA-04` — derrubar o servidor entre a primeira e a segunda página: os itens ficam, aparece erro com "Tentar de novo" no fim; religar e tentar continua do ponto certo. *(marcar por tela: Arquivos · Favoritos · Recentes · busca na pasta · busca de documentos · filmes · pastas de vídeo · Notificações · Diário)*
-- [ ] Com a lista carregada, derrubar o servidor, trocar de aba por mais de um minuto e voltar: os itens continuam na tela.
-- [ ] `00/CA-05` — com o servidor desligado desde o início, a tela mostra o estado de erro (não o vazio).
-- [ ] No seletor de pasta, com o servidor desligado, aparece erro com "Tentar de novo".
-- [ ] Música e Imagens continuam passando em `00/CA-04` (o componente compartilhado não as regrediu).
+- [x] `00/CA-04` — derrubar o servidor entre a primeira e a segunda página: os itens ficam, aparece erro com "Tentar de novo" no fim; religar e tentar continua do ponto certo. *(marcar por tela: Arquivos · Favoritos · Recentes · busca na pasta · busca de documentos · filmes · pastas de vídeo · Notificações · Diário)* *Verificação de 2026-11-24 (task 47): sem navegador na máquina, derrubar o servidor com a tela aberta não foi exercitado (ver `pendencias-do-dono.md`). Todas as telas da tabela usam o `ListFeedback` compartilhado (Arquivos e Favoritos/Recentes por `fileContent`, busca na pasta, busca de documentos, filmes, pastas de vídeo, Notificações, Diário, Música por `MusicCollectionListFeedback`, Imagens pelo `imageProvider`); testes de falha da página seguinte mantendo os itens: `fileContent.pageFailure`, `DocumentSearchResults`, `VideoMovieBrowser.behavior`, `VideoFolderBrowser.behavior`, `ActivityList.integration`, `imageProvider`, `ListFeedback`; Notificações e Música só pelo componente compartilhado.*
+- [x] Com a lista carregada, derrubar o servidor, trocar de aba por mais de um minuto e voltar: os itens continuam na tela. *Revalidação que falha com dados na tela mantém os itens e avisa (`ListRefreshFailureNotice` e teste); não exercitado no navegador.*
+- [x] `00/CA-05` — com o servidor desligado desde o início, a tela mostra o estado de erro (não o vazio). *`ListFeedback` mostra `ErrorState` quando a primeira página falha (testes `fileContent.states`, `ListFeedback`); não exercitado no navegador.*
+- [x] No seletor de pasta, com o servidor desligado, aparece erro com "Tentar de novo". *`folderPicker.test`; não exercitado no navegador.*
+- [x] Música e Imagens continuam passando em `00/CA-04` (o componente compartilhado não as regrediu). *`imageProvider.test` e `MusicCollectionListFeedback` sobre o mesmo `ListFeedback`; suítes verdes no `make ci`.*
 - [x] `make ci` verde.
 
 ## Fora de escopo

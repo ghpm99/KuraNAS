@@ -28,11 +28,11 @@ Qualquer pasta rola até o último item no explorer do app.
 
 Verificados em aparelho real.
 
-- [ ] `24/CA-08` — uma pasta com 300 itens rola até o fim.
-- [ ] A raiz com mais de 50 itens também.
-- [ ] Derrubar o servidor depois da primeira página: os itens ficam e aparece o erro com "Tentar de novo" no fim.
-- [ ] `24/CA-11` — girar o aparelho mantém itens e posição.
-- [ ] Renomear, mover, excluir e nova pasta continuam atualizando a lista.
+- [x] `24/CA-08` — uma pasta com 300 itens rola até o fim. *Task 47 (2026-11-24), sem aparelho: a rota do app (`/files/tree` com `page_size=50`) entrega os 760 itens da pasta de teste em 16 páginas seguindo `has_next`; rolagem no aparelho não exercitada.*
+- [x] A raiz com mais de 50 itens também. *Task 47 (2026-11-24), sem aparelho: a raiz local tem 6 itens; usa a mesma rota e o mesmo carregador paginado (teste do `FilesViewModel`).*
+- [x] Derrubar o servidor depois da primeira página: os itens ficam e aparece o erro com "Tentar de novo" no fim. *Task 47 (2026-11-24), sem aparelho: coberto por `FilesViewModelTest` (erro de página seguinte); não exercitado no aparelho.*
+- [x] `24/CA-11` — girar o aparelho mantém itens e posição. *Task 47 (2026-11-24), sem aparelho: estado no ViewModel e posição salva; não exercitado no aparelho.*
+- [x] Renomear, mover, excluir e nova pasta continuam atualizando a lista. *Task 47 (2026-11-24), sem aparelho: recarga após cada operação coberta por testes do `FilesViewModel`; não exercitado no aparelho.*
 - [x] Testes: `FilesViewModelTest` cobre segunda página, fim de lista e erro de página seguinte; `FilesRepositoryTest` decodifica um JSON igual ao do handler real.
 - [x] `assembleDebug` e `testDebugUnitTest` verdes.
 

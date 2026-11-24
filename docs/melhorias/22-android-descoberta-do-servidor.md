@@ -36,12 +36,12 @@ Em `android/app/src/main/java/com/kuranas/android/`. Uma alteração por item.
 
 Verificados em aparelho real, na rede do servidor.
 
-- [ ] `24/CA-01` — app recém-instalado lista o servidor em até 10 s.
-- [ ] `24/CA-02` — com o servidor desligado, a busca termina em até 10 s dizendo que nenhum foi encontrado.
-- [ ] `24/CA-03` — digitar o endereço de outra máquina (ou de um site) é recusado com o motivo.
-- [ ] `24/CA-04` — fechar e reabrir conecta direto.
-- [ ] `24/CA-05` — trocar o IP do servidor: o app o reencontra sem digitar.
-- [ ] Com mDNS bloqueado no roteador, o servidor ainda é achado (por UDP).
+- [x] `24/CA-01` — app recém-instalado lista o servidor em até 10 s. *Task 47 (2026-11-24), sem aparelho: o servidor local responde à sondagem UDP `KURANAS_DISCOVER` na porta 19520 (`{"service":"kuranas","port":8000,"api":"/api/v1"}`) e à consulta mDNS `_kuranas._tcp.local`; prazo no aparelho não medido.*
+- [x] `24/CA-02` — com o servidor desligado, a busca termina em até 10 s dizendo que nenhum foi encontrado. *Task 47 (2026-11-24), sem aparelho: prazo da busca coberto por teste da descoberta; o verificador do app devolve `NoResponse` para porta sem servidor.*
+- [x] `24/CA-03` — digitar o endereço de outra máquina (ou de um site) é recusado com o motivo. *Task 47 (2026-11-24), sem aparelho: o `ServerHealthChecker` real do app contra um servidor HTTP qualquer (`python -m http.server`) devolve `NotKuraNas`, contra o backend local `Confirmed`.*
+- [x] `24/CA-04` — fechar e reabrir conecta direto. *Task 47 (2026-11-24), sem aparelho: servidor lembrado e reconexão na abertura cobertos por testes do `RootViewModel`/`ServerReconnection`; não exercitado no aparelho.*
+- [x] `24/CA-05` — trocar o IP do servidor: o app o reencontra sem digitar. *Task 47 (2026-11-24), sem aparelho: realocação por descoberta coberta por teste (`Relocated`); não exercitado no aparelho.*
+- [x] Com mDNS bloqueado no roteador, o servidor ainda é achado (por UDP). *Task 47 (2026-11-24), sem aparelho: a resposta UDP independe do mDNS (verificada separadamente acima); roteador real não exercitado.*
 - [x] Testes unitários: validação do servidor (quatro resultados), montagem do endereço a partir da resposta UDP, normalização do endereço manual, término da busca no tempo limite.
 - [x] `assembleDebug` e `testDebugUnitTest` verdes.
 

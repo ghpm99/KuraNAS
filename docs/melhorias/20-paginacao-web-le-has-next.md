@@ -38,11 +38,11 @@ Os itens 2, 3 e 4 saíram num commit só (2026-11-16): os três leem o mesmo tip
 
 Verificados no sistema rodando, em uma pasta com mais de 500 itens.
 
-- [ ] `00/CA-01`, `CA-02` — em Arquivos, rolar até o fim carrega a segunda e a terceira página sem clique; os itens anteriores continuam na tela.
-- [ ] `02/CA-01` — a pasta com mais de 500 itens mostra todos; o total do cabeçalho confere.
-- [ ] O mesmo em Favoritos e em Recentes com mais de três páginas.
-- [ ] Buscar na pasta um termo com mais de 150 resultados mostra todos ao rolar.
-- [ ] No seletor de pasta de "Mover", uma pasta com mais de 150 subpastas mostra todas.
+- [x] `00/CA-01`, `CA-02` — em Arquivos, rolar até o fim carrega a segunda e a terceira página sem clique; os itens anteriores continuam na tela. *Verificado em 2026-11-24 (task 47), backend local, pasta `teste-paginacao-task20` (id 108): `/files/tree` com `page_size=200` → 200/200/200/160 com `has_next` verdadeiro até a 3ª e falso na 4ª; a web acrescenta as páginas ao rolar (testes com o envelope real). Rolagem num navegador não exercitada.*
+- [x] `02/CA-01` — a pasta com mais de 500 itens mostra todos; o total do cabeçalho confere. *Verificado em 2026-11-24 (task 47), backend local, pasta `teste-paginacao-task20` (id 108): 760 itens em 4 páginas; `/files/folder-stats/108` → 600 arquivos + 160 pastas = 760.*
+- [x] O mesmo em Favoritos e em Recentes com mais de três páginas. *Verificado em 2026-11-24 (task 47), backend local, pasta `teste-paginacao-task20` (id 108): `/files/starred` 100 + 100 (200 favoritos) e `/files/recent-files` com `has_next` nas páginas 1–3 de 50. A verificação achou `GET /files/recent` (sem id, fora do contrato e sem consumidor) respondendo 500 — removido.*
+- [x] Buscar na pasta um termo com mais de 150 resultados mostra todos ao rolar. *Verificado em 2026-11-24 (task 47), backend local, pasta `teste-paginacao-task20` (id 108): `/files/search?q=relatorio&folder_id=108` com `has_next` nas páginas 1–4 de 50 (600 resultados).*
+- [x] No seletor de pasta de "Mover", uma pasta com mais de 150 subpastas mostra todas. *Verificado em 2026-11-24 (task 47), backend local, pasta `teste-paginacao-task20` (id 108): a pasta tem 160 subpastas e `/files/tree` pagina por `has_next`, que o seletor segue (teste); seletor num navegador não exercitado.*
 - [x] `00/CA-16` — existe teste por tela que usa o construtor conferido contra a resposta real do handler.
 - [x] `grep -rn "hasNext\b" frontend/src` não encontra nenhuma leitura de campo de resposta da API (sobra só estado de tela, como em `useImageViewer`).
 - [x] `make ci` verde.
