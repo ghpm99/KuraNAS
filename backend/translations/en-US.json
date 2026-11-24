@@ -2268,5 +2268,8 @@
 	"MUSIC_PLAYLIST_RULE_PREVIEW_LOADING": "Counting tracks...",
 	"MUSIC_PLAYLIST_RULE_PREVIEW_COUNT": "{{count}} track(s) in the playlist",
 	"MUSIC_PLAYLIST_RULE_PREVIEW_FAILED": "Failed to count the rule tracks",
-	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Failed to load the options"
+	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Failed to load the options",
+	"MUSIC_PLAYLIST_RULE_REMOVED_NOTE": "Removed tracks do not come back to this playlist",
+	"MUSIC_PLAYLIST_RULE_EMPTY": "No track matches this playlist's rule",
+	"MUSIC_GENRE_CREATE_RULE_PLAYLIST": "Create playlist from this genre"
 }

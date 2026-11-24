@@ -2268,5 +2268,8 @@
 	"MUSIC_PLAYLIST_RULE_PREVIEW_LOADING": "Contando faixas...",
 	"MUSIC_PLAYLIST_RULE_PREVIEW_COUNT": "{{count}} faixa(s) na playlist",
 	"MUSIC_PLAYLIST_RULE_PREVIEW_FAILED": "Falha ao contar as faixas da regra",
-	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Falha ao carregar as opções"
+	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Falha ao carregar as opções",
+	"MUSIC_PLAYLIST_RULE_REMOVED_NOTE": "Faixas removidas não voltam para esta playlist",
+	"MUSIC_PLAYLIST_RULE_EMPTY": "Nenhuma faixa corresponde à regra desta playlist",
+	"MUSIC_GENRE_CREATE_RULE_PLAYLIST": "Criar playlist deste gênero"
 }
