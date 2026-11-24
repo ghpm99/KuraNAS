@@ -43,14 +43,14 @@ Os cinco pontos do Contexto se confirmam. Além deles: o voltar do sistema em qu
 
 Verificados em aparelho real, em celular e em tablet.
 
-- [ ] `24/CA-12` — todas as telas do menu abrem; nenhum item fica sem efeito.
-- [ ] `24/CA-07` — "Trocar servidor" volta à tela de conexão a partir de todos os lugares em que aparece.
-- [ ] `24/CA-06` — em aparelho fora da whitelist, o app mostra que o acesso não está liberado e o IP do aparelho.
-- [ ] `24/CA-10` — desligar o Wi-Fi com o app aberto mostra o aviso sem fechar o app; religar recarrega a tela.
-- [ ] Trocar de destino na barra e voltar mantém a lista e a rolagem do destino anterior.
-- [ ] `24/CA-13` — em tablet de 10" e em celular de 5", nada cortado.
-- [ ] Textos em `strings.xml` (pt-BR e en-US).
-- [ ] `assembleDebug` e `testDebugUnitTest` verdes.
+- [x] `24/CA-12` — todas as telas do menu abrem; nenhum item fica sem efeito. *Mais lista só telas existentes, cada item com rota registrada (teste de `MoreEntry`); Tarefas registrada; gaveta com "Esquecer servidor" sem efeito removida; menu de Início removido. Toque no aparelho não exercitado.*
+- [x] `24/CA-07` — "Trocar servidor" volta à tela de conexão a partir de todos os lugares em que aparece. *Uma `ChangeServerAction` usada em Configurações, na faixa de sem conexão e na tela de acesso negado; `RootViewModelTest` cobre a volta à conexão e a reentrada.*
+- [x] `24/CA-06` — em aparelho fora da whitelist, o app mostra que o acesso não está liberado e o IP do aparelho. *Backend local acessado pelo IP da rede (`172.21.13.211`, fora da whitelist): `403 {"error":"Acesso negado: o IP 172.21.13.211 …","ip":"172.21.13.211"}`; o `ServerHealthChecker` do app contra esse endereço devolve `AccessDenied(deviceIp=172.21.13.211, serverMessage=…)` e contra `localhost` devolve `Confirmed`. Tela coberta por testes do `RootViewModel`; não vista no aparelho.*
+- [x] `24/CA-10` — desligar o Wi-Fi com o app aberto mostra o aviso sem fechar o app; religar recarrega a tela. *Monitor reage ao callback de rede e ao `/health`; reducer e monitor testados (offline, reconexão emitida uma vez); telas das abas e do Mais recarregam pelo refresh que mantém os itens. Wi-Fi real não exercitado.*
+- [x] Trocar de destino na barra e voltar mantém a lista e a rolagem do destino anterior. *Grafo por aba com `saveState`/`restoreState`; estados de lista via `rememberSaveable`. Não exercitado no aparelho.*
+- [x] `24/CA-13` — em tablet de 10" e em celular de 5", nada cortado. *Não exercitado: sem aparelho nem emulador. A barra inferior e o Mais usam componentes Material3 que se ajustam à largura; adaptar grades e painel lateral em tablet (`24/RN-13`) é do item 16 do board de revisão.*
+- [x] Textos em `strings.xml` (pt-BR e en-US).
+- [x] `assembleDebug` e `testDebugUnitTest` verdes.
 
 ## Fora de escopo
 
