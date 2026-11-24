@@ -1,6 +1,7 @@
 import type { DocumentFilters, DocumentSort } from '@/service/documents';
+import { documentsQueryKey } from '@/shared/queryKeys/fileQueryKeys';
 
-export const documentsQueryKeyPrefix = ['documents'] as const;
+export const documentsQueryKeyPrefix = [documentsQueryKey] as const;
 
 export const documentsListQueryKey = (filters: DocumentFilters, sort: DocumentSort) =>
     [...documentsQueryKeyPrefix, 'list', filters, sort] as const;

@@ -1,5 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
-import { homeFavoritesQueryKey, searchQueryKey, starredCountsQueryKey } from './fileQueryKeys';
+import {
+    documentsQueryKey,
+    homeFavoritesQueryKey,
+    searchQueryKey,
+    starredCountsQueryKey,
+} from './fileQueryKeys';
 import { invalidateStarredViews } from './invalidateStarredViews';
 
 describe('invalidateStarredViews', () => {
@@ -14,6 +19,7 @@ describe('invalidateStarredViews', () => {
             { queryKey: ['files'] },
             { queryKey: starredCountsQueryKey },
             { queryKey: [searchQueryKey] },
+            { queryKey: [documentsQueryKey] },
             { queryKey: ['images', 'library'], refetchType: 'none' },
             { queryKey: ['images', 'count'] },
             { queryKey: ['images', 'timeline'] },

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import type { DocumentListItem } from '@/service/documents';
 import DocumentRow from './DocumentRow';
@@ -47,5 +47,34 @@ describe('DocumentRow', () => {
         );
 
         expect(screen.getByLabelText('DOCUMENTS_STARRED')).toBeInTheDocument();
+    });
+});
+
+describe('DocumentRow with interaction', () => {
+    const buildInteraction = () => ({
+        isSelected: true,
+        isSelectionActive: true,
+        onToggleSelection: jest.fn(),
+        onToggleStar: jest.fn(),
+        onOpenMenu: jest.fn(),
+        onContextMenu: jest.fn(),
+    });
+
+    it('renders the controls and reports clicks and right click', () => {
+        const interaction = buildInteraction();
+        render(
+            <ul>
+                <DocumentRow document={baseDocument} interaction={interaction} />
+            </ul>
+        );
+
+        expect(screen.getByRole('checkbox')).toBeChecked();
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_FAVORITE_ITEM' }));
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_ITEM_MENU' }));
+        fireEvent.contextMenu(screen.getByRole('listitem'));
+
+        expect(interaction.onToggleStar).toHaveBeenCalledTimes(1);
+        expect(interaction.onOpenMenu).toHaveBeenCalledTimes(1);
+        expect(interaction.onContextMenu).toHaveBeenCalledTimes(1);
     });
 });

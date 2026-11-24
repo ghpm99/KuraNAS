@@ -69,3 +69,34 @@ describe('DocumentsSearchResults', () => {
         expect(onOpenDocument).toHaveBeenNthCalledWith(2, 8, undefined);
     });
 });
+
+describe('DocumentsSearchResults with interaction', () => {
+    it('renders selection and menu controls without opening the document', () => {
+        const interaction = {
+            isSelected: true,
+            isSelectionActive: true,
+            onToggleSelection: jest.fn(),
+            onToggleStar: jest.fn(),
+            onOpenMenu: jest.fn(),
+            onContextMenu: jest.fn(),
+        };
+        const onOpenDocument = jest.fn();
+        render(
+            <DocumentsSearchResults
+                query="contrato"
+                results={[buildResult()]}
+                onOpenDocument={onOpenDocument}
+                getInteraction={() => interaction}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_ITEM_MENU' }));
+        fireEvent.contextMenu(screen.getByRole('listitem'));
+
+        expect(interaction.onToggleSelection).toHaveBeenCalledTimes(1);
+        expect(interaction.onOpenMenu).toHaveBeenCalledTimes(1);
+        expect(interaction.onContextMenu).toHaveBeenCalledTimes(1);
+        expect(onOpenDocument).not.toHaveBeenCalled();
+    });
+});

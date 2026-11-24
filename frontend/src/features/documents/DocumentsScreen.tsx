@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Drawer, ToggleButton, ToggleButtonGroup, useMediaQuery } from '@mui/material';
 import { FileText, Folder, LayoutGrid, List, RefreshCw } from 'lucide-react';
@@ -8,9 +8,17 @@ import PageHeader from '@/components/layout/PageHeader';
 import ListFeedback from '@/components/listFeedback/ListFeedback';
 import EmptyState from '@/components/emptyState/emptyState';
 import { buildFilesUrl } from '@/app/routes';
+import FileDetails from '@/features/files/fileDetails';
+import FileDetailsProvider from '@/features/files/fileDetails/fileDetailsProvider';
+import useFileDetails from '@/features/files/fileDetails/useFileDetails';
+import { useFileSelectionContext } from '@/features/files/selection/fileSelectionContext';
 import FileSearchBar from '@/features/files/search/FileSearchBar';
 import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import DocumentCard from './DocumentCard';
+import DocumentItemMenu from './DocumentItemMenu';
+import DocumentsBatchBar from './DocumentsBatchBar';
+import { documentToFileData, searchResultToFileData } from './documentFileAdapter';
+import useDocumentItemInteractions from './useDocumentItemInteractions';
 import DocumentRow from './DocumentRow';
 import { viewportMediaQueries } from '@/theme/visualTokens';
 import DocumentsFolderPanel from './DocumentsFolderPanel';
@@ -28,7 +36,7 @@ import useDocumentsList from './useDocumentsList';
 import useDocumentsSearch from './useDocumentsSearch';
 import styles from './DocumentsScreen.module.css';
 
-const DocumentsScreen = () => {
+const DocumentsScreenContent = () => {
     const { t } = useI18n();
     const {
         filters,
@@ -64,6 +72,23 @@ const DocumentsScreen = () => {
         reload,
     } = useDocumentsList(requestFilters, requestSort, !isSearching);
     const search = useDocumentsSearch(activeQuery, requestFilters);
+    const { hasSelection, clear: clearSelection } = useFileSelectionContext();
+    const { explicitTarget, closeDetails } = useFileDetails();
+    const { interactionFor, menuAnchorPosition, menuTargetFiles, closeMenu } =
+        useDocumentItemInteractions();
+
+    const selectionResetKey = JSON.stringify([requestFilters, requestSort, activeQuery]);
+    useEffect(() => {
+        clearSelection();
+    }, [selectionResetKey, clearSelection]);
+
+    const selectableFiles = useMemo(
+        () =>
+            isSearching
+                ? search.results.map(searchResultToFileData)
+                : documents.map(documentToFileData),
+        [isSearching, search.results, documents]
+    );
 
     const openDocument = (fileId: number, pageNumber?: number) => {
         const openedResult = search.results.find((result) => result.file_id === fileId);
@@ -171,6 +196,7 @@ const DocumentsScreen = () => {
                             </Button>
                         </div>
                     ) : null}
+                    {hasSelection ? <DocumentsBatchBar selectableFiles={selectableFiles} /> : null}
                     {isSearching ? (
                         search.isLoading && !search.isError ? (
                             <DocumentsListSkeleton viewMode="list" />
@@ -197,6 +223,9 @@ const DocumentsScreen = () => {
                                     query={activeQuery}
                                     results={search.results}
                                     onOpenDocument={openDocument}
+                                    getInteraction={(result) =>
+                                        interactionFor(searchResultToFileData(result))
+                                    }
                                 />
                             </ListFeedback>
                         )
@@ -241,13 +270,25 @@ const DocumentsScreen = () => {
                             {viewMode === 'grid' ? (
                                 <ul className={styles.grid} aria-label={t('NAV_DOCUMENTS')}>
                                     {documents.map((document) => (
-                                        <DocumentCard key={document.id} document={document} />
+                                        <DocumentCard
+                                            key={document.id}
+                                            document={document}
+                                            interaction={interactionFor(
+                                                documentToFileData(document)
+                                            )}
+                                        />
                                     ))}
                                 </ul>
                             ) : (
                                 <ul className={styles.list} aria-label={t('NAV_DOCUMENTS')}>
                                     {documents.map((document) => (
-                                        <DocumentRow key={document.id} document={document} />
+                                        <DocumentRow
+                                            key={document.id}
+                                            document={document}
+                                            interaction={interactionFor(
+                                                documentToFileData(document)
+                                            )}
+                                        />
                                     ))}
                                 </ul>
                             )}
@@ -269,8 +310,26 @@ const DocumentsScreen = () => {
                     <DocumentsFolderPanel selectedFolderId={folderId} onSelect={selectFolder} />
                 </div>
             </Drawer>
+            <Drawer anchor="right" open={explicitTarget !== null} onClose={closeDetails}>
+                <div className={styles.detailsDrawerContent}>
+                    {explicitTarget ? (
+                        <FileDetails file={explicitTarget} onClose={closeDetails} />
+                    ) : null}
+                </div>
+            </Drawer>
+            <DocumentItemMenu
+                anchorPosition={menuAnchorPosition}
+                targetFiles={menuTargetFiles}
+                onClose={closeMenu}
+            />
         </PageContainer>
     );
 };
+
+const DocumentsScreen = () => (
+    <FileDetailsProvider>
+        <DocumentsScreenContent />
+    </FileDetailsProvider>
+);
 
 export default DocumentsScreen;

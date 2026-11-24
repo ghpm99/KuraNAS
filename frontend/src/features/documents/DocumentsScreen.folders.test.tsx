@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
-import DocumentsScreen from './DocumentsScreen';
+import DocumentsScreen from './documentsScreenInFileProvider';
 
 const mockGet = jest.fn();
 

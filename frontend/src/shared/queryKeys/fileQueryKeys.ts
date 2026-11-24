@@ -1,4 +1,6 @@
-export const fileQueryKeys = ['files', 'files-path', 'filesRecent'];
+export const documentsQueryKey = 'documents';
+
+export const fileQueryKeys = ['files', 'files-path', 'filesRecent', documentsQueryKey];
 export const ancestorsQueryKey = 'files-ancestors';
 export const searchQueryKey = 'files-search';
 

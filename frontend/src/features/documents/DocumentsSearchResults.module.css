@@ -6,11 +6,22 @@
     list-style: none;
 }
 
-.result {
+.item,
+.itemSelected {
     display: flex;
     align-items: flex-start;
+    gap: var(--app-spacing-2);
+}
+
+.itemSelected .result {
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.result {
+    display: flex;
+    flex: 1;
+    align-items: flex-start;
     gap: var(--app-spacing-3);
-    width: 100%;
     min-width: 0;
     padding: var(--app-spacing-3);
     border: 1px solid var(--app-color-border-subtle);

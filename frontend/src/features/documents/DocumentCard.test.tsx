@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import DocumentCard from './DocumentCard';
 
@@ -27,5 +27,33 @@ describe('DocumentCard', () => {
         );
 
         expect(screen.queryByLabelText('DOCUMENTS_STARRED')).toBeNull();
+    });
+});
+
+describe('DocumentCard with interaction', () => {
+    it('renders the controls and reports clicks and right click', () => {
+        const interaction = {
+            isSelected: false,
+            isSelectionActive: false,
+            onToggleSelection: jest.fn(),
+            onToggleStar: jest.fn(),
+            onOpenMenu: jest.fn(),
+            onContextMenu: jest.fn(),
+        };
+        renderWithoutBackend(
+            <ul>
+                <DocumentCard document={document} interaction={interaction} />
+            </ul>
+        );
+
+        fireEvent.click(screen.getByRole('checkbox'));
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_UNFAVORITE_ITEM' }));
+        fireEvent.click(screen.getByRole('button', { name: 'FILES_ITEM_MENU' }));
+        fireEvent.contextMenu(screen.getByRole('listitem'));
+
+        expect(interaction.onToggleSelection).toHaveBeenCalledTimes(1);
+        expect(interaction.onToggleStar).toHaveBeenCalledTimes(1);
+        expect(interaction.onOpenMenu).toHaveBeenCalledTimes(1);
+        expect(interaction.onContextMenu).toHaveBeenCalledTimes(1);
     });
 });

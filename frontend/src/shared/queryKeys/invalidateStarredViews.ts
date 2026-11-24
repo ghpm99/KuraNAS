@@ -1,11 +1,17 @@
 import type { InvalidateQueryFilters, QueryClient } from '@tanstack/react-query';
-import { homeFavoritesQueryKey, searchQueryKey, starredCountsQueryKey } from './fileQueryKeys';
+import {
+    documentsQueryKey,
+    homeFavoritesQueryKey,
+    searchQueryKey,
+    starredCountsQueryKey,
+} from './fileQueryKeys';
 
 export const starredViewInvalidations: InvalidateQueryFilters[] = [
     { queryKey: homeFavoritesQueryKey },
     { queryKey: ['files'] },
     { queryKey: starredCountsQueryKey },
     { queryKey: [searchQueryKey] },
+    { queryKey: [documentsQueryKey] },
     { queryKey: ['images', 'library'], refetchType: 'none' },
     { queryKey: ['images', 'count'] },
     { queryKey: ['images', 'timeline'] },

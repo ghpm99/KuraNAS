@@ -5,15 +5,24 @@ import { formatDocumentSnippet } from '@/shared/utils/formatDocumentSnippet';
 import { formatSize } from '@/shared/utils/formatSize';
 import { formatDate } from '@/utils';
 import type { DocumentSearchResult } from '@/service/documents';
+import DocumentMenuButton from './DocumentMenuButton';
+import DocumentSelectionCheckbox from './DocumentSelectionCheckbox';
+import type { DocumentItemInteraction } from './documentItemInteraction';
 import styles from './DocumentsSearchResults.module.css';
 
 type DocumentsSearchResultsProps = {
     query: string;
     results: DocumentSearchResult[];
     onOpenDocument: (fileId: number, page?: number) => void;
+    getInteraction?: (result: DocumentSearchResult) => DocumentItemInteraction;
 };
 
-const DocumentsSearchResults = ({ query, results, onOpenDocument }: DocumentsSearchResultsProps) => {
+const DocumentsSearchResults = ({
+    query,
+    results,
+    onOpenDocument,
+    getInteraction,
+}: DocumentsSearchResultsProps) => {
     const { t } = useI18n();
 
     return (
@@ -28,9 +37,21 @@ const DocumentsSearchResults = ({ query, results, onOpenDocument }: DocumentsSea
                 ]
                     .filter(Boolean)
                     .join(' · ');
+                const interaction = getInteraction?.(result);
 
                 return (
-                    <li key={result.file_id}>
+                    <li
+                        key={result.file_id}
+                        className={interaction?.isSelected ? styles.itemSelected : styles.item}
+                        onContextMenu={interaction?.onContextMenu}
+                    >
+                        {interaction ? (
+                            <DocumentSelectionCheckbox
+                                documentName={result.name}
+                                isSelected={interaction.isSelected}
+                                onToggle={interaction.onToggleSelection}
+                            />
+                        ) : null}
                         <button
                             type="button"
                             className={styles.result}
@@ -54,6 +75,12 @@ const DocumentsSearchResults = ({ query, results, onOpenDocument }: DocumentsSea
                                 </span>
                             ) : null}
                         </button>
+                        {interaction ? (
+                            <DocumentMenuButton
+                                documentName={result.name}
+                                onOpen={interaction.onOpenMenu}
+                            />
+                        ) : null}
                     </li>
                 );
             })}

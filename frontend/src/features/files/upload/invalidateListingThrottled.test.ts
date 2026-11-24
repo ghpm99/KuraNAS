@@ -21,11 +21,12 @@ describe('createThrottledListingInvalidation', () => {
             { queryKey: ['files'] },
             { queryKey: ['files-path'] },
             { queryKey: ['filesRecent'] },
+            { queryKey: ['documents'] },
         ]);
 
         throttled.request();
         jest.advanceTimersByTime(1000);
-        expect(invalidateSpy).toHaveBeenCalledTimes(6);
+        expect(invalidateSpy).toHaveBeenCalledTimes(8);
     });
 
     it('cancel drops a pending invalidation', () => {

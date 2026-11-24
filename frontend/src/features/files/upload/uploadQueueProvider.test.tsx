@@ -59,7 +59,7 @@ describe('UploadQueueProvider', () => {
             jest.advanceTimersByTime(2000);
         });
 
-        expect(invalidateSpy).toHaveBeenCalledTimes(3);
+        expect(invalidateSpy).toHaveBeenCalledTimes(4);
         jest.useRealTimers();
     });
 

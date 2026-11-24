@@ -40,3 +40,16 @@
     display: flex;
     color: var(--app-color-warning, #f5b301);
 }
+
+.cardSelected {
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.select {
+    display: flex;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+}

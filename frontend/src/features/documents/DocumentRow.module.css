@@ -1,6 +1,6 @@
 .row {
     display: grid;
-    grid-template-columns: 28px minmax(0, 3fr) minmax(0, 2fr) 90px 170px 24px;
+    grid-template-columns: 32px 28px minmax(0, 3fr) minmax(0, 2fr) 90px 170px 72px;
     align-items: center;
     gap: var(--app-space-3, 12px);
     padding: var(--app-space-2, 8px) var(--app-space-3, 12px);
@@ -23,6 +23,7 @@
 }
 
 .icon,
+.select,
 .star {
     display: flex;
     align-items: center;
@@ -35,7 +36,7 @@
 
 @media (max-width: 599.95px) {
     .row {
-        grid-template-columns: 28px minmax(0, 1fr) 24px;
+        grid-template-columns: 32px 28px minmax(0, 1fr) 72px;
     }
 
     .folder,
@@ -43,4 +44,14 @@
     .modified {
         display: none;
     }
+}
+
+.rowSelected {
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
