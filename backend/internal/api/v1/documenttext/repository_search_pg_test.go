@@ -2,6 +2,7 @@ package documenttext
 
 import (
 	"database/sql"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -55,6 +56,27 @@ func TestSearchDocumentsReportsPageAndSnippetOfContentMatch_Postgres(t *testing.
 	}
 	if !strings.Contains(results[0].Snippet, "Reembolso") || strings.Contains(results[0].Snippet, "\f") || len(results[0].Snippet) > 220 {
 		t.Fatalf("unexpected snippet %q", results[0].Snippet)
+	}
+}
+
+func TestSearchDocumentsPageFollowsTheTermThatAppearsLast_Postgres(t *testing.T) {
+	repository, service, dbContext := newDocumentTextPostgres(t)
+	now := time.Now().UTC().Truncate(time.Second)
+	fileID := seedDocumentFile(t, dbContext, "manual.pdf", ".pdf", now)
+	pages := make([]string, 0, 9)
+	for pageNumber := 1; pageNumber <= 9; pageNumber++ {
+		pages = append(pages, fmt.Sprintf("secao comum da pagina %d", pageNumber))
+	}
+	pages[5] = "secao especial 1799 da pagina 6"
+	storeText(t, repository, fileID, strings.Join(pages, "\f"), now, "")
+
+	results := searchPage(t, service, DocumentSearchParams{Query: "secao 1799"})
+
+	if len(results) != 1 || results[0].Page == nil || *results[0].Page != 6 {
+		t.Fatalf("expected page 6, got %+v", results)
+	}
+	if !strings.Contains(results[0].Snippet, "1799") {
+		t.Fatalf("expected the snippet around 1799, got %q", results[0].Snippet)
 	}
 }
 
