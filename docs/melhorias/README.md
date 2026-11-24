@@ -71,7 +71,7 @@ Regras invariantes:
 | 39 | [Android: navegação](39-android-navegacao.md) | bug | P1 | 22 | ✅ concluída (2026-11-24) | spec 24; 403 com IP verificado contra o backend local; aparelho não exercitado (CA-13 sem verificação de tela) |
 | 40 | [Música: corrigir metadados](40-musica-edicao-de-metadados.md) | feature | P0 | — | ✅ concluída (2026-11-17) | spec 05; CAs verificados no sistema local; sub-itens 40.1 (RN-04 completa), 40.2 (seleção de faixas), 40.3 (player reflete a edição) |
 | 41 | [Música: playlist por regra](41-musica-playlist-por-regra.md) | feature | P0 | 40 | ✅ concluída (2026-11-24) | spec 05; CAs verificados no backend local |
-| 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | em execução | spec 06 |
+| 42 | [Vídeos: tela da série](42-videos-tela-da-serie.md) | feature | P0 | — | ✅ concluída (2026-11-24) | spec 06; CAs verificados no backend local; sub-itens 42.1 (série pequena) e 42.2 (vídeo corrigido para série) |
 | 43 | [Vídeos: faixa de áudio](43-videos-faixa-de-audio.md) | feature | P1 | — | pendente | spec 06 |
 | 44 | [Documentos: biblioteca no backend](44-documentos-biblioteca-backend.md) | feature | P0 | — | pendente | spec 07 |
 | 45 | [Documentos: tela na web](45-documentos-tela-web.md) | feature | P0 | 44, 20, 21 | pendente | spec 07 |
