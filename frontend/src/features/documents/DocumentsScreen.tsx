@@ -21,6 +21,7 @@ import { documentToFileData, searchResultToFileData } from './documentFileAdapte
 import useDocumentItemInteractions from './useDocumentItemInteractions';
 import DocumentRow from './DocumentRow';
 import { viewportMediaQueries } from '@/theme/visualTokens';
+import DocumentsUploadActions from './DocumentsUploadActions';
 import DocumentsFolderPanel from './DocumentsFolderPanel';
 import DocumentsFilterBar from './DocumentsFilterBar';
 import DocumentsSortControl from './DocumentsSortControl';
@@ -129,6 +130,7 @@ const DocumentsScreenContent = () => {
                                 {t('DOCUMENTS_FOLDERS_TITLE')}
                             </Button>
                         ) : null}
+                        <DocumentsUploadActions selectedFolderId={folderId} />
                         <DocumentsSortControl
                             sortState={sortState}
                             onChange={setSort}
