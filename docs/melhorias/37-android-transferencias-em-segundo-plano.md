@@ -44,7 +44,7 @@ Verificados em aparelho real.
 
 ## Sub-itens
 
-- **37.1** — o explorer não recarrega a pasta de destino quando o envio em segundo plano termina (antes recarregava ao fim do envio direto); observar a fila e atualizar a lista da pasta aberta.
+- [x] **37.1** — o explorer não recarrega a pasta de destino quando o envio em segundo plano termina (antes recarregava ao fim do envio direto); observar a fila e atualizar a lista da pasta aberta.
 
 ## Fora de escopo
 

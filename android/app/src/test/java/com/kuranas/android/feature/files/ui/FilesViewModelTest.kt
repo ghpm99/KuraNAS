@@ -8,6 +8,9 @@ import com.kuranas.android.feature.files.data.StarredResponse
 import com.kuranas.android.feature.files.data.download.DownloadQueue
 import com.kuranas.android.feature.files.data.download.DownloadRequest
 import com.kuranas.android.core.paging.ListPage
+import com.kuranas.android.feature.transfers.data.TransferDirection
+import com.kuranas.android.feature.transfers.data.TransferEntity
+import com.kuranas.android.feature.transfers.data.TransferStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.verify
@@ -45,7 +48,7 @@ class FilesViewModelTest {
     private fun viewModelWithFile(isStarred: Boolean): FilesViewModel {
         coEvery { repository.getRootFiles(any()) } returns
             AppResult.Success(ListPage(listOf(FileItemDto(rawId = 7, name = "a.txt", starred = isStarred)), false))
-        return FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), SavedStateHandle())
+        return FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), FakeUploadCompletionSource(), SavedStateHandle())
     }
 
     private fun FilesViewModel.isFileStarred() = state.value.files.single().starred
@@ -171,7 +174,7 @@ class FilesViewModelTest {
     fun `second page appends its items to the folder list`() {
         coEvery { repository.getRootFiles(1) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), true))
         coEvery { repository.getRootFiles(2) } returns AppResult.Success(ListPage(listOf(fileNamed(2)), false))
-        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), SavedStateHandle())
+        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), FakeUploadCompletionSource(), SavedStateHandle())
 
         viewModel.loadMore()
 
@@ -182,7 +185,7 @@ class FilesViewModelTest {
     @Test
     fun `end of list does not request another page`() {
         coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), false))
-        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), SavedStateHandle())
+        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), FakeUploadCompletionSource(), SavedStateHandle())
 
         viewModel.loadMore()
 
@@ -193,7 +196,7 @@ class FilesViewModelTest {
     fun `next page failure keeps the items and retry asks for the same page`() {
         coEvery { repository.getRootFiles(1) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), true))
         coEvery { repository.getRootFiles(2) } returns AppResult.Error("falhou")
-        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), SavedStateHandle())
+        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), FakeUploadCompletionSource(), SavedStateHandle())
 
         viewModel.loadMore()
 
@@ -213,7 +216,7 @@ class FilesViewModelTest {
         coEvery { repository.getRootFiles(1) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), true))
         coEvery { repository.getRootFiles(2) } returns AppResult.Success(ListPage(listOf(fileNamed(2)), true))
         coEvery { repository.getChildrenById("9", 1) } returns AppResult.Success(ListPage(listOf(fileNamed(3)), false))
-        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), SavedStateHandle())
+        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), FakeUploadCompletionSource(), SavedStateHandle())
         viewModel.loadMore()
 
         viewModel.openFolder(FileItemDto(rawId = 9, name = "docs", type = FileItemDto.TYPE_DIRECTORY))
@@ -227,7 +230,7 @@ class FilesViewModelTest {
     fun `creating a folder reloads the current folder`() {
         coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(listOf(fileNamed(1)), false))
         coEvery { repository.createFolder("novo", null) } returns AppResult.Success(Unit)
-        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), SavedStateHandle())
+        val viewModel = FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), FakeUploadCompletionSource(), SavedStateHandle())
         coEvery { repository.getRootFiles(any()) } returns
             AppResult.Success(ListPage(listOf(fileNamed(1), fileNamed(2)), false))
 
@@ -243,7 +246,7 @@ class FilesViewModelTest {
         val first = FileItemDto(rawId = 2, name = "primeiro arquivo.pdf", format = ".pdf", size = 10)
         val second = FileItemDto(rawId = 3, name = "foto.png", format = ".png", size = 20)
         coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(listOf(folder, first, second), false))
-        val viewModel = FilesViewModel(repository, queue, SavedStateHandle())
+        val viewModel = FilesViewModel(repository, queue, FakeUploadCompletionSource(), SavedStateHandle())
 
         viewModel.toggleSelection(second)
         viewModel.toggleSelection(folder)
@@ -267,7 +270,7 @@ class FilesViewModelTest {
         val queue = mockk<DownloadQueue>(relaxed = true)
         val file = FileItemDto(rawId = 2, name = "a.txt")
         coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(listOf(file), false))
-        val viewModel = FilesViewModel(repository, queue, SavedStateHandle())
+        val viewModel = FilesViewModel(repository, queue, FakeUploadCompletionSource(), SavedStateHandle())
 
         viewModel.toggleSelection(file)
         assertTrue(viewModel.state.value.isSelecting)
@@ -276,5 +279,44 @@ class FilesViewModelTest {
 
         assertFalse(viewModel.state.value.isSelecting)
         coVerify(exactly = 0) { queue.enqueue(any()) }
+    }
+
+    private fun uploadTransfer(id: Long, status: TransferStatus, folderId: Long?) = TransferEntity(
+        id = id,
+        batchId = "batch",
+        direction = TransferDirection.UPLOAD,
+        displayName = "f$id",
+        targetFolderId = folderId,
+        targetFolderName = "folder",
+        status = status,
+        createdAt = 0,
+        updatedAt = 0,
+    )
+
+    @Test
+    fun `upload completing in the open root folder refreshes the listing once for a burst`() {
+        coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(emptyList(), false))
+        val uploads = FakeUploadCompletionSource()
+        FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), uploads, SavedStateHandle())
+
+        uploads.transfers.value = listOf(uploadTransfer(1, TransferStatus.RUNNING, null), uploadTransfer(2, TransferStatus.RUNNING, null))
+        uploads.transfers.value = listOf(uploadTransfer(1, TransferStatus.COMPLETED, null), uploadTransfer(2, TransferStatus.RUNNING, null))
+        uploads.transfers.value = listOf(uploadTransfer(1, TransferStatus.COMPLETED, null), uploadTransfer(2, TransferStatus.COMPLETED, null))
+        dispatcher.scheduler.advanceTimeBy(UPLOAD_REFRESH_DEBOUNCE_MILLIS + 1)
+
+        coVerify(exactly = 2) { repository.getRootFiles(any()) }
+    }
+
+    @Test
+    fun `upload completing in another folder does not refresh the listing`() {
+        coEvery { repository.getRootFiles(any()) } returns AppResult.Success(ListPage(emptyList(), false))
+        val uploads = FakeUploadCompletionSource()
+        FilesViewModel(repository, mockk<DownloadQueue>(relaxed = true), uploads, SavedStateHandle())
+
+        uploads.transfers.value = listOf(uploadTransfer(1, TransferStatus.RUNNING, 9))
+        uploads.transfers.value = listOf(uploadTransfer(1, TransferStatus.COMPLETED, 9))
+        dispatcher.scheduler.advanceTimeBy(UPLOAD_REFRESH_DEBOUNCE_MILLIS + 1)
+
+        coVerify(exactly = 1) { repository.getRootFiles(any()) }
     }
 }

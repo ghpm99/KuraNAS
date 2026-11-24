@@ -7,10 +7,18 @@ import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.paging.PagedListLoader
 import com.kuranas.android.feature.files.data.FileItemDto
 import com.kuranas.android.feature.files.data.FilesRepository
+import com.kuranas.android.feature.files.data.NewUploadCompletionDetector
+import com.kuranas.android.feature.files.data.UploadCompletionSource
 import com.kuranas.android.feature.files.data.download.DownloadQueue
 import com.kuranas.android.feature.files.data.download.toDownloadRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -21,6 +29,7 @@ import javax.inject.Inject
 
 const val FOLDER_ID_ARGUMENT = "folderId"
 const val FOLDER_NAME_ARGUMENT = "name"
+const val UPLOAD_REFRESH_DEBOUNCE_MILLIS = 1_000L
 
 data class FilesUiState(
     val isLoading: Boolean = true,
@@ -44,6 +53,7 @@ data class FilesUiState(
 class FilesViewModel @Inject constructor(
     private val repository: FilesRepository,
     private val downloadQueue: DownloadQueue,
+    private val uploadCompletions: UploadCompletionSource,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -65,7 +75,21 @@ class FilesViewModel @Inject constructor(
     init {
         val initialFolderId = savedStateHandle.get<String>(FOLDER_ID_ARGUMENT)
         if (initialFolderId == null) loadRoot() else openFolder(initialFolder(initialFolderId, savedStateHandle))
+        refreshWhenUploadCompletesInOpenFolder()
     }
+
+    @OptIn(FlowPreview::class)
+    private fun refreshWhenUploadCompletesInOpenFolder() {
+        val detector = NewUploadCompletionDetector()
+        uploadCompletions.observeTransfers()
+            .map { transfers -> detector.hasNewCompletionIn(transfers, openFolderId()) }
+            .filter { hasNewCompletion -> hasNewCompletion }
+            .debounce(UPLOAD_REFRESH_DEBOUNCE_MILLIS)
+            .onEach { filesLoader.refresh() }
+            .launchIn(viewModelScope)
+    }
+
+    private fun openFolderId(): Long? = navigationState.value.breadcrumb.lastOrNull()?.second?.toLongOrNull()
 
     private fun initialFolder(folderId: String, savedStateHandle: SavedStateHandle) = FileItemDto(
         rawId = folderId.toIntOrNull() ?: 0,
