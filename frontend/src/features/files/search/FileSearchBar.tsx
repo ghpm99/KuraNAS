@@ -12,6 +12,7 @@ interface FileSearchBarProps {
     isRecursive?: boolean;
     onRecursiveChange?: (isRecursive: boolean) => void;
     inputRef?: Ref<HTMLInputElement>;
+    placeholder?: string;
 }
 
 const FileSearchBar = ({
@@ -22,9 +23,10 @@ const FileSearchBar = ({
     isRecursive = true,
     onRecursiveChange,
     inputRef,
+    placeholder: placeholderOverride,
 }: FileSearchBarProps) => {
     const { t } = useI18n();
-    const placeholder = isFolderScope ? t('FILES_SEARCH_PLACEHOLDER') : t('FILES_SEARCH_PLACEHOLDER_ALL');
+    const placeholder = placeholderOverride ?? (isFolderScope ? t('FILES_SEARCH_PLACEHOLDER') : t('FILES_SEARCH_PLACEHOLDER_ALL'));
 
     return (
         <div className={styles.searchBar}>

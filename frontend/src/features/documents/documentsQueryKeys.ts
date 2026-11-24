@@ -7,3 +7,6 @@ export const documentsListQueryKey = (filters: DocumentFilters, sort: DocumentSo
 
 export const documentsCountQueryKey = (filters: DocumentFilters) =>
     [...documentsQueryKeyPrefix, 'count', filters] as const;
+
+export const documentsSearchQueryKey = (query: string, filters: DocumentFilters) =>
+    [...documentsQueryKeyPrefix, 'search', query, filters] as const;

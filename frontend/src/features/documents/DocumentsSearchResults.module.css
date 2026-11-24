@@ -1,0 +1,69 @@
+.list {
+    display: grid;
+    gap: var(--app-spacing-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.result {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--app-spacing-3);
+    width: 100%;
+    min-width: 0;
+    padding: var(--app-spacing-3);
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-lg);
+    background: rgba(var(--app-color-ink-rgb), 0.03);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.result:hover,
+.result:focus-visible {
+    background: rgba(var(--app-color-primary-rgb), 0.12);
+}
+
+.result:focus-visible {
+    outline: 2px solid var(--mui-palette-primary-main, var(--app-color-primary));
+    outline-offset: 2px;
+}
+
+.icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--app-color-text-secondary);
+}
+
+.body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--app-spacing-1);
+    min-width: 0;
+}
+
+.name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.snippet {
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.meta,
+.page {
+    color: var(--app-color-text-secondary);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+.page {
+    flex-shrink: 0;
+    white-space: nowrap;
+}

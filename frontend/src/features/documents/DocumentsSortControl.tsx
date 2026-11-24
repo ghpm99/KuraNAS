@@ -13,6 +13,7 @@ import styles from './DocumentsFilters.module.css';
 interface DocumentsSortControlProps {
     sortState?: DocumentsSortState;
     onChange?: (sortState: DocumentsSortState) => void;
+    isRelevanceLocked?: boolean;
 }
 
 const sortLabelKeys: Record<DocumentSortField, string> = {
@@ -25,8 +26,25 @@ const sortLabelKeys: Record<DocumentSortField, string> = {
 const DocumentsSortControl = ({
     sortState = defaultDocumentsSort,
     onChange,
+    isRelevanceLocked = false,
 }: DocumentsSortControlProps) => {
     const { t } = useI18n();
+
+    if (isRelevanceLocked) {
+        return (
+            <div className={styles.sortControl}>
+                <Select
+                    size="small"
+                    value="relevance"
+                    disabled
+                    inputProps={{ 'aria-label': t('DOCUMENTS_SORT_LABEL') }}
+                >
+                    <MenuItem value="relevance">{t('FILES_SEARCH_SORT_RELEVANCE')}</MenuItem>
+                </Select>
+            </div>
+        );
+    }
+
     const isDescending = sortState.order === 'desc';
     const orderLabel = t(
         isDescending ? 'DOCUMENTS_SORT_ORDER_DESCENDING' : 'DOCUMENTS_SORT_ORDER_ASCENDING'

@@ -23,7 +23,8 @@ const dedupeById = (documents: DocumentListItem[]): DocumentListItem[] => {
 
 const useDocumentsList = (
     filters: DocumentFilters = noFilters,
-    sort: DocumentSort = defaultSort
+    sort: DocumentSort = defaultSort,
+    isEnabled = true
 ) => {
     const listQuery = useInfiniteQuery({
         queryKey: documentsListQueryKey(filters, sort),
@@ -31,11 +32,13 @@ const useDocumentsList = (
             listDocuments({ filters, sort, page: pageParam, pageSize: documentsPageSize, signal }),
         initialPageParam: 1,
         getNextPageParam: getNextPageNumber,
+        enabled: isEnabled,
         staleTime: listingStaleTimeMs,
     });
     const countQuery = useQuery({
         queryKey: documentsCountQueryKey(filters),
         queryFn: () => countDocuments(filters),
+        enabled: isEnabled,
         staleTime: listingStaleTimeMs,
     });
     const retry = useRetryFailedPage(listQuery);

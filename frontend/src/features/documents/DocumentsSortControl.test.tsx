@@ -28,3 +28,13 @@ describe('DocumentsSortControl', () => {
         expect(onChange).toHaveBeenCalledWith({ sort: 'name', order: 'asc' });
     });
 });
+
+describe('DocumentsSortControl while searching', () => {
+    it('shows Relevância locked and hides the order toggle', () => {
+        render(<DocumentsSortControl isRelevanceLocked />);
+
+        expect(screen.getByRole('combobox')).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByText('FILES_SEARCH_SORT_RELEVANCE')).toBeInTheDocument();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+});

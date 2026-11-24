@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Drawer, ToggleButton, ToggleButtonGroup, useMediaQuery } from '@mui/material';
 import { FileText, Folder, LayoutGrid, List, RefreshCw } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -6,12 +7,16 @@ import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import ListFeedback from '@/components/listFeedback/ListFeedback';
 import EmptyState from '@/components/emptyState/emptyState';
+import { buildFilesUrl } from '@/app/routes';
+import FileSearchBar from '@/features/files/search/FileSearchBar';
+import useFileSearchQuery from '@/features/files/search/useFileSearchQuery';
 import DocumentCard from './DocumentCard';
 import DocumentRow from './DocumentRow';
 import { viewportMediaQueries } from '@/theme/visualTokens';
 import DocumentsFolderPanel from './DocumentsFolderPanel';
 import DocumentsFilterBar from './DocumentsFilterBar';
 import DocumentsSortControl from './DocumentsSortControl';
+import DocumentsSearchResults from './DocumentsSearchResults';
 import DocumentsListSkeleton from './DocumentsListSkeleton';
 import {
     loadDocumentsViewMode,
@@ -20,6 +25,7 @@ import {
 } from './documentsViewModePreference';
 import useDocumentsFilters from './useDocumentsFilters';
 import useDocumentsList from './useDocumentsList';
+import useDocumentsSearch from './useDocumentsSearch';
 import styles from './DocumentsScreen.module.css';
 
 const DocumentsScreen = () => {
@@ -36,6 +42,11 @@ const DocumentsScreen = () => {
         setFolderId,
         resetFilters,
     } = useDocumentsFilters();
+    const navigate = useNavigate();
+    const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery({
+        shouldAlwaysReplaceHistory: true,
+    });
+    const isSearching = activeQuery !== '';
     const isNarrowScreen = useMediaQuery(viewportMediaQueries.belowTablet);
     const [isFolderDrawerOpen, setIsFolderDrawerOpen] = useState(false);
     const [viewMode, setViewMode] = useState<DocumentsViewMode>(loadDocumentsViewMode);
@@ -51,7 +62,15 @@ const DocumentsScreen = () => {
         errorMessage,
         retry,
         reload,
-    } = useDocumentsList(requestFilters, requestSort);
+    } = useDocumentsList(requestFilters, requestSort, !isSearching);
+    const search = useDocumentsSearch(activeQuery, requestFilters);
+
+    const openDocument = (fileId: number, pageNumber?: number) => {
+        const openedResult = search.results.find((result) => result.file_id === fileId);
+        if (!openedResult) return;
+        const filesUrl = buildFilesUrl(openedResult.path);
+        navigate(pageNumber === undefined ? filesUrl : `${filesUrl}?page=${pageNumber}`);
+    };
 
     const changeViewMode = (nextViewMode: DocumentsViewMode | null) => {
         if (!nextViewMode) return;
@@ -65,7 +84,7 @@ const DocumentsScreen = () => {
     };
 
     const subtitle =
-        total === undefined ? undefined : t('DOCUMENTS_TOTAL', { count: String(total) });
+        isSearching || total === undefined ? undefined : t('DOCUMENTS_TOTAL', { count: String(total) });
     const isListFullyLoaded = documents.length > 0 && !hasNextPage && !isNextPageError;
 
     return (
@@ -85,7 +104,11 @@ const DocumentsScreen = () => {
                                 {t('DOCUMENTS_FOLDERS_TITLE')}
                             </Button>
                         ) : null}
-                        <DocumentsSortControl sortState={sortState} onChange={setSort} />
+                        <DocumentsSortControl
+                            sortState={sortState}
+                            onChange={setSort}
+                            isRelevanceLocked={isSearching}
+                        />
                         <ToggleButtonGroup
                             size="small"
                             value={viewMode}
@@ -106,7 +129,7 @@ const DocumentsScreen = () => {
                             size="small"
                             variant="outlined"
                             startIcon={<RefreshCw size={16} />}
-                            onClick={reload}
+                            onClick={isSearching ? search.retry : reload}
                         >
                             {t('DOCUMENTS_RELOAD')}
                         </Button>
@@ -126,12 +149,18 @@ const DocumentsScreen = () => {
                     </aside>
                 )}
                 <div className={styles.mainColumn}>
+                    <FileSearchBar
+                        value={inputValue}
+                        onChange={setInputValue}
+                        onClear={clearQuery}
+                        placeholder={t('DOCUMENTS_SEARCH_PLACEHOLDER')}
+                    />
                     <DocumentsFilterBar
                         filters={filters}
                         onChange={setFilters}
                         onReset={resetFilters}
                     />
-                    {isError && folderId !== undefined ? (
+                    {isError && !isSearching && folderId !== undefined ? (
                         <div className={styles.folderError}>
                             <Button
                                 size="small"
@@ -142,7 +171,36 @@ const DocumentsScreen = () => {
                             </Button>
                         </div>
                     ) : null}
-                    {isLoading && !isError ? (
+                    {isSearching ? (
+                        search.isLoading && !search.isError ? (
+                            <DocumentsListSkeleton viewMode="list" />
+                        ) : (
+                            <ListFeedback
+                                isEmpty={search.results.length === 0}
+                                isError={search.isError}
+                                isNextPageError={search.isNextPageError}
+                                errorTitle={t('DOCUMENTS_LOAD_ERROR')}
+                                errorMessage={search.errorMessage}
+                                onRetry={search.retry}
+                                hasNextPage={search.hasNextPage}
+                                isFetchingNextPage={search.isFetchingNextPage}
+                                onLoadMore={search.fetchNextPage}
+                                emptyState={
+                                    <EmptyState
+                                        icon={<FileText size={32} aria-hidden="true" />}
+                                        title={t('DOCUMENTS_SEARCH_EMPTY_TITLE')}
+                                        description={t('DOCUMENTS_SEARCH_EMPTY_DESCRIPTION')}
+                                    />
+                                }
+                            >
+                                <DocumentsSearchResults
+                                    query={activeQuery}
+                                    results={search.results}
+                                    onOpenDocument={openDocument}
+                                />
+                            </ListFeedback>
+                        )
+                    ) : isLoading && !isError ? (
                         <DocumentsListSkeleton viewMode={viewMode} />
                     ) : (
                         <ListFeedback
