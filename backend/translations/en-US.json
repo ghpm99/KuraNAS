@@ -546,6 +546,7 @@
 	"INGEST_DOWNLOAD_ERROR_DESTINATION_UNAVAILABLE": "The destination folder is not available.",
 	"INGEST_DOWNLOAD_ERROR_TIMEOUT": "The download exceeded the maximum allowed time.",
 	"INGEST_DOWNLOAD_ERROR_UNKNOWN": "The download failed for an unexpected reason.",
+	"INGEST_DOWNLOAD_ERROR_SERVER_RESTARTED": "The download was interrupted by a server restart.",
 	"ERROR_AUTO_SHUTDOWN_LOAD_FAILED": "Failed to load the auto-shutdown settings.",
 	"ERROR_AUTO_SHUTDOWN_UPDATE_FAILED": "Failed to save the auto-shutdown settings.",
 	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "There is no shutdown countdown to cancel.",

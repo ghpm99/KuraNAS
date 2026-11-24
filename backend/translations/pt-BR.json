@@ -546,6 +546,7 @@
 	"INGEST_DOWNLOAD_ERROR_DESTINATION_UNAVAILABLE": "A pasta de destino não está disponível.",
 	"INGEST_DOWNLOAD_ERROR_TIMEOUT": "O download excedeu o tempo máximo permitido.",
 	"INGEST_DOWNLOAD_ERROR_UNKNOWN": "O download falhou por um motivo inesperado.",
+	"INGEST_DOWNLOAD_ERROR_SERVER_RESTARTED": "O download foi interrompido pelo reinício do servidor.",
 	"ERROR_AUTO_SHUTDOWN_LOAD_FAILED": "Falha ao carregar as configurações de desligamento automático.",
 	"ERROR_AUTO_SHUTDOWN_UPDATE_FAILED": "Falha ao salvar as configurações de desligamento automático.",
 	"ERROR_AUTO_SHUTDOWN_NOT_IN_WARNING": "Não há desligamento em contagem para cancelar.",
