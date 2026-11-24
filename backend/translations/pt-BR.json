@@ -2328,5 +2328,13 @@
 	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Falha ao carregar as opções",
 	"MUSIC_PLAYLIST_RULE_REMOVED_NOTE": "Faixas removidas não voltam para esta playlist",
 	"MUSIC_PLAYLIST_RULE_EMPTY": "Nenhuma faixa corresponde à regra desta playlist",
-	"MUSIC_GENRE_CREATE_RULE_PLAYLIST": "Criar playlist deste gênero"
+	"MUSIC_GENRE_CREATE_RULE_PLAYLIST": "Criar playlist deste gênero",
+	"NAV_DOCUMENTS": "Documentos",
+	"DOCUMENTS_PAGE_DESCRIPTION": "Todos os documentos do servidor, em qualquer pasta.",
+	"DOCUMENTS_TOTAL": "{{count}} documentos",
+	"DOCUMENTS_RELOAD": "Recarregar",
+	"DOCUMENTS_STARRED": "Favorito",
+	"DOCUMENTS_LOAD_ERROR": "Não foi possível carregar os documentos",
+	"DOCUMENTS_EMPTY_TITLE": "Nenhum documento encontrado",
+	"DOCUMENTS_EMPTY_DESCRIPTION": "Envie documentos para o servidor ou configure a pasta de documentos nas configurações para que eles apareçam aqui."
 }

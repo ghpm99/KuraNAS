@@ -2328,5 +2328,13 @@
 	"MUSIC_PLAYLIST_RULE_OPTIONS_FAILED": "Failed to load the options",
 	"MUSIC_PLAYLIST_RULE_REMOVED_NOTE": "Removed tracks do not come back to this playlist",
 	"MUSIC_PLAYLIST_RULE_EMPTY": "No track matches this playlist's rule",
-	"MUSIC_GENRE_CREATE_RULE_PLAYLIST": "Create playlist from this genre"
+	"MUSIC_GENRE_CREATE_RULE_PLAYLIST": "Create playlist from this genre",
+	"NAV_DOCUMENTS": "Documents",
+	"DOCUMENTS_PAGE_DESCRIPTION": "Every document on the server, in any folder.",
+	"DOCUMENTS_TOTAL": "{{count}} documents",
+	"DOCUMENTS_RELOAD": "Reload",
+	"DOCUMENTS_STARRED": "Starred",
+	"DOCUMENTS_LOAD_ERROR": "Could not load the documents",
+	"DOCUMENTS_EMPTY_TITLE": "No documents found",
+	"DOCUMENTS_EMPTY_DESCRIPTION": "Upload documents to the server or configure the documents folder in settings so they show up here."
 }
