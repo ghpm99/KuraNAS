@@ -93,19 +93,25 @@ class ConnectionViewModel @Inject constructor(
         _state.update { it.copy(isCheckingManualAddress = true, error = null) }
         viewModelScope.launch {
             try {
-                when (serverHealthChecker.check(normalizedUrl)) {
+                when (val result = serverHealthChecker.check(normalizedUrl)) {
                     ServerCheckResult.Confirmed -> {
                         serverStore.saveManual(normalizedUrl)
                         serverSelectionEvents.notifyServerSelected()
                     }
                     ServerCheckResult.NoResponse -> showError(R.string.connection_no_response)
                     ServerCheckResult.NotKuraNas -> showError(R.string.connection_not_kuranas)
-                    is ServerCheckResult.AccessDenied -> showError(R.string.connection_access_denied)
+                    is ServerCheckResult.AccessDenied -> showAccessDenied(result.denial.deviceIp)
                 }
             } finally {
                 _state.update { it.copy(isCheckingManualAddress = false) }
             }
         }
+    }
+
+    private fun showAccessDenied(deviceIp: String?) {
+        val message = deviceIp?.let { context.getString(R.string.connection_access_denied_with_ip, it) }
+            ?: context.getString(R.string.connection_access_denied)
+        _state.update { it.copy(error = message) }
     }
 
     private fun showError(messageResId: Int) {

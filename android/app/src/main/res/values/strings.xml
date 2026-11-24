@@ -37,6 +37,7 @@
     <string name="connection_no_response">No server answered at this address. Check that you are on the same Wi-Fi and that the server is on.</string>
     <string name="connection_not_kuranas">This address answered, but it is not a KuraNAS server.</string>
     <string name="connection_access_denied">The server refused this device. Allow its IP in the server access list.</string>
+    <string name="connection_access_denied_with_ip">The server refused this device (IP %1$s). Allow this IP in the server access list.</string>
     <string name="connection_invalid_address">Enter a valid address</string>
     <string name="connection_searching_server">Searching for the server on the network…</string>
     <string name="connection_check_same_wifi">Check that this phone is on the same Wi-Fi as the server and that the server is on.</string>

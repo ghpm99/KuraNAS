@@ -141,10 +141,12 @@ class ConnectionViewModelTest {
         every { context.getString(R.string.connection_no_response) } returns "no response"
         every { context.getString(R.string.connection_not_kuranas) } returns "not kuranas"
         every { context.getString(R.string.connection_access_denied) } returns "access denied"
+        every { context.getString(R.string.connection_access_denied_with_ip, "10.0.0.9") } returns "access denied for 10.0.0.9"
         val expectedErrors = mapOf(
             ServerCheckResult.NoResponse to "no response",
             ServerCheckResult.NotKuraNas to "not kuranas",
-            ServerCheckResult.AccessDenied(AccessDenial("10.0.0.9", null)) to "access denied",
+            ServerCheckResult.AccessDenied(AccessDenial("10.0.0.9", null)) to "access denied for 10.0.0.9",
+            ServerCheckResult.AccessDenied(AccessDenial(null, null)) to "access denied",
         )
 
         expectedErrors.forEach { (checkResult, expectedError) ->
