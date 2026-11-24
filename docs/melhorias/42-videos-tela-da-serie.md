@@ -35,22 +35,16 @@ O backend não guarda temporada nem episódio de arquivos (só de capturas, em `
 
 ## Critérios de aceite
 
-- [ ] `06/CA-07` — série de 24 episódios `Ep 1`…`Ep 24` aparece na ordem 1, 2, 3 … 24.
-- [ ] `06/CA-08` — `Serie.S02E03.1080p.x264.mkv` aparece como episódio 3 da temporada 2.
-- [ ] `06/CA-10` — "próximo" no último episódio da temporada abre o primeiro da seguinte; no último da série, desabilitado.
-- [ ] `06/CA-15` — marcar uma temporada como assistida marca todos os episódios dela e só eles.
-- [ ] Corrigir o número de um episódio o reposiciona na lista; reindexar não desfaz.
-- [ ] Corrigir a classificação de "filme" para "série" tira o vídeo de Filmes e o coloca em Séries.
-- [ ] "Continuar" abre o episódio em andamento no ponto salvo; sem episódio em andamento, abre o próximo não assistido.
-- [ ] Os CA de `00` valem na lista de episódios (três páginas, falha de página seguinte mantém a lista).
-- [ ] Testes: ordenação e overrides contra Postgres real; seam test das mutações; render sem mock da tela.
-- [ ] `make ci` verde.
-
-## Andamento (2026-11-24)
-
-- Backend B1–B3 commitados: temporada e episódio, correções, ordem, `?season`, `seasons` e `resume` no cabeçalho (só com `include_items=false`, que é o que o Android usa), `PUT …/watched`.
-- Verificado no backend local (pastas `nas-data/Videos/teste-task42-ep` e `teste-task42-temporadas`, playlists 19 e 20): `Ep 1`…`Ep 24` na ordem 1..24; `Anime.Teste.S02E03.1080p.x264.mp4` = T2E3; `seasons` 10+10 e `resume` em modo `start`.
-- **Parado no passo F1 (tela da série na web)**: o agente foi interrompido por limite de uso; o que ele deixou no working tree não foi revisado nem commitado — conferir com `git status` e refazer o F1 a partir daqui. Faltam F1, F2 (ações e diálogos de correção), CA-10 no player, 42.1 e 42.2, e `make ci`.
+- [x] `06/CA-07` — série de 24 episódios `Ep 1`…`Ep 24` aparece na ordem 1, 2, 3 … 24. *Backend local, pasta `teste-task42-ep`: `items` devolve T1E1…T1E24 na ordem 1, 2, … 10, 11 … 24.*
+- [x] `06/CA-08` — `Serie.S02E03.1080p.x264.mkv` aparece como episódio 3 da temporada 2. *Backend local: `Anime.Teste.S02E03.1080p.x264.mp4` sai como `season: 2, episode: 3` em `?season=2`.*
+- [x] `06/CA-10` — "próximo" no último episódio da temporada abre o primeiro da seguinte; no último da série, desabilitado. *Backend local: `playback/start` em T1E10 (959) + `playback/next` → T2E01 (953); no último (958) o `next` fica nele; a web desabilita o botão no último (teste do player).*
+- [x] `06/CA-15` — marcar uma temporada como assistida marca todos os episódios dela e só eles. *Backend local: `PUT /playlists/20/watched {"watched":true,"season":1}` → `updated: 10`; `seasons` = T1 10/10 e T2 0/10; `resume` passa a T2E1.*
+- [x] Corrigir o número de um episódio o reposiciona na lista; reindexar não desfaz. *Backend local: T2E10 (958) corrigido para T1E11 aparece no fim da T1 na hora e continua lá depois de `POST /playlists/rebuild`; limpar volta a T2E10; episódio 0 → `400` com `field: episode`.*
+- [x] Corrigir a classificação de "filme" para "série" tira o vídeo de Filmes e o coloca em Séries. *Backend local, pasta `teste-task42-filmes`: corrigir o 966 para `series` o tira de `/library/movies` e cria a série `teste-task42-filmes` com 1 item em Séries; limpar devolve a Filmes e a série some (sub-itens 42.1 e 42.2).*
+- [x] "Continuar" abre o episódio em andamento no ponto salvo; sem episódio em andamento, abre o próximo não assistido. *`resume` do servidor (testes Postgres: continue/start/rewatch); backend local: sem progresso → `start` T1E1, com a T1 assistida → `start` T2E1; botão da web segue o modo (teste).*
+- [x] Os CA de `00` valem na lista de episódios (três páginas, falha de página seguinte mantém a lista). *Testes de seam da web (3 páginas, falha da página 2 mantém a 1 com tentar de novo, total no fim) e Postgres do filtro por temporada em 3 páginas.*
+- [x] Testes: ordenação e overrides contra Postgres real; seam test das mutações; render sem mock da tela.
+- [x] `make ci` verde.
 
 ## Sub-itens
 
