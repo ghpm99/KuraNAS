@@ -15,6 +15,7 @@ import com.kuranas.android.feature.transfers.data.TransferStateMachine
 import com.kuranas.android.feature.transfers.data.TransferTransition
 import com.kuranas.android.feature.transfers.data.download.PartialDownloadDiscarder
 import com.kuranas.android.feature.transfers.data.download.withoutPartialDownload
+import com.kuranas.android.feature.transfers.data.notification.TransferBatchNotifier
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,6 +42,7 @@ class TransferRepository @Inject constructor(
     private val uploadApi: TransferUploadApi,
     private val clock: TransferClock,
     private val partialDownloadDiscarder: PartialDownloadDiscarder,
+    private val batchNotifier: TransferBatchNotifier,
 ) {
 
     suspend fun enqueueUploads(items: List<UploadRequestItem>, destination: UploadDestination): String {
@@ -104,6 +106,7 @@ class TransferRepository @Inject constructor(
         if (previous.direction == TransferDirection.DOWNLOAD) partialDownloadDiscarder.discard(previous)
         cancelled.uploadId?.let { discardServerSession(it) }
         cancelled.stagedFilePath?.let { File(it).parentFile?.deleteRecursively() }
+        batchNotifier.refresh(cancelled.batchId)
     }
 
     private fun cancelledTransition(current: TransferEntity): TransferTransition =

@@ -3,6 +3,7 @@ package com.kuranas.android.feature.transfers.data.upload
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.kuranas.android.R
 import com.kuranas.android.feature.transfers.data.TransferDao
@@ -10,6 +11,8 @@ import com.kuranas.android.feature.transfers.data.TransferEntity
 import com.kuranas.android.feature.transfers.data.TransferStateMachine
 import com.kuranas.android.feature.transfers.data.TransferStatus
 import com.kuranas.android.feature.transfers.data.TransferTransition
+import com.kuranas.android.feature.transfers.data.notification.TransferBatchNotifier
+import com.kuranas.android.feature.transfers.data.notification.enterForegroundIfAllowed
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
@@ -22,6 +25,7 @@ class UploadTransferWorker @AssistedInject constructor(
     private val stateMachine: TransferStateMachine,
     private val uploader: ChunkedUploader,
     private val sourceFactory: UploadSourceFactory,
+    private val batchNotifier: TransferBatchNotifier,
 ) : CoroutineWorker(appContext, workerParameters) {
 
     override suspend fun doWork(): Result {
@@ -29,13 +33,21 @@ class UploadTransferWorker @AssistedInject constructor(
         val storedTransfer = transferDao.findById(transferId) ?: return Result.success()
         if (!storedTransfer.status.isActive) return Result.success()
         val runningTransfer = markRunning(storedTransfer) ?: return Result.success()
+        enterForegroundIfAllowed(batchNotifier, runningTransfer.batchId)
 
         val outcome = try {
             uploadWithPersistedProgress(runningTransfer)
         } catch (cancelled: TransferCancelledException) {
+            batchNotifier.refresh(runningTransfer.batchId)
             return Result.success()
         }
         return finish(transferId, outcome)
+    }
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        val transferId = inputData.getLong(KEY_TRANSFER_ID, NO_TRANSFER_ID)
+        val batchId = transferDao.findById(transferId)?.batchId.orEmpty()
+        return batchNotifier.progressForegroundInfo(batchId)
     }
 
     private suspend fun markRunning(transfer: TransferEntity): TransferEntity? {
@@ -53,7 +65,10 @@ class UploadTransferWorker @AssistedInject constructor(
         return uploader.upload(
             source = source,
             request = request,
-            progressListener = { uploadId, receivedBytes -> persistProgress(transfer.id, uploadId, receivedBytes) },
+            progressListener = { uploadId, receivedBytes ->
+                persistProgress(transfer.id, uploadId, receivedBytes)
+                batchNotifier.refresh(transfer.batchId)
+            },
             chunkGate = { requireStillActive(transfer.id) },
         )
     }
@@ -87,8 +102,9 @@ class UploadTransferWorker @AssistedInject constructor(
             shouldRetryLater = resolution.shouldRetryLater
             resolution.transition
         } ?: return Result.success()
+        if (finished.status != TransferStatus.FAILED && !shouldRetryLater) deleteStagedFile(finished)
+        batchNotifier.refresh(finished.batchId)
         if (shouldRetryLater) return Result.retry()
-        if (finished.status != TransferStatus.FAILED) deleteStagedFile(finished)
         return Result.success()
     }
 

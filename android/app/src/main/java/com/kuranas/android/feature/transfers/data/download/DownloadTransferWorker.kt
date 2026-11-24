@@ -3,9 +3,9 @@ package com.kuranas.android.feature.transfers.data.download
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.kuranas.android.R
-import com.kuranas.android.feature.files.data.download.DownloadNotifier
 import com.kuranas.android.feature.files.data.download.DownloadOutcome
 import com.kuranas.android.feature.files.data.download.DownloadProgress
 import com.kuranas.android.feature.files.data.download.PersistedDownloadDestination
@@ -16,6 +16,8 @@ import com.kuranas.android.feature.transfers.data.TransferEntity
 import com.kuranas.android.feature.transfers.data.TransferStateMachine
 import com.kuranas.android.feature.transfers.data.TransferStatus
 import com.kuranas.android.feature.transfers.data.TransferTransition
+import com.kuranas.android.feature.transfers.data.notification.TransferBatchNotifier
+import com.kuranas.android.feature.transfers.data.notification.enterForegroundIfAllowed
 import com.kuranas.android.feature.transfers.data.upload.TransferCancelledException
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -27,7 +29,7 @@ class DownloadTransferWorker @AssistedInject constructor(
     private val transferDao: TransferDao,
     private val stateMachine: TransferStateMachine,
     private val executor: ResumableDownloadExecutor,
-    private val notifier: DownloadNotifier,
+    private val batchNotifier: TransferBatchNotifier,
     private val partialDiscarder: PartialDownloadDiscarder,
 ) : CoroutineWorker(appContext, workerParameters) {
 
@@ -36,14 +38,22 @@ class DownloadTransferWorker @AssistedInject constructor(
         val storedTransfer = transferDao.findById(transferId) ?: return Result.success()
         if (storedTransfer.direction != TransferDirection.DOWNLOAD || !storedTransfer.status.isActive) return Result.success()
         val runningTransfer = markRunning(storedTransfer) ?: return Result.success()
+        enterForegroundIfAllowed(batchNotifier, runningTransfer.batchId)
 
         val outcome = try {
             downloadWithPersistedProgress(runningTransfer)
         } catch (cancelled: TransferCancelledException) {
             partialDiscarder.discard(transferDao.findById(transferId) ?: runningTransfer)
+            batchNotifier.refresh(runningTransfer.batchId)
             return Result.success()
         }
         return finish(transferId, outcome)
+    }
+
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        val transferId = inputData.getLong(KEY_TRANSFER_ID, NO_TRANSFER_ID)
+        val batchId = transferDao.findById(transferId)?.batchId.orEmpty()
+        return batchNotifier.progressForegroundInfo(batchId)
     }
 
     private suspend fun markRunning(transfer: TransferEntity): TransferEntity? {
@@ -60,8 +70,10 @@ class DownloadTransferWorker @AssistedInject constructor(
             persistedDestination = persistedDestination,
             onDestinationReady = { reference, mimeType -> persistDestination(transfer, reference, mimeType) },
             onProgress = { progress ->
-                notifier.showProgress(transfer.id.toInt(), request, progress)
-                if (throttle.shouldPersist(progress)) persistProgress(transfer.id, progress)
+                if (throttle.shouldPersist(progress)) {
+                    persistProgress(transfer.id, progress)
+                    batchNotifier.refresh(transfer.batchId)
+                }
             },
         )
     }
@@ -100,18 +112,9 @@ class DownloadTransferWorker @AssistedInject constructor(
             shouldRetryLater = resolution.shouldRetryLater
             resolution.transition
         } ?: return Result.success()
+        batchNotifier.refresh(finished.batchId)
         if (shouldRetryLater) return Result.retry()
-        notifyFinished(finished, outcome)
         return Result.success()
-    }
-
-    private fun notifyFinished(transfer: TransferEntity, outcome: DownloadOutcome) {
-        val notificationId = transfer.id.toInt()
-        val request = transfer.toDownloadRequest()
-        when (outcome) {
-            is DownloadOutcome.Completed -> notifier.showCompleted(notificationId, request, outcome.uri, outcome.mimeType)
-            is DownloadOutcome.Failed -> notifier.showFailed(notificationId, request, outcome.failure)
-        }
     }
 
     private fun newResolver() = DownloadOutcomeResolver(

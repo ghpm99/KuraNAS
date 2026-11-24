@@ -111,10 +111,7 @@
     <string name="file_open_with">Open with…</string>
     <string name="file_share">Share</string>
     <string name="file_too_large_for_preview">This file is larger than %1$d MB, so it is not previewed. Download it to open.</string>
-    <string name="download_channel_name">Downloads</string>
-    <string name="download_channel_description">Progress of files downloaded from the server</string>
     <string name="download_notification_completed_title">Download complete</string>
-    <string name="download_notification_failed_title">Download failed</string>
     <string name="download_open_action">Open</string>
     <string name="download_failed_http">Download failed (HTTP %1$d)</string>
     <string name="download_failed_connection">The connection was lost and the download could not be completed.</string>
@@ -260,4 +257,32 @@
     <string name="transfers_status_failed">Failed</string>
     <string name="transfers_status_failed_with_reason">Failed: %1$s</string>
     <string name="transfers_status_cancelled">Cancelled</string>
+    <string name="transfer_channel_name">Transfers</string>
+    <string name="transfer_channel_description">Progress and result of uploads and downloads</string>
+    <string name="transfer_batch_progress_text">%1$d of %2$d · %3$d%%</string>
+    <string name="transfer_batch_result_title">Transfers finished</string>
+    <plurals name="transfer_batch_uploading_title">
+        <item quantity="one">Uploading %d file</item>
+        <item quantity="other">Uploading %d files</item>
+    </plurals>
+    <plurals name="transfer_batch_downloading_title">
+        <item quantity="one">Downloading %d file</item>
+        <item quantity="other">Downloading %d files</item>
+    </plurals>
+    <plurals name="transfer_batch_result_uploaded">
+        <item quantity="one">%d uploaded</item>
+        <item quantity="other">%d uploaded</item>
+    </plurals>
+    <plurals name="transfer_batch_result_downloaded">
+        <item quantity="one">%d downloaded</item>
+        <item quantity="other">%d downloaded</item>
+    </plurals>
+    <plurals name="transfer_batch_result_already_existed">
+        <item quantity="one">%d already existed</item>
+        <item quantity="other">%d already existed</item>
+    </plurals>
+    <plurals name="transfer_batch_result_failed">
+        <item quantity="one">%d failed</item>
+        <item quantity="other">%d failed</item>
+    </plurals>
 </resources>

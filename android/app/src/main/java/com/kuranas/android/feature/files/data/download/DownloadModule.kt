@@ -47,7 +47,4 @@ interface DownloadBindingsModule {
 
     @Binds
     fun bindMimeTypeResolver(resolver: AndroidMimeTypeResolver): MimeTypeResolver
-
-    @Binds
-    fun bindDownloadNotifier(notifier: SystemDownloadNotifier): DownloadNotifier
 }

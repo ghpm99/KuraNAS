@@ -109,10 +109,7 @@
     <string name="file_open_with">Abrir com…</string>
     <string name="file_share">Compartilhar</string>
     <string name="file_too_large_for_preview">Este arquivo tem mais de %1$d MB e não é pré-visualizado. Baixe para abri-lo.</string>
-    <string name="download_channel_name">Downloads</string>
-    <string name="download_channel_description">Progresso dos arquivos baixados do servidor</string>
     <string name="download_notification_completed_title">Download concluído</string>
-    <string name="download_notification_failed_title">Falha no download</string>
     <string name="download_open_action">Abrir</string>
     <string name="download_failed_http">Falha no download (HTTP %1$d)</string>
     <string name="download_failed_connection">A conexão caiu e o download não pôde ser concluído.</string>
@@ -258,4 +255,32 @@
     <string name="transfers_status_failed">Falhou</string>
     <string name="transfers_status_failed_with_reason">Falhou: %1$s</string>
     <string name="transfers_status_cancelled">Cancelada</string>
+    <string name="transfer_channel_name">Transferências</string>
+    <string name="transfer_channel_description">Andamento e resultado de envios e downloads</string>
+    <string name="transfer_batch_progress_text">%1$d de %2$d · %3$d%%</string>
+    <string name="transfer_batch_result_title">Transferências concluídas</string>
+    <plurals name="transfer_batch_uploading_title">
+        <item quantity="one">Enviando %d arquivo</item>
+        <item quantity="other">Enviando %d arquivos</item>
+    </plurals>
+    <plurals name="transfer_batch_downloading_title">
+        <item quantity="one">Baixando %d arquivo</item>
+        <item quantity="other">Baixando %d arquivos</item>
+    </plurals>
+    <plurals name="transfer_batch_result_uploaded">
+        <item quantity="one">%d enviado</item>
+        <item quantity="other">%d enviados</item>
+    </plurals>
+    <plurals name="transfer_batch_result_downloaded">
+        <item quantity="one">%d baixado</item>
+        <item quantity="other">%d baixados</item>
+    </plurals>
+    <plurals name="transfer_batch_result_already_existed">
+        <item quantity="one">%d já existia</item>
+        <item quantity="other">%d já existiam</item>
+    </plurals>
+    <plurals name="transfer_batch_result_failed">
+        <item quantity="one">%d com falha</item>
+        <item quantity="other">%d com falha</item>
+    </plurals>
 </resources>
