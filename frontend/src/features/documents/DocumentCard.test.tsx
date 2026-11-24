@@ -21,6 +21,15 @@ describe('DocumentCard', () => {
         expect(screen.getByLabelText('DOCUMENTS_STARRED')).toBeInTheDocument();
     });
 
+    it('opens the document from its name when an open handler is given', () => {
+        const onOpen = jest.fn();
+        renderWithoutBackend(<DocumentCard document={document} onOpen={onOpen} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'relatorio.pdf' }));
+
+        expect(onOpen).toHaveBeenCalledTimes(1);
+    });
+
     it('omits the star when not starred', () => {
         renderWithoutBackend(
             <DocumentCard document={{ ...(document as object), starred: false } as never} />

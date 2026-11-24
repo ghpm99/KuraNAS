@@ -39,5 +39,5 @@ export const searchResultToFileData = (result: DocumentSearchResult): FileData =
     size: result.size ?? 0,
     updated_at: result.updated_at ?? '',
     created_at: '',
-    starred: false,
+    starred: Boolean(result.starred),
 });

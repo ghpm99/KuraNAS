@@ -14,6 +14,7 @@ export const appRoutes = {
     music: '/music',
     videos: '/videos',
     documents: '/documents',
+    documentViewer: '/documents/view',
     assistant: '/assistant',
     takeout: '/takeout',
     captures: '/captures',
@@ -129,3 +130,20 @@ export const buildFilesUrl = (filePath: string): string =>
 
 export const buildFavoritesUrl = (filePath: string): string =>
     buildBrowserUrl(appRoutes.favorites, filePath);
+
+export const buildDocumentsListUrl = (listSearch: string): string =>
+    listSearch ? `${appRoutes.documents}?${listSearch}` : appRoutes.documents;
+
+export const buildDocumentViewerUrl = (
+    fileId: number,
+    listSearch: string,
+    pageNumber?: number
+): string => {
+    const params = new URLSearchParams();
+    const listParams = listSearch.replace(/^\?/, '');
+    if (listParams) params.set('from', listParams);
+    if (pageNumber !== undefined) params.set('page', String(pageNumber));
+    const serializedParams = params.toString();
+    const viewerPath = `${appRoutes.documentViewer}/${fileId}`;
+    return serializedParams ? `${viewerPath}?${serializedParams}` : viewerPath;
+};

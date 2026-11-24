@@ -42,6 +42,7 @@ export interface DocumentSearchResult {
     updated_at: string;
     snippet: string;
     page: number | null;
+    starred?: boolean;
 }
 
 export interface DocumentIndexState {

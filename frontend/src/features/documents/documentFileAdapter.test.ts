@@ -64,6 +64,7 @@ describe('documentFileAdapter', () => {
             type: FileType.File,
             starred: false,
         });
+        expect(searchResultToFileData({ ...result, starred: true }).starred).toBe(true);
     });
 
     it('falls back to the parent path when a search result has no path', () => {

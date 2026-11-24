@@ -2,6 +2,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/shared/utils/formatSize';
 import { formatDate } from '@/utils';
 import type { DocumentListItem } from '@/service/documents';
+import DocumentName from './DocumentName';
 import DocumentFormatIcon from './DocumentFormatIcon';
 import DocumentMenuButton from './DocumentMenuButton';
 import DocumentSelectionCheckbox from './DocumentSelectionCheckbox';
@@ -12,11 +13,14 @@ import styles from './DocumentRow.module.css';
 type DocumentRowProps = {
     document: DocumentListItem;
     interaction?: DocumentItemInteraction;
+    onOpen?: () => void;
 };
 
-const DocumentRow = ({ document, interaction }: DocumentRowProps) => {
+const DocumentRow = ({ document, interaction, onOpen }: DocumentRowProps) => {
     const { t } = useI18n();
-    const rowClassName = interaction?.isSelected ? `${styles.row} ${styles.rowSelected}` : styles.row;
+    const rowClassName = interaction?.isSelected
+        ? `${styles.row} ${styles.rowSelected}`
+        : styles.row;
 
     return (
         <li className={rowClassName} onContextMenu={interaction?.onContextMenu}>
@@ -32,9 +36,7 @@ const DocumentRow = ({ document, interaction }: DocumentRowProps) => {
             <span className={styles.icon}>
                 <DocumentFormatIcon format={document.format} />
             </span>
-            <span className={styles.name} title={document.name}>
-                {document.name}
-            </span>
+            <DocumentName name={document.name} className={styles.name} onOpen={onOpen} />
             <span className={styles.folder} title={document.parent_path}>
                 {document.parent_path}
             </span>

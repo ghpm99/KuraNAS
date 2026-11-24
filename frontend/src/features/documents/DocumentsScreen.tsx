@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Drawer, ToggleButton, ToggleButtonGroup, useMediaQuery } from '@mui/material';
 import { FileText, Folder, LayoutGrid, List, RefreshCw } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -7,7 +7,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import ListFeedback from '@/components/listFeedback/ListFeedback';
 import EmptyState from '@/components/emptyState/emptyState';
-import { buildFilesUrl } from '@/app/routes';
+import { buildDocumentViewerUrl } from '@/app/routes';
 import FileDetails from '@/features/files/fileDetails';
 import FileDetailsProvider from '@/features/files/fileDetails/fileDetailsProvider';
 import useFileDetails from '@/features/files/fileDetails/useFileDetails';
@@ -52,6 +52,7 @@ const DocumentsScreenContent = () => {
         resetFilters,
     } = useDocumentsFilters();
     const navigate = useNavigate();
+    const location = useLocation();
     const { inputValue, setInputValue, activeQuery, clearQuery } = useFileSearchQuery({
         shouldAlwaysReplaceHistory: true,
     });
@@ -92,10 +93,7 @@ const DocumentsScreenContent = () => {
     );
 
     const openDocument = (fileId: number, pageNumber?: number) => {
-        const openedResult = search.results.find((result) => result.file_id === fileId);
-        if (!openedResult) return;
-        const filesUrl = buildFilesUrl(openedResult.path);
-        navigate(pageNumber === undefined ? filesUrl : `${filesUrl}?page=${pageNumber}`);
+        navigate(buildDocumentViewerUrl(fileId, location.search, pageNumber));
     };
 
     const changeViewMode = (nextViewMode: DocumentsViewMode | null) => {
@@ -110,7 +108,9 @@ const DocumentsScreenContent = () => {
     };
 
     const subtitle =
-        isSearching || total === undefined ? undefined : t('DOCUMENTS_TOTAL', { count: String(total) });
+        isSearching || total === undefined
+            ? undefined
+            : t('DOCUMENTS_TOTAL', { count: String(total) });
     const isListFullyLoaded = documents.length > 0 && !hasNextPage && !isNextPageError;
 
     return (
@@ -278,6 +278,7 @@ const DocumentsScreenContent = () => {
                                             interaction={interactionFor(
                                                 documentToFileData(document)
                                             )}
+                                            onOpen={() => openDocument(document.id)}
                                         />
                                     ))}
                                 </ul>
@@ -290,6 +291,7 @@ const DocumentsScreenContent = () => {
                                             interaction={interactionFor(
                                                 documentToFileData(document)
                                             )}
+                                            onOpen={() => openDocument(document.id)}
                                         />
                                     ))}
                                 </ul>

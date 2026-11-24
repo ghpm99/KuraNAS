@@ -11,3 +11,12 @@ export const documentsCountQueryKey = (filters: DocumentFilters) =>
 
 export const documentsSearchQueryKey = (query: string, filters: DocumentFilters) =>
     [...documentsQueryKeyPrefix, 'search', query, filters] as const;
+
+export const documentIndexStateQueryKey = (fileId: number) =>
+    [...documentsQueryKeyPrefix, 'index-state', fileId] as const;
+
+export const documentTextQueryKey = (fileId: number) =>
+    [...documentsQueryKeyPrefix, 'text', fileId] as const;
+
+export const documentViewerFileQueryKey = (fileId: number) =>
+    [...documentsQueryKeyPrefix, 'viewer-file', fileId] as const;

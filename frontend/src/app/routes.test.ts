@@ -1,5 +1,7 @@
 import {
     appRoutes,
+    buildDocumentsListUrl,
+    buildDocumentViewerUrl,
     buildFavoritesUrl,
     buildFilesUrl,
     getFileBrowserRootPath,
@@ -55,5 +57,20 @@ describe('app routes helpers', () => {
         expect(buildFavoritesUrl('')).toBe('/favorites');
         expect(buildFavoritesUrl('/docs/my folder')).toBe('/favorites/docs/my%20folder');
         expect(buildFilesUrl('/docs')).toBe('/files/docs');
+    });
+});
+
+describe('document viewer routes', () => {
+    it('builds the viewer url keeping the list url and the page', () => {
+        expect(buildDocumentViewerUrl(7, '')).toBe('/documents/view/7');
+        expect(buildDocumentViewerUrl(7, '?format=pdf&q=a b', 3)).toBe(
+            '/documents/view/7?from=format%3Dpdf%26q%3Da+b&page=3'
+        );
+        expect(buildDocumentViewerUrl(7, '', 2)).toBe('/documents/view/7?page=2');
+    });
+
+    it('builds the list url the viewer goes back to', () => {
+        expect(buildDocumentsListUrl('')).toBe('/documents');
+        expect(buildDocumentsListUrl('format=pdf')).toBe('/documents?format=pdf');
     });
 });

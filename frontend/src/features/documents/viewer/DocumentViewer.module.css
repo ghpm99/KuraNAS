@@ -1,0 +1,32 @@
+.pdfFrame {
+    display: block;
+    width: 100%;
+    height: calc(100vh - 220px);
+    min-height: 480px;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-md, 8px);
+}
+
+.extractedText {
+    margin: 0;
+    padding: var(--app-space-3, 12px);
+    max-height: 70vh;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    border: 1px solid var(--app-color-border-subtle);
+    border-radius: var(--app-radius-md, 8px);
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-2, 8px);
+    min-width: 0;
+}
+
+.detailsDrawerContent {
+    width: min(420px, 100vw);
+}

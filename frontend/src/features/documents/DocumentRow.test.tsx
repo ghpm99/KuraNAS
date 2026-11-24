@@ -39,6 +39,25 @@ describe('DocumentRow', () => {
         expect(screen.queryByLabelText('DOCUMENTS_STARRED')).toBeNull();
     });
 
+    it('opens the document from its name only when an open handler is given', () => {
+        const onOpen = jest.fn();
+        const { rerender } = renderWithoutBackend(
+            <ul>
+                <DocumentRow document={baseDocument} onOpen={onOpen} />
+            </ul>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'escritura.pdf' }));
+        expect(onOpen).toHaveBeenCalledTimes(1);
+
+        rerender(
+            <ul>
+                <DocumentRow document={baseDocument} />
+            </ul>
+        );
+        expect(screen.queryByRole('button', { name: 'escritura.pdf' })).toBeNull();
+    });
+
     it('shows the star only for starred documents', () => {
         renderWithoutBackend(
             <ul>

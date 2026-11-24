@@ -186,13 +186,22 @@ describe('DocumentsScreen search', () => {
         expect(screen.getByText('DOCUMENTS_SEARCH_PAGE')).toBeInTheDocument();
     });
 
-    it('opens the result in Files keeping the page in the URL', async () => {
+    it('opens the result in the viewer keeping the list URL and the page', async () => {
         routeRequests();
         renderWithoutBackend(<DocumentsScreen />, ['/documents?q=contrato']);
 
         await screen.findByText('DOCUMENTS_SEARCH_PAGE');
         fireEvent.click(screen.getByRole('button', { name: /DOCUMENTS_SEARCH_PAGE/ }));
 
-        expect(mockNavigate).toHaveBeenCalledWith('/files/docs/contrato.pdf?page=4');
+        expect(mockNavigate).toHaveBeenCalledWith('/documents/view/9?from=q%3Dcontrato&page=4');
+    });
+
+    it('opens a listed document in the viewer carrying the list URL', async () => {
+        routeRequests();
+        renderWithoutBackend(<DocumentsScreen />, ['/documents?format=pdf']);
+
+        fireEvent.click(await screen.findByRole('button', { name: 'lista.pdf' }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/documents/view/1?from=format%3Dpdf');
     });
 });

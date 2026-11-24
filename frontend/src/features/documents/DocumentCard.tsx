@@ -2,6 +2,7 @@ import { Star } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatDate } from '@/utils';
 import type { DocumentListItem } from '@/service/documents';
+import DocumentName from './DocumentName';
 import DocumentFormatIcon from './DocumentFormatIcon';
 import DocumentMenuButton from './DocumentMenuButton';
 import DocumentSelectionCheckbox from './DocumentSelectionCheckbox';
@@ -12,11 +13,12 @@ import styles from './DocumentCard.module.css';
 type DocumentCardProps = {
     document: DocumentListItem;
     interaction?: DocumentItemInteraction;
+    onOpen?: () => void;
 };
 
 const cardIconSize = 56;
 
-const DocumentCard = ({ document, interaction }: DocumentCardProps) => {
+const DocumentCard = ({ document, interaction, onOpen }: DocumentCardProps) => {
     const { t } = useI18n();
     const cardClassName = interaction?.isSelected
         ? `${styles.card} ${styles.cardSelected}`
@@ -36,9 +38,7 @@ const DocumentCard = ({ document, interaction }: DocumentCardProps) => {
             <span className={styles.icon}>
                 <DocumentFormatIcon format={document.format} size={cardIconSize} />
             </span>
-            <span className={styles.name} title={document.name}>
-                {document.name}
-            </span>
+            <DocumentName name={document.name} className={styles.name} onOpen={onOpen} />
             <span className={styles.folder} title={document.parent_path}>
                 {document.parent_path}
             </span>

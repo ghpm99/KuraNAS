@@ -16,6 +16,7 @@ const HomePage = lazy(() => import('@/pages/home'));
 const FilePage = lazy(() => import('@/pages/files'));
 const FavoritesPage = lazy(() => import('@/pages/favorites'));
 const DocumentsPage = lazy(() => import('@/pages/documents'));
+const DocumentViewerPage = lazy(() => import('@/pages/documentViewer'));
 const SettingsPage = lazy(() => import('@/pages/settings'));
 const ActivityDiaryPage = lazy(() => import('@/pages/activityDiary'));
 const AnalyticsPage = lazy(() => import('@/pages/analytics'));
@@ -84,6 +85,10 @@ function AppContent() {
                     <Route path={`${appRoutes.files}/*`} element={<FilePage />} />
                     <Route path={`${appRoutes.favorites}/*`} element={<FavoritesPage />} />
                     <Route path={appRoutes.documents} element={<DocumentsPage />} />
+                    <Route
+                        path={`${appRoutes.documentViewer}/:fileId`}
+                        element={<DocumentViewerPage />}
+                    />
                     <Route path={appRoutes.settings} element={<SettingsPage />} />
                     <Route path={appRoutes.activityDiary} element={<ActivityDiaryPage />} />
                     <Route path={`${appRoutes.analytics}/*`} element={<AnalyticsPage />} />

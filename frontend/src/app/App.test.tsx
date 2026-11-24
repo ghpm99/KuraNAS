@@ -87,6 +87,7 @@ jest.mock('@/pages/vacuum', () => () => <div>VacuumPage</div>);
 jest.mock('@/pages/downloads', () => () => <div>DownloadsPage</div>);
 jest.mock('@/pages/trash', () => () => <div>TrashPage</div>);
 jest.mock('@/pages/documents', () => () => <div>DocumentsPage</div>);
+jest.mock('@/pages/documentViewer', () => () => <div>DocumentViewerPage</div>);
 jest.mock('@/pages/assistant', () => () => <div>AssistantPage</div>);
 
 describe('App', () => {
