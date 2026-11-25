@@ -17,12 +17,13 @@ import (
 )
 
 type handlerServiceMock struct {
-	initFn     func(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error)
-	chunkFn    func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error
-	completeFn func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
-	statusFn   func(uploadID string) (TakeoutUploadStatusDto, error)
-	cancelFn   func(uploadID string) error
-	listFn     func(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
+	initFn      func(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error)
+	chunkFn     func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error
+	completeFn  func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
+	statusFn    func(uploadID string) (TakeoutUploadStatusDto, error)
+	cancelFn    func(uploadID string) error
+	listFn      func(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
+	getImportFn func(importID int) (TakeoutImportDto, error)
 }
 
 type handlerLoggerMock struct{}
@@ -84,6 +85,13 @@ func (m *handlerServiceMock) ListImports(page int, pageSize int) (utils.Paginati
 		return m.listFn(page, pageSize)
 	}
 	return utils.PaginationResponse[TakeoutImportDto]{}, nil
+}
+
+func (m *handlerServiceMock) GetImport(importID int) (TakeoutImportDto, error) {
+	if m.getImportFn != nil {
+		return m.getImportFn(importID)
+	}
+	return TakeoutImportDto{ID: importID}, nil
 }
 
 func buildJSONRequest(method string, url string, body string) *http.Request {

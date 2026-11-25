@@ -671,6 +671,7 @@ func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {
 	takeoutRoutes.POST("/upload/complete", context.Takeout.Handler.CompleteUploadHandler)
 	takeoutRoutes.GET("/upload/:upload_id", context.Takeout.Handler.GetUploadStatusHandler)
 	takeoutRoutes.GET("/imports", context.Takeout.Handler.ListImportsHandler)
+	takeoutRoutes.GET("/imports/:id", context.Takeout.Handler.GetImportHandler)
 	takeoutRoutes.DELETE("/upload/:upload_id", context.Takeout.Handler.CancelUploadHandler)
 }
 

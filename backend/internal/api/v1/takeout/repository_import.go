@@ -2,6 +2,7 @@ package takeout
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/takeout"
@@ -82,23 +83,8 @@ func (r *ImportRepository) ListImports(page int, pageSize int) (utils.Pagination
 		defer rows.Close()
 
 		for rows.Next() {
-			var importDto TakeoutImportDto
-			if err := rows.Scan(
-				&importDto.ID,
-				&importDto.JobID,
-				&importDto.FileName,
-				&importDto.Size,
-				&importDto.State,
-				&importDto.TotalEntries,
-				&importDto.ProcessedEntries,
-				&importDto.Imported,
-				&importDto.AlreadyExisting,
-				&importDto.Ignored,
-				&importDto.FailedEntries,
-				&importDto.Error,
-				&importDto.CreatedAt,
-				&importDto.EndedAt,
-			); err != nil {
+			importDto, err := scanImport(rows)
+			if err != nil {
 				return err
 			}
 			pagination.Items = append(pagination.Items, importDto)
@@ -111,4 +97,45 @@ func (r *ImportRepository) ListImports(page int, pageSize int) (utils.Pagination
 
 	pagination.UpdatePagination()
 	return pagination, nil
+}
+
+type importRowScanner interface {
+	Scan(destinations ...any) error
+}
+
+func scanImport(row importRowScanner) (TakeoutImportDto, error) {
+	var importDto TakeoutImportDto
+	err := row.Scan(
+		&importDto.ID,
+		&importDto.JobID,
+		&importDto.FileName,
+		&importDto.Size,
+		&importDto.State,
+		&importDto.TotalEntries,
+		&importDto.ProcessedEntries,
+		&importDto.Imported,
+		&importDto.AlreadyExisting,
+		&importDto.Ignored,
+		&importDto.FailedEntries,
+		&importDto.Error,
+		&importDto.CreatedAt,
+		&importDto.EndedAt,
+	)
+	return importDto, err
+}
+
+func (r *ImportRepository) GetImport(importID int) (TakeoutImportDto, error) {
+	var importDto TakeoutImportDto
+	err := r.DbContext.QueryTx(func(transaction *sql.Tx) error {
+		scanned, err := scanImport(transaction.QueryRow(queries.SelectTakeoutImportByIDQuery, importID))
+		importDto = scanned
+		return err
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return TakeoutImportDto{}, ErrImportNotFound
+	}
+	if err != nil {
+		return TakeoutImportDto{}, fmt.Errorf("GetImport: %w", err)
+	}
+	return importDto, nil
 }

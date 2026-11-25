@@ -435,3 +435,7 @@ func sanitizeTakeoutFileName(fileName string) string {
 		}
 	}, name)
 }
+
+func (s *Service) GetImport(importID int) (TakeoutImportDto, error) {
+	return s.ImportLister.GetImport(importID)
+}

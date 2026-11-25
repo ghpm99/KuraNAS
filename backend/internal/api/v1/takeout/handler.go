@@ -211,6 +211,38 @@ func (h *Handler) ListImportsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, imports)
 }
 
+func (h *Handler) GetImportHandler(c *gin.Context) {
+	logModel := h.createLog(logger.LoggerModel{
+		Name:        "GetTakeoutImport",
+		Description: "Reading a single takeout import",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	})
+
+	importID, parseErr := strconv.Atoi(c.Param("id"))
+	if parseErr != nil {
+		h.completeError(logModel, parseErr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_IMPORT_INVALID_ID")})
+		return
+	}
+
+	importDto, err := h.service.GetImport(importID)
+	if err != nil {
+		h.completeError(logModel, err)
+		if errors.Is(err, ErrImportNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_IMPORT_NOT_FOUND")})
+			return
+		}
+		applog.ErrorWithStack("takeout: failed to read import", err, "import_id", importID)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_IMPORT_GET_ERROR")})
+		return
+	}
+
+	h.completeSuccess(logModel)
+	c.JSON(http.StatusOK, importDto)
+}
+
 func (h *Handler) CancelUploadHandler(c *gin.Context) {
 	logModel := h.createLog(logger.LoggerModel{
 		Name:        "CancelTakeoutUpload",

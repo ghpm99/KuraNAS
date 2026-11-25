@@ -10,6 +10,7 @@ var (
 	ErrUnsafeArchiveEntry     = errors.New("unsafe archive entry path")
 	ErrMetadataEntryTooLarge  = errors.New("metadata entry exceeds size limit")
 	ErrUploadSessionNotFound  = errors.New("upload session not found")
+	ErrImportNotFound         = errors.New("takeout import not found")
 	ErrUploadOffsetMismatch   = errors.New("upload offset mismatch")
 	ErrUploadChunkExceedsSize = errors.New("upload chunk exceeds declared size")
 	ErrUploadAlreadyCompleted = errors.New("upload already completed")

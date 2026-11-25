@@ -2,6 +2,7 @@ package takeout
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
 
 	"nas-go/api/internal/testutil"
@@ -166,5 +167,38 @@ func TestImportRepositoryListImportsOrdersNewestFirst_Postgres(t *testing.T) {
 	}
 	if secondPage.Items[0].FileName == "" || secondPage.Items[0].CreatedAt.IsZero() {
 		t.Fatalf("incomplete item: %+v", secondPage.Items[0])
+	}
+}
+
+func TestImportRepositoryGetImportReturnsStoredRow_Postgres(t *testing.T) {
+	repository := NewImportRepository(testutil.NewPostgresDB(t, "kuranas_takeout_import_it"))
+	jobID := createJobRow(t, repository)
+	importID := createQueuedImport(t, repository, jobID)
+	if err := repository.CloseImportFailed(jobID, "disk full"); err != nil {
+		t.Fatalf("CloseImportFailed: %v", err)
+	}
+
+	importDto, err := repository.GetImport(importID)
+	if err != nil {
+		t.Fatalf("GetImport: %v", err)
+	}
+	if importDto.ID != importID || importDto.JobID == nil || *importDto.JobID != jobID {
+		t.Fatalf("unexpected identity: %+v", importDto)
+	}
+	if importDto.FileName != "takeout.zip" || importDto.Size != 2048 || importDto.State != "failed" || importDto.Error != "disk full" {
+		t.Fatalf("unexpected content: %+v", importDto)
+	}
+	if importDto.CreatedAt.IsZero() || importDto.EndedAt == nil {
+		t.Fatalf("missing timestamps: %+v", importDto)
+	}
+}
+
+func TestImportRepositoryGetImportReportsNotFound_Postgres(t *testing.T) {
+	repository := NewImportRepository(testutil.NewPostgresDB(t, "kuranas_takeout_import_it"))
+
+	_, err := repository.GetImport(987654)
+
+	if !errors.Is(err, ErrImportNotFound) {
+		t.Fatalf("err = %v, want ErrImportNotFound", err)
 	}
 }

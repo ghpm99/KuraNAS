@@ -3,6 +3,7 @@ package takeout
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
 	"net/http"
@@ -89,5 +90,90 @@ func TestListImportsHandlerHidesRawErrorOnFailure(t *testing.T) {
 	_ = json.Unmarshal(recorder.Body.Bytes(), &body)
 	if body["error"] != i18n.GetMessage("TAKEOUT_IMPORTS_LIST_ERROR") {
 		t.Fatalf("error = %q", body["error"])
+	}
+}
+
+func performGetImportRequest(service ServiceInterface, importID string) *httptest.ResponseRecorder {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/takeout/imports/:id", NewHandler(service, &handlerLoggerMock{}).GetImportHandler)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/takeout/imports/"+importID, nil))
+	return recorder
+}
+
+func TestGetImportHandlerExposesEveryField(t *testing.T) {
+	jobID := 9
+	endedAt := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+	var receivedImportID int
+	service := &handlerServiceMock{getImportFn: func(importID int) (TakeoutImportDto, error) {
+		receivedImportID = importID
+		return TakeoutImportDto{
+			ID: importID, JobID: &jobID, FileName: "takeout.zip", Size: 2048, State: "failed",
+			TotalEntries: 10, ProcessedEntries: 4, Imported: 3, AlreadyExisting: 1, Ignored: 0,
+			FailedEntries: 0, Error: "boom", CreatedAt: endedAt, EndedAt: &endedAt,
+		}, nil
+	}}
+
+	recorder := performGetImportRequest(service, "7")
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+	}
+	if receivedImportID != 7 {
+		t.Fatalf("service received id %d", receivedImportID)
+	}
+	var importItem map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &importItem); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for _, fieldName := range []string{
+		"id", "job_id", "file_name", "size", "state", "total_entries", "processed_entries",
+		"imported", "already_existing", "ignored", "failed_entries", "error", "created_at", "ended_at",
+	} {
+		if _, exists := importItem[fieldName]; !exists {
+			t.Errorf("missing field %q in %v", fieldName, importItem)
+		}
+	}
+}
+
+func TestGetImportHandlerRespondsNotFound(t *testing.T) {
+	service := &handlerServiceMock{getImportFn: func(int) (TakeoutImportDto, error) {
+		return TakeoutImportDto{}, fmt.Errorf("wrapped: %w", ErrImportNotFound)
+	}}
+
+	recorder := performGetImportRequest(service, "7")
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	if decodeErrorMessage(t, recorder) != i18n.GetMessage("TAKEOUT_IMPORT_NOT_FOUND") {
+		t.Fatalf("unexpected message: %s", recorder.Body.String())
+	}
+}
+
+func TestGetImportHandlerRejectsNonNumericID(t *testing.T) {
+	recorder := performGetImportRequest(&handlerServiceMock{}, "abc")
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	if decodeErrorMessage(t, recorder) != i18n.GetMessage("TAKEOUT_IMPORT_INVALID_ID") {
+		t.Fatalf("unexpected message: %s", recorder.Body.String())
+	}
+}
+
+func TestGetImportHandlerHidesRawErrorOnFailure(t *testing.T) {
+	service := &handlerServiceMock{getImportFn: func(int) (TakeoutImportDto, error) {
+		return TakeoutImportDto{}, errors.New("pq: secret detail")
+	}}
+
+	recorder := performGetImportRequest(service, "7")
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	if decodeErrorMessage(t, recorder) != i18n.GetMessage("TAKEOUT_IMPORT_GET_ERROR") {
+		t.Fatalf("unexpected message: %s", recorder.Body.String())
 	}
 }

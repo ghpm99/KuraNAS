@@ -27,3 +27,6 @@ var UpdateTakeoutImportProgressQuery string
 
 //go:embed select_takeout_imports_page.sql
 var SelectTakeoutImportsPageQuery string
+
+//go:embed select_takeout_import_by_id.sql
+var SelectTakeoutImportByIDQuery string

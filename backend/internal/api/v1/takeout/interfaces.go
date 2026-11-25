@@ -16,6 +16,7 @@ type ServiceInterface interface {
 	GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error)
 	CancelUpload(uploadID string) error
 	ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
+	GetImport(importID int) (TakeoutImportDto, error)
 }
 
 type UploadJobDispatcherInterface interface {
@@ -49,4 +50,5 @@ type SidecarFinderInterface interface {
 
 type ImportListerInterface interface {
 	ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
+	GetImport(importID int) (TakeoutImportDto, error)
 }
