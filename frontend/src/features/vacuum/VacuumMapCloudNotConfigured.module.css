@@ -1,0 +1,16 @@
+.notice {
+    align-items: flex-start;
+}
+
+.explanation {
+    margin: 0 0 8px;
+}
+
+.missing {
+    margin: 0 0 12px;
+    padding-left: 20px;
+}
+
+.settingsLink {
+    min-height: 44px;
+}

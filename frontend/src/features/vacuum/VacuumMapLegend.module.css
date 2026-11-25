@@ -1,0 +1,39 @@
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--app-color-text-secondary);
+}
+
+.entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.swatch {
+    flex: none;
+    border: 2px solid transparent;
+    box-sizing: border-box;
+}
+
+.square {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+}
+
+.circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.line {
+    width: 20px;
+    height: 4px;
+    border-radius: 2px;
+}

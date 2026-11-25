@@ -1,0 +1,24 @@
+.frame {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: var(--app-radius-md, 8px);
+    border: 1px solid var(--app-color-border-subtle);
+}
+
+.layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.layer:first-child {
+    image-rendering: pixelated;
+}
+
+.interactive {
+    cursor: pointer;
+    touch-action: manipulation;
+}

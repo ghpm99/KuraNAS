@@ -84,3 +84,58 @@ export type VacuumCloudSettingsChanges = {
     access_secret: string;
     region: string;
 };
+
+export type VacuumMapPoint = {
+    x: number;
+    y: number;
+};
+
+export type VacuumForbiddenZone = {
+    vertices: [number, number][];
+};
+
+export type VacuumMap = {
+    map_id: number;
+    width: number;
+    height: number;
+    resolution: number;
+    origin_x: number;
+    origin_y: number;
+    cells: string;
+    dock: VacuumMapPoint | null;
+    forbidden_zones: VacuumForbiddenZone[];
+    read_at: string;
+};
+
+export type VacuumRoom = {
+    id: number;
+    name: string | null;
+    area: number;
+};
+
+export type VacuumRooms = {
+    map_id: number;
+    items: VacuumRoom[];
+};
+
+export type VacuumRoomRename = {
+    map_id: number;
+    name: string;
+};
+
+export type VacuumPath = {
+    path_id: number | null;
+    points: [number, number][];
+    position: VacuumMapPoint | null;
+};
+
+export type VacuumRoomCleaningRequest = {
+    map_id: number;
+    room_ids: number[];
+};
+
+export type VacuumSpotCleaningRequest = {
+    map_id: number;
+    x: number;
+    y: number;
+};

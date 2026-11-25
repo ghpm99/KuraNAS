@@ -7,4 +7,5 @@ export const vacuumQueryKeys = {
     cloudSettings: ['vacuum', 'cloud-settings'],
     map: ['vacuum', 'map'],
     rooms: ['vacuum', 'rooms'],
+    path: ['vacuum', 'path'],
 } as const;

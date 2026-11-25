@@ -4,6 +4,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import VacuumCommandsBlock from './VacuumCommandsBlock';
 import VacuumConsumablesBlock from './VacuumConsumablesBlock';
+import VacuumMapBlock from './VacuumMapBlock';
 import VacuumNotConfigured from './VacuumNotConfigured';
 import VacuumPreferencesBlock from './VacuumPreferencesBlock';
 import VacuumRemoteControlBlock from './VacuumRemoteControlBlock';
@@ -38,6 +39,7 @@ const VacuumScreen = () => {
             <div className={styles.blocks}>
                 <VacuumStatusBlock />
                 <VacuumCommandsBlock />
+                <VacuumMapBlock />
                 <VacuumRemoteControlBlock />
                 <VacuumPreferencesBlock />
                 <VacuumConsumablesBlock />

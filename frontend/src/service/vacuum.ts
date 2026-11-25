@@ -7,10 +7,17 @@ import type {
     VacuumConsumables,
     VacuumDirection,
     VacuumDiscovery,
+    VacuumMap,
+    VacuumPath,
     VacuumPreferences,
     VacuumPreferencesPatch,
+    VacuumRoom,
+    VacuumRoomCleaningRequest,
+    VacuumRoomRename,
+    VacuumRooms,
     VacuumSettings,
     VacuumSettingsChanges,
+    VacuumSpotCleaningRequest,
     VacuumStatus,
     VacuumTotals,
 } from '@/types/vacuum';
@@ -89,4 +96,35 @@ export const updateVacuumCloudSettings = async (
 
 export const testVacuumCloudConnection = async (): Promise<void> => {
     await apiBase.post('/vacuum/cloud-connection-test');
+};
+
+export const getVacuumMap = async (): Promise<VacuumMap> => {
+    const response = await apiBase.get<VacuumMap>('/vacuum/map');
+    return response.data;
+};
+
+export const getVacuumRooms = async (): Promise<VacuumRooms> => {
+    const response = await apiBase.get<VacuumRooms>('/vacuum/rooms');
+    return response.data;
+};
+
+export const renameVacuumRoom = async (
+    roomId: number,
+    rename: VacuumRoomRename
+): Promise<VacuumRoom> => {
+    const response = await apiBase.put<VacuumRoom>(`/vacuum/rooms/${roomId}`, rename);
+    return response.data;
+};
+
+export const getVacuumPath = async (): Promise<VacuumPath> => {
+    const response = await apiBase.get<VacuumPath>('/vacuum/path');
+    return response.data;
+};
+
+export const startVacuumRoomCleaning = async (request: VacuumRoomCleaningRequest): Promise<void> => {
+    await apiBase.post('/vacuum/room-cleaning', request);
+};
+
+export const startVacuumSpotCleaning = async (request: VacuumSpotCleaningRequest): Promise<void> => {
+    await apiBase.post('/vacuum/spot-cleaning', request);
 };

@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import {
+    getVacuumCloudSettings,
     getVacuumConsumables,
     getVacuumPreferences,
     getVacuumSettings,
@@ -20,6 +21,7 @@ jest.mock('@/service/vacuum', () => ({
     getVacuumStatus: jest.fn(),
     getVacuumPreferences: jest.fn(),
     getVacuumConsumables: jest.fn(),
+    getVacuumCloudSettings: jest.fn(),
     getVacuumTotals: jest.fn(),
 }));
 
@@ -28,12 +30,14 @@ const mockedGetStatus = getVacuumStatus as jest.Mock;
 const mockedGetPreferences = getVacuumPreferences as jest.Mock;
 const mockedGetConsumables = getVacuumConsumables as jest.Mock;
 const mockedGetTotals = getVacuumTotals as jest.Mock;
+const mockedGetCloudSettings = getVacuumCloudSettings as jest.Mock;
 
 const configuredSettings = { address: '10.0.0.5', device_id: 'abc', has_local_key: true };
 
 const blockHeadingKeys = [
     'VACUUM_STATUS_TITLE',
     'VACUUM_COMMANDS_TITLE',
+    'VACUUM_MAP_TITLE',
     'VACUUM_REMOTE_TITLE',
     'VACUUM_PREFERENCES_TITLE',
     'VACUUM_CONSUMABLES_TITLE',
@@ -49,6 +53,7 @@ describe('VacuumScreen', () => {
         mockedGetPreferences.mockRejectedValue(backendAbsent);
         mockedGetConsumables.mockRejectedValue(backendAbsent);
         mockedGetTotals.mockRejectedValue(backendAbsent);
+        mockedGetCloudSettings.mockRejectedValue(backendAbsent);
     });
 
     it('mounts without a backend', () => {

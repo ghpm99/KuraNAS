@@ -12,6 +12,7 @@ type VacuumBlockProps = {
     hasLoadError?: boolean;
     loadError?: unknown;
     onRetry?: () => void;
+    className?: string;
 };
 
 const VacuumBlock = ({
@@ -21,6 +22,7 @@ const VacuumBlock = ({
     hasLoadError = false,
     loadError,
     onRetry,
+    className,
 }: VacuumBlockProps) => {
     const { t } = useI18n();
     const titleId = useId();
@@ -50,7 +52,10 @@ const VacuumBlock = ({
     };
 
     return (
-        <section className={styles.block} aria-labelledby={titleId}>
+        <section
+            className={className ? `${styles.block} ${className}` : styles.block}
+            aria-labelledby={titleId}
+        >
             <h2 id={titleId} className={styles.title}>
                 {title}
             </h2>

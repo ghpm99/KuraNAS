@@ -1,0 +1,65 @@
+.rooms {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.title {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.empty {
+    margin: 0;
+    color: var(--app-color-text-secondary);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.room {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.selection {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+
+.checkbox {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.description {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.name {
+    font-weight: 600;
+}
+
+.area {
+    color: var(--app-color-text-secondary);
+}
+
+.rename {
+    flex: none;
+    width: 44px;
+    height: 44px;
+}
