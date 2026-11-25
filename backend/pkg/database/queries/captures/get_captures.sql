@@ -7,6 +7,6 @@ WHERE
     AND ($3::boolean OR media_type = $4::text)
     AND ($5::boolean OR status = $6::text)
     AND ($7::boolean OR platform = $8::text)
-ORDER BY created_at DESC
+ORDER BY created_at DESC, id DESC
 LIMIT $9
 OFFSET $10;
