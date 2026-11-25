@@ -128,7 +128,7 @@ describe('ActiveIngestDownloads', () => {
             renderBlock();
 
             const buttons = await screen.findAllByRole('button', { name: 'INGEST_ACTIVE_CANCEL' });
-            fireEvent.click(buttons[0]);
+            fireEvent.click(buttons[0] as HTMLElement);
 
             await waitFor(() => expect((buttons[0] as HTMLButtonElement).disabled).toBe(true));
             expect((buttons[1] as HTMLButtonElement).disabled).toBe(false);
