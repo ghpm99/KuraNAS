@@ -6,8 +6,10 @@ type InitTakeoutUploadDto struct {
 }
 
 type InitTakeoutUploadResultDto struct {
-	UploadID  string `json:"upload_id"`
-	ChunkSize int64  `json:"chunk_size"`
+	UploadID     string `json:"upload_id"`
+	ChunkSize    int64  `json:"chunk_size"`
+	ReceivedSize int64  `json:"received_size"`
+	Resumed      bool   `json:"resumed"`
 }
 
 type UploadTakeoutChunkDto struct {

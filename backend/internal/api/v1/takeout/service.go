@@ -69,6 +69,16 @@ func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultD
 		return InitTakeoutUploadResultDto{}, ErrInvalidUploadFileName
 	}
 
+	openSession, hasOpenSession := s.findOpenSessionByFile(fileName, dto.Size)
+	if hasOpenSession {
+		return InitTakeoutUploadResultDto{
+			UploadID:     openSession.UploadID,
+			ChunkSize:    takeoutUploadChunkSize,
+			ReceivedSize: openSession.ReceivedSize,
+			Resumed:      true,
+		}, nil
+	}
+
 	uploadID, err := generateTakeoutUploadID()
 	if err != nil {
 		return InitTakeoutUploadResultDto{}, fmt.Errorf("InitUpload generate upload id: %w", err)
@@ -96,6 +106,30 @@ func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultD
 		UploadID:  uploadID,
 		ChunkSize: takeoutUploadChunkSize,
 	}, nil
+}
+
+func (s *Service) findOpenSessionByFile(fileName string, expectedSize int64) (TakeoutUploadSession, bool) {
+	entries, err := os.ReadDir(s.takeoutUploadRootDir())
+	if err != nil {
+		return TakeoutUploadSession{}, false
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		session, loadErr := s.loadTakeoutUploadSession(entry.Name())
+		if loadErr != nil {
+			continue
+		}
+		isSameFile := session.FileName == fileName && session.ExpectedSize == expectedSize
+		isOpen := session.ReceivedSize < session.ExpectedSize
+		if isSameFile && isOpen {
+			return session, true
+		}
+	}
+
+	return TakeoutUploadSession{}, false
 }
 
 func (s *Service) UploadChunk(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error {

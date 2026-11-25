@@ -428,3 +428,67 @@ func TestInitAndCompleteUploadAcceptUppercaseZipExtension(t *testing.T) {
 		t.Fatalf("uppercase .ZIP must pass the extension check, got %v", err)
 	}
 }
+
+func TestInitUploadResumesOpenSessionWithSameNameAndSize(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	firstInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if firstInit.Resumed || firstInit.ReceivedSize != 0 {
+		t.Fatalf("new session must not be resumed, got %+v", firstInit)
+	}
+	if err := service.UploadChunk(buildChunkHeader(t, "chunk.bin", "hello"), UploadTakeoutChunkDto{UploadID: firstInit.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+
+	secondInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil {
+		t.Fatalf("second InitUpload returned error: %v", err)
+	}
+	if !secondInit.Resumed || secondInit.UploadID != firstInit.UploadID || secondInit.ReceivedSize != 5 {
+		t.Fatalf("expected resumed session with 5 bytes, got %+v", secondInit)
+	}
+	if secondInit.ChunkSize != takeoutUploadChunkSize {
+		t.Fatalf("unexpected chunk size %d", secondInit.ChunkSize)
+	}
+}
+
+func TestInitUploadWithDifferentSizeCreatesNewSession(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	firstInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	secondInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 11})
+	if err != nil {
+		t.Fatalf("second InitUpload returned error: %v", err)
+	}
+	if secondInit.Resumed || secondInit.UploadID == firstInit.UploadID || secondInit.ReceivedSize != 0 {
+		t.Fatalf("expected new session, got %+v", secondInit)
+	}
+}
+
+func TestInitUploadDoesNotResumeFullyReceivedSession(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	firstInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if err := service.UploadChunk(buildChunkHeader(t, "chunk.bin", "hello"), UploadTakeoutChunkDto{UploadID: firstInit.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+	secondInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5})
+	if err != nil {
+		t.Fatalf("second InitUpload returned error: %v", err)
+	}
+	if secondInit.Resumed || secondInit.UploadID == firstInit.UploadID {
+		t.Fatalf("fully received session must not resume, got %+v", secondInit)
+	}
+}

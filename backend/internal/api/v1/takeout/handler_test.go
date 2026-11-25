@@ -307,3 +307,28 @@ func TestInitUploadHandlerRejectsInvalidInput(t *testing.T) {
 		})
 	}
 }
+
+func TestInitUploadHandlerReturnsResumeFields(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = buildJSONRequest(http.MethodPost, "/takeout/upload/init", `{"file_name":"takeout.zip","size":10}`)
+	service := &handlerServiceMock{initFn: func(InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error) {
+		return InitTakeoutUploadResultDto{UploadID: "u1", ChunkSize: 2048, ReceivedSize: 4, Resumed: true}, nil
+	}}
+
+	NewHandler(service, nil).InitUploadHandler(ctx)
+
+	var body struct {
+		UploadID     string `json:"upload_id"`
+		ChunkSize    int64  `json:"chunk_size"`
+		ReceivedSize int64  `json:"received_size"`
+		Resumed      bool   `json:"resumed"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.UploadID != "u1" || body.ChunkSize != 2048 || body.ReceivedSize != 4 || !body.Resumed {
+		t.Fatalf("unexpected body %+v", body)
+	}
+}
