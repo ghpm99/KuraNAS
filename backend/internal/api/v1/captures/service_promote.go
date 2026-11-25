@@ -215,6 +215,13 @@ func (s *Service) deletePreRegisteredFile(captureID int, fileID int) {
 	if delErr := s.FilesProvider.DeleteFileRecord(fileID); delErr != nil {
 		applog.Error("captures: rollback delete home_file failed", "capture_id", captureID, "file_id", fileID, "error", delErr)
 	}
+	removeOrphanPoster(captureID, fileID)
+}
+
+func removeOrphanPoster(captureID int, fileID int) {
+	if removeErr := os.Remove(posterSourcePath(fileID)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+		applog.Error("captures: rollback remove poster failed", "capture_id", captureID, "file_id", fileID, "error", removeErr)
+	}
 }
 
 func (s *Service) failPromotion(capture CaptureModel, receivedFilePath string, reasonKey string, promoteErr error) error {
@@ -229,11 +236,15 @@ func (s *Service) failPromotion(capture CaptureModel, receivedFilePath string, r
 	return promoteErr
 }
 
+var thumbnailRootPath = func() string {
+	return config.GetBuildConfig("ThumbnailPath")
+}
+
 // posterSourcePath is the agreed location of a capture's source poster:
 // <ThumbnailPath>/video/source/<file_id>. video.GetVideoThumbnail reads from
 // here before falling back to an ffmpeg frame — the two sides must stay in sync.
 func posterSourcePath(fileID int) string {
-	return filepath.Join(config.GetBuildConfig("ThumbnailPath"), "video", "source", strconv.Itoa(fileID))
+	return filepath.Join(thumbnailRootPath(), "video", "source", strconv.Itoa(fileID))
 }
 
 // downloadPoster fetches the capture's poster (thumbnail_url, falling back to

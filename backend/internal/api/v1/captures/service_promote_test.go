@@ -146,6 +146,11 @@ func TestPromoteCaptureMoveFailureRollsBack(t *testing.T) {
 	staging := filepath.Join(dir, "capturas", "gone", "missing.mp4")
 	swapRemux(t, func(src, dest string) error { return os.ErrNotExist })
 
+	thumbnailsDir := filepath.Join(dir, "thumbnails")
+	previousThumbnailRoot := thumbnailRootPath
+	thumbnailRootPath = func() string { return thumbnailsDir }
+	t.Cleanup(func() { thumbnailRootPath = previousThumbnailRoot })
+
 	deleted := 0
 	var failedStatus CaptureStatus
 	mock := &repoMock{
@@ -163,7 +168,17 @@ func TestPromoteCaptureMoveFailureRollsBack(t *testing.T) {
 	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
 		return libraries.LibraryDto{Path: videosDir}, nil
 	}}
-	fp := &filesProviderMock{deleteFn: func(id int) error { deleted++; return nil }}
+	const preRegisteredFileID = 77
+	fp := &filesProviderMock{
+		createFileFn: func(fileDto files.FileDto) (files.FileDto, error) {
+			fileDto.ID = preRegisteredFileID
+			if err := writePosterSource(preRegisteredFileID, []byte("poster")); err != nil {
+				t.Fatalf("seed poster: %v", err)
+			}
+			return fileDto, nil
+		},
+		deleteFn: func(id int) error { deleted++; return nil },
+	}
 	service := newPromoteServiceForTest(mock, lib, fp)
 
 	if err := service.PromoteCapture(1); err == nil {
@@ -174,6 +189,9 @@ func TestPromoteCaptureMoveFailureRollsBack(t *testing.T) {
 	}
 	if failedStatus != CaptureStatusFailed {
 		t.Fatalf("expected failed status, got %s", failedStatus)
+	}
+	if _, statErr := os.Stat(posterSourcePath(preRegisteredFileID)); !os.IsNotExist(statErr) {
+		t.Fatalf("expected orphan poster removed on rollback, stat err: %v", statErr)
 	}
 }
 
