@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
+import useConfirmLeaveWhileUploading from '@/features/files/upload/useConfirmLeaveWhileUploading';
 import TakeoutDropZone from './TakeoutDropZone';
 import useTakeoutUpload from './useTakeoutUpload';
 import styles from './TakeoutImportScreen.module.css';
@@ -23,6 +24,9 @@ const TakeoutImportScreen = () => {
         startUpload,
         reset,
     } = useTakeoutUpload();
+    const isUploadInProgress = state === 'uploading' || state === 'completing';
+
+    useConfirmLeaveWhileUploading(isUploadInProgress);
 
     return (
         <PageContainer className={styles.content}>
@@ -61,7 +65,7 @@ const TakeoutImportScreen = () => {
 
             {fileName ? <Typography variant="body2">{fileName}</Typography> : null}
 
-            {state === 'uploading' || state === 'completing' ? (
+            {isUploadInProgress ? (
                 <>
                     <LinearProgress variant="determinate" value={progress} />
                     <Typography variant="body2">
@@ -82,7 +86,7 @@ const TakeoutImportScreen = () => {
                 <Button
                     variant="contained"
                     onClick={() => void startUpload()}
-                    disabled={state === 'uploading' || state === 'completing' || state === 'idle'}
+                    disabled={isUploadInProgress || state === 'idle'}
                 >
                     {t('TAKEOUT_START_UPLOAD')}
                 </Button>
