@@ -175,6 +175,15 @@ func (h *Handler) CompleteCaptureUploadHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_EMPTY")})
 			return
 		}
+		var incompleteUpload *IncompleteUploadError
+		if errors.As(err, &incompleteUpload) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.Translate(
+				"ERROR_CAPTURE_UPLOAD_INCOMPLETE",
+				incompleteUpload.ReceivedSize,
+				incompleteUpload.ExpectedSize,
+			)})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")})
 		return
 	}

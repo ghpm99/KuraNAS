@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/utils"
 
@@ -419,6 +420,42 @@ func TestCompleteCaptureUploadEmptyReturns400(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected %d, got %d, body=%s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+}
+
+type capturesHandlerIncompleteServiceMock struct {
+	capturesHandlerErrServiceMock
+}
+
+func (m *capturesHandlerIncompleteServiceMock) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error) {
+	return CaptureDto{}, fmt.Errorf("complete: %w", &IncompleteUploadError{ExpectedSize: 10, ReceivedSize: 7})
+}
+
+func TestCompleteCaptureUploadIncompleteReturns400WithTranslatedMessage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&capturesHandlerIncompleteServiceMock{}, &capturesLoggerMock{})
+	router := gin.New()
+	router.POST("/captures/upload/complete", handler.CompleteCaptureUploadHandler)
+
+	req := buildJSONRequest(t, http.MethodPost, "/captures/upload/complete", CompleteCaptureUploadDto{UploadID: "abc"})
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected %d, got %d, body=%s", http.StatusBadRequest, w.Code, w.Body.String())
+	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	expectedMessage := i18n.Translate("ERROR_CAPTURE_UPLOAD_INCOMPLETE", int64(7), int64(10))
+	if body.Error == "" || body.Error != expectedMessage {
+		t.Fatalf("expected message %q, got %q", expectedMessage, body.Error)
+	}
+	if body.Error == i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED") {
+		t.Fatalf("message must not be the generic failure: %q", body.Error)
 	}
 }
 

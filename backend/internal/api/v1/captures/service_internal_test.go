@@ -1081,3 +1081,42 @@ func TestServiceUploadCaptureChunkRejectsWrongOffsetWithoutWriting(t *testing.T)
 		t.Fatalf("temp file changed: %q -> %q", contentBefore, contentAfter)
 	}
 }
+
+func TestServiceCompleteCaptureUploadSizeMismatchReturnsIncompleteErrorAndKeepsSession(t *testing.T) {
+	dir := t.TempDir()
+	setEntryPointForTest(t, dir)
+
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
+
+	initResult, err := service.InitCaptureUpload(InitCaptureUploadDto{
+		Name:      "partial_recording",
+		MediaType: "recording",
+		MimeType:  "video/webm",
+		Size:      10,
+		FileName:  "recording.webm",
+	})
+	if err != nil {
+		t.Fatalf("InitCaptureUpload returned error: %v", err)
+	}
+
+	partialChunk := buildTestFileHeader(t, "chunk_a.bin", "1234")
+	if err := service.UploadCaptureChunk(partialChunk, UploadCaptureChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadCaptureChunk returned error: %v", err)
+	}
+
+	_, err = service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: initResult.UploadID})
+
+	var incompleteUpload *IncompleteUploadError
+	if !errors.As(err, &incompleteUpload) {
+		t.Fatalf("expected IncompleteUploadError, got %v", err)
+	}
+	if incompleteUpload.ExpectedSize != 10 || incompleteUpload.ReceivedSize != 4 {
+		t.Fatalf("unexpected sizes: expected %d received %d", incompleteUpload.ExpectedSize, incompleteUpload.ReceivedSize)
+	}
+	if _, statErr := os.Stat(service.captureUploadSessionDir(initResult.UploadID)); statErr != nil {
+		t.Fatalf("expected session dir to remain, stat err = %v", statErr)
+	}
+	if _, statErr := os.Stat(service.captureUploadTempFilePath(initResult.UploadID)); statErr != nil {
+		t.Fatalf("expected temp file to remain, stat err = %v", statErr)
+	}
+}

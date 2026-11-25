@@ -58,7 +58,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [x] 03. `POST /captures/:id/promote`: `202` com `{"job_id"}` via `CreateCaptureProcessJob`; `409` quando não está `failed`; `404` quando não existe — `§8`, `RF-04`, `CA-10`. Seam: teste do handler decodifica `job_id`.
 - [x] 04. `GET /captures` aceita `status` (`uploaded|promoting|promoted|failed`) e `platform`, `400` em valor inválido — `§8`, `RF-02`, `00/RN-52`.
 - [x] 05. `get_captures.sql` ordena por `created_at DESC, id DESC` — `00/RN-17`.
-- [ ] 06. Concluir com tamanho diferente do declarado responde `400` com mensagem própria; a sessão continua em disco — `RN-03`, `00/RN-40`.
+- [x] 06. Concluir com tamanho diferente do declarado responde `400` com mensagem própria; a sessão continua em disco — `RN-03`, `00/RN-40`.
 - [ ] 07. `upload_id` inexistente ou inválido em `chunk` e `complete` responde `404` com mensagem própria — `00/RN-40`.
 - [ ] 08. `DELETE /captures/:id` de inexistente responde `404`; `GET /captures/:id` só responde `404` quando não existe (falha de banco vira `500`) — `00/RN-40`.
 - [ ] 09. Notificações de falha deixam de gravar o erro cru no metadata; gravam o motivo traduzido; o erro cru fica só em `applog` — `00/RN-40`, `RN-42`.

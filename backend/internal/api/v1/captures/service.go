@@ -39,6 +39,15 @@ func (e *ChunkOffsetMismatchError) Error() string {
 	return fmt.Sprintf("chunk offset mismatch: expected %d got %d", e.ReceivedSize, e.GivenOffset)
 }
 
+type IncompleteUploadError struct {
+	ExpectedSize int64
+	ReceivedSize int64
+}
+
+func (e *IncompleteUploadError) Error() string {
+	return fmt.Sprintf("incomplete upload: expected %d got %d", e.ExpectedSize, e.ReceivedSize)
+}
+
 type Service struct {
 	Repository          RepositoryInterface
 	UploadJobDispatcher UploadJobDispatcherInterface
@@ -287,11 +296,10 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 	}
 
 	if session.ExpectedSize > 0 && session.ReceivedSize != session.ExpectedSize {
-		uploadErr := fmt.Errorf(
-			"CompleteCaptureUpload: incomplete upload, expected %d got %d",
-			session.ExpectedSize,
-			session.ReceivedSize,
-		)
+		uploadErr := fmt.Errorf("CompleteCaptureUpload: %w", &IncompleteUploadError{
+			ExpectedSize: session.ExpectedSize,
+			ReceivedSize: session.ReceivedSize,
+		})
 		s.emitUploadFailedNotification(dto.UploadID, session.Name, uploadErr)
 		return CaptureDto{}, uploadErr
 	}
