@@ -1,3 +1,4 @@
+import ActiveIngestDownloads from '@/components/ingest/ActiveIngestDownloads';
 import IngestForm from '@/components/ingest/IngestForm';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
@@ -10,6 +11,7 @@ const IngestPage = () => {
         <PageContainer>
             <PageHeader title={t('INGEST_PAGE_TITLE')} subtitle={t('INGEST_PAGE_DESCRIPTION')} />
             <IngestForm />
+            <ActiveIngestDownloads />
         </PageContainer>
     );
 };

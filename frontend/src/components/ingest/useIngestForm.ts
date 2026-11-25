@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import type { FolderPickerResult } from '@/components/folderPicker/folderPicker';
@@ -6,10 +6,12 @@ import { fetchFromUrl, getIngestPresets, getIngestTargets } from '@/service/inge
 import { getFileLocation } from '@/service/files';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { validateIngestUrl } from './ingestUrlValidation';
+import { activeIngestDownloadsQueryKey } from './ingestQueryKeys';
 import { subfolderFromDiskPath } from './subfolderFromDiskPath';
 
 export const useIngestForm = () => {
     const { t } = useI18n();
+    const queryClient = useQueryClient();
     const [url, setUrl] = useState('');
     const [selectedTargetRoot, setSelectedTargetRoot] = useState('');
     const [selectedPreset, setSelectedPreset] = useState('');
@@ -40,6 +42,7 @@ export const useIngestForm = () => {
         onSuccess: () => {
             setUrl('');
             setServerError(null);
+            void queryClient.invalidateQueries({ queryKey: activeIngestDownloadsQueryKey });
         },
         onError: (error) => {
             setServerError(extractBackendErrorMessage(error) ?? t('INGEST_FORM_SUBMIT_ERROR'));
