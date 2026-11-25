@@ -1,5 +1,7 @@
 package takeout
 
+import "time"
+
 type InitTakeoutUploadDto struct {
 	FileName string `json:"file_name" binding:"required"`
 	Size     int64  `json:"size"`
@@ -31,4 +33,21 @@ type TakeoutUploadStatusDto struct {
 	UploadID     string `json:"upload_id"`
 	Size         int64  `json:"size"`
 	ReceivedSize int64  `json:"received_size"`
+}
+
+type TakeoutImportDto struct {
+	ID               int        `json:"id"`
+	JobID            *int       `json:"job_id"`
+	FileName         string     `json:"file_name"`
+	Size             int64      `json:"size"`
+	State            string     `json:"state"`
+	TotalEntries     int        `json:"total_entries"`
+	ProcessedEntries int        `json:"processed_entries"`
+	Imported         int        `json:"imported"`
+	AlreadyExisting  int        `json:"already_existing"`
+	Ignored          int        `json:"ignored"`
+	FailedEntries    int        `json:"failed_entries"`
+	Error            string     `json:"error"`
+	CreatedAt        time.Time  `json:"created_at"`
+	EndedAt          *time.Time `json:"ended_at"`
 }

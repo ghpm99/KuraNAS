@@ -132,3 +132,39 @@ func TestImportRepositoryUpdateProgress_Postgres(t *testing.T) {
 		t.Fatalf("unexpected import after progress update: %+v", running)
 	}
 }
+
+func TestImportRepositoryListImportsOrdersNewestFirst_Postgres(t *testing.T) {
+	repository := NewImportRepository(testutil.NewPostgresDB(t, "kuranas_takeout_import_it"))
+	var createdIDs []int
+	for range 3 {
+		createdIDs = append(createdIDs, createQueuedImport(t, repository, createJobRow(t, repository)))
+	}
+	oldestID := createdIDs[0]
+	_, err := repository.DbContext.GetDatabase().Exec(
+		`UPDATE takeout_import SET created_at = created_at - INTERVAL '1 day' WHERE id = $1`, oldestID)
+	if err != nil {
+		t.Fatalf("age import: %v", err)
+	}
+
+	firstPage, err := repository.ListImports(1, 2)
+	if err != nil {
+		t.Fatalf("ListImports first page: %v", err)
+	}
+	if len(firstPage.Items) != 2 || !firstPage.Pagination.HasNext || firstPage.Pagination.HasPrev {
+		t.Fatalf("unexpected first page: %+v", firstPage)
+	}
+	if firstPage.Items[0].ID != createdIDs[2] || firstPage.Items[1].ID != createdIDs[1] {
+		t.Fatalf("first page order = %d, %d; want %d, %d", firstPage.Items[0].ID, firstPage.Items[1].ID, createdIDs[2], createdIDs[1])
+	}
+
+	secondPage, err := repository.ListImports(2, 2)
+	if err != nil {
+		t.Fatalf("ListImports second page: %v", err)
+	}
+	if len(secondPage.Items) == 0 || !secondPage.Pagination.HasPrev {
+		t.Fatalf("unexpected second page: %+v", secondPage)
+	}
+	if secondPage.Items[0].FileName == "" || secondPage.Items[0].CreatedAt.IsZero() {
+		t.Fatalf("incomplete item: %+v", secondPage.Items[0])
+	}
+}

@@ -6,11 +6,14 @@ import (
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/utils"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
+
+const defaultImportsPageSize = 20
 
 type Handler struct {
 	service    ServiceInterface
@@ -180,6 +183,32 @@ func (h *Handler) GetUploadStatusHandler(c *gin.Context) {
 
 	h.completeSuccess(logModel)
 	c.JSON(http.StatusOK, status)
+}
+
+func (h *Handler) ListImportsHandler(c *gin.Context) {
+	logModel := h.createLog(logger.LoggerModel{
+		Name:        "ListTakeoutImports",
+		Description: "Listing takeout import history",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	})
+
+	page, pageSize, isPaginationValid := utils.ParsePagination(c, defaultImportsPageSize)
+	if !isPaginationValid {
+		return
+	}
+
+	imports, err := h.service.ListImports(page, pageSize)
+	if err != nil {
+		h.completeError(logModel, err)
+		applog.ErrorWithStack("takeout: failed to list imports", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_IMPORTS_LIST_ERROR")})
+		return
+	}
+
+	h.completeSuccess(logModel)
+	c.JSON(http.StatusOK, imports)
 }
 
 func (h *Handler) CancelUploadHandler(c *gin.Context) {

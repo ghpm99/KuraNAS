@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
+	"nas-go/api/pkg/utils"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,6 +22,7 @@ type handlerServiceMock struct {
 	completeFn func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
 	statusFn   func(uploadID string) (TakeoutUploadStatusDto, error)
 	cancelFn   func(uploadID string) error
+	listFn     func(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
 }
 
 type handlerLoggerMock struct{}
@@ -75,6 +77,13 @@ func (m *handlerServiceMock) CancelUpload(uploadID string) error {
 		return m.cancelFn(uploadID)
 	}
 	return nil
+}
+
+func (m *handlerServiceMock) ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error) {
+	if m.listFn != nil {
+		return m.listFn(page, pageSize)
+	}
+	return utils.PaginationResponse[TakeoutImportDto]{}, nil
 }
 
 func buildJSONRequest(method string, url string, body string) *http.Request {

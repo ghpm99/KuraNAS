@@ -6,6 +6,7 @@ import (
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/utils"
 )
 
 type ServiceInterface interface {
@@ -14,6 +15,7 @@ type ServiceInterface interface {
 	CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
 	GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error)
 	CancelUpload(uploadID string) error
+	ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
 }
 
 type UploadJobDispatcherInterface interface {
@@ -43,4 +45,8 @@ type SidecarRecorderInterface interface {
 
 type SidecarFinderInterface interface {
 	FindSidecarByPath(path string) (*PhotoSidecar, error)
+}
+
+type ImportListerInterface interface {
+	ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error)
 }

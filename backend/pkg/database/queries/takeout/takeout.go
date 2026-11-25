@@ -24,3 +24,6 @@ var SelectTakeoutPhotoSidecarByPathQuery string
 
 //go:embed update_takeout_import_progress.sql
 var UpdateTakeoutImportProgressQuery string
+
+//go:embed select_takeout_imports_page.sql
+var SelectTakeoutImportsPageQuery string

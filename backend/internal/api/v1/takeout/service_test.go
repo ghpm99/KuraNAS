@@ -120,7 +120,7 @@ func TestInitUploadSuccess(t *testing.T) {
 }
 
 func TestNewService(t *testing.T) {
-	result := NewService(&uploadDispatcherMock{db: database.NewDbContext(nil)}, nil, nil, &importCreatorMock{})
+	result := NewService(&uploadDispatcherMock{db: database.NewDbContext(nil)}, nil, nil, &importCreatorMock{}, nil)
 	if result == nil {
 		t.Fatalf("expected non-nil service")
 	}

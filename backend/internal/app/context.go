@@ -1067,7 +1067,7 @@ func newTakeoutContext(
 	notificationService notifications.ServiceInterface,
 ) *TakeoutContext {
 	importRepository := takeout.NewImportRepository(dbContext)
-	service := takeout.NewService(jobsRepository, libraryResolver, notificationService, importRepository)
+	service := takeout.NewService(jobsRepository, libraryResolver, notificationService, importRepository, importRepository)
 	handler := takeout.NewHandler(service, loggerService)
 	return &TakeoutContext{
 		Handler:           handler,

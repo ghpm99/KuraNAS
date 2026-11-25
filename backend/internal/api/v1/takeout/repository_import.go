@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"nas-go/api/pkg/database"
 	queries "nas-go/api/pkg/database/queries/takeout"
+	"nas-go/api/pkg/utils"
 )
 
 type ImportRepository struct {
@@ -65,4 +66,49 @@ func (r *ImportRepository) execForJob(operation string, execute func(transaction
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 	return nil
+}
+
+func (r *ImportRepository) ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error) {
+	pagination := utils.PaginationResponse[TakeoutImportDto]{
+		Items:      []TakeoutImportDto{},
+		Pagination: utils.Pagination{Page: page, PageSize: pageSize},
+	}
+
+	err := r.DbContext.QueryTx(func(transaction *sql.Tx) error {
+		rows, err := transaction.Query(queries.SelectTakeoutImportsPageQuery, pageSize+1, utils.CalculateOffset(page, pageSize))
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var importDto TakeoutImportDto
+			if err := rows.Scan(
+				&importDto.ID,
+				&importDto.JobID,
+				&importDto.FileName,
+				&importDto.Size,
+				&importDto.State,
+				&importDto.TotalEntries,
+				&importDto.ProcessedEntries,
+				&importDto.Imported,
+				&importDto.AlreadyExisting,
+				&importDto.Ignored,
+				&importDto.FailedEntries,
+				&importDto.Error,
+				&importDto.CreatedAt,
+				&importDto.EndedAt,
+			); err != nil {
+				return err
+			}
+			pagination.Items = append(pagination.Items, importDto)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return pagination, fmt.Errorf("ListImports: %w", err)
+	}
+
+	pagination.UpdatePagination()
+	return pagination, nil
 }

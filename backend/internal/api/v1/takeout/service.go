@@ -15,6 +15,7 @@ import (
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/diskspace"
 	"nas-go/api/pkg/i18n"
+	"nas-go/api/pkg/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,7 @@ type Service struct {
 	LibraryResolver     LibraryResolverInterface
 	NotificationService notificationServiceInterface
 	ImportCreator       ImportCreatorInterface
+	ImportLister        ImportListerInterface
 	AvailableBytesAt    func(path string) (int64, error)
 }
 
@@ -42,12 +44,14 @@ func NewService(
 	libraryResolver LibraryResolverInterface,
 	notificationService notificationServiceInterface,
 	importCreator ImportCreatorInterface,
+	importLister ImportListerInterface,
 ) ServiceInterface {
 	return &Service{
 		UploadJobDispatcher: uploadJobDispatcher,
 		LibraryResolver:     libraryResolver,
 		NotificationService: notificationService,
 		ImportCreator:       importCreator,
+		ImportLister:        importLister,
 		AvailableBytesAt:    diskspace.AvailableBytesAt,
 	}
 }
@@ -148,6 +152,10 @@ func (s *Service) availableBytesAtUploadRoot() (int64, error) {
 		}
 		existingPath = parentPath
 	}
+}
+
+func (s *Service) ListImports(page int, pageSize int) (utils.PaginationResponse[TakeoutImportDto], error) {
+	return s.ImportLister.ListImports(page, pageSize)
 }
 
 func (s *Service) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error) {

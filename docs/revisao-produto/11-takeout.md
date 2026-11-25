@@ -38,7 +38,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 08. Notificação "Importação iniciada" sai do `init` para o `complete`, com `event` e `import_id` no metadata — `RN-11`, `CA-11`.
 - [x] 09. Notificações de conclusão e falha levam `metadata` `{event, import_id, job_id}` — `RN-11`, `CA-11`.
 - [x] 10. `complete` repetido responde `409` e não cria segundo job — `RN-06`, `RN-10`. Depende da 07.
-- [ ] 11. `GET /takeout/imports` paginado (`created_at DESC, id DESC`) com os campos de `§7` — `RF-05`, `00/RN-17`, `RN-52`. Seam + teste `_Postgres`.
+- [x] 11. `GET /takeout/imports` paginado (`created_at DESC, id DESC`) com os campos de `§7` — `RF-05`, `00/RN-17`, `RN-52`. Seam + teste `_Postgres`.
 - [ ] 12. `GET /takeout/imports/:id`; `404` quando não existe — `RF-03`, `CA-06`. Depende da 11.
 - [ ] 13. O extrator devolve o `ExtractResult` acumulado junto do erro — `RN-12`.
 - [ ] 13.1. Na falha, o step grava os sidecars e enfileira a indexação do que já foi gravado antes de fechar como falha — `RN-12`, `CA-09`. Depende da 13.
