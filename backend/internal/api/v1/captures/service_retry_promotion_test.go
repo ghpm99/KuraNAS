@@ -63,3 +63,30 @@ func TestRetryCapturePromotionWithoutDispatcher(t *testing.T) {
 		t.Fatalf("expected dispatcher unavailable error, got %v", err)
 	}
 }
+
+func TestServiceCaptureLookupMapsMissingRowToNotFound(t *testing.T) {
+	storageErr := errors.New("db down")
+	testCases := []struct {
+		name        string
+		lookupErr   error
+		expectedErr error
+	}{
+		{"missing row", fmt.Errorf("GetCaptureByID: %w", sql.ErrNoRows), ErrCaptureNotFound},
+		{"storage failure", storageErr, storageErr},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			repository := &repoMock{getByIDFn: func(id int) (CaptureModel, error) {
+				return CaptureModel{}, testCase.lookupErr
+			}}
+			service := newServiceForTest(t, repository, nil, nil)
+
+			_, getErr := service.GetCaptureByID(5)
+			_, deleteErr := service.DeleteCapture(5)
+
+			if !errors.Is(getErr, testCase.expectedErr) || !errors.Is(deleteErr, testCase.expectedErr) {
+				t.Fatalf("expected %v, got get=%v delete=%v", testCase.expectedErr, getErr, deleteErr)
+			}
+		})
+	}
+}

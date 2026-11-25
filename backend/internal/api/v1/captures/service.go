@@ -476,8 +476,17 @@ func (s *Service) GetCaptures(filter CaptureFilter, page int, pageSize int) (uti
 	return ParsePaginationToDto(&pagination), nil
 }
 
-func (s *Service) GetCaptureByID(id int) (CaptureDto, error) {
+func (s *Service) findCaptureModel(id int) (CaptureModel, error) {
 	model, err := s.Repository.GetCaptureByID(id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return CaptureModel{}, ErrCaptureNotFound
+	}
+	return model, err
+}
+
+// GetCaptureByID returns the capture, or ErrCaptureNotFound when it does not exist.
+func (s *Service) GetCaptureByID(id int) (CaptureDto, error) {
+	model, err := s.findCaptureModel(id)
 	if err != nil {
 		return CaptureDto{}, err
 	}
@@ -488,7 +497,7 @@ func (s *Service) GetCaptureByID(id int) (CaptureDto, error) {
 // was kept. A promoted capture points at the library video, so only the row is
 // deleted; an unpromoted one also has its received file removed from disk.
 func (s *Service) DeleteCapture(id int) (bool, error) {
-	model, err := s.Repository.GetCaptureByID(id)
+	model, err := s.findCaptureModel(id)
 	if err != nil {
 		return false, fmt.Errorf("DeleteCapture: %w", err)
 	}

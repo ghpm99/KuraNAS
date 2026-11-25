@@ -261,9 +261,14 @@ func (h *Handler) GetCaptureByIDHandler(c *gin.Context) {
 	}
 
 	capture, err := h.service.GetCaptureByID(id)
-	if err != nil {
+	if errors.Is(err, ErrCaptureNotFound) {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_NOT_FOUND")})
+		return
+	}
+	if err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_GET_FAILED")})
 		return
 	}
 
@@ -288,6 +293,11 @@ func (h *Handler) DeleteCaptureHandler(c *gin.Context) {
 	}
 
 	libraryFileKept, err := h.service.DeleteCapture(id)
+	if errors.Is(err, ErrCaptureNotFound) {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_NOT_FOUND")})
+		return
+	}
 	if err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_DELETE_FAILED")})

@@ -1,7 +1,6 @@
 package captures
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 )
@@ -17,9 +16,9 @@ var ErrPromotionDispatcherUnavailable = errors.New("capture promotion dispatcher
 // the capture does not exist and ErrCaptureNotRetryable when its status is not
 // failed.
 func (s *Service) RetryCapturePromotion(captureID int) (int, error) {
-	capture, err := s.Repository.GetCaptureByID(captureID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, ErrCaptureNotFound
+	capture, err := s.findCaptureModel(captureID)
+	if errors.Is(err, ErrCaptureNotFound) {
+		return 0, err
 	}
 	if err != nil {
 		return 0, fmt.Errorf("RetryCapturePromotion: %w", err)

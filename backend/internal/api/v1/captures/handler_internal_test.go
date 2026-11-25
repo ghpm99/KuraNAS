@@ -98,7 +98,7 @@ func (m *capturesHandlerErrServiceMock) GetCaptures(filter CaptureFilter, page i
 }
 
 func (m *capturesHandlerErrServiceMock) GetCaptureByID(id int) (CaptureDto, error) {
-	return CaptureDto{}, errors.New("not found")
+	return CaptureDto{}, ErrCaptureNotFound
 }
 
 func (m *capturesHandlerErrServiceMock) DeleteCapture(id int) (bool, error) {
