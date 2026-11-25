@@ -2572,5 +2572,7 @@
 	"INGEST_HISTORY_LOCATION_ERROR": "Could not locate the downloaded file.",
 	"INGEST_ACTIVE_CANCEL": "Cancel",
 	"INGEST_ACTIVE_CANCEL_ERROR": "Could not cancel the download.",
-	"CAPTURES_END": "End of captures list"
+	"CAPTURES_END": "End of captures list",
+	"INGEST_HISTORY_RETRY": "Try again",
+	"INGEST_HISTORY_RETRY_ERROR": "Could not retry the download."
 }

@@ -2572,5 +2572,7 @@
 	"INGEST_HISTORY_LOCATION_ERROR": "Não foi possível localizar o arquivo baixado.",
 	"INGEST_ACTIVE_CANCEL": "Cancelar",
 	"INGEST_ACTIVE_CANCEL_ERROR": "Não foi possível cancelar o download.",
-	"CAPTURES_END": "Fim da lista de capturas"
+	"CAPTURES_END": "Fim da lista de capturas",
+	"INGEST_HISTORY_RETRY": "Tentar de novo",
+	"INGEST_HISTORY_RETRY_ERROR": "Não foi possível tentar o download de novo."
 }
