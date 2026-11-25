@@ -128,6 +128,8 @@ func ExtractTakeout(zipPath string, libraryResolver LibraryResolverInterface) (E
 // ExtractTakeoutWithProgress behaves like ExtractTakeout and calls reportProgress
 // after every processed entry with the number of entries processed so far and
 // the total of entries that will be processed. A nil reportProgress is allowed.
+// When an error aborts the extraction after it started, the returned result
+// still reports everything extracted up to that point.
 func ExtractTakeoutWithProgress(zipPath string, libraryResolver LibraryResolverInterface, reportProgress ProgressReporter) (ExtractResult, error) {
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -146,7 +148,7 @@ func ExtractTakeoutWithProgress(zipPath string, libraryResolver LibraryResolverI
 			continue
 		}
 		if err := extractCountedEntry(entry, libraryResolver, metadataIndex, &extraction); err != nil {
-			return ExtractResult{}, err
+			return extraction, err
 		}
 		if reportProgress != nil {
 			reportProgress(extraction.TotalEntries, totalEntries)
