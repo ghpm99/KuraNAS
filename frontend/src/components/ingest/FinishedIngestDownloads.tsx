@@ -96,6 +96,18 @@ const FinishedIngestDownloads = () => {
                                         </Button>
                                     </div>
                                 ) : null}
+                                {download.state === 'failed' || download.state === 'canceled' ? (
+                                    <div className={styles.actionsRow}>
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            disabled={history.isRetrying(download.id)}
+                                            onClick={() => void history.retryDownload(download.id)}
+                                        >
+                                            {t('INGEST_HISTORY_RETRY')}
+                                        </Button>
+                                    </div>
+                                ) : null}
                                 {location.failedDownloadId === download.id ? (
                                     <Typography variant="body2" color="error">
                                         {t('INGEST_HISTORY_LOCATION_ERROR')}

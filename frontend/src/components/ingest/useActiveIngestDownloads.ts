@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import useI18n from '@/components/i18n/provider/i18nContext';
@@ -6,6 +6,7 @@ import { cancelJob } from '@/service/jobs';
 import { getIngestDownloads, getIngestPresets } from '@/service/ingest';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import type { IngestDownload } from '@/types/ingest';
+import { useInFlightIds } from './useInFlightIds';
 import { activeIngestDownloadsQueryKey, finishedIngestDownloadsQueryKey } from './ingestQueryKeys';
 
 export const ACTIVE_DOWNLOADS_POLL_INTERVAL_MS = 2000;
@@ -14,7 +15,7 @@ export const useActiveIngestDownloads = () => {
     const queryClient = useQueryClient();
     const { t } = useI18n();
     const { enqueueSnackbar } = useSnackbar();
-    const [cancelingJobIds, setCancelingJobIds] = useState<ReadonlySet<number>>(new Set());
+    const cancelations = useInFlightIds();
     const previousActiveIdsRef = useRef<Set<number>>(new Set());
     const downloadsQuery = useQuery({
         queryKey: activeIngestDownloadsQueryKey,
@@ -53,34 +54,26 @@ export const useActiveIngestDownloads = () => {
     const presets = Array.isArray(presetsQuery.data) ? presetsQuery.data : [];
     const presetLabelsByKey = new Map(presets.map((preset) => [preset.key, preset.label]));
 
-    const stopCanceling = (jobId: number) =>
-        setCancelingJobIds((current) => {
-            const remaining = new Set(current);
-            remaining.delete(jobId);
-            return remaining;
+    const cancelDownload = (jobId: number) =>
+        cancelations.runExclusively(jobId, async () => {
+            try {
+                await cancelJob(jobId);
+                await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: activeIngestDownloadsQueryKey }),
+                    queryClient.invalidateQueries({ queryKey: finishedIngestDownloadsQueryKey }),
+                ]);
+            } catch (error) {
+                enqueueSnackbar(
+                    extractBackendErrorMessage(error) ?? t('INGEST_ACTIVE_CANCEL_ERROR'),
+                    { variant: 'error' }
+                );
+            }
         });
-
-    const cancelDownload = async (jobId: number) => {
-        setCancelingJobIds((current) => new Set(current).add(jobId));
-        try {
-            await cancelJob(jobId);
-            await Promise.all([
-                queryClient.invalidateQueries({ queryKey: activeIngestDownloadsQueryKey }),
-                queryClient.invalidateQueries({ queryKey: finishedIngestDownloadsQueryKey }),
-            ]);
-        } catch (error) {
-            enqueueSnackbar(extractBackendErrorMessage(error) ?? t('INGEST_ACTIVE_CANCEL_ERROR'), {
-                variant: 'error',
-            });
-        } finally {
-            stopCanceling(jobId);
-        }
-    };
 
     return {
         downloads,
         cancelDownload,
-        isCanceling: (jobId: number) => cancelingJobIds.has(jobId),
+        isCanceling: cancelations.isInFlight,
         presetLabelFor: (presetKey: string) => presetLabelsByKey.get(presetKey) ?? presetKey,
         isError: downloadsQuery.isError,
         errorMessage: extractBackendErrorMessage(downloadsQuery.error),

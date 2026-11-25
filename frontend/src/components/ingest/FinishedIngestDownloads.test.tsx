@@ -1,15 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SnackbarProvider } from 'notistack';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import { apiBase } from '@/service';
 import FinishedIngestDownloads from './FinishedIngestDownloads';
+import { activeIngestDownloadsQueryKey } from './ingestQueryKeys';
 
 jest.mock('@/service', () => ({
     apiBase: { get: jest.fn(), post: jest.fn() },
 }));
 
-const mockedApi = apiBase as unknown as { get: jest.Mock };
+const mockedApi = apiBase as unknown as { get: jest.Mock; post: jest.Mock };
 
 const finishedDownload = (overrides: Record<string, unknown>) => ({
     id: 1,
@@ -40,13 +42,17 @@ const renderHistory = () => {
     const client = new QueryClient({
         defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
-    return render(
+    const invalidateQueries = jest.spyOn(client, 'invalidateQueries');
+    const view = render(
         <QueryClientProvider client={client}>
-            <MemoryRouter>
-                <FinishedIngestDownloads />
-            </MemoryRouter>
+            <SnackbarProvider>
+                <MemoryRouter>
+                    <FinishedIngestDownloads />
+                </MemoryRouter>
+            </SnackbarProvider>
         </QueryClientProvider>
     );
+    return { ...view, invalidateQueries };
 };
 
 describe('FinishedIngestDownloads', () => {
@@ -140,5 +146,79 @@ describe('FinishedIngestDownloads', () => {
         expect(screen.getByRole('button', { name: 'INGEST_HISTORY_OPEN_FOLDER' })).toBeDisabled();
         expect(screen.getByText('Download failed badly')).toBeInTheDocument();
         expect(screen.getByText(/INGEST_HISTORY_STATE_FAILED/)).toBeInTheDocument();
+    });
+
+    describe('retry', () => {
+        const failedDownload = finishedDownload({ id: 2, title: 'Failed video', state: 'failed' });
+        const canceledDownload = finishedDownload({
+            id: 3,
+            title: 'Canceled video',
+            state: 'canceled',
+        });
+        const retryButtons = () => screen.getAllByRole('button', { name: 'INGEST_HISTORY_RETRY' });
+        const retryButtonAt = (index: number): HTMLElement => {
+            const button = retryButtons()[index];
+            if (!button) throw new Error(`retry button ${index} not found`);
+            return button;
+        };
+        const finishedCalls = () =>
+            mockedApi.get.mock.calls.filter(
+                ([url, config]) => url === '/ingest/downloads' && config.params.state === 'finished'
+            ).length;
+
+        it('shows the button only on failed and canceled items', async () => {
+            mockedApi.get.mockResolvedValue({
+                data: pageOf([finishedDownload({}), failedDownload, canceledDownload], 1, false),
+            });
+            renderHistory();
+            await screen.findByText('Failed video');
+            expect(retryButtons()).toHaveLength(2);
+        });
+
+        it('posts the retry, disables only the clicked item and refetches the lists', async () => {
+            let finishRetry: (value: unknown) => void = () => undefined;
+            mockedApi.post.mockReturnValue(
+                new Promise((resolve) => {
+                    finishRetry = resolve;
+                })
+            );
+            mockedApi.get.mockResolvedValue({
+                data: pageOf([failedDownload, canceledDownload], 1, false),
+            });
+            const { invalidateQueries } = renderHistory();
+            await screen.findByText('Failed video');
+            const buttons = retryButtons();
+            fireEvent.click(buttons[0] as HTMLElement);
+
+            await waitFor(() => expect(buttons[0]).toBeDisabled());
+            expect(buttons[1]).not.toBeDisabled();
+            expect(mockedApi.post).toHaveBeenCalledWith('/ingest/downloads/2/retry');
+
+            const finishedBefore = finishedCalls();
+            finishRetry({ data: { ...failedDownload, id: 9, state: 'queued' } });
+            await waitFor(() => expect(finishedCalls()).toBeGreaterThan(finishedBefore));
+            await waitFor(() => expect(buttons[0]).not.toBeDisabled());
+            expect(invalidateQueries).toHaveBeenCalledWith({
+                queryKey: activeIngestDownloadsQueryKey,
+            });
+        });
+
+        it('shows the server message when the retry fails', async () => {
+            mockedApi.post.mockRejectedValue({ response: { data: { error: 'cannot retry now' } } });
+            mockedApi.get.mockResolvedValue({ data: pageOf([failedDownload], 1, false) });
+            renderHistory();
+            await screen.findByText('Failed video');
+            fireEvent.click(retryButtonAt(0));
+            expect(await screen.findByText('cannot retry now')).toBeInTheDocument();
+        });
+
+        it('falls back to the translated message without a server message', async () => {
+            mockedApi.post.mockRejectedValue(new Error('offline'));
+            mockedApi.get.mockResolvedValue({ data: pageOf([failedDownload], 1, false) });
+            renderHistory();
+            await screen.findByText('Failed video');
+            fireEvent.click(retryButtonAt(0));
+            expect(await screen.findByText('INGEST_HISTORY_RETRY_ERROR')).toBeInTheDocument();
+        });
     });
 });
