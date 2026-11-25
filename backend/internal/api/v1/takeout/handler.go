@@ -42,6 +42,14 @@ func (h *Handler) InitUploadHandler(c *gin.Context) {
 	result, err := h.service.InitUpload(dto)
 	if err != nil {
 		h.completeError(logModel, err)
+		switch {
+		case errors.Is(err, ErrInvalidUploadSize):
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_SIZE_INVALID")})
+			return
+		case errors.Is(err, ErrInvalidUploadFileName):
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_FILE_NAME_INVALID")})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
 		return
 	}

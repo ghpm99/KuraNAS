@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"mime/multipart"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
 	"net/http/httptest"
@@ -264,4 +265,45 @@ func TestTakeoutHandler(t *testing.T) {
 			t.Fatalf("expected 400, got %d", rec.Code)
 		}
 	})
+}
+
+func TestInitUploadHandlerRejectsInvalidInput(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cases := []struct {
+		name         string
+		body         string
+		serviceError error
+		messageKey   string
+		expectedCode int
+	}{
+		{"size zero", `{"file_name":"takeout.zip","size":0}`, ErrInvalidUploadSize, "TAKEOUT_UPLOAD_SIZE_INVALID", http.StatusBadRequest},
+		{"rar name", `{"file_name":"takeout.rar","size":10}`, ErrInvalidUploadFileName, "TAKEOUT_UPLOAD_FILE_NAME_INVALID", http.StatusBadRequest},
+		{"uppercase zip", `{"file_name":"FOTOS.ZIP","size":10}`, nil, "", http.StatusOK},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = buildJSONRequest(http.MethodPost, "/takeout/upload/init", testCase.body)
+			service := &handlerServiceMock{initFn: func(InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error) {
+				return InitTakeoutUploadResultDto{UploadID: "u1"}, testCase.serviceError
+			}}
+
+			NewHandler(service, nil).InitUploadHandler(ctx)
+
+			if rec.Code != testCase.expectedCode {
+				t.Fatalf("expected %d, got %d", testCase.expectedCode, rec.Code)
+			}
+			if testCase.messageKey == "" {
+				return
+			}
+			var body map[string]string
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatalf("decode body: %v", err)
+			}
+			if body["error"] != i18n.GetMessage(testCase.messageKey) || body["error"] == "" {
+				t.Fatalf("unexpected error message %q", body["error"])
+			}
+		})
+	}
 }

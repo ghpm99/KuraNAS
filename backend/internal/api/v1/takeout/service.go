@@ -53,10 +53,20 @@ func (s *Service) withTransaction(fn func(tx *sql.Tx) error) error {
 	return database.ExecOptionalTx(s.UploadJobDispatcher.GetDbContext(), fn)
 }
 
+func hasZipExtension(fileName string) bool {
+	return strings.EqualFold(filepath.Ext(fileName), ".zip")
+}
+
 func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error) {
+	if dto.Size <= 0 {
+		return InitTakeoutUploadResultDto{}, ErrInvalidUploadSize
+	}
 	fileName := sanitizeTakeoutFileName(dto.FileName)
 	if fileName == "" || fileName == "unnamed" {
-		return InitTakeoutUploadResultDto{}, fmt.Errorf("InitUpload: file_name is required")
+		return InitTakeoutUploadResultDto{}, ErrInvalidUploadFileName
+	}
+	if !hasZipExtension(fileName) {
+		return InitTakeoutUploadResultDto{}, ErrInvalidUploadFileName
 	}
 
 	uploadID, err := generateTakeoutUploadID()
@@ -136,7 +146,7 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 	}
 
 	zipPath := s.takeoutUploadTempFilePath(dto.UploadID)
-	if filepath.Ext(session.FileName) != ".zip" {
+	if !hasZipExtension(session.FileName) {
 		return TakeoutImportResultDto{}, ErrInvalidZipFile
 	}
 

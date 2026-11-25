@@ -306,9 +306,17 @@ func TestCompleteUploadInvalidZipExtension(t *testing.T) {
 	root := t.TempDir()
 	setEntryPoint(t, root)
 	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
-	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.txt", Size: 5})
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5})
 	if err != nil {
 		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	session, err := service.loadTakeoutUploadSession(initResult.UploadID)
+	if err != nil {
+		t.Fatalf("loadTakeoutUploadSession returned error: %v", err)
+	}
+	session.FileName = "takeout.txt"
+	if err := service.saveTakeoutUploadSession(session); err != nil {
+		t.Fatalf("saveTakeoutUploadSession returned error: %v", err)
 	}
 	chunk := buildChunkHeader(t, "chunk.bin", "hello")
 	if err := service.UploadChunk(chunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
@@ -386,5 +394,37 @@ func TestEmitImportStartedNotification(t *testing.T) {
 	service.emitImportStartedNotification("takeout.zip", "u1")
 	if !mock.called {
 		t.Fatalf("expected notification call")
+	}
+}
+
+func TestInitUploadRejectsInvalidSizeAndFileName(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	_, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 0})
+	if !errors.Is(err, ErrInvalidUploadSize) {
+		t.Fatalf("expected ErrInvalidUploadSize, got %v", err)
+	}
+	_, err = service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.rar", Size: 5})
+	if !errors.Is(err, ErrInvalidUploadFileName) {
+		t.Fatalf("expected ErrInvalidUploadFileName, got %v", err)
+	}
+}
+
+func TestInitAndCompleteUploadAcceptUppercaseZipExtension(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "FOTOS.ZIP", Size: 5})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	chunk := buildChunkHeader(t, "chunk.bin", "hello")
+	if err := service.UploadChunk(chunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+	_, err = service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: initResult.UploadID})
+	if errors.Is(err, ErrInvalidZipFile) {
+		t.Fatalf("uppercase .ZIP must pass the extension check, got %v", err)
 	}
 }
