@@ -2558,5 +2558,8 @@
 	"TAKEOUT_UPLOAD_ALREADY_COMPLETED": "This upload was already completed and its import has already started",
 	"TAKEOUT_IMPORTS_LIST_ERROR": "Could not load the Takeout import history. Try again.",
 	"TAKEOUT_START_UPLOAD": "Start upload",
-	"TAKEOUT_CLEAR": "Clear"
+	"TAKEOUT_CLEAR": "Clear",
+	"TAKEOUT_IMPORT_INVALID_ID": "Invalid Takeout import identifier.",
+	"TAKEOUT_IMPORT_NOT_FOUND": "Takeout import not found.",
+	"TAKEOUT_IMPORT_GET_ERROR": "Could not load the Takeout import. Try again."
 }

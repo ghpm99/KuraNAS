@@ -2558,5 +2558,8 @@
 	"TAKEOUT_UPLOAD_ALREADY_COMPLETED": "Este upload já foi concluído e a importação já foi iniciada",
 	"TAKEOUT_IMPORTS_LIST_ERROR": "Não foi possível carregar o histórico de importações do Takeout. Tente novamente.",
 	"TAKEOUT_START_UPLOAD": "Enviar",
-	"TAKEOUT_CLEAR": "Limpar"
+	"TAKEOUT_CLEAR": "Limpar",
+	"TAKEOUT_IMPORT_INVALID_ID": "Identificador de importação do Takeout inválido.",
+	"TAKEOUT_IMPORT_NOT_FOUND": "Importação do Takeout não encontrada.",
+	"TAKEOUT_IMPORT_GET_ERROR": "Não foi possível carregar a importação do Takeout. Tente novamente."
 }
