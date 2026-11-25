@@ -2530,5 +2530,8 @@
 	"TAKEOUT_UPLOAD_CANCEL_ERROR": "Não foi possível cancelar o upload do Takeout. Tente novamente.",
 	"ERROR_CAPTURE_GET_FAILED": "Falha ao buscar captura",
 	"TAKEOUT_UPLOAD_ERROR": "Não foi possível enviar o arquivo do Takeout. Tente novamente.",
-	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Espaço insuficiente no servidor para receber este arquivo"
+	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Espaço insuficiente no servidor para receber este arquivo",
+	"NAV_INGEST": "Baixar de URL",
+	"INGEST_PAGE_TITLE": "Baixar de URL",
+	"INGEST_PAGE_DESCRIPTION": "Baixe um vídeo ou áudio de um endereço direto para a biblioteca."
 }

@@ -2530,5 +2530,8 @@
 	"TAKEOUT_UPLOAD_CANCEL_ERROR": "Could not cancel the Takeout upload. Try again.",
 	"ERROR_CAPTURE_GET_FAILED": "Failed to get capture",
 	"TAKEOUT_UPLOAD_ERROR": "Could not upload the Takeout file. Try again.",
-	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Not enough free space on the server to receive this file"
+	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Not enough free space on the server to receive this file",
+	"NAV_INGEST": "Download from URL",
+	"INGEST_PAGE_TITLE": "Download from URL",
+	"INGEST_PAGE_DESCRIPTION": "Download a video or audio from an address straight into the library."
 }
