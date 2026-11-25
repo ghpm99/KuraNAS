@@ -1,5 +1,5 @@
 import type { Pagination } from '@/types/pagination';
-import type { Capture } from '@/types/captures';
+import type { Capture, CaptureStatus } from '@/types/captures';
 import { getApiV1BaseUrl } from '@/service/apiUrl';
 import { apiBase } from './index';
 
@@ -8,6 +8,8 @@ interface ListCapturesParams {
     pageSize?: number;
     name?: string;
     mediaType?: string;
+    status?: CaptureStatus;
+    platform?: string;
 }
 
 export const getCaptures = async ({
@@ -15,6 +17,8 @@ export const getCaptures = async ({
     pageSize = 50,
     name,
     mediaType,
+    status,
+    platform,
 }: ListCapturesParams = {}): Promise<Pagination<Capture>> => {
     const response = await apiBase.get<Pagination<Capture>>('/captures', {
         params: {
@@ -22,6 +26,8 @@ export const getCaptures = async ({
             page_size: pageSize,
             name,
             media_type: mediaType,
+            ...(status ? { status } : {}),
+            ...(platform ? { platform } : {}),
         },
     });
     if (!Array.isArray(response.data?.items)) {
@@ -42,6 +48,15 @@ export type DeleteCaptureResult = {
 
 export const deleteCapture = async (id: number): Promise<DeleteCaptureResult> => {
     const response = await apiBase.delete<DeleteCaptureResult>(`/captures/${id}`);
+    return response.data;
+};
+
+export type PromoteCaptureResult = {
+    job_id: number;
+};
+
+export const promoteCapture = async (id: number): Promise<PromoteCaptureResult> => {
+    const response = await apiBase.post<PromoteCaptureResult>(`/captures/${id}/promote`);
     return response.data;
 };
 

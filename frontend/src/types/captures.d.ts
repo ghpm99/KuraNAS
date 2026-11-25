@@ -12,6 +12,7 @@ export interface Capture {
     created_at: string;
     file_id?: number;
     status: CaptureStatus;
+    failure_reason?: string;
     title?: string;
     episode_title?: string;
     season?: number;

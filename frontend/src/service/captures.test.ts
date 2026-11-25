@@ -1,11 +1,18 @@
 import { apiBase } from '@/service';
-import { captureThumbnailHref, deleteCapture, getCaptureById, getCaptures } from './captures';
+import {
+    captureThumbnailHref,
+    deleteCapture,
+    getCaptureById,
+    getCaptures,
+    promoteCapture,
+} from './captures';
 import type { Capture } from '@/types/captures';
 
 jest.mock('@/service', () => ({
     apiBase: {
         get: jest.fn(),
         delete: jest.fn(),
+        post: jest.fn(),
     },
 }));
 
@@ -14,6 +21,7 @@ jest.mock('@/service/apiUrl', () => ({
 }));
 
 const mockedGet = apiBase.get as jest.Mock;
+const mockedPost = apiBase.post as jest.Mock;
 const mockedDelete = apiBase.delete as jest.Mock;
 
 const baseCapture = (overrides: Partial<Capture> = {}): Capture => ({
@@ -49,6 +57,36 @@ describe('captures service', () => {
         });
     });
 
+    it('getCaptures sends status and platform when present', async () => {
+        mockedGet.mockResolvedValue({ data: { items: [], pagination: {} } });
+        await getCaptures({ page: 3, pageSize: 25, status: 'failed', platform: 'netflix' });
+        expect(mockedGet).toHaveBeenCalledWith('/captures', {
+            params: {
+                page: 3,
+                page_size: 25,
+                name: undefined,
+                media_type: undefined,
+                status: 'failed',
+                platform: 'netflix',
+            },
+        });
+    });
+
+    it('getCaptures omits status and platform when absent', async () => {
+        mockedGet.mockResolvedValue({ data: { items: [], pagination: {} } });
+        await getCaptures({ name: 'frieren' });
+        const sentParams = mockedGet.mock.calls[0][1].params;
+        expect(Object.keys(sentParams)).not.toContain('status');
+        expect(Object.keys(sentParams)).not.toContain('platform');
+    });
+
+    it('promoteCapture posts to the promote route and returns the job id', async () => {
+        mockedPost.mockResolvedValue({ data: { job_id: 42 } });
+        const promotion = await promoteCapture(7);
+        expect(mockedPost).toHaveBeenCalledWith('/captures/7/promote');
+        expect(promotion.job_id).toBe(42);
+    });
+
     it('getCaptures rejects a response without an items array', async () => {
         mockedGet.mockResolvedValue({ data: { pagination: {} } });
         await expect(getCaptures()).rejects.toThrow();
@@ -76,9 +114,9 @@ describe('captures service', () => {
         });
 
         it('falls back to the video thumbnail when promoted with a file_id', () => {
-            expect(
-                captureThumbnailHref(baseCapture({ status: 'promoted', file_id: 42 }))
-            ).toBe('http://api/api/v1/files/video-thumbnail/42?width=320&height=180');
+            expect(captureThumbnailHref(baseCapture({ status: 'promoted', file_id: 42 }))).toBe(
+                'http://api/api/v1/files/video-thumbnail/42?width=320&height=180'
+            );
         });
 
         it('returns empty string when nothing is available', () => {
