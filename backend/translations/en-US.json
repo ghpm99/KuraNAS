@@ -1406,7 +1406,7 @@
 	"TAKEOUT_SELECT_FILE": "Select ZIP file",
 	"TAKEOUT_DRAG_DROP": "Drag and drop your Takeout ZIP here",
 	"TAKEOUT_UPLOADING": "Uploading...",
-	"TAKEOUT_UPLOAD_PROGRESS": "Uploading: %s of %s",
+	"TAKEOUT_UPLOAD_PROGRESS": "Uploading: {{sent}} of {{total}}",
 	"TAKEOUT_PROCESSING": "Processing import...",
 	"TAKEOUT_UPLOAD_COMPLETE": "Upload complete, processing started",
 	"TAKEOUT_FILE_TYPE_ERROR": "Only ZIP files are accepted",
@@ -2556,5 +2556,7 @@
 	"INGEST_ACTIVE_ETA": "{{time}} left",
 	"INGEST_ACTIVE_ETA_UNKNOWN": "Time left unknown",
 	"TAKEOUT_UPLOAD_ALREADY_COMPLETED": "This upload was already completed and its import has already started",
-	"TAKEOUT_IMPORTS_LIST_ERROR": "Could not load the Takeout import history. Try again."
+	"TAKEOUT_IMPORTS_LIST_ERROR": "Could not load the Takeout import history. Try again.",
+	"TAKEOUT_START_UPLOAD": "Start upload",
+	"TAKEOUT_CLEAR": "Clear"
 }
