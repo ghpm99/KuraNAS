@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { SnackbarProvider } from 'notistack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import { apiBase } from '@/service';
@@ -8,7 +9,7 @@ jest.mock('@/service', () => ({
     apiBase: { get: jest.fn(), post: jest.fn() },
 }));
 
-const mockedApi = apiBase as unknown as { get: jest.Mock };
+const mockedApi = apiBase as unknown as { get: jest.Mock; post: jest.Mock };
 
 const activeDownload = {
     id: 7,
@@ -51,7 +52,9 @@ const renderBlock = () => {
     });
     return render(
         <QueryClientProvider client={client}>
-            <ActiveIngestDownloads />
+            <SnackbarProvider>
+                <ActiveIngestDownloads />
+            </SnackbarProvider>
         </QueryClientProvider>
     );
 };
@@ -104,5 +107,67 @@ describe('ActiveIngestDownloads', () => {
 
         await jest.advanceTimersByTimeAsync(10000);
         expect(downloadsCalls()).toBe(3);
+    });
+
+    describe('cancel', () => {
+        const secondDownload = {
+            ...activeDownload,
+            id: 8,
+            job_id: 4,
+            url: 'https://example.com/other',
+        };
+
+        it('posts the cancel for the clicked item and disables only that button meanwhile', async () => {
+            let finishCancel: () => void = () => undefined;
+            mockedApi.post.mockReturnValue(
+                new Promise<void>((resolve) => {
+                    finishCancel = resolve;
+                })
+            );
+            mockApi(() => pageOf([activeDownload, secondDownload]));
+            renderBlock();
+
+            const buttons = await screen.findAllByRole('button', { name: 'INGEST_ACTIVE_CANCEL' });
+            fireEvent.click(buttons[0]);
+
+            await waitFor(() => expect((buttons[0] as HTMLButtonElement).disabled).toBe(true));
+            expect((buttons[1] as HTMLButtonElement).disabled).toBe(false);
+            expect(mockedApi.post).toHaveBeenCalledWith('/jobs/3/cancel');
+
+            const callsBeforeFinish = downloadsCalls();
+            finishCancel();
+            await waitFor(() => expect(downloadsCalls()).toBeGreaterThan(callsBeforeFinish));
+            await waitFor(() => expect((buttons[0] as HTMLButtonElement).disabled).toBe(false));
+        });
+
+        it('shows the server message when the cancel fails', async () => {
+            mockedApi.post.mockRejectedValue({
+                response: { data: { error: 'cannot cancel now' } },
+            });
+            mockApi(() => pageOf([activeDownload]));
+            renderBlock();
+
+            fireEvent.click(await screen.findByRole('button', { name: 'INGEST_ACTIVE_CANCEL' }));
+
+            expect(await screen.findByText('cannot cancel now')).toBeDefined();
+        });
+
+        it('falls back to the translated message without a server message', async () => {
+            mockedApi.post.mockRejectedValue(new Error('offline'));
+            mockApi(() => pageOf([activeDownload]));
+            renderBlock();
+
+            fireEvent.click(await screen.findByRole('button', { name: 'INGEST_ACTIVE_CANCEL' }));
+
+            expect(await screen.findByText('INGEST_ACTIVE_CANCEL_ERROR')).toBeDefined();
+        });
+
+        it('hides the button when the download has no job', async () => {
+            mockApi(() => pageOf([{ ...activeDownload, job_id: null }]));
+            renderBlock();
+
+            await screen.findByText('https://example.com/video');
+            expect(screen.queryByRole('button', { name: 'INGEST_ACTIVE_CANCEL' })).toBeNull();
+        });
     });
 });

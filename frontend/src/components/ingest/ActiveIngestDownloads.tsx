@@ -1,4 +1,4 @@
-import { LinearProgress, Typography } from '@mui/material';
+import { Button, LinearProgress, Typography } from '@mui/material';
 import ErrorState from '@/components/errorState/errorState';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/shared/utils/formatSize';
@@ -8,7 +8,8 @@ import { useActiveIngestDownloads } from './useActiveIngestDownloads';
 
 const ActiveIngestDownloads = () => {
     const { t } = useI18n();
-    const { downloads, presetLabelFor, isError, errorMessage, retry } = useActiveIngestDownloads();
+    const { downloads, presetLabelFor, cancelDownload, isCanceling, isError, errorMessage, retry } =
+        useActiveIngestDownloads();
 
     if (isError) {
         return (
@@ -64,6 +65,17 @@ const ActiveIngestDownloads = () => {
                                       })
                                     : t('INGEST_ACTIVE_ETA_UNKNOWN')}
                             </Typography>
+                            {download.job_id !== null && (
+                                <Button
+                                    size="small"
+                                    color="error"
+                                    disabled={isCanceling(download.job_id)}
+                                    onClick={() => void cancelDownload(download.job_id as number)}
+                                    sx={{ alignSelf: 'flex-start' }}
+                                >
+                                    {t('INGEST_ACTIVE_CANCEL')}
+                                </Button>
+                            )}
                         </li>
                     );
                 })}

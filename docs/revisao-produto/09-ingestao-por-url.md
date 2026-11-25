@@ -53,7 +53,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 - [x] 17. Rota `/ingest` e item "Baixar de URL" no grupo Ferramentas do menu — `01/RF-01`, `11/RF-01`.
 - [x] 18. Bloco "Em andamento" (`state=active`): título ou endereço, destino, formato, barra com porcentagem, velocidade e tempo restante; consulta a cada 2 s só enquanto há item ativo — `11/RF-04`, `CA-01`. Depende da 15.
 - [x] 18.1. Bloco "Histórico" (`state=finished`): scroll infinito conforme `00`, estado, data e destino; "Abrir" (habilitado com `file_id`) e "Ver na pasta"; motivo nos falhos — `11/RF-05`, `00/CA-01` a `CA-12`, `CA-16`. Depende da 15.
-- [ ] 19. "Cancelar" no item em andamento chama `POST /jobs/:id/cancel`, desabilita só aquele item durante a chamada e o item passa ao histórico como cancelado — `11/RN-08`, `CA-03`, `00/RN-34`. Seam test.
+- [x] 19. "Cancelar" no item em andamento chama `POST /jobs/:id/cancel`, desabilita só aquele item durante a chamada e o item passa ao histórico como cancelado — `11/RN-08`, `CA-03`, `00/RN-34`. Seam test.
 - [ ] 20. "Tentar de novo" nos itens falhos e cancelados chama `POST /ingest/downloads/:id/retry`; o item novo aparece em "Em andamento" — `11/RN-17`, `CA-08`. Seam test. Depende da 33.
 - [x] 21. `YtDlpSettingsSection`: teste de render sem mock (conferido em 2026-11-16: os dois testes existentes mockam `useYtDlpSettings`, `@/service` ou o i18n — nenhum renderiza sem mock) — regra do projeto, `01/RN-02`.
 - [x] 21.1. `YtDlpSettingsSection` mostra a mensagem do servidor na falha de carregar e na falha de "Atualizar" (hoje usa o texto fixo `SETTINGS_YTDLP_LOAD_ERROR`), pelo componente de erro compartilhado — `00/RN-41`, `11/RF-06`.
