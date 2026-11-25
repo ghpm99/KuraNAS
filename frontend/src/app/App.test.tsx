@@ -84,6 +84,7 @@ jest.mock('@/pages/videoPlayer/videoPlayer', () => () => <div>VideoPlayerPage</d
 jest.mock('@/pages/takeout', () => () => <div>TakeoutPage</div>);
 jest.mock('@/pages/captures', () => () => <div>CapturesPage</div>);
 jest.mock('@/pages/vacuum', () => () => <div>VacuumPage</div>);
+jest.mock('@/pages/ingest', () => () => <div>IngestPage</div>);
 jest.mock('@/pages/downloads', () => () => <div>DownloadsPage</div>);
 jest.mock('@/pages/trash', () => () => <div>TrashPage</div>);
 jest.mock('@/pages/documents', () => () => <div>DocumentsPage</div>);

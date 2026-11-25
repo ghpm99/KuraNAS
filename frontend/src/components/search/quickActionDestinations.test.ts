@@ -27,6 +27,7 @@ describe('search/quickActionDestinations', () => {
             appRoutes.trash,
             appRoutes.downloads,
             appRoutes.captures,
+            appRoutes.ingest,
             appRoutes.assistant,
             appRoutes.takeout,
             appRoutes.vacuum,

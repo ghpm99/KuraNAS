@@ -26,6 +26,15 @@ describe('navigationItems', () => {
         expect(navigationItems[documentsPosition]?.descriptionKey).toBe('DOCUMENTS_PAGE_DESCRIPTION');
     });
 
+    it('lists the download from URL tool right before the captures with its own translation keys', () => {
+        const itemRoutes = navigationItems.map((item) => item.href);
+        const ingestPosition = itemRoutes.indexOf(appRoutes.ingest);
+
+        expect(itemRoutes[ingestPosition + 1]).toBe(appRoutes.captures);
+        expect(navigationItems[ingestPosition]?.labelKey).toBe('NAV_INGEST');
+        expect(navigationItems[ingestPosition]?.descriptionKey).toBe('INGEST_PAGE_DESCRIPTION');
+    });
+
     it('has no repeated destination', () => {
         const itemRoutes = navigationItems.map((item) => item.href);
 

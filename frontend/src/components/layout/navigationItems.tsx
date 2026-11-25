@@ -3,6 +3,7 @@ import {
     BookImage,
     Bot,
     DownloadCloud,
+    Link2,
     FileText,
     Film,
     House,
@@ -90,6 +91,12 @@ export const navigationItems: NavigationItem[] = [
         icon: <Upload size={20} />,
         labelKey: 'NAV_TAKEOUT',
         descriptionKey: 'TAKEOUT_PAGE_DESCRIPTION',
+    },
+    {
+        href: appRoutes.ingest,
+        icon: <Link2 size={20} />,
+        labelKey: 'NAV_INGEST',
+        descriptionKey: 'INGEST_PAGE_DESCRIPTION',
     },
     {
         href: appRoutes.captures,

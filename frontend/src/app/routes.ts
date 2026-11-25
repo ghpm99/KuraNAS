@@ -18,6 +18,7 @@ export const appRoutes = {
     assistant: '/assistant',
     takeout: '/takeout',
     captures: '/captures',
+    ingest: '/ingest',
     vacuum: '/vacuum',
     downloads: '/downloads',
     trash: '/trash',

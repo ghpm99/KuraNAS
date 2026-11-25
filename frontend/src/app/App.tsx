@@ -37,6 +37,7 @@ const VideosPage = lazy(() => import('@/pages/videos/videos'));
 const AssistantPage = lazy(() => import('@/pages/assistant'));
 const TakeoutPage = lazy(() => import('@/pages/takeout'));
 const CapturesPage = lazy(() => import('@/pages/captures'));
+const IngestPage = lazy(() => import('@/pages/ingest'));
 const VacuumPage = lazy(() => import('@/pages/vacuum'));
 const DownloadsPage = lazy(() => import('@/pages/downloads'));
 const TrashPage = lazy(() => import('@/pages/trash'));
@@ -111,6 +112,7 @@ function AppContent() {
                     <Route path={appRoutes.assistant} element={<AssistantPage />} />
                     <Route path={appRoutes.takeout} element={<TakeoutPage />} />
                     <Route path={appRoutes.captures} element={<CapturesPage />} />
+                    <Route path={appRoutes.ingest} element={<IngestPage />} />
                     <Route path={appRoutes.vacuum} element={<VacuumPage />} />
                     <Route path={appRoutes.downloads} element={<DownloadsPage />} />
                     <Route path={appRoutes.trash} element={<TrashPage />} />
