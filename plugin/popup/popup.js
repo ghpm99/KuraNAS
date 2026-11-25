@@ -69,6 +69,7 @@
   const apiUrlInput = $("#apiUrl");
   const btnSaveSettings = $("#btnSaveSettings");
   const settingsStatusEl = $("#settingsStatus");
+  const connectionStatusEl = $("#connectionStatus");
   const detectedTitleEl = $("#detectedTitle");
   const fetchUrlInput = $("#fetchUrl");
   const fetchPresetSelect = $("#fetchPreset");
@@ -92,6 +93,7 @@
     currentTabId = tab.id;
 
     loadSettings();
+    loadConnectionStatus();
     loadMedia();
     loadHybridStatus();
     loadDetectedTitle();
@@ -453,12 +455,30 @@
       if (response && response.ok) {
         apiUrlInput.value = response.apiBaseUrl;
         setSettingsStatus("Servidor aceito e salvo.", "success");
+        loadConnectionStatus();
         return;
       }
       const reason = response && response.reason;
       setSettingsStatus(serverAddressRefusalMessages[reason] || serverAddressRefusalMessages.unreachable, "error");
     });
   });
+
+  const connectionStatusLabels = {
+    connected: { text: "Conectado", kind: "success" },
+    not_found: { text: "Servidor não encontrado", kind: "error" },
+    forbidden: { text: "Acesso não liberado", kind: "error" },
+  };
+
+  function loadConnectionStatus() {
+    connectionStatusEl.textContent = "Verificando conexão...";
+    connectionStatusEl.className = "connection-status fetch-status-pending";
+    chrome.runtime.sendMessage({ action: "get_connection_status" }, (response) => {
+      const label = (response && connectionStatusLabels[response.status]) || connectionStatusLabels.not_found;
+      const address = response && response.apiBaseUrl ? ` (${response.apiBaseUrl})` : "";
+      connectionStatusEl.textContent = `${label.text}${address}`;
+      connectionStatusEl.className = `connection-status fetch-status-${label.kind}`;
+    });
+  }
 
   function setSettingsStatus(text, kind) {
     settingsStatusEl.textContent = text;

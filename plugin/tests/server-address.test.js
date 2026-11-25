@@ -71,3 +71,20 @@ test('reachability checker accepts only a healthy response that mentions KuraNAS
   assert.equal(await check(responseFor(false, 'kuranas'))('http://a/api/v1'), false);
   assert.equal(await check(async () => { throw new Error('down'); })('http://a/api/v1'), false);
 });
+
+test('connection status checker tells connected, forbidden and not_found apart', async () => {
+  const { createConnectionStatusChecker } = await import(serverAddressModuleUrl);
+  const responseFor = (status, body) => async () => ({
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => body,
+  });
+  const statusFor = (fetchImpl) =>
+    createConnectionStatusChecker({ healthSuffix: '/health', timeoutMs: 100, fetchImpl })('http://a/api/v1');
+
+  assert.equal(await statusFor(responseFor(200, '{"app":"KuraNAS"}')), 'connected');
+  assert.equal(await statusFor(responseFor(403, 'forbidden')), 'forbidden');
+  assert.equal(await statusFor(async () => { throw new Error('down'); }), 'not_found');
+  assert.equal(await statusFor(responseFor(200, 'ok')), 'not_found');
+  assert.equal(await statusFor(responseFor(500, 'kuranas')), 'not_found');
+});

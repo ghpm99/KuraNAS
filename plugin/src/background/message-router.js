@@ -113,6 +113,10 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       handlers.saveVerifiedServerAddress(msg.address).then(sendResponse);
       return true;
 
+    case "get_connection_status":
+      handlers.getConnectionStatus().then(sendResponse);
+      return true;
+
     default:
       return false;
   }

@@ -159,3 +159,22 @@ test('routeRuntimeMessage routes save_server_address to the address validation h
   assert.equal(keepAlive, true);
   assert.deepEqual(responses[0], { ok: true, apiBaseUrl: 'http://nas:8000' });
 });
+
+test('routeRuntimeMessage routes get_connection_status to the connection status handler', async () => {
+  const { routeRuntimeMessage } = await import(messageRouterModuleUrl);
+  const { handlers } = createHandlers();
+  const responses = [];
+  handlers.getConnectionStatus = async () => ({ status: 'forbidden', apiBaseUrl: 'http://nas:8000/api/v1' });
+
+  const keepAlive = routeRuntimeMessage(
+    { action: 'get_connection_status' },
+    {},
+    (payload) => responses.push(payload),
+    handlers
+  );
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(keepAlive, true);
+  assert.deepEqual(responses[0], { status: 'forbidden', apiBaseUrl: 'http://nas:8000/api/v1' });
+});

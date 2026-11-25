@@ -22,6 +22,7 @@ import {
 import { createMediaDetectionManager } from "./src/background/media-detection.js";
 import { routeRuntimeMessage } from "./src/background/message-router.js";
 import {
+  createConnectionStatusChecker,
   createReachabilityChecker,
   createServerAddressSaver,
   normalizeApiBaseUrl,
@@ -76,10 +77,12 @@ const {
 } = downloader;
 
 const fetcher = createFetcher({ getApiBaseUrl });
-const isKuraNASApiReachable = createReachabilityChecker({
+const reachabilityOptions = {
   healthSuffix: DISCOVERY_HEALTH_SUFFIX,
   timeoutMs: DISCOVERY_REQUEST_TIMEOUT_MS,
-});
+};
+const isKuraNASApiReachable = createReachabilityChecker(reachabilityOptions);
+const checkConnectionStatus = createConnectionStatusChecker(reachabilityOptions);
 const saveVerifiedServerAddress = createServerAddressSaver({
   isKuraNASApiReachable,
   saveApiBaseUrl: (apiBaseUrl) => chrome.storage.sync.set({ apiBaseUrl }),
@@ -184,6 +187,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     submitFetch,
     uploadBlobCapture,
     saveVerifiedServerAddress,
+    getConnectionStatus,
   }
 ));
 
@@ -587,6 +591,12 @@ async function getApiBaseUrl() {
   }
 
   return DEFAULT_KURANAS_API_BASE;
+}
+
+async function getConnectionStatus() {
+  const apiBaseUrl = await getApiBaseUrl();
+  const status = await checkConnectionStatus(apiBaseUrl);
+  return { status, apiBaseUrl };
 }
 
 async function getConfiguredApiBaseUrl() {

@@ -11,7 +11,13 @@ export function normalizeApiBaseUrl(url) {
   return `${trimmed}/api/v1`;
 }
 
-export function createReachabilityChecker({ healthSuffix, timeoutMs, fetchImpl = fetch }) {
+export const CONNECTION_STATUS = Object.freeze({
+  CONNECTED: "connected",
+  NOT_FOUND: "not_found",
+  FORBIDDEN: "forbidden",
+});
+
+export function createConnectionStatusChecker({ healthSuffix, timeoutMs, fetchImpl = fetch }) {
   async function fetchWithTimeout(url, options) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -23,22 +29,34 @@ export function createReachabilityChecker({ healthSuffix, timeoutMs, fetchImpl =
     }
   }
 
-  return async function isKuraNASApiReachable(apiBaseUrl) {
+  return async function checkConnectionStatus(apiBaseUrl) {
     try {
       const response = await fetchWithTimeout(`${apiBaseUrl}${healthSuffix}`, {
         method: "GET",
         cache: "no-store",
       });
 
+      if (response.status === 403) {
+        return CONNECTION_STATUS.FORBIDDEN;
+      }
+
       if (!response.ok) {
-        return false;
+        return CONNECTION_STATUS.NOT_FOUND;
       }
 
       const healthBody = (await response.text()).toLowerCase();
-      return healthBody.includes("kuranas");
+      return healthBody.includes("kuranas") ? CONNECTION_STATUS.CONNECTED : CONNECTION_STATUS.NOT_FOUND;
     } catch {
-      return false;
+      return CONNECTION_STATUS.NOT_FOUND;
     }
+  };
+}
+
+export function createReachabilityChecker(options) {
+  const checkConnectionStatus = createConnectionStatusChecker(options);
+
+  return async function isKuraNASApiReachable(apiBaseUrl) {
+    return (await checkConnectionStatus(apiBaseUrl)) === CONNECTION_STATUS.CONNECTED;
   };
 }
 
