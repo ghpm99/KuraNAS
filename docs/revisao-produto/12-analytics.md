@@ -48,7 +48,7 @@ Spec: `docs/especificacao/16-analytics.md`. A seção "Situação em 2026-11-10"
 - [ ] 11. Uso de IA persistido por chamada (provedor, função, instante, sucesso, tokens, latência) — `RF-12`, §8.
 - [ ] 12. `/analytics/ai-usage` aceita `period` e devolve `by_provider` e `by_function` — `RF-12`, `RN-04`. Depende da 11.
 - [x] 13. `ERROR_ANALYTICS_LOAD` sem "overview" e textos `ANALYTICS_*` pt-BR com acento — `00/RN-43`.
-- [ ] 14. Remove comentários de `service.go` e dos `.sql` de saúde; `log.Printf` vira `applog` — só refatoração.
+- [x] 14. Remove comentários de `service.go` e dos `.sql` de saúde; `log.Printf` vira `applog` — só refatoração.
 - [x] 15. Testes de handler fixam os campos de todos os endpoints de analytics — `00/CA-16`. Só teste.
 
 ### Frontend

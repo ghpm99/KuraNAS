@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/roots"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/ai/prompts"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/utils"
 	"sort"
 	"strings"
@@ -270,7 +270,7 @@ func (s *Service) generateInsights(summary string) []string {
 		Temperature:  0.3,
 	})
 	if err != nil {
-		log.Printf("AI insights generation failed: %v\n", err)
+		applog.Error("analytics: AI insights generation failed", "error", err)
 		return []string{}
 	}
 
@@ -327,7 +327,7 @@ func parseInsightsResponse(content string) []string {
 
 	var insights []string
 	if err := json.Unmarshal([]byte(content), &insights); err != nil {
-		log.Printf("AI insights parse error: %v\n", err)
+		applog.Error("analytics: AI insights parse failed", "error", err)
 		return []string{}
 	}
 
@@ -361,11 +361,6 @@ func getFileSystemStorage(usedBytes int64) (int64, int64) {
 	return totalBytes, freeBytes
 }
 
-// resolveHealthStatus maps the last scan job's worker_job status to the three
-// states the dashboard renders. A failed or partially failed scan must surface
-// as "error" — the old mapping read the legacy `log` table's uppercase values
-// and silently fell through to "ok", which is why a broken pipeline looked
-// healthy.
 func resolveHealthStatus(status sql.NullString) string {
 	if !status.Valid {
 		return "ok"
