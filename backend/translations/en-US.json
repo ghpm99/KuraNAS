@@ -1308,6 +1308,7 @@
 	"ERROR_CAPTURE_UPLOAD_EMPTY": "The capture is empty: no data was received",
 	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
 	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
+	"ERROR_CAPTURE_INVALID_STATUS": "Invalid capture status",
 	"ERROR_CAPTURE_DELETE_FAILED": "Failed to delete capture",
 	"ERROR_CAPTURE_PROMOTE_NOT_RETRYABLE": "Only a capture whose promotion failed can be retried",
 	"ERROR_CAPTURE_PROMOTE_RETRY_FAILED": "Failed to queue the capture promotion retry",
