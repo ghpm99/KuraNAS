@@ -1375,6 +1375,8 @@
 	"TAKEOUT_INVALID_ZIP": "O arquivo enviado nao eh um arquivo ZIP valido",
 	"TAKEOUT_SESSION_NOT_FOUND": "Sessao de upload nao encontrada",
 	"TAKEOUT_OFFSET_MISMATCH": "Offset do chunk nao corresponde",
+	"TAKEOUT_UPLOAD_SIZE_INVALID": "Tamanho do arquivo inválido: informe um tamanho maior que zero",
+	"TAKEOUT_UPLOAD_FILE_NAME_INVALID": "O nome do arquivo deve terminar em .zip",
 	"TAKEOUT_UPLOAD_INCOMPLETE": "Upload incompleto: esperado %d bytes, recebido %d",
 	"NOTIFICATION_TAKEOUT_IMPORT_STARTED_TITLE": "Importação do Takeout iniciada",
 	"NOTIFICATION_TAKEOUT_IMPORT_STARTED_MESSAGE": "Processando arquivo Google Takeout: %s",

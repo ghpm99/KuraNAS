@@ -1375,6 +1375,8 @@
 	"TAKEOUT_INVALID_ZIP": "The uploaded file is not a valid ZIP archive",
 	"TAKEOUT_SESSION_NOT_FOUND": "Upload session not found",
 	"TAKEOUT_OFFSET_MISMATCH": "Chunk offset mismatch",
+	"TAKEOUT_UPLOAD_SIZE_INVALID": "Invalid file size: provide a size greater than zero",
+	"TAKEOUT_UPLOAD_FILE_NAME_INVALID": "The file name must end in .zip",
 	"TAKEOUT_UPLOAD_INCOMPLETE": "Upload incomplete: expected %d bytes, received %d",
 	"NOTIFICATION_TAKEOUT_IMPORT_STARTED_TITLE": "Takeout Import Started",
 	"NOTIFICATION_TAKEOUT_IMPORT_STARTED_MESSAGE": "Processing Google Takeout file: %s",
