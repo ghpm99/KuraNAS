@@ -47,10 +47,21 @@ describe('CapturesScreen', () => {
         expect(screen.getByText('CAPTURES_PAGE_TITLE')).toBeInTheDocument();
     });
 
-    it('survives a partial payload with no items array', async () => {
-        mockedGetCaptures.mockResolvedValue({ pagination: {} });
+    it('shows the server message verbatim and refetches on retry', async () => {
+        mockedGetCaptures.mockRejectedValueOnce({ response: { data: { error: 'banco indisponível' } } });
+        mockedGetCaptures.mockResolvedValueOnce({ items: [capture({ title: 'Recovered' })], pagination: {} });
         renderScreen();
-        await waitFor(() => expect(screen.getByText('CAPTURES_EMPTY')).toBeInTheDocument());
+        expect(await screen.findByText('banco indisponível')).toBeInTheDocument();
+        expect(screen.queryByText('CAPTURES_EMPTY')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'TRY_AGAIN' }));
+        expect(await screen.findByText('Recovered')).toBeInTheDocument();
+        expect(mockedGetCaptures).toHaveBeenCalledTimes(2);
+    });
+
+    it('falls back to the unavailable text when the error has no server message', async () => {
+        mockedGetCaptures.mockRejectedValue(new Error('network down'));
+        renderScreen();
+        expect(await screen.findByText('CONNECTION_BANNER_UNAVAILABLE')).toBeInTheDocument();
     });
 
     it('shows the loading state while fetching', () => {

@@ -1,3 +1,4 @@
+import ErrorState from '@/components/errorState/errorState';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
@@ -30,6 +31,8 @@ const CapturesScreen = () => {
         items,
         isLoading,
         isError,
+        errorMessage,
+        retryLoading,
         isEmpty,
         deletingId,
         captureAwaitingDeletion,
@@ -55,7 +58,13 @@ const CapturesScreen = () => {
                 </div>
             )}
 
-            {isError && <div className={styles.state}>{t('CAPTURES_ERROR')}</div>}
+            {isError && (
+                <ErrorState
+                    title={t('CAPTURES_ERROR')}
+                    backendMessage={errorMessage}
+                    onRetry={retryLoading}
+                />
+            )}
 
             {isEmpty && <div className={styles.state}>{t('CAPTURES_EMPTY')}</div>}
 

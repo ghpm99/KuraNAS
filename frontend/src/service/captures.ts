@@ -24,6 +24,9 @@ export const getCaptures = async ({
             media_type: mediaType,
         },
     });
+    if (!Array.isArray(response.data?.items)) {
+        throw new Error('invalid captures response');
+    }
     return response.data;
 };
 

@@ -1,5 +1,6 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { captureThumbnailHref, deleteCapture, getCaptures } from '@/service/captures';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { formatSize } from '@/shared/utils/formatSize';
 import type { Capture, CaptureStatus } from '@/types/captures';
 import type { Pagination } from '@/types/pagination';
@@ -27,7 +28,7 @@ export const useCapturesScreen = () => {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [captureAwaitingDeletion, setCaptureAwaitingDeletion] = useState<Capture | null>(null);
 
-    const { data, isLoading, isError } = useQuery<Pagination<Capture>>({
+    const { data, isLoading, isError, error, refetch } = useQuery<Pagination<Capture>>({
         queryKey: ['captures'],
         queryFn: () => getCaptures(),
         refetchOnWindowFocus: false,
@@ -55,6 +56,10 @@ export const useCapturesScreen = () => {
         items,
         isLoading,
         isError,
+        errorMessage: extractBackendErrorMessage(error) ?? t('CONNECTION_BANNER_UNAVAILABLE'),
+        retryLoading: () => {
+            refetch();
+        },
         isEmpty: !isLoading && !isError && items.length === 0,
         deletingId,
         captureAwaitingDeletion,

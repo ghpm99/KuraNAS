@@ -49,6 +49,11 @@ describe('captures service', () => {
         });
     });
 
+    it('getCaptures rejects a response without an items array', async () => {
+        mockedGet.mockResolvedValue({ data: { pagination: {} } });
+        await expect(getCaptures()).rejects.toThrow();
+    });
+
     it('getCaptureById hits the detail route', async () => {
         mockedGet.mockResolvedValue({ data: baseCapture() });
         const result = await getCaptureById(7);
