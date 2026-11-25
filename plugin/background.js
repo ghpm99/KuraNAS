@@ -28,6 +28,7 @@ import {
   normalizeApiBaseUrl,
 } from "./src/background/server-address.js";
 import { createUploader } from "./src/background/uploader.js";
+import { createHybridUploadSession } from "./src/background/hybrid-upload-session.js";
 import { createDownloader } from "./src/background/downloader.js";
 import { createFetcher } from "./src/background/fetcher.js";
 import { createHybridStateMachine } from "./src/background/hybrid-state.js";
@@ -361,18 +362,20 @@ async function initHybridUploadSession(tabId) {
     logBg(tabId, `metadados: episode_key="${episodeKey}", plataforma="${metadata.platform || "?"}"`);
   }
 
+  const buildInitBody = () => ({
+    name,
+    media_type: "recording",
+    mime_type: mimeType,
+    size: 0,
+    file_name: fileName,
+    episode_key: episodeKey,
+    metadata: metadata || undefined,
+  });
+
   const initResp = await fetch(`${apiUrl}/captures/upload/init`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      media_type: "recording",
-      mime_type: mimeType,
-      size: 0,
-      file_name: fileName,
-      episode_key: episodeKey,
-      metadata: metadata || undefined,
-    }),
+    body: JSON.stringify(buildInitBody()),
   });
 
   if (!initResp.ok) {
@@ -398,15 +401,22 @@ async function initHybridUploadSession(tabId) {
   // must continue from that offset or the very first chunk fails on a mismatch.
   const startOffset = Number(payload.received_size || 0);
 
-  state.uploadSession = {
+  state.uploadSession = createHybridUploadSession({
     apiUrl,
     uploadID: payload.upload_id,
-    offset: startOffset,
-    chunkIndex: 0,
-    pending: Promise.resolve(),
-    failed: false,
-    completed: false,
-  };
+    startOffset,
+    buildInitBody,
+    uploadChunkWithRetry,
+    wait,
+    onStatusChange: ({ status, error }) => {
+      logBg(tabId, `upload HYBRID: ${status}${error ? ` (${error})` : ""}`);
+      broadcastHybridStatus(tabId);
+      if (status !== "failed") return;
+      chrome.runtime
+        .sendMessage({ action: "hybrid_upload_error", tabId, error })
+        .catch(() => {});
+    },
+  });
 
   logBg(tabId, `upload session HYBRID criada: uploadID=${payload.upload_id}`);
   return state.uploadSession;
@@ -419,6 +429,7 @@ function logBg(tabId, ...args) {
 // Logged-once guard so the per-chunk handler (called ~hundreds of times) emits a
 // single line for a dropped-chunk reason instead of flooding the console.
 const chunkDropLogged = new Set();
+const chunkFetchChains = new Map();
 
 // Streamed chunks arrive as a blob: URL string (a Blob cannot cross
 // chrome.runtime messaging). Fetch it here to recover the real bytes, then
@@ -438,13 +449,13 @@ async function fetchChunkBlob(chunkUrl) {
 
 function handleHybridRecordingChunk(tabId, msg) {
   const state = hybridStates.get(tabId);
-  if (!state || !state.uploadSession || state.uploadSession.failed) {
+  if (!state || !state.uploadSession || state.uploadSession.hasFailed()) {
     if (!chunkDropLogged.has(tabId)) {
       chunkDropLogged.add(tabId);
       logBg(
         tabId,
         "chunk DESCARTADO (hybrid): ",
-        !state ? "sem state" : !state.uploadSession ? "sem uploadSession (init não rodou?)" : "session.failed"
+        !state ? "sem state" : !state.uploadSession ? "sem uploadSession (init não rodou?)" : "upload falhou"
       );
     }
     return;
@@ -452,39 +463,20 @@ function handleHybridRecordingChunk(tabId, msg) {
   if (!msg.chunkUrl) return;
 
   const session = state.uploadSession;
-  const { chunkUrl } = msg;
-  session.pending = session.pending
-    .then(async () => {
-      if (session.failed || session.completed) return;
-      const chunkBlob = await fetchChunkBlob(chunkUrl);
+  const previousFetch = chunkFetchChains.get(tabId) || Promise.resolve();
+  const currentFetch = previousFetch
+    .then(() => fetchChunkBlob(msg.chunkUrl))
+    .then((chunkBlob) => {
       if (!chunkBlob.size) {
         logBg(tabId, "chunk vazio após fetch da blob URL (SW não leu a blob?)");
         return;
       }
-      await uploadChunkWithRetry(
-        session.apiUrl,
-        session.uploadID,
-        chunkBlob,
-        session.offset,
-        session.chunkIndex
-      );
-      session.offset += chunkBlob.size;
-      session.chunkIndex += 1;
-      if (session.chunkIndex === 1 || session.chunkIndex % 25 === 0) {
-        logBg(tabId, `chunk #${session.chunkIndex} enviado (offset ${session.offset} bytes)`);
-      }
+      session.enqueueChunk(chunkBlob);
     })
     .catch((err) => {
-      session.failed = true;
-      console.error("[KuraNAS bg]", `tab=${tabId}`, "falha no chunk (hybrid):", err && err.message);
-      chrome.runtime
-        .sendMessage({
-          action: "hybrid_upload_error",
-          tabId,
-          error: err && err.message ? err.message : "Chunk upload failed",
-        })
-        .catch(() => {});
+      session.abort(err && err.message ? err.message : "Chunk read failed");
     });
+  chunkFetchChains.set(tabId, currentFetch);
 }
 
 async function handleHybridRecordingComplete(tabId) {
@@ -494,9 +486,11 @@ async function handleHybridRecordingComplete(tabId) {
 
   const session = state.uploadSession;
   try {
-    await session.pending;
-    logBg(tabId, `complete HYBRID: ${session.chunkIndex} chunks, ${session.offset} bytes, failed=${session.failed}`);
-    if (session.failed || session.completed) {
+    await (chunkFetchChains.get(tabId) || Promise.resolve());
+    chunkFetchChains.delete(tabId);
+    await session.waitUntilDrained();
+    logBg(tabId, `complete HYBRID: ${session.getChunkIndex()} chunks, ${session.getUploadedOffset()} bytes, failed=${session.hasFailed()}`);
+    if (session.hasFailed() || session.completed) {
       state.uploadSession = null;
       return;
     }

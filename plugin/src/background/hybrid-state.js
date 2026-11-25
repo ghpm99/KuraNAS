@@ -18,6 +18,11 @@ export function createHybridStateMachine({
     console.log(LOG, ...args);
   }
 
+  function uploadStatusFields(uploadSession) {
+    const { status, error } = uploadSession.getStatus();
+    return { uploadStatus: status, uploadError: error };
+  }
+
   function getHybridStatus(tabId) {
     const state = hybridStates.get(tabId);
     if (!state) return { armed: false, state: "IDLE" };
@@ -25,6 +30,7 @@ export function createHybridStateMachine({
       armed: state.armed,
       state: state.recordingState,
       monitorEnabled: state.monitorEnabled,
+      ...(state.uploadSession ? uploadStatusFields(state.uploadSession) : {}),
     };
   }
 

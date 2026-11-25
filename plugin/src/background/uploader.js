@@ -3,7 +3,7 @@ import {
   CAPTURE_UPLOAD_MAX_RETRIES,
 } from "../shared/constants.js";
 
-class ChunkOffsetMismatchError extends Error {
+export class ChunkOffsetMismatchError extends Error {
   constructor(receivedSize) {
     super(`Chunk offset mismatch: server already has ${receivedSize} bytes`);
     this.receivedSize = receivedSize;

@@ -382,6 +382,7 @@
 
   function updateHybridUI(status) {
     hybridStatusEl.className = "hybrid-badge";
+    hybridStatusEl.title = "";
 
     if (!status.armed) {
       hybridStatusEl.textContent = "";
@@ -396,7 +397,15 @@
     btnArmV2.classList.add("hidden");
     btnDisarm.classList.remove("hidden");
 
-    if (status.state === "RECORDING") {
+    if (status.uploadStatus === "reconnecting") {
+      hybridStatusEl.textContent = "RECONECTANDO";
+      hybridStatusEl.classList.add("recording");
+      btnStopNow.classList.remove("hidden");
+    } else if (status.uploadStatus === "failed") {
+      hybridStatusEl.textContent = "FALHA NO ENVIO";
+      hybridStatusEl.title = status.uploadError || "";
+      btnStopNow.classList.add("hidden");
+    } else if (status.state === "RECORDING") {
       hybridStatusEl.textContent = "REC";
       hybridStatusEl.classList.add("recording");
       btnStopNow.classList.remove("hidden");
