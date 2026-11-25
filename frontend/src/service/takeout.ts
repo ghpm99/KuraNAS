@@ -1,5 +1,12 @@
 import { apiBase } from '@/service';
-import type { CompleteTakeoutUploadResponse, InitTakeoutUploadResponse } from '@/types/takeout';
+import type { Pagination } from '@/types/pagination';
+import type {
+	CompleteTakeoutUploadResponse,
+	InitTakeoutUploadResponse,
+	ListTakeoutImportsParams,
+	TakeoutImport,
+	TakeoutUploadStatus,
+} from '@/types/takeout';
 
 export const initTakeoutUpload = async (
 	fileName: string,
@@ -36,5 +43,32 @@ export const completeTakeoutUpload = async (
 	const response = await apiBase.post<CompleteTakeoutUploadResponse>('/takeout/upload/complete', {
 		upload_id: uploadId,
 	});
+	return response.data;
+};
+
+export const getTakeoutUploadStatus = async (uploadId: string): Promise<TakeoutUploadStatus> => {
+	const response = await apiBase.get<TakeoutUploadStatus>(`/takeout/upload/${uploadId}`);
+	return response.data;
+};
+
+export const cancelTakeoutUpload = async (uploadId: string): Promise<void> => {
+	await apiBase.delete(`/takeout/upload/${uploadId}`);
+};
+
+export const listTakeoutImports = async ({
+	page = 1,
+	pageSize = 20,
+}: ListTakeoutImportsParams = {}): Promise<Pagination<TakeoutImport>> => {
+	const response = await apiBase.get<Pagination<TakeoutImport>>('/takeout/imports', {
+		params: { page, page_size: pageSize },
+	});
+	if (!Array.isArray(response.data?.items)) {
+		throw new Error('invalid takeout imports response');
+	}
+	return response.data;
+};
+
+export const getTakeoutImport = async (importId: number): Promise<TakeoutImport> => {
+	const response = await apiBase.get<TakeoutImport>(`/takeout/imports/${importId}`);
 	return response.data;
 };
