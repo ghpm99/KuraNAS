@@ -1,8 +1,8 @@
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import ErrorState from '@/components/errorState/errorState';
 import useYtDlpSettings from './useYtDlpSettings';
 import styles from './YtDlpSettingsSection.module.css';
 
@@ -11,7 +11,7 @@ type YtDlpSettingsSectionProps = {
 };
 
 const YtDlpSettingsSection = ({ className = '' }: YtDlpSettingsSectionProps) => {
-	const { t, status, isLoading, hasError, isUpdating, handleUpdate } = useYtDlpSettings();
+	const { t, status, isLoading, hasError, loadErrorMessage, isUpdating, handleUpdate } = useYtDlpSettings();
 	const sectionClassName = `${className} ${styles.section}`.trim();
 
 	return (
@@ -22,7 +22,7 @@ const YtDlpSettingsSection = ({ className = '' }: YtDlpSettingsSectionProps) => 
 			</div>
 
 			{isLoading ? <CircularProgress size={20} /> : null}
-			{hasError ? <Alert severity="error">{t('SETTINGS_YTDLP_LOAD_ERROR')}</Alert> : null}
+			{hasError ? <ErrorState title={t('SETTINGS_YTDLP_LOAD_ERROR')} backendMessage={loadErrorMessage} /> : null}
 
 			{!isLoading && !hasError && status ? (
 				<>

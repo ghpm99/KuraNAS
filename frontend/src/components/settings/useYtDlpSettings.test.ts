@@ -96,4 +96,22 @@ describe('components/settings/useYtDlpSettings', () => {
 
 		expect(mockEnqueueSnackbar).toHaveBeenCalledWith('ERROR_YTDLP_UPDATE', { variant: 'error' });
 	});
+
+	it('exposes the server message when loading the status fails', () => {
+		mockedUseQuery.mockReturnValue({
+			data: undefined,
+			isLoading: false,
+			isError: true,
+			error: { response: { data: { error: 'falha ao consultar release' } } },
+		});
+		const { result } = renderHook(() => useYtDlpSettings());
+		expect(result.current.hasError).toBe(true);
+		expect(result.current.loadErrorMessage).toBe('falha ao consultar release');
+	});
+
+	it('falls back to the connection key when the load error has no server message', () => {
+		mockedUseQuery.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: new Error('Network Error') });
+		const { result } = renderHook(() => useYtDlpSettings());
+		expect(result.current.loadErrorMessage).toBe('CONNECTION_BANNER_UNAVAILABLE');
+	});
 });

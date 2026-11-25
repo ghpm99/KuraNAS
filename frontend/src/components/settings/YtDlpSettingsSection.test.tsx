@@ -38,10 +38,13 @@ describe('components/settings/YtDlpSettingsSection', () => {
 		expect(screen.getByRole('progressbar')).toBeInTheDocument();
 	});
 
-	it('shows an error alert when the status fails to load', () => {
-		mockUseYtDlpSettings.mockReturnValue(createState({ hasError: true, status: undefined }));
+	it('shows the server message when the status fails to load', () => {
+		mockUseYtDlpSettings.mockReturnValue(
+			createState({ hasError: true, status: undefined, loadErrorMessage: 'yt-dlp indisponivel no servidor' })
+		);
 		render(<YtDlpSettingsSection />);
 		expect(screen.getByText('SETTINGS_YTDLP_LOAD_ERROR')).toBeInTheDocument();
+		expect(screen.getByText('yt-dlp indisponivel no servidor')).toBeInTheDocument();
 	});
 
 	it('offers the update when one is available and triggers it', () => {

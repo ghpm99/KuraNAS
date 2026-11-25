@@ -2,14 +2,7 @@ import useI18n from '@/components/i18n/provider/i18nContext';
 import { getYtDlpStatus, updateYtDlp } from '@/service/ingest';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
-
-const extractBackendError = (error: unknown): string | undefined => {
-	if (typeof error === 'object' && error !== null && 'response' in error) {
-		const response = (error as { response?: { data?: { error?: string } } }).response;
-		return response?.data?.error;
-	}
-	return undefined;
-};
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 
 const useYtDlpSettings = () => {
 	const { t } = useI18n();
@@ -29,7 +22,7 @@ const useYtDlpSettings = () => {
 			queryClient.invalidateQueries({ queryKey: ['ytdlp-status'] });
 		},
 		onError: (error: unknown) => {
-			enqueueSnackbar(extractBackendError(error) ?? t('ERROR_YTDLP_UPDATE'), { variant: 'error' });
+			enqueueSnackbar(extractBackendErrorMessage(error) ?? t('ERROR_YTDLP_UPDATE'), { variant: 'error' });
 		},
 	});
 
@@ -38,6 +31,7 @@ const useYtDlpSettings = () => {
 		status: statusQuery.data,
 		isLoading: statusQuery.isLoading,
 		hasError: statusQuery.isError,
+		loadErrorMessage: extractBackendErrorMessage(statusQuery.error) ?? t('CONNECTION_BANNER_UNAVAILABLE'),
 		isUpdating: updateMutation.isPending,
 		handleUpdate: () => updateMutation.mutate(),
 	};
