@@ -1306,6 +1306,7 @@
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Failed to save capture",
 	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "The chunk position does not match what the server already received",
 	"ERROR_CAPTURE_UPLOAD_EMPTY": "The capture is empty: no data was received",
+	"ERROR_CAPTURE_UPLOAD_INCOMPLETE": "The capture is incomplete: %d bytes received of %d expected",
 	"ERROR_CAPTURE_NOT_FOUND": "Capture not found",
 	"ERROR_CAPTURE_LIST_FAILED": "Failed to list captures",
 	"ERROR_CAPTURE_INVALID_STATUS": "Invalid capture status",
