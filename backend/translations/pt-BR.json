@@ -1376,7 +1376,7 @@
 	"TAKEOUT_IMPORT_COMPLETED": "Importacao do Takeout concluida: %d arquivos processados",
 	"TAKEOUT_IMPORT_FAILED": "Importacao do Takeout falhou: %s",
 	"TAKEOUT_INVALID_ZIP": "O arquivo enviado nao eh um arquivo ZIP valido",
-	"TAKEOUT_SESSION_NOT_FOUND": "Sessao de upload nao encontrada",
+	"TAKEOUT_SESSION_NOT_FOUND": "Sessão de upload não encontrada",
 	"TAKEOUT_OFFSET_MISMATCH": "Offset do chunk nao corresponde",
 	"TAKEOUT_UPLOAD_SIZE_INVALID": "Tamanho do arquivo inválido: informe um tamanho maior que zero",
 	"TAKEOUT_UPLOAD_FILE_NAME_INVALID": "O nome do arquivo deve terminar em .zip",
@@ -2536,5 +2536,10 @@
 	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "O trecho enviado ultrapassa o tamanho informado do arquivo",
 	"CAPTURE_DELETED": "Captura excluída.",
 	"CAPTURE_DELETED_LIBRARY_FILE_KEPT": "Captura excluída. O vídeo continua na biblioteca de Vídeos.",
-	"CAPTURE_DELETE_ERROR": "Não foi possível excluir a captura."
+	"CAPTURE_DELETE_ERROR": "Não foi possível excluir a captura.",
+	"TAKEOUT_UPLOAD_INIT_ERROR": "Não foi possível iniciar o envio do Takeout. Tente novamente.",
+	"TAKEOUT_UPLOAD_CHUNK_ERROR": "Não foi possível gravar a parte do envio do Takeout. Tente novamente.",
+	"TAKEOUT_UPLOAD_STATUS_ERROR": "Não foi possível consultar o andamento do envio do Takeout. Tente novamente.",
+	"TAKEOUT_UPLOAD_COMPLETE_ERROR": "Não foi possível concluir o envio do Takeout. Tente novamente.",
+	"TAKEOUT_UPLOAD_INCOMPLETE_GENERIC": "Upload incompleto: nem todos os bytes foram recebidos"
 }

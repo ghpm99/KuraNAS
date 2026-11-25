@@ -2536,5 +2536,10 @@
 	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "The uploaded chunk exceeds the declared file size",
 	"CAPTURE_DELETED": "Capture deleted.",
 	"CAPTURE_DELETED_LIBRARY_FILE_KEPT": "Capture deleted. The video stays in the Videos library.",
-	"CAPTURE_DELETE_ERROR": "Could not delete the capture."
+	"CAPTURE_DELETE_ERROR": "Could not delete the capture.",
+	"TAKEOUT_UPLOAD_INIT_ERROR": "Could not start the Takeout upload. Try again.",
+	"TAKEOUT_UPLOAD_CHUNK_ERROR": "Could not store the Takeout upload chunk. Try again.",
+	"TAKEOUT_UPLOAD_STATUS_ERROR": "Could not read the Takeout upload progress. Try again.",
+	"TAKEOUT_UPLOAD_COMPLETE_ERROR": "Could not complete the Takeout upload. Try again.",
+	"TAKEOUT_UPLOAD_INCOMPLETE_GENERIC": "Upload incomplete: not all bytes were received"
 }
