@@ -67,7 +67,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [ ] 33. Sair da tela durante o envio pede confirmação ao fechar ou recarregar a aba (`beforeunload`) — `RF-06`.
 - [ ] 33.1. Navegação interna durante o envio pede confirmação — `RF-06`. Depende de migrar `AppProviders` de `BrowserRouter` para data router (`createBrowserRouter`), pré-requisito de `useBlocker` no react-router 7; mudança própria em todo o roteamento.
 - [ ] 34. Notificação de conclusão leva às fotos importadas — `CA-11`. Depende da 09 e 29.
-- [ ] 35. Teste de render sem mock de `TakeoutImportScreen` e `TakeoutDropZone` — `00/RN-30`.
+- [x] 35. Teste de render sem mock de `TakeoutImportScreen` e `TakeoutDropZone` — `00/RN-30`.
 
 Ordem: backend 01 → 18 (13 antes de 13.1, 13.2 e 14); frontend 20, 23, 28, 33, 35 independem do backend; 19 depois de 02, 03, 04, 11 e 12; 21 antes de 22 e 24; 27 antes de 29, 30, 32.
 
