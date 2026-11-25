@@ -50,6 +50,7 @@ const uploader = createUploader({
   guessExtension,
   sanitizeFileName,
   waitFn: wait,
+  resolveCaptureContext: (tabId) => resolveCaptureContext(tabId),
 });
 const {
   handleSaveRecordingBlob,
@@ -61,6 +62,7 @@ const {
 const downloader = createDownloader({
   resolveUrl,
   uploadToKuraNAS,
+  resolveCaptureContext: (tabId) => resolveCaptureContext(tabId),
 });
 const {
   downloadDASH,
@@ -284,6 +286,16 @@ async function resolveCaptureMetadata(tabId) {
   return latest || null;
 }
 
+async function resolveCaptureContext(tabId) {
+  if (tabId === undefined || tabId === null) return {};
+  const captureMetadata = await resolveCaptureMetadata(tabId);
+  return { captureMetadata: captureMetadata || undefined, episodeKey: extractEpisodeKey(captureMetadata) };
+}
+
+function extractEpisodeKey(captureMetadata) {
+  return (captureMetadata && captureMetadata.episode_key) || "";
+}
+
 // probeOffscreenFormat asks the (ensured) offscreen recorder which container it
 // will record in, so the upload session is created with the matching mime type
 // and file extension. Defaults to WebM if the recorder cannot be reached.
@@ -326,7 +338,7 @@ async function initHybridUploadSession(tabId) {
   // page yields a stable per-episode id) also drives the server's idempotency, so
   // re-arming on the same episode resumes instead of recording a duplicate.
   const metadata = await resolveCaptureMetadata(tabId);
-  const episodeKey = (metadata && metadata.episode_key) || "";
+  const episodeKey = extractEpisodeKey(metadata);
   if (metadata) {
     logBg(tabId, `metadados: episode_key="${episodeKey}", plataforma="${metadata.platform || "?"}"`);
   }

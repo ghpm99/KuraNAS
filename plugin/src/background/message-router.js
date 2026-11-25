@@ -74,15 +74,15 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       return false;
 
     case "download_hls":
-      handlers.downloadHLS(msg.url, msg.name).then(sendResponse);
+      handlers.downloadHLS(msg.url, msg.name, msg.tabId).then(sendResponse);
       return true;
 
     case "download_dash":
-      handlers.downloadDASH(msg.url, msg.name).then(sendResponse);
+      handlers.downloadDASH(msg.url, msg.name, msg.tabId).then(sendResponse);
       return true;
 
     case "download_direct":
-      handlers.downloadDirect(msg.url, msg.name).then(sendResponse);
+      handlers.downloadDirect(msg.url, msg.name, msg.tabId).then(sendResponse);
       return true;
 
     case "upload_blob_capture":

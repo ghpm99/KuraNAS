@@ -2,8 +2,14 @@ export function createDownloader({
   fetchImpl = fetch,
   resolveUrl,
   uploadToKuraNAS,
+  resolveCaptureContext = async () => ({}),
 }) {
-  async function downloadHLS(manifestUrl, name) {
+  async function uploadForTab(blob, captureName, mediaType, tabId) {
+    const { captureMetadata, episodeKey } = await resolveCaptureContext(tabId);
+    return uploadToKuraNAS(blob, captureName, mediaType, captureMetadata, episodeKey);
+  }
+
+  async function downloadHLS(manifestUrl, name, tabId) {
     try {
       const resp = await fetchImpl(manifestUrl);
       const text = await resp.text();
@@ -12,7 +18,7 @@ export function createDownloader({
         return parseHLSMasterPlaylist(text, manifestUrl);
       }
 
-      return await downloadHLSMediaPlaylist(text, manifestUrl, name);
+      return await downloadHLSMediaPlaylist(text, manifestUrl, name, tabId);
     } catch (error) {
       return { error: error.message };
     }
@@ -46,7 +52,7 @@ export function createDownloader({
     return { type: "master", variants };
   }
 
-  async function downloadHLSMediaPlaylist(text, baseUrl, name) {
+  async function downloadHLSMediaPlaylist(text, baseUrl, name, tabId) {
     const lines = text.split("\n");
     const segmentUrls = [];
 
@@ -76,11 +82,11 @@ export function createDownloader({
     const blob = new Blob([merged], { type: "video/mp2t" });
     const captureName = name || `stream_hls_${Date.now()}`;
 
-    await uploadToKuraNAS(blob, captureName, "hls");
+    await uploadForTab(blob, captureName, "hls", tabId);
     return { ok: true, name: captureName };
   }
 
-  async function downloadDASH(manifestUrl, name) {
+  async function downloadDASH(manifestUrl, name, tabId) {
     try {
       const resp = await fetchImpl(manifestUrl);
       const text = await resp.text();
@@ -114,7 +120,8 @@ export function createDownloader({
           manifestUrl,
           text,
           representations[0].id,
-          name
+          name,
+          tabId
         );
       }
 
@@ -124,7 +131,7 @@ export function createDownloader({
     }
   }
 
-  async function downloadDASHRepresentation(manifestUrl, manifestText, repId, name) {
+  async function downloadDASHRepresentation(manifestUrl, manifestText, repId, name, tabId) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(manifestText, "application/xml");
     const rep = repId
@@ -157,7 +164,7 @@ export function createDownloader({
     const blob = new Blob([merged], { type: mimeType });
     const captureName = name || `stream_dash_${Date.now()}`;
 
-    await uploadToKuraNAS(blob, captureName, "dash");
+    await uploadForTab(blob, captureName, "dash", tabId);
     return { ok: true, name: captureName, ext };
   }
 
@@ -295,12 +302,12 @@ export function createDownloader({
     );
   }
 
-  async function downloadDirect(url, name) {
+  async function downloadDirect(url, name, tabId) {
     try {
       const resp = await fetchImpl(url);
       const blob = await resp.blob();
       const captureName = name || `direct_${Date.now()}`;
-      await uploadToKuraNAS(blob, captureName, "direct");
+      await uploadForTab(blob, captureName, "direct", tabId);
       return { ok: true, name: captureName };
     } catch (error) {
       return { error: error.message };

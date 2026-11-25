@@ -24,6 +24,7 @@ export function createUploader({
   sanitizeFileName,
   waitFn,
   fetchImpl = fetch,
+  resolveCaptureContext = async () => ({}),
 }) {
   const wait = waitFn || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
 
@@ -169,7 +170,8 @@ export function createUploader({
       const resp = await fetchImpl(blobUrl);
       const blob = await resp.blob();
       const captureName = name || `blob_${Date.now()}`;
-      await uploadToKuraNAS(blob, captureName, "blob");
+      const { captureMetadata, episodeKey } = await resolveCaptureContext(tabId);
+      await uploadToKuraNAS(blob, captureName, "blob", captureMetadata, episodeKey);
       return { ok: true, name: captureName };
     } catch (error) {
       return { error: error.message };

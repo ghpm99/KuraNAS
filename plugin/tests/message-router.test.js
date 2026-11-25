@@ -117,3 +117,26 @@ test('routeRuntimeMessage routes ingest_job_status to the job status handler', a
   assert.equal(keepAlive, true);
   assert.deepEqual(responses[0], { ok: true, jobId: 12 });
 });
+
+test('routeRuntimeMessage forwards tabId to download and blob upload handlers', async () => {
+  const { routeRuntimeMessage } = await import(messageRouterModuleUrl);
+  const received = [];
+  const handlers = {
+    downloadHLS: async (...args) => { received.push(['hls', ...args]); return {}; },
+    downloadDASH: async (...args) => { received.push(['dash', ...args]); return {}; },
+    downloadDirect: async (...args) => { received.push(['direct', ...args]); return {}; },
+    uploadBlobCapture: async (...args) => { received.push(['blob', ...args]); return {}; },
+  };
+
+  routeRuntimeMessage({ action: 'download_hls', url: 'u1', name: 'n', tabId: 5 }, {}, () => {}, handlers);
+  routeRuntimeMessage({ action: 'download_dash', url: 'u2', name: 'n', tabId: 5 }, {}, () => {}, handlers);
+  routeRuntimeMessage({ action: 'download_direct', url: 'u3', name: 'n', tabId: 5 }, {}, () => {}, handlers);
+  routeRuntimeMessage({ action: 'upload_blob_capture', blobUrl: 'b', name: 'n', tabId: 5 }, {}, () => {}, handlers);
+
+  assert.deepEqual(received, [
+    ['hls', 'u1', 'n', 5],
+    ['dash', 'u2', 'n', 5],
+    ['direct', 'u3', 'n', 5],
+    ['blob', 5, 'b', 'n'],
+  ]);
+});

@@ -238,3 +238,32 @@ test('uploadToKuraNAS omits metadata and episode_key from the init body when abs
   assert.equal('episode_key' in initBodies[0], false);
   assert.equal('metadata' in initBodies[0], false);
 });
+
+test('uploadBlobCapture sends the resolved metadata and episode key in the init body', async () => {
+  const { createUploader } = await import(uploaderModuleUrl);
+  const initBodies = [];
+
+  const fetchImpl = async (url, options = {}) => {
+    if (url === 'blob:abc') {
+      return { blob: async () => new Blob(['abc'], { type: 'video/webm' }) };
+    }
+    if (url.endsWith('/captures/upload/init')) {
+      initBodies.push(JSON.parse(options.body));
+      return { ok: true, json: async () => ({ upload_id: 'u1' }) };
+    }
+    return { ok: true, json: async () => ({}), text: async () => '' };
+  };
+
+  const uploader = createUploader({
+    getApiBaseUrl: async () => 'http://api.local/api/v1',
+    guessExtension: () => 'webm',
+    sanitizeFileName: (name) => name,
+    waitFn: async () => {},
+    resolveCaptureContext: async (tabId) => ({ captureMetadata: { tabId }, episodeKey: 'ep-9' }),
+    fetchImpl,
+  });
+
+  await uploader.uploadBlobCapture(3, 'blob:abc', 'cap');
+  assert.deepEqual(initBodies[0].metadata, { tabId: 3 });
+  assert.equal(initBodies[0].episode_key, 'ep-9');
+});

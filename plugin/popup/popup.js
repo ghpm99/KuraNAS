@@ -275,6 +275,7 @@
 
     const response = await chrome.runtime.sendMessage({
       action: "download_hls",
+      tabId: currentTabId,
       url: item.url,
       name,
     });
@@ -283,6 +284,7 @@
       showQualityModal("HLS", response.variants, (variant) => {
         chrome.runtime.sendMessage({
           action: "download_hls",
+          tabId: currentTabId,
           url: variant.url,
           name,
         });
@@ -296,6 +298,7 @@
 
     const response = await chrome.runtime.sendMessage({
       action: "download_dash",
+      tabId: currentTabId,
       url: item.url,
       name,
     });
@@ -304,6 +307,7 @@
       showQualityModal("DASH", response.representations, (rep) => {
         chrome.runtime.sendMessage({
           action: "download_dash",
+          tabId: currentTabId,
           url: item.url,
           name,
           representationId: rep.id,
@@ -330,6 +334,7 @@
 
     chrome.runtime.sendMessage({
       action: "download_direct",
+      tabId: currentTabId,
       url: item.url,
       name,
     });
