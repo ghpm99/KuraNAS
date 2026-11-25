@@ -175,6 +175,10 @@ func (r *Repository) GetCaptures(filter CaptureFilter, page int, pageSize int) (
 		filter.Name.Value,
 		!filter.MediaType.HasValue,
 		filter.MediaType.Value,
+		!filter.Status.HasValue,
+		filter.Status.Value,
+		!filter.Platform.HasValue,
+		filter.Platform.Value,
 		pageSize + 1,
 		utils.CalculateOffset(page, pageSize),
 	}

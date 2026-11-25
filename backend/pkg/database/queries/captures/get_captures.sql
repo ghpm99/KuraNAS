@@ -5,6 +5,8 @@ FROM captures
 WHERE
     ($1::boolean OR name ILIKE '%' || $2::text || '%')
     AND ($3::boolean OR media_type = $4::text)
+    AND ($5::boolean OR status = $6::text)
+    AND ($7::boolean OR platform = $8::text)
 ORDER BY created_at DESC
-LIMIT $5
-OFFSET $6;
+LIMIT $9
+OFFSET $10;

@@ -87,6 +87,8 @@ type CompleteCaptureUploadDto struct {
 type CaptureFilter struct {
 	Name      utils.Optional[string]
 	MediaType utils.Optional[string]
+	Status    utils.Optional[string]
+	Platform  utils.Optional[string]
 }
 
 func (m *CaptureModel) ToDto() CaptureDto {

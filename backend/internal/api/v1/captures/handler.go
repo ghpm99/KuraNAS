@@ -204,6 +204,17 @@ func (h *Handler) GetCapturesHandler(c *gin.Context) {
 	if mediaType := c.Query("media_type"); mediaType != "" {
 		filter.MediaType = utils.Optional[string]{HasValue: true, Value: mediaType}
 	}
+	if status := c.Query("status"); status != "" {
+		if !isValidCaptureStatus(CaptureStatus(status)) {
+			h.logService.CompleteWithErrorLog(loggerModel, fmt.Errorf("GetCaptures: invalid status %q", status))
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_INVALID_STATUS")})
+			return
+		}
+		filter.Status = utils.Optional[string]{HasValue: true, Value: status}
+	}
+	if platform := c.Query("platform"); platform != "" {
+		filter.Platform = utils.Optional[string]{HasValue: true, Value: platform}
+	}
 
 	pagination, err := h.service.GetCaptures(filter, page, pageSize)
 	if err != nil {
@@ -268,4 +279,12 @@ func (h *Handler) DeleteCaptureHandler(c *gin.Context) {
 
 	h.logService.CompleteWithSuccessLog(loggerModel)
 	c.JSON(http.StatusOK, DeleteCaptureResponseDto{Deleted: true, LibraryFileKept: libraryFileKept})
+}
+
+func isValidCaptureStatus(status CaptureStatus) bool {
+	switch status {
+	case CaptureStatusUploaded, CaptureStatusPromoting, CaptureStatusPromoted, CaptureStatusFailed:
+		return true
+	}
+	return false
 }
