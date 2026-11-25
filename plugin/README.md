@@ -173,6 +173,12 @@ Testes:
 cd plugin && npm test
 ```
 
+### Conteúdo protegido (DRM)
+
+- A extensão grava o que está renderizado na tela (`tabCapture`). Ela nunca decripta stream, nunca extrai chaves e não contorna DRM.
+- Em conteúdo protegido, o navegador ou o sistema pode entregar quadros pretos à gravação. Isso é uma limitação conhecida, não um bug: não há correção no plugin.
+- Fontes sem DRM podem ser baixadas pelo servidor (Baixar), sem depender da gravação da tela.
+
 ### i18n
 
 - Evitar hardcode de novos textos visíveis ao usuário em popup/fluxos de UI.
