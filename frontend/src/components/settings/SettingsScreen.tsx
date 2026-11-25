@@ -24,6 +24,7 @@ import IndexingSettingsSection from './IndexingSettingsSection';
 import LibrarySettingsSection from './LibrarySettingsSection';
 import StorageRootsSettingsSection from './StorageRootsSettingsSection';
 import TieringSettingsSection from './TieringSettingsSection';
+import VacuumCloudSettingsSection from './VacuumCloudSettingsSection';
 import VacuumSettingsSection from './VacuumSettingsSection';
 import YtDlpSettingsSection from './YtDlpSettingsSection';
 import SettingsSectionAnchor from './SettingsSectionAnchor';
@@ -119,6 +120,10 @@ const SettingsScreen = () => {
 
                 <SettingsSectionAnchor sectionId="vacuum">
                     <VacuumSettingsSection className={styles.panel} />
+                </SettingsSectionAnchor>
+
+                <SettingsSectionAnchor sectionId="vacuum-cloud">
+                    <VacuumCloudSettingsSection className={styles.panel} />
                 </SettingsSectionAnchor>
 
                 <SettingsSectionAnchor sectionId="indexing">

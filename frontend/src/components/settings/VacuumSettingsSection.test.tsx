@@ -11,8 +11,9 @@ import {
 import { renderWithoutBackend } from '@/shared/test/renderWithoutBackend';
 import VacuumSettingsSection from './VacuumSettingsSection';
 
-jest.mock('@/components/i18n/provider/i18nContext', () =>
-    require('@/features/vacuum/testSupport/interpolatingI18nMock').interpolatingI18nMock
+jest.mock(
+    '@/components/i18n/provider/i18nContext',
+    () => require('@/features/vacuum/testSupport/interpolatingI18nMock').interpolatingI18nMock
 );
 jest.mock('@/service/vacuum', () => ({
     ...jest.requireActual('@/service/vacuum'),
@@ -207,7 +208,9 @@ describe('VacuumSettingsSection', () => {
         fireEvent.change(deviceIdField(), { target: { value: 'abcd' } });
         fireEvent.click(saveButton());
 
-        await waitFor(() => expect(invalidateQueries).toHaveBeenCalledTimes(5));
+        await waitFor(() =>
+            expect(invalidateQueries).toHaveBeenCalledTimes(Object.keys(vacuumQueryKeys).length)
+        );
         Object.values(vacuumQueryKeys).forEach((queryKey) =>
             expect(invalidateQueries).toHaveBeenCalledWith({ queryKey })
         );
@@ -314,7 +317,9 @@ describe('VacuumSettingsSection', () => {
         });
 
         it('shows the not-found message as the server sent it', async () => {
-            mockedDiscover.mockRejectedValue(createServerFailure(404, 'no device accepted the key'));
+            mockedDiscover.mockRejectedValue(
+                createServerFailure(404, 'no device accepted the key')
+            );
             await renderLoadedSection();
 
             fireEvent.click(discoverButton());
@@ -344,7 +349,9 @@ describe('VacuumSettingsSection', () => {
         it('shows the unreachable and the rejected-key messages as the server sent them', async () => {
             await renderLoadedSection();
 
-            mockedTestConnection.mockRejectedValueOnce(createServerFailure(502, 'robot unreachable'));
+            mockedTestConnection.mockRejectedValueOnce(
+                createServerFailure(502, 'robot unreachable')
+            );
             fireEvent.click(testButton());
             expect(await screen.findByText('robot unreachable')).toBeInTheDocument();
 

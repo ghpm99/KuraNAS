@@ -58,6 +58,11 @@ export const settingsSections = [
         descriptionKey: 'VACUUM_SETTINGS_DESCRIPTION',
     },
     {
+        id: 'vacuum-cloud',
+        labelKey: 'VACUUM_CLOUD_SETTINGS_TITLE',
+        descriptionKey: 'VACUUM_CLOUD_SETTINGS_DESCRIPTION',
+    },
+    {
         id: 'indexing',
         labelKey: 'SETTINGS_SECTION_INDEXING',
         descriptionKey: 'SETTINGS_SECTION_INDEXING_DESCRIPTION',

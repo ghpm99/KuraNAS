@@ -70,3 +70,17 @@ export type VacuumTotals = {
     cleaning_area: number;
     cleaning_count: number;
 };
+
+export type VacuumCloudRegion = 'us' | 'eu' | 'cn' | 'in';
+
+export type VacuumCloudSettings = {
+    access_id: string;
+    region: string;
+    has_access_secret: boolean;
+};
+
+export type VacuumCloudSettingsChanges = {
+    access_id: string;
+    access_secret: string;
+    region: string;
+};

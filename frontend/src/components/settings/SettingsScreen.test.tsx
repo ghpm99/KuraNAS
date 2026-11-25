@@ -65,6 +65,10 @@ jest.mock('./VacuumSettingsSection', () => ({
     __esModule: true,
     default: () => <div>Vacuum Section</div>,
 }));
+jest.mock('./VacuumCloudSettingsSection', () => ({
+    __esModule: true,
+    default: () => <div>Vacuum Cloud Section</div>,
+}));
 jest.mock('./YtDlpSettingsSection', () => ({
     __esModule: true,
     default: () => <div>yt-dlp Section</div>,

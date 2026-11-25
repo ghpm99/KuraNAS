@@ -4,4 +4,7 @@ export const vacuumQueryKeys = {
     preferences: ['vacuum', 'preferences'],
     consumables: ['vacuum', 'consumables'],
     totals: ['vacuum', 'totals'],
+    cloudSettings: ['vacuum', 'cloud-settings'],
+    map: ['vacuum', 'map'],
+    rooms: ['vacuum', 'rooms'],
 } as const;

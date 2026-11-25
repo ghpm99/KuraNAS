@@ -53,3 +53,7 @@
     display: flex;
     justify-content: flex-end;
 }
+
+.touchTarget {
+    min-height: 44px;
+}

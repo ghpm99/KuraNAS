@@ -2,6 +2,8 @@ import { apiBase } from '@/service';
 import type {
     VacuumCommand,
     VacuumConsumablePart,
+    VacuumCloudSettings,
+    VacuumCloudSettingsChanges,
     VacuumConsumables,
     VacuumDirection,
     VacuumDiscovery,
@@ -71,4 +73,20 @@ export const resetVacuumConsumable = async (part: VacuumConsumablePart): Promise
 export const getVacuumTotals = async (): Promise<VacuumTotals> => {
     const response = await apiBase.get<VacuumTotals>('/vacuum/totals');
     return response.data;
+};
+
+export const getVacuumCloudSettings = async (): Promise<VacuumCloudSettings> => {
+    const response = await apiBase.get<VacuumCloudSettings>('/vacuum/cloud-settings');
+    return response.data;
+};
+
+export const updateVacuumCloudSettings = async (
+    changes: VacuumCloudSettingsChanges
+): Promise<VacuumCloudSettings> => {
+    const response = await apiBase.put<VacuumCloudSettings>('/vacuum/cloud-settings', changes);
+    return response.data;
+};
+
+export const testVacuumCloudConnection = async (): Promise<void> => {
+    await apiBase.post('/vacuum/cloud-connection-test');
 };
