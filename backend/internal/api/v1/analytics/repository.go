@@ -74,7 +74,6 @@ func (r *Repository) GetTypeDistribution() ([]TypeDistributionModel, error) {
 			pq.Array(DuplicateCategoryImage.includedFormats()),
 			pq.Array(DuplicateCategoryAudio.includedFormats()),
 			pq.Array(DuplicateCategoryDocument.includedFormats()),
-			pq.Array(archiveFormats()),
 		)
 		if err != nil {
 			return err

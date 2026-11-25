@@ -93,7 +93,7 @@ func TestRepositoryGetTypeDistribution(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(queries.TypeDistributionQuery)).
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"category", "count", "bytes"}).AddRow("image", 10, 1000))
 	mock.ExpectRollback()
 

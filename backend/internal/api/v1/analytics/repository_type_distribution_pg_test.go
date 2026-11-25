@@ -31,7 +31,7 @@ func TestPostgres_TypeDistributionClassifiesCanonicalFormats(t *testing.T) {
 
 	countsByCategory := typeDistributionCountsByCategory(t, repo)
 
-	expected := map[string]int{"image": 3, "audio": 1, "archive": 1, "other": 1}
+	expected := map[string]int{"image": 3, "audio": 1, "other": 2}
 	for category, expectedCount := range expected {
 		if countsByCategory[category] != expectedCount {
 			t.Fatalf("category %s: expected %d, got %d (%v)", category, expectedCount, countsByCategory[category], countsByCategory)
@@ -69,5 +69,42 @@ func TestPostgres_TypeDistributionMatchesDuplicateCategorization(t *testing.T) {
 		if copiesInCategory == 0 || countsByCategory[string(category)] != copiesInCategory {
 			t.Fatalf("category %s: distribution %d, duplicates %d", category, countsByCategory[string(category)], copiesInCategory)
 		}
+	}
+}
+
+func TestPostgres_TypeDistributionHasNoArchiveCategoryAndMatchesUsedBytes(t *testing.T) {
+	repo := newDuplicateGroupsRepository(t)
+	insertDuplicateFixtures(t, repo, []duplicateFileFixture{
+		{name: "photo.jpg", size: 100},
+		{name: "song.mp3", size: 200},
+		{name: "movie.mkv", size: 400},
+		{name: "report.pdf", size: 800},
+		{name: "backup.zip", size: 1600},
+		{name: "unknown.xyz", size: 3200},
+		{name: "deleted.zip", size: 6400, isDeleted: true},
+	})
+
+	distribution, err := repo.GetTypeDistribution()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	bytesByCategory := map[string]int64{}
+	var distributionBytes int64
+	for _, row := range distribution {
+		bytesByCategory[row.Category] = row.Bytes
+		distributionBytes += row.Bytes
+	}
+	if _, hasArchive := bytesByCategory["archive"]; hasArchive {
+		t.Fatalf("archive category must not be returned: %v", bytesByCategory)
+	}
+	if bytesByCategory["other"] != 1600+3200 {
+		t.Fatalf("expected zip counted in other (4800), got %v", bytesByCategory)
+	}
+	storageKpis, err := repo.GetStorageKpis(PeriodConfig{Label: "30d", Interval: "30 days"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if distributionBytes != storageKpis.UsedBytes {
+		t.Fatalf("distribution bytes %d differ from used_bytes %d", distributionBytes, storageKpis.UsedBytes)
 	}
 }

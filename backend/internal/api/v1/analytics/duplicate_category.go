@@ -35,10 +35,6 @@ func documentFormats() []string {
 	return slices.Concat(utils.DocumentFormats, officeDocumentFormats)
 }
 
-func archiveFormats() []string {
-	return utils.ArchiveFormats
-}
-
 func (category DuplicateCategory) includedFormats() []string {
 	switch category {
 	case DuplicateCategoryImage:
