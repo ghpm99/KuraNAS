@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/fs"
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
@@ -13,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -192,6 +195,42 @@ func TestExecuteTakeoutExtractStepGenericFailureNotificationHidesErrorAndPath(t 
 		t.Fatalf("expected extraction error")
 	}
 	assertFailureNotificationIsSafe(t, notifier, "NOTIFICATION_TAKEOUT_IMPORT_FAILED_MESSAGE", zipPath)
+}
+
+type erroringLibrariesServiceMock struct {
+	librariesServiceMock
+	resolveErr error
+}
+
+func (m *erroringLibrariesServiceMock) GetLibraryByCategory(category libraries.LibraryCategory) (libraries.LibraryDto, error) {
+	return libraries.LibraryDto{}, m.resolveErr
+}
+
+func TestExecuteTakeoutExtractStepFailureNotificationNamesTheCause(t *testing.T) {
+	testCases := []struct {
+		name               string
+		resolveErr         error
+		expectedMessageKey string
+	}{
+		{"no space left", fmt.Errorf("write: %w", syscall.ENOSPC), "NOTIFICATION_TAKEOUT_IMPORT_FAILED_NO_SPACE_MESSAGE"},
+		{"permission denied", fmt.Errorf("open: %w", fs.ErrPermission), "NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE"},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			loadTranslationsForTest(t)
+			zipPath := filepath.Join(t.TempDir(), "upload", "takeout.zip")
+			if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+				t.Fatalf("failed to create upload dir: %v", err)
+			}
+			createWorkerZip(t, zipPath)
+
+			notifier, err := runTakeoutStepWithNotifier(t, zipPath, &erroringLibrariesServiceMock{resolveErr: testCase.resolveErr})
+			if !errors.Is(err, testCase.resolveErr) {
+				t.Fatalf("expected the underlying cause to be preserved, got %v", err)
+			}
+			assertFailureNotificationIsSafe(t, notifier, testCase.expectedMessageKey, zipPath)
+		})
+	}
 }
 
 func assertFailureNotificationIsSafe(t *testing.T, notifier *fakeWorkerNotifSvc, expectedMessageKey string, zipPath string) {

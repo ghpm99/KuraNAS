@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/internal/api/v1/takeout"
 	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"os"
+	"syscall"
 )
 
 func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) error {
@@ -122,6 +124,12 @@ func recordTakeoutSidecars(context *WorkerContext, extraction takeout.ExtractRes
 func takeoutFailureMessageKey(extractionErr error) string {
 	if errors.Is(extractionErr, takeout.ErrInvalidZipFile) {
 		return "NOTIFICATION_TAKEOUT_IMPORT_FAILED_INVALID_ZIP_MESSAGE"
+	}
+	if errors.Is(extractionErr, syscall.ENOSPC) {
+		return "NOTIFICATION_TAKEOUT_IMPORT_FAILED_NO_SPACE_MESSAGE"
+	}
+	if errors.Is(extractionErr, fs.ErrPermission) {
+		return "NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE"
 	}
 	return "NOTIFICATION_TAKEOUT_IMPORT_FAILED_MESSAGE"
 }
