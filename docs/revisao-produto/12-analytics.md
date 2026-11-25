@@ -49,7 +49,7 @@ Spec: `docs/especificacao/16-analytics.md`. A seção "Situação em 2026-11-10"
 - [ ] 12. `/analytics/ai-usage` aceita `period` e devolve `by_provider` e `by_function` — `RF-12`, `RN-04`. Depende da 11.
 - [x] 13. `ERROR_ANALYTICS_LOAD` sem "overview" e textos `ANALYTICS_*` pt-BR com acento — `00/RN-43`.
 - [ ] 14. Remove comentários de `service.go` e dos `.sql` de saúde; `log.Printf` vira `applog` — só refatoração.
-- [ ] 15. Testes de handler fixam os campos de todos os endpoints de analytics — `00/CA-16`. Só teste.
+- [x] 15. Testes de handler fixam os campos de todos os endpoints de analytics — `00/CA-16`. Só teste.
 
 ### Frontend
 - [ ] 16. `service/analytics.ts`: lixeira, falhas paginadas, reprocessar, tipos novos de `tiers`, biblioteca e IA; formato inválido é erro — `00/RN-11`, §7. Depende da 03, 04, 07, 08, 09, 12. Seam do reprocessar.
