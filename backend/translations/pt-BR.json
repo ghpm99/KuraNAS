@@ -2534,5 +2534,8 @@
 	"NAV_INGEST": "Baixar de URL",
 	"INGEST_PAGE_TITLE": "Baixar de URL",
 	"INGEST_PAGE_DESCRIPTION": "Baixe um vídeo ou áudio de um endereço direto para a biblioteca.",
-	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "O trecho enviado ultrapassa o tamanho informado do arquivo"
+	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "O trecho enviado ultrapassa o tamanho informado do arquivo",
+	"CAPTURE_DELETED": "Captura excluída.",
+	"CAPTURE_DELETED_LIBRARY_FILE_KEPT": "Captura excluída. O vídeo continua na biblioteca de Vídeos.",
+	"CAPTURE_DELETE_ERROR": "Não foi possível excluir a captura."
 }

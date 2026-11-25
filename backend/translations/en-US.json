@@ -2534,5 +2534,8 @@
 	"NAV_INGEST": "Download from URL",
 	"INGEST_PAGE_TITLE": "Download from URL",
 	"INGEST_PAGE_DESCRIPTION": "Download a video or audio from an address straight into the library.",
-	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "The uploaded chunk exceeds the declared file size"
+	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "The uploaded chunk exceeds the declared file size",
+	"CAPTURE_DELETED": "Capture deleted.",
+	"CAPTURE_DELETED_LIBRARY_FILE_KEPT": "Capture deleted. The video stays in the Videos library.",
+	"CAPTURE_DELETE_ERROR": "Could not delete the capture."
 }
