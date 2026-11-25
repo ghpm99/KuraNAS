@@ -2533,5 +2533,6 @@
 	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Espaço insuficiente no servidor para receber este arquivo",
 	"NAV_INGEST": "Baixar de URL",
 	"INGEST_PAGE_TITLE": "Baixar de URL",
-	"INGEST_PAGE_DESCRIPTION": "Baixe um vídeo ou áudio de um endereço direto para a biblioteca."
+	"INGEST_PAGE_DESCRIPTION": "Baixe um vídeo ou áudio de um endereço direto para a biblioteca.",
+	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "O trecho enviado ultrapassa o tamanho informado do arquivo"
 }

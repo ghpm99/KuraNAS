@@ -2533,5 +2533,6 @@
 	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Not enough free space on the server to receive this file",
 	"NAV_INGEST": "Download from URL",
 	"INGEST_PAGE_TITLE": "Download from URL",
-	"INGEST_PAGE_DESCRIPTION": "Download a video or audio from an address straight into the library."
+	"INGEST_PAGE_DESCRIPTION": "Download a video or audio from an address straight into the library.",
+	"TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE": "The uploaded chunk exceeds the declared file size"
 }
