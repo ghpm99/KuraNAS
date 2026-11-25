@@ -2527,5 +2527,6 @@
 	"DOCUMENTS_INDEX_REASON_BINARY": "Binary content",
 	"DOCUMENTS_INDEX_REASON_TIMEOUT": "Reading took too long",
 	"DOCUMENTS_INDEX_REASON_UNREADABLE": "Unreadable file",
-	"TAKEOUT_UPLOAD_CANCEL_ERROR": "Could not cancel the Takeout upload. Try again."
+	"TAKEOUT_UPLOAD_CANCEL_ERROR": "Could not cancel the Takeout upload. Try again.",
+	"ERROR_CAPTURE_GET_FAILED": "Failed to get capture"
 }
