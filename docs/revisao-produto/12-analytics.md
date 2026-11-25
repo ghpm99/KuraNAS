@@ -33,7 +33,7 @@ Spec: `docs/especificacao/16-analytics.md`. A seção "Situação em 2026-11-10"
 ## Lacunas (uma alteração cada)
 
 ### Spec
-- [ ] 01. Spec 16: §8 atualizada (tasks 30 e 31 resolvidas) e §7 documenta `tiers: {hot_bytes, cold_bytes}` em `/analytics/storage` — `RF-02`. Commit próprio, antes do código.
+- [x] 01. Spec 16: §8 atualizada (tasks 30 e 31 resolvidas) e §7 documenta `tiers: {hot_bytes, cold_bytes}` em `/analytics/storage` — `RF-02`. Commit próprio, antes do código.
 
 ### Backend
 - [ ] 02. Espaço total e livre somam os volumes das raízes habilitadas sem contar o mesmo volume duas vezes; falha de `statfs` não vira total = usado em silêncio — `RN-02`, `CA-01`.

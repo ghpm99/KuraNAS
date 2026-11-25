@@ -64,7 +64,7 @@ Um endpoint por informação (regra do projeto — não existe endpoint agregado
 
 | Método | Rota | Uso |
 |---|---|---|
-| GET | `/analytics/storage` | espaço e contagens |
+| GET | `/analytics/storage` | espaço, contagens e espaço por tier |
 | GET | `/analytics/timeseries` | uso ao longo do tempo |
 | GET | `/analytics/types` · `/extensions` | por tipo, por extensão |
 | GET | `/analytics/top-folders` · `/hot-folders` | pastas |
@@ -79,8 +79,10 @@ Um endpoint por informação (regra do projeto — não existe endpoint agregado
 | Método | Rota | Uso |
 |---|---|---|
 | GET | `/analytics/trash` | espaço da lixeira (RF-02) → `{"item_count": 31, "size_bytes": 5368709120}` |
-| GET | `/analytics/processing/failures` | falhas de processamento, paginadas (RF-10) |
-| POST | `/analytics/processing/retry-failed` | reprocessar as falhas (RF-10) → `202` com `job_id` |
+| GET | `/analytics/processing/failures` | falhas de processamento, paginadas, com filtro `stage` (RF-10) |
+| POST | `/analytics/processing/retry-failed` | reprocessar as falhas (RF-10) → `202` com `{"job_id": 6291}`, ou `200` com `{"job_id": null}` |
+
+- **`/analytics/storage`** ganha o campo opcional `tiers`: `{"hot_bytes": 107374182400, "cold_bytes": 536870912000}` (RF-02). Quente é o que não tem `physical_path` no tier frio; frio é o que tem. Os campos atuais não mudam — o contrato só cresce.
 
 - **`/analytics/duplicates/groups`** e **`/files/top-files-by-size`** passam a aceitar `page` e `page_size` e a responder no envelope de [00 §10](00-padroes-transversais.md) quando `page` é enviado; sem `page`, respondem como hoje (compatibilidade). `/analytics/duplicates/groups` aceita ainda `type` (`image`, `audio`, `video`, `document`, `other`) e ordena por espaço recuperável decrescente, com desempate pelo checksum.
 - **Item de `/analytics/processing/failures`**: `file_id`, `name`, `stage` (`checksum`, `metadata`, `thumbnail`, `document_text`, `ai`), `error` (traduzido), `failed_at`. Filtro `stage`.
@@ -88,13 +90,13 @@ Um endpoint por informação (regra do projeto — não existe endpoint agregado
 - **"Reindexar" (RF-11)** usa `POST /indexing/reindex` ([21 §8](21-indexacao.md)).
 - **Links de RN-06**: maiores arquivos → `/analytics/largest` (tela desta spec, RF-07: lista paginada de `/files/top-files-by-size`); recentes → a tela Recentes de [02/RF-22](02-arquivos.md); pasta → a pasta em Arquivos ([02/RF-01](02-arquivos.md)); duplicados → `/analytics/duplicates` (RF-09); falhas → `/analytics/library` (RF-10), no bloco de falhas.
 
-## 8. Situação em 2026-11-10
+## 8. Situação em 2026-11-25
 
-- "Ver duplicados", "Ver recentes", "Ver maiores" e as linhas das tabelas só abrem `/files`, sem filtro (contraria RN-06).
-- "Reindexar" só recarrega os números (contraria RN-07).
-- Só a falha do bloco de armazenamento vira erro; as demais viram zeros e "saudável" (contraria RN-03).
-- O espaço total considera só a raiz principal (contraria RN-02).
-- O uso de IA zera a cada reinício do servidor; existe um endpoint de sugestões por IA sem tela.
+- Atendido: "Reindexar" chama `POST /indexing/reindex` com `scope: all` e "Atualizar" só recarrega os números (RN-07); os links levam à lista certa — maiores arquivos, duplicados, recentes e pastas (RN-06); as linhas de pasta existem e abrem a pasta em Arquivos; as telas `/analytics/largest` e `/analytics/duplicates` existem (RF-07, RF-09).
+- Em aberto: o espaço total considera só a raiz principal (contraria RN-02).
+- Em aberto: só a falha do bloco de armazenamento vira erro; as demais viram zeros e "saudável" (contraria RN-03).
+- Em aberto: o uso de IA zera a cada reinício do servidor; existe um endpoint de sugestões por IA sem tela.
+- Em aberto: espaço por tier (`tiers`), espaço da lixeira e falhas de processamento com reprocessamento ainda não têm endpoint (ver "A criar").
 
 ## 9. Critérios de aceite
 
