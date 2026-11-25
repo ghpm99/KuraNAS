@@ -1,7 +1,9 @@
 package vacuum
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -140,4 +142,106 @@ func (h *Handler) GetTotalsHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, totals)
+}
+
+func (h *Handler) GetCloudSettingsHandler(c *gin.Context) {
+	settings, err := h.service.GetCloudSettings()
+	if err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, settings)
+}
+
+func (h *Handler) UpdateCloudSettingsHandler(c *gin.Context) {
+	var request UpdateCloudSettingsDto
+	if err := c.ShouldBindJSON(&request); err != nil {
+		respondWithInvalidBody(c)
+		return
+	}
+
+	settings, err := h.service.UpdateCloudSettings(request)
+	if err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, settings)
+}
+
+func (h *Handler) TestCloudConnectionHandler(c *gin.Context) {
+	if err := h.service.TestCloudConnection(c.Request.Context()); err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) GetMapHandler(c *gin.Context) {
+	robotMap, err := h.service.GetMap(c.Request.Context())
+	if err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, robotMap)
+}
+
+func (h *Handler) GetRoomsHandler(c *gin.Context) {
+	rooms, err := h.service.GetRooms(c.Request.Context())
+	if err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, rooms)
+}
+
+func (h *Handler) UpdateRoomHandler(c *gin.Context) {
+	roomID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		respondWithError(c, fmt.Errorf("%w: %q", ErrRoomNotFound, c.Param("id")))
+		return
+	}
+	var request UpdateRoomDto
+	if err := c.ShouldBindJSON(&request); err != nil {
+		respondWithInvalidBody(c)
+		return
+	}
+
+	room, err := h.service.UpdateRoom(c.Request.Context(), roomID, request)
+	if err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, room)
+}
+
+func (h *Handler) GetPathHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, h.service.GetPath())
+}
+
+func (h *Handler) CleanRoomsHandler(c *gin.Context) {
+	var request RoomCleaningDto
+	if err := c.ShouldBindJSON(&request); err != nil {
+		respondWithInvalidBody(c)
+		return
+	}
+
+	if err := h.service.CleanRooms(c.Request.Context(), request); err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) CleanSpotHandler(c *gin.Context) {
+	var request SpotCleaningDto
+	if err := c.ShouldBindJSON(&request); err != nil {
+		respondWithInvalidBody(c)
+		return
+	}
+
+	if err := h.service.CleanSpot(c.Request.Context(), request); err != nil {
+		respondWithError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
 }

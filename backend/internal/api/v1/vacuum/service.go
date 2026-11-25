@@ -26,21 +26,31 @@ type Service struct {
 	repository         RepositoryInterface
 	deviceClient       DeviceClient
 	candidateAddresses CandidateAddressesFunc
+	cloudClient        CloudMapClient
+	pathTracker        *pathTracker
 	now                func() time.Time
 
-	settingsMutex sync.Mutex
-	deviceMutex   sync.Mutex
+	settingsMutex      sync.Mutex
+	cloudSettingsMutex sync.Mutex
+	roomNamesMutex     sync.Mutex
+	deviceMutex        sync.Mutex
+	mapMutex           sync.Mutex
+
+	robotChangedHandler func()
 
 	sharedStateMutex sync.Mutex
 	snapshot         dataPointSnapshot
 	lastDiscoveryAt  time.Time
+	mapCache         mapSnapshot
 }
 
-func NewService(repository RepositoryInterface, deviceClient DeviceClient, candidateAddresses CandidateAddressesFunc) *Service {
+func NewService(repository RepositoryInterface, deviceClient DeviceClient, candidateAddresses CandidateAddressesFunc, cloudClient CloudMapClient) *Service {
 	return &Service{
 		repository:         repository,
 		deviceClient:       deviceClient,
 		candidateAddresses: candidateAddresses,
+		cloudClient:        cloudClient,
+		pathTracker:        &pathTracker{},
 		now:                time.Now,
 	}
 }

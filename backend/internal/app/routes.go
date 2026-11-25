@@ -211,6 +211,15 @@ func RegisterVacuumRoutes(router *gin.RouterGroup, context *AppContext) {
 	group.GET("/consumables", handler.GetConsumablesHandler)
 	group.POST("/consumables/:part/reset", handler.ResetConsumableHandler)
 	group.GET("/totals", handler.GetTotalsHandler)
+	group.GET("/cloud-settings", handler.GetCloudSettingsHandler)
+	group.PUT("/cloud-settings", handler.UpdateCloudSettingsHandler)
+	group.POST("/cloud-connection-test", handler.TestCloudConnectionHandler)
+	group.GET("/map", handler.GetMapHandler)
+	group.GET("/rooms", handler.GetRoomsHandler)
+	group.PUT("/rooms/:id", handler.UpdateRoomHandler)
+	group.GET("/path", handler.GetPathHandler)
+	group.POST("/room-cleaning", handler.CleanRoomsHandler)
+	group.POST("/spot-cleaning", handler.CleanSpotHandler)
 }
 
 // registerAccessControlMiddleware installs the IP whitelist in front of every

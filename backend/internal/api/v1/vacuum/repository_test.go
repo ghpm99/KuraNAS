@@ -87,3 +87,60 @@ func TestRepositoryUpsertSettingsDocumentFailure(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 }
+
+func TestRepositoryCloudSettingsAndRoomNamesDocuments(t *testing.T) {
+	repository, mock := newRepositoryWithMock(t)
+	documents := []struct {
+		name   string
+		get    func() (string, bool, error)
+		upsert func(string) error
+		getSQL string
+		putSQL string
+	}{
+		{"cloud settings", repository.GetCloudSettingsDocument, repository.UpsertCloudSettingsDocument, queries.GetCloudSettingsQuery, queries.UpsertCloudSettingsQuery},
+		{"room names", repository.GetRoomNamesDocument, repository.UpsertRoomNamesDocument, queries.GetRoomNamesQuery, queries.UpsertRoomNamesQuery},
+	}
+	for _, document := range documents {
+		t.Run(document.name, func(t *testing.T) {
+			mock.ExpectBegin()
+			mock.ExpectQuery(regexp.QuoteMeta(document.getSQL)).
+				WillReturnRows(sqlmock.NewRows([]string{"setting_value"}).AddRow(`{"a":1}`))
+			mock.ExpectRollback()
+			stored, isFound, err := document.get()
+			if err != nil || !isFound || stored != `{"a":1}` {
+				t.Fatalf("unexpected read: %q %v %v", stored, isFound, err)
+			}
+
+			mock.ExpectBegin()
+			mock.ExpectQuery(regexp.QuoteMeta(document.getSQL)).WillReturnError(sql.ErrNoRows)
+			mock.ExpectRollback()
+			if _, isFound, err := document.get(); err != nil || isFound {
+				t.Fatalf("expected a clean miss, got %v %v", isFound, err)
+			}
+
+			mock.ExpectBegin()
+			mock.ExpectQuery(regexp.QuoteMeta(document.getSQL)).WillReturnError(errors.New("db down"))
+			mock.ExpectRollback()
+			if _, _, err := document.get(); err == nil {
+				t.Fatal("expected a read failure")
+			}
+
+			mock.ExpectBegin()
+			mock.ExpectExec(regexp.QuoteMeta(document.putSQL)).WithArgs(`{"a":2}`).WillReturnResult(sqlmock.NewResult(1, 1))
+			mock.ExpectCommit()
+			if err := document.upsert(`{"a":2}`); err != nil {
+				t.Fatal(err)
+			}
+
+			mock.ExpectBegin()
+			mock.ExpectExec(regexp.QuoteMeta(document.putSQL)).WillReturnError(errors.New("db down"))
+			mock.ExpectRollback()
+			if err := document.upsert("{}"); err == nil {
+				t.Fatal("expected a write failure")
+			}
+		})
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet expectations: %v", err)
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -50,10 +51,14 @@ import (
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/logger"
 	"nas-go/api/pkg/tuya"
+	"nas-go/api/pkg/tuyacloud"
 	"nas-go/api/pkg/utils"
 )
 
-const vacuumDeviceTimeout = 3 * time.Second
+const (
+	vacuumDeviceTimeout = 3 * time.Second
+	vacuumCloudTimeout  = 15 * time.Second
+)
 
 var tasks = make(chan utils.Task, 100)
 
@@ -127,9 +132,10 @@ type AutoShutdownContext struct {
 }
 
 type VacuumContext struct {
-	Handler    *vacuum.Handler
-	Service    vacuum.ServiceInterface
-	Repository vacuum.RepositoryInterface
+	Handler      *vacuum.Handler
+	PathListener *vacuum.PathListener
+	Service      vacuum.ServiceInterface
+	Repository   vacuum.RepositoryInterface
 }
 
 type IndexingContext struct {
@@ -755,13 +761,17 @@ func newAutoShutdownContext(dbContext *database.DbContext) *AutoShutdownContext 
 func newVacuumContext(dbContext *database.DbContext) *VacuumContext {
 	repository := vacuum.NewRepository(dbContext)
 	deviceClient := tuya.NewClient(vacuumDeviceTimeout)
-	service := vacuum.NewService(repository, deviceClient, tuya.LocalNetworkCandidates)
+	cloudClient := tuyacloud.NewClient(&http.Client{Timeout: vacuumCloudTimeout})
+	service := vacuum.NewService(repository, deviceClient, tuya.LocalNetworkCandidates, cloudClient)
 	handler := vacuum.NewHandler(service)
+	pathListener := vacuum.NewPathListener(service, deviceClient)
+	service.SetRobotChangedHandler(pathListener.Restart)
 
 	return &VacuumContext{
-		Handler:    handler,
-		Service:    service,
-		Repository: repository,
+		Handler:      handler,
+		PathListener: pathListener,
+		Service:      service,
+		Repository:   repository,
 	}
 }
 

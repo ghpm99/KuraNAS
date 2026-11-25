@@ -9,6 +9,7 @@ import (
 	"nas-go/api/internal/api/v1/notifications"
 	ollamamgmt "nas-go/api/internal/api/v1/ollama"
 	"nas-go/api/internal/api/v1/trash"
+	"nas-go/api/internal/api/v1/vacuum"
 	"nas-go/api/internal/config"
 	"nas-go/api/internal/discovery"
 	"nas-go/api/internal/watcher"
@@ -67,16 +68,17 @@ type FolderWatcherInterface interface {
 }
 
 type Application struct {
-	Router            *gin.Engine
-	Context           *AppContext
-	Server            *http.Server
-	UDPListener       *discovery.UDPListener
-	MdnsRegistrar     *discovery.MdnsRegistrar
-	FolderWatcher     FolderWatcherInterface
-	TrashPurger       *trash.Purger
-	AutoShutdownSched *autoshutdown.Scheduler
-	UploadReaper      *files.UploadSessionReaper
-	SystemEvents      systemevent.ServiceInterface
+	Router             *gin.Engine
+	Context            *AppContext
+	Server             *http.Server
+	UDPListener        *discovery.UDPListener
+	MdnsRegistrar      *discovery.MdnsRegistrar
+	FolderWatcher      FolderWatcherInterface
+	TrashPurger        *trash.Purger
+	AutoShutdownSched  *autoshutdown.Scheduler
+	UploadReaper       *files.UploadSessionReaper
+	VacuumPathListener *vacuum.PathListener
+	SystemEvents       systemevent.ServiceInterface
 }
 
 func InitializeApp() (*Application, error) {
@@ -198,6 +200,7 @@ func InitializeApp() (*Application, error) {
 	uploadReaper.Start()
 
 	autoShutdownSched := startAutoShutdownScheduler(appContext)
+	vacuumPathListener := startVacuumPathListener(appContext)
 
 	udpListener := discovery.NewUDPListener(discovery.DefaultUDPPort, 8000)
 	if err := udpListener.Start(); err != nil {
@@ -217,16 +220,25 @@ func InitializeApp() (*Application, error) {
 	startYtDlpUpdateChecker(appContext)
 
 	return &Application{
-		Router:            router,
-		Context:           appContext,
-		UDPListener:       udpListener,
-		MdnsRegistrar:     mdnsRegistrar,
-		FolderWatcher:     folderWatcher,
-		TrashPurger:       trashPurger,
-		AutoShutdownSched: autoShutdownSched,
-		UploadReaper:      uploadReaper,
-		SystemEvents:      systemEvents,
+		Router:             router,
+		Context:            appContext,
+		UDPListener:        udpListener,
+		MdnsRegistrar:      mdnsRegistrar,
+		FolderWatcher:      folderWatcher,
+		TrashPurger:        trashPurger,
+		AutoShutdownSched:  autoShutdownSched,
+		UploadReaper:       uploadReaper,
+		VacuumPathListener: vacuumPathListener,
+		SystemEvents:       systemEvents,
 	}, nil
+}
+
+func startVacuumPathListener(appContext *AppContext) *vacuum.PathListener {
+	if appContext == nil || appContext.Vacuum == nil || appContext.Vacuum.PathListener == nil {
+		return nil
+	}
+	appContext.Vacuum.PathListener.Start()
+	return appContext.Vacuum.PathListener
 }
 
 // startAutoShutdownScheduler launches the background scheduler that powers the
@@ -399,6 +411,10 @@ func (app *Application) Stop() error {
 
 	if app.AutoShutdownSched != nil {
 		app.AutoShutdownSched.Stop()
+	}
+
+	if app.VacuumPathListener != nil {
+		app.VacuumPathListener.Stop()
 	}
 
 	if app.Server == nil {

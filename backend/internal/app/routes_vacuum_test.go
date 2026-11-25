@@ -33,6 +33,15 @@ func TestRegisterVacuumRoutesRegistersTheContractedRoutes(t *testing.T) {
 		http.MethodGet + " /api/v1/vacuum/consumables",
 		http.MethodPost + " /api/v1/vacuum/consumables/:part/reset",
 		http.MethodGet + " /api/v1/vacuum/totals",
+		http.MethodGet + " /api/v1/vacuum/cloud-settings",
+		http.MethodPut + " /api/v1/vacuum/cloud-settings",
+		http.MethodPost + " /api/v1/vacuum/cloud-connection-test",
+		http.MethodGet + " /api/v1/vacuum/map",
+		http.MethodGet + " /api/v1/vacuum/rooms",
+		http.MethodPut + " /api/v1/vacuum/rooms/:id",
+		http.MethodGet + " /api/v1/vacuum/path",
+		http.MethodPost + " /api/v1/vacuum/room-cleaning",
+		http.MethodPost + " /api/v1/vacuum/spot-cleaning",
 	}
 	for _, route := range wanted {
 		if !registered[route] {

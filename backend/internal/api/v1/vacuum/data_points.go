@@ -21,6 +21,8 @@ const (
 	dpSideBrushSeconds     = "119"
 	dpMainBrushSeconds     = "120"
 	dpFilterSeconds        = "121"
+	dpPath                 = "123"
+	dpMapCommand           = "127"
 	dpFaultBitmap          = "122"
 	dpAutoEmpty            = "135"
 	dpAutoEmptyFrequency   = "136"

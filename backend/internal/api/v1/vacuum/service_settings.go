@@ -51,21 +51,36 @@ func (s *Service) UpdateSettings(request UpdateSettingsDto) (SettingsDto, error)
 		return SettingsDto{}, err
 	}
 
-	updated, err := s.replaceSettings(address, deviceID, request.LocalKey)
+	previous, updated, err := s.replaceSettings(address, deviceID, request.LocalKey)
 	if err != nil {
 		return SettingsDto{}, err
 	}
 	s.invalidateSnapshot()
+	if updated != previous {
+		s.handleRobotChanged()
+	}
 	return updated.toDto(), nil
 }
 
-func (s *Service) replaceSettings(address string, deviceID string, newLocalKey string) (settingsState, error) {
+func (s *Service) SetRobotChangedHandler(handler func()) {
+	s.robotChangedHandler = handler
+}
+
+func (s *Service) handleRobotChanged() {
+	s.pathTracker.reset()
+	s.invalidateMap()
+	if s.robotChangedHandler != nil {
+		s.robotChangedHandler()
+	}
+}
+
+func (s *Service) replaceSettings(address string, deviceID string, newLocalKey string) (previous settingsState, updated settingsState, err error) {
 	s.settingsMutex.Lock()
 	defer s.settingsMutex.Unlock()
 
 	current, err := s.loadSettings()
 	if err != nil {
-		return settingsState{}, err
+		return settingsState{}, settingsState{}, err
 	}
 
 	localKey := newLocalKey
@@ -73,12 +88,12 @@ func (s *Service) replaceSettings(address string, deviceID string, newLocalKey s
 		localKey = current.LocalKey
 	}
 	if localKey == "" {
-		return settingsState{}, fmt.Errorf("%w: no stored key and none sent", ErrLocalKeyRequired)
+		return settingsState{}, settingsState{}, fmt.Errorf("%w: no stored key and none sent", ErrLocalKeyRequired)
 	}
 
-	updated := settingsState{Address: address, DeviceID: deviceID, LocalKey: localKey}
+	updated = settingsState{Address: address, DeviceID: deviceID, LocalKey: localKey}
 	if err := s.saveSettings(updated); err != nil {
-		return settingsState{}, err
+		return settingsState{}, settingsState{}, err
 	}
-	return updated, nil
+	return current, updated, nil
 }

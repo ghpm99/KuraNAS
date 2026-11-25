@@ -28,6 +28,17 @@ type stubService struct {
 	receivedPatch    UpdatePreferencesDto
 	receivedPart     string
 	calledMethods    []string
+
+	cloudSettings        CloudSettingsDto
+	robotMap             MapDto
+	rooms                RoomsDto
+	room                 RoomDto
+	path                 PathDto
+	receivedCloud        UpdateCloudSettingsDto
+	receivedRoomID       int
+	receivedRoomUpdate   UpdateRoomDto
+	receivedRoomCleaning RoomCleaningDto
+	receivedSpotCleaning SpotCleaningDto
 }
 
 func (s *stubService) record(method string) { s.calledMethods = append(s.calledMethods, method) }
@@ -97,6 +108,56 @@ func (s *stubService) GetTotals(context.Context) (TotalsDto, error) {
 	return s.totals, s.failure
 }
 
+func (s *stubService) GetCloudSettings() (CloudSettingsDto, error) {
+	s.record("GetCloudSettings")
+	return s.cloudSettings, s.failure
+}
+
+func (s *stubService) UpdateCloudSettings(request UpdateCloudSettingsDto) (CloudSettingsDto, error) {
+	s.record("UpdateCloudSettings")
+	s.receivedCloud = request
+	return s.cloudSettings, s.failure
+}
+
+func (s *stubService) TestCloudConnection(context.Context) error {
+	s.record("TestCloudConnection")
+	return s.failure
+}
+
+func (s *stubService) GetMap(context.Context) (MapDto, error) {
+	s.record("GetMap")
+	return s.robotMap, s.failure
+}
+
+func (s *stubService) GetRooms(context.Context) (RoomsDto, error) {
+	s.record("GetRooms")
+	return s.rooms, s.failure
+}
+
+func (s *stubService) UpdateRoom(_ context.Context, roomID int, request UpdateRoomDto) (RoomDto, error) {
+	s.record("UpdateRoom")
+	s.receivedRoomID = roomID
+	s.receivedRoomUpdate = request
+	return s.room, s.failure
+}
+
+func (s *stubService) GetPath() PathDto {
+	s.record("GetPath")
+	return s.path
+}
+
+func (s *stubService) CleanRooms(_ context.Context, request RoomCleaningDto) error {
+	s.record("CleanRooms")
+	s.receivedRoomCleaning = request
+	return s.failure
+}
+
+func (s *stubService) CleanSpot(_ context.Context, request SpotCleaningDto) error {
+	s.record("CleanSpot")
+	s.receivedSpotCleaning = request
+	return s.failure
+}
+
 func newHandlerRouter(service ServiceInterface) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -114,6 +175,15 @@ func newHandlerRouter(service ServiceInterface) *gin.Engine {
 	group.GET("/consumables", handler.GetConsumablesHandler)
 	group.POST("/consumables/:part/reset", handler.ResetConsumableHandler)
 	group.GET("/totals", handler.GetTotalsHandler)
+	group.GET("/cloud-settings", handler.GetCloudSettingsHandler)
+	group.PUT("/cloud-settings", handler.UpdateCloudSettingsHandler)
+	group.POST("/cloud-connection-test", handler.TestCloudConnectionHandler)
+	group.GET("/map", handler.GetMapHandler)
+	group.GET("/rooms", handler.GetRoomsHandler)
+	group.PUT("/rooms/:id", handler.UpdateRoomHandler)
+	group.GET("/path", handler.GetPathHandler)
+	group.POST("/room-cleaning", handler.CleanRoomsHandler)
+	group.POST("/spot-cleaning", handler.CleanSpotHandler)
 	return router
 }
 

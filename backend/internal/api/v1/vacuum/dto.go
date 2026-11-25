@@ -63,3 +63,70 @@ type TotalsDto struct {
 	CleaningArea    int `json:"cleaning_area"`
 	CleaningCount   int `json:"cleaning_count"`
 }
+
+type CloudSettingsDto struct {
+	AccessID        string `json:"access_id"`
+	Region          string `json:"region"`
+	HasAccessSecret bool   `json:"has_access_secret"`
+}
+
+type UpdateCloudSettingsDto struct {
+	AccessID     string `json:"access_id"`
+	AccessSecret string `json:"access_secret"`
+	Region       string `json:"region"`
+}
+
+type PointDto struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type ForbiddenZoneDto struct {
+	Vertices [][2]int `json:"vertices"`
+}
+
+type MapDto struct {
+	MapID          int64              `json:"map_id"`
+	Width          int                `json:"width"`
+	Height         int                `json:"height"`
+	Resolution     int                `json:"resolution"`
+	OriginX        int                `json:"origin_x"`
+	OriginY        int                `json:"origin_y"`
+	Cells          string             `json:"cells"`
+	Dock           *PointDto          `json:"dock"`
+	ForbiddenZones []ForbiddenZoneDto `json:"forbidden_zones"`
+	ReadAt         time.Time          `json:"read_at"`
+}
+
+type RoomDto struct {
+	ID   int     `json:"id"`
+	Name *string `json:"name"`
+	Area float64 `json:"area"`
+}
+
+type RoomsDto struct {
+	MapID int64     `json:"map_id"`
+	Items []RoomDto `json:"items"`
+}
+
+type UpdateRoomDto struct {
+	MapID int64  `json:"map_id"`
+	Name  string `json:"name"`
+}
+
+type PathDto struct {
+	PathID   *int64    `json:"path_id"`
+	Points   [][2]int  `json:"points"`
+	Position *PointDto `json:"position"`
+}
+
+type RoomCleaningDto struct {
+	MapID   int64 `json:"map_id"`
+	RoomIDs []int `json:"room_ids"`
+}
+
+type SpotCleaningDto struct {
+	MapID int64   `json:"map_id"`
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+}
