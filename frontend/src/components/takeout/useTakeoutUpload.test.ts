@@ -8,7 +8,8 @@ const completeTakeoutUploadMock = jest.fn();
 jest.mock('@/components/i18n/provider/i18nContext', () => ({
 	__esModule: true,
 	default: () => ({
-		t: (key: string) => key,
+		t: (key: string, vars?: Record<string, string>) =>
+			vars ? `${key}:${Object.values(vars).join('/')}` : key,
 	}),
 }));
 
@@ -148,5 +149,6 @@ describe('components/takeout/useTakeoutUpload', () => {
 
 		expect(result.current.state).toBe('done');
 		expect(uploadTakeoutChunkMock).toHaveBeenCalledTimes(2);
+		expect(result.current.progressMessage).toBe('TAKEOUT_UPLOAD_PROGRESS:2.00 KB/2.00 KB');
 	});
 });

@@ -84,10 +84,10 @@ const TakeoutImportScreen = () => {
                     onClick={() => void startUpload()}
                     disabled={state === 'uploading' || state === 'completing' || state === 'idle'}
                 >
-                    {t('TAKEOUT_UPLOADING')}
+                    {t('TAKEOUT_START_UPLOAD')}
                 </Button>
                 <Button variant="outlined" onClick={reset}>
-                    {t('SETTINGS_RESET')}
+                    {t('TAKEOUT_CLEAR')}
                 </Button>
             </div>
         </PageContainer>

@@ -4,24 +4,11 @@ import {
 	initTakeoutUpload,
 	uploadTakeoutChunk,
 } from '@/service/takeout';
+import { formatSize } from '@/shared/utils/formatSize';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { useCallback, useMemo, useState } from 'react';
 
 export type TakeoutUploadState = 'idle' | 'selecting' | 'uploading' | 'completing' | 'done' | 'error';
-
-const formatBytes = (bytes: number): string => {
-	if (!Number.isFinite(bytes) || bytes <= 0) {
-		return '0 B';
-	}
-	const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-	let value = bytes;
-	let unitIndex = 0;
-	while (value >= 1024 && unitIndex < units.length - 1) {
-		value /= 1024;
-		unitIndex++;
-	}
-	return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
-};
 
 const useTakeoutUpload = () => {
 	const { t } = useI18n();
@@ -96,7 +83,10 @@ const useTakeoutUpload = () => {
 		if (!selectedFile) {
 			return '';
 		}
-		return `${t('TAKEOUT_UPLOADING')} ${formatBytes(uploadedBytes)} / ${formatBytes(selectedFile.size)}`;
+		return t('TAKEOUT_UPLOAD_PROGRESS', {
+			sent: formatSize(uploadedBytes),
+			total: formatSize(selectedFile.size),
+		});
 	}, [selectedFile, t, uploadedBytes]);
 
 	return {

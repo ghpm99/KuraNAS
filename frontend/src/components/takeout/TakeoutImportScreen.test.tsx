@@ -120,13 +120,13 @@ describe('TakeoutImportScreen', () => {
 
 	it('disables upload button in idle state', () => {
 		render(<TakeoutImportScreen />);
-		const button = screen.getByText('TAKEOUT_UPLOADING');
+		const button = screen.getByText('TAKEOUT_START_UPLOAD');
 		expect(button.closest('button')).toBeDisabled();
 	});
 
 	it('calls reset on reset button click', () => {
 		render(<TakeoutImportScreen />);
-		fireEvent.click(screen.getByText('SETTINGS_RESET'));
+		fireEvent.click(screen.getByText('TAKEOUT_CLEAR'));
 		expect(mockReset).toHaveBeenCalled();
 	});
 });
