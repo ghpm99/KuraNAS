@@ -2561,5 +2561,7 @@
 	"TAKEOUT_CLEAR": "Limpar",
 	"TAKEOUT_IMPORT_INVALID_ID": "Identificador de importação do Takeout inválido.",
 	"TAKEOUT_IMPORT_NOT_FOUND": "Importação do Takeout não encontrada.",
-	"TAKEOUT_IMPORT_GET_ERROR": "Não foi possível carregar a importação do Takeout. Tente novamente."
+	"TAKEOUT_IMPORT_GET_ERROR": "Não foi possível carregar a importação do Takeout. Tente novamente.",
+	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NO_SPACE_MESSAGE": "Não há espaço livre suficiente no disco para importar o Google Takeout. Libere espaço e tente novamente.",
+	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE": "O servidor não tem permissão para gravar na biblioteca de destino, então o Google Takeout não foi importado."
 }

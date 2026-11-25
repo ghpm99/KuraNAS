@@ -2561,5 +2561,7 @@
 	"TAKEOUT_CLEAR": "Clear",
 	"TAKEOUT_IMPORT_INVALID_ID": "Invalid Takeout import identifier.",
 	"TAKEOUT_IMPORT_NOT_FOUND": "Takeout import not found.",
-	"TAKEOUT_IMPORT_GET_ERROR": "Could not load the Takeout import. Try again."
+	"TAKEOUT_IMPORT_GET_ERROR": "Could not load the Takeout import. Try again.",
+	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NO_SPACE_MESSAGE": "There is not enough free disk space to import the Google Takeout. Free up space and try again.",
+	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE": "The server has no permission to write to the destination library, so the Google Takeout was not imported."
 }
