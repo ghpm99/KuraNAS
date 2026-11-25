@@ -2528,5 +2528,6 @@
 	"DOCUMENTS_INDEX_REASON_TIMEOUT": "Reading took too long",
 	"DOCUMENTS_INDEX_REASON_UNREADABLE": "Unreadable file",
 	"TAKEOUT_UPLOAD_CANCEL_ERROR": "Could not cancel the Takeout upload. Try again.",
-	"ERROR_CAPTURE_GET_FAILED": "Failed to get capture"
+	"ERROR_CAPTURE_GET_FAILED": "Failed to get capture",
+	"TAKEOUT_UPLOAD_ERROR": "Could not upload the Takeout file. Try again."
 }
