@@ -1309,6 +1309,8 @@
 	"ERROR_CAPTURE_NOT_FOUND": "Captura nao encontrada",
 	"ERROR_CAPTURE_LIST_FAILED": "Falha ao listar capturas",
 	"ERROR_CAPTURE_DELETE_FAILED": "Falha ao deletar captura",
+	"ERROR_CAPTURE_PROMOTE_NOT_RETRYABLE": "Só é possível tentar de novo a promoção de uma captura que falhou",
+	"ERROR_CAPTURE_PROMOTE_RETRY_FAILED": "Falha ao enfileirar a nova tentativa de promoção da captura",
 	"CAPTURE_PROMOTION_FAILED_REMUX": "A conversão do vídeo para um formato compatível com o player falhou. O arquivo recebido foi preservado para nova tentativa.",
 	"CAPTURE_PROMOTION_FAILED_MOVE": "Não foi possível mover o vídeo para a biblioteca. O arquivo recebido foi preservado para nova tentativa.",
 	"CAPTURE_PROMOTION_FAILED_LIBRARY_UNAVAILABLE": "A biblioteca de vídeos não está disponível. O arquivo recebido foi preservado para nova tentativa.",
