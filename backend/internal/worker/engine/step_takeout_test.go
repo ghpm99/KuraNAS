@@ -10,6 +10,7 @@ import (
 	"nas-go/api/pkg/i18n"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -108,7 +109,7 @@ func (m *failingLibrariesServiceMock) GetLibraryByCategory(category libraries.Li
 
 func runTakeoutStepWithNotifier(t *testing.T, zipPath string, librariesService libraries.ServiceInterface) (*fakeWorkerNotifSvc, error) {
 	t.Helper()
-	payload, err := json.Marshal(TakeoutStepPayload{ZipPath: zipPath, UploadID: "u1"})
+	payload, err := json.Marshal(TakeoutStepPayload{ZipPath: zipPath, UploadID: "u1", ImportID: 77})
 	if err != nil {
 		t.Fatalf("failed to marshal payload: %v", err)
 	}
@@ -116,7 +117,7 @@ func runTakeoutStepWithNotifier(t *testing.T, zipPath string, librariesService l
 	stepErr := executeTakeoutExtractStep(&WorkerContext{
 		LibrariesService:    librariesService,
 		NotificationService: notifier,
-	}, jobs.StepModel{Payload: payload})
+	}, jobs.StepModel{JobID: 9, Payload: payload})
 	return notifier, stepErr
 }
 
@@ -377,4 +378,49 @@ func TestExecuteTakeoutExtractStepRecordsSidecarOfExtractedPhoto(t *testing.T) {
 	if len(spy.saved) != 1 || spy.saved[0].Path != expectedPath || spy.saved[0].Description != "Praia" || !spy.saved[0].HasLocation() {
 		t.Fatalf("expected exactly the sidecar of IMG_01.jpg at %s, got %+v", expectedPath, spy.saved)
 	}
+}
+
+func assertTakeoutEventMetadata(t *testing.T, metadata any, expectedEvent string) {
+	t.Helper()
+	expected := map[string]any{"event": expectedEvent, "import_id": 77, "job_id": 9}
+	if !reflect.DeepEqual(metadata, expected) {
+		t.Fatalf("expected metadata %v, got %v", expected, metadata)
+	}
+}
+
+func TestExecuteTakeoutExtractStepCompletionNotificationCarriesEventMetadata(t *testing.T) {
+	loadTranslationsForTest(t)
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "upload", "takeout.zip")
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	createWorkerZip(t, zipPath)
+	imageLib := filepath.Join(tempDir, "Imagens")
+	if err := os.MkdirAll(imageLib, 0755); err != nil {
+		t.Fatalf("failed to create image lib: %v", err)
+	}
+
+	notifier, err := runTakeoutStepWithNotifier(t, zipPath, &librariesServiceMock{
+		paths: map[libraries.LibraryCategory]string{libraries.LibraryCategoryImages: imageLib},
+	})
+	if err != nil {
+		t.Fatalf("executeTakeoutExtractStep returned error: %v", err)
+	}
+	assertTakeoutEventMetadata(t, notifier.dtos[0].Metadata, "takeout_import_completed")
+}
+
+func TestExecuteTakeoutExtractStepFailureNotificationCarriesEventMetadata(t *testing.T) {
+	loadTranslationsForTest(t)
+	zipPath := filepath.Join(t.TempDir(), "upload", "takeout.zip")
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	createWorkerZip(t, zipPath)
+
+	notifier, err := runTakeoutStepWithNotifier(t, zipPath, &failingLibrariesServiceMock{})
+	if err == nil {
+		t.Fatalf("expected extraction error")
+	}
+	assertTakeoutEventMetadata(t, notifier.dtos[0].Metadata, "takeout_import_failed")
 }

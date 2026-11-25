@@ -41,6 +41,7 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 				Title:    i18n.GetMessage("NOTIFICATION_TAKEOUT_IMPORT_FAILED_TITLE"),
 				Message:  failureMessage,
 				GroupKey: "",
+				Metadata: takeoutImportEventMetadata("takeout_import_failed", payload.ImportID, step.JobID),
 			})
 		}
 		return err
@@ -72,10 +73,19 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 				extraction.FailedEntries,
 			),
 			GroupKey: "takeout_import",
+			Metadata: takeoutImportEventMetadata("takeout_import_completed", payload.ImportID, step.JobID),
 		})
 	}
 
 	return nil
+}
+
+func takeoutImportEventMetadata(event string, importID int, jobID int) map[string]any {
+	return map[string]any{
+		"event":     event,
+		"import_id": importID,
+		"job_id":    jobID,
+	}
 }
 
 func removeTakeoutUploadSession(zipPath string) {
