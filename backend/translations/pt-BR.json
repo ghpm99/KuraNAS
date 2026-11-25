@@ -2547,5 +2547,12 @@
 	"TAKEOUT_GUIDE_LINK": "takeout.google.com",
 	"TAKEOUT_GUIDE_STEP_SELECT": "Desmarque tudo e selecione somente o Google Fotos.",
 	"TAKEOUT_GUIDE_STEP_FORMAT": "Escolha o formato .zip para a exportação.",
-	"TAKEOUT_GUIDE_STEP_DROP": "Baixe os arquivos gerados e solte-os aqui abaixo."
+	"TAKEOUT_GUIDE_STEP_DROP": "Baixe os arquivos gerados e solte-os aqui abaixo.",
+	"INGEST_ACTIVE_TITLE": "Em andamento",
+	"INGEST_ACTIVE_LOAD_ERROR": "Não foi possível carregar os downloads em andamento.",
+	"INGEST_ACTIVE_DESTINATION": "Destino: {{destination}}",
+	"INGEST_ACTIVE_FORMAT": "Formato: {{format}}",
+	"INGEST_ACTIVE_SPEED": "{{speed}}/s",
+	"INGEST_ACTIVE_ETA": "Faltam {{time}}",
+	"INGEST_ACTIVE_ETA_UNKNOWN": "Tempo restante indefinido"
 }

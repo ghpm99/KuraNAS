@@ -2547,5 +2547,12 @@
 	"TAKEOUT_GUIDE_LINK": "takeout.google.com",
 	"TAKEOUT_GUIDE_STEP_SELECT": "Deselect everything and select only Google Photos.",
 	"TAKEOUT_GUIDE_STEP_FORMAT": "Choose the .zip format for the export.",
-	"TAKEOUT_GUIDE_STEP_DROP": "Download the generated files and drop them below."
+	"TAKEOUT_GUIDE_STEP_DROP": "Download the generated files and drop them below.",
+	"INGEST_ACTIVE_TITLE": "In progress",
+	"INGEST_ACTIVE_LOAD_ERROR": "Could not load the downloads in progress.",
+	"INGEST_ACTIVE_DESTINATION": "Destination: {{destination}}",
+	"INGEST_ACTIVE_FORMAT": "Format: {{format}}",
+	"INGEST_ACTIVE_SPEED": "{{speed}}/s",
+	"INGEST_ACTIVE_ETA": "{{time}} left",
+	"INGEST_ACTIVE_ETA_UNKNOWN": "Time left unknown"
 }
