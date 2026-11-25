@@ -42,6 +42,7 @@ object AppRoute {
     const val TRANSFERS = "transfers"
     const val CAMERA_UPLOAD = "camera-upload"
     const val JOBS = "jobs"
+    const val INGEST = "ingest"
     const val JOB_DETAIL = "jobs/{id}"
     const val HOME = "home"
     const val FILES = "files"

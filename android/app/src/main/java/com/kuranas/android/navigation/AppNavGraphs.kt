@@ -35,6 +35,7 @@ import com.kuranas.android.feature.notifications.ui.NotificationsIndicatorViewMo
 import com.kuranas.android.feature.notifications.ui.NotificationsScreen
 import com.kuranas.android.feature.search.ui.SearchScreen
 import com.kuranas.android.feature.settings.ui.SettingsScreen
+import com.kuranas.android.feature.ingest.ui.IngestScreen
 import com.kuranas.android.feature.trash.ui.TrashScreen
 import com.kuranas.android.feature.transfers.ui.TransfersIndicatorViewModel
 import com.kuranas.android.feature.transfers.ui.TransfersScreen
@@ -212,6 +213,7 @@ private fun NavGraphBuilder.moreGraph(navController: NavHostController) {
         composable(AppRoute.TRASH) { TrashScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.NOTIFICATIONS) { NotificationsScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.JOBS) { JobsScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable(AppRoute.INGEST) { IngestScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.DIARY) { DiaryScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.SETTINGS) {
             SettingsScreen(

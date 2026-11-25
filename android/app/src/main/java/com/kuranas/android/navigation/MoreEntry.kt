@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Notifications
@@ -22,6 +23,7 @@ enum class MoreEntry(val route: String, @StringRes val labelRes: Int, val icon: 
     TRASH(AppRoute.TRASH, R.string.nav_trash, Icons.Filled.Delete),
     NOTIFICATIONS(AppRoute.NOTIFICATIONS, R.string.nav_notifications, Icons.Filled.Notifications),
     JOBS(AppRoute.JOBS, R.string.nav_jobs, Icons.Filled.Checklist),
+    INGEST(AppRoute.INGEST, R.string.nav_ingest, Icons.Filled.CloudDownload),
     DIARY(AppRoute.DIARY, R.string.nav_diary, Icons.Filled.Book),
     SETTINGS(AppRoute.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 }

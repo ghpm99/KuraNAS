@@ -16,6 +16,7 @@ class MoreEntryTest {
                 AppRoute.TRASH,
                 AppRoute.NOTIFICATIONS,
                 AppRoute.JOBS,
+                AppRoute.INGEST,
                 AppRoute.DIARY,
                 AppRoute.SETTINGS,
             ),

@@ -351,4 +351,23 @@
         <item quantity="one">%d documento</item>
         <item quantity="other">%d documentos</item>
     </plurals>
+
+    <string name="nav_ingest">Baixar de URL</string>
+    <string name="ingest_title">Baixar de URL</string>
+    <string name="ingest_url_label">Endereço (URL)</string>
+    <string name="ingest_target_label">Destino</string>
+    <string name="ingest_subfolder_label">Subpasta (opcional)</string>
+    <string name="ingest_preset_label">Formato</string>
+    <string name="ingest_submit_action">Baixar</string>
+    <string name="ingest_no_targets">Nenhum destino disponível no servidor</string>
+    <string name="ingest_downloads_heading">Pedidos</string>
+    <string name="ingest_downloads_empty">Nenhum download pedido ainda</string>
+    <string name="ingest_cancel_action">Cancelar</string>
+    <string name="ingest_retry_action">Tentar de novo</string>
+    <string name="ingest_destination">%1$s / %2$s</string>
+    <string name="ingest_state_queued">Na fila</string>
+    <string name="ingest_state_running">Baixando %1$d%%</string>
+    <string name="ingest_state_completed">Concluído</string>
+    <string name="ingest_state_failed">Falhou</string>
+    <string name="ingest_state_canceled">Cancelado</string>
 </resources>

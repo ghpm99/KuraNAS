@@ -62,7 +62,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 - [x] 22. Depois de enviar, o popup consulta `GET /jobs/:id` a cada 2 s e mostra estado e porcentagem até o job terminar; bump de `version_name` — `11/RF-07`, `CA-12`.
 
 ### Android
-- [ ] 23. Tela "Baixar de URL" com endereço, destino e formato, e a lista de pedidos por `GET /ingest/downloads` (paginada, com cancelar e tentar de novo); entrada no menu "Mais" — `11/RF-08`, `24/RF-03`. Depende da 31 e da 33.
+- [x] 23. Tela "Baixar de URL" com endereço, destino e formato, e a lista de pedidos por `GET /ingest/downloads` (paginada, com cancelar e tentar de novo); entrada no menu "Mais" — `11/RF-08`, `24/RF-03`. Depende da 31 e da 33.
 - [ ] 23.1. O app aparece em "Compartilhar" de outros aplicativos para texto com endereço (`ACTION_SEND`, `text/plain`) e abre a tela com o endereço preenchido — `11/RF-08`.
 
 Ordem de execução: 10 → 14 (backend já aberto), 29 → 34, depois frontend 15 → 21, plugin 22, Android 23 → 23.1. A 35 espera o item 13 do board.

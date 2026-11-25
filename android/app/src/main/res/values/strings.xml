@@ -353,4 +353,23 @@
         <item quantity="one">%d document</item>
         <item quantity="other">%d documents</item>
     </plurals>
+
+    <string name="nav_ingest">Download from URL</string>
+    <string name="ingest_title">Download from URL</string>
+    <string name="ingest_url_label">Address (URL)</string>
+    <string name="ingest_target_label">Destination</string>
+    <string name="ingest_subfolder_label">Subfolder (optional)</string>
+    <string name="ingest_preset_label">Format</string>
+    <string name="ingest_submit_action">Download</string>
+    <string name="ingest_no_targets">No destination is available on the server</string>
+    <string name="ingest_downloads_heading">Requests</string>
+    <string name="ingest_downloads_empty">No download requested yet</string>
+    <string name="ingest_cancel_action">Cancel</string>
+    <string name="ingest_retry_action">Try again</string>
+    <string name="ingest_destination">%1$s / %2$s</string>
+    <string name="ingest_state_queued">Queued</string>
+    <string name="ingest_state_running">Downloading %1$d%%</string>
+    <string name="ingest_state_completed">Completed</string>
+    <string name="ingest_state_failed">Failed</string>
+    <string name="ingest_state_canceled">Canceled</string>
 </resources>
