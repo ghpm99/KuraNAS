@@ -97,6 +97,10 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       handlers.submitFetch(msg.payload).then(sendResponse);
       return true;
 
+    case "ingest_job_status":
+      handlers.getIngestJobStatus(msg.jobId).then(sendResponse);
+      return true;
+
     case "ingest_targets":
       handlers.listIngestTargets().then(sendResponse);
       return true;

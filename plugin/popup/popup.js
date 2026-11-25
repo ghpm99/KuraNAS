@@ -472,6 +472,33 @@
     fetchStatusEl.className = "fetch-status" + (kind ? ` fetch-status-${kind}` : "");
   }
 
+  const jobPoller = window.KuraNasJobPoller.createJobPoller({
+    requestJob: (jobId) =>
+      new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: "ingest_job_status", jobId }, resolve);
+      }),
+    onUpdate: renderJobProgress,
+  });
+
+  function renderJobProgress(response) {
+    if (!response || !response.ok) {
+      setFetchStatus((response && response.error) || "Falha ao consultar o andamento.", "error");
+      return;
+    }
+    const text = `Job: ${response.status} (${response.progress}%)`;
+    if (response.status === "completed") {
+      setFetchStatus(text, "success");
+      return;
+    }
+    if (response.status === "failed" || response.status === "canceled") {
+      setFetchStatus(response.lastError ? `${text} — ${response.lastError}` : text, "error");
+      return;
+    }
+    setFetchStatus(text, "pending");
+  }
+
+  window.addEventListener("pagehide", () => jobPoller.stop());
+
   btnFetch.addEventListener("click", () => {
     const url = fetchUrlInput.value.trim();
     const preset = fetchPresetSelect.value;
@@ -487,6 +514,7 @@
       return;
     }
 
+    jobPoller.stop();
     btnFetch.disabled = true;
     setFetchStatus("Enviando…", "pending");
     logPopup("ingest_fetch ->", { url, preset, targetRoot, subfolder });
@@ -496,7 +524,8 @@
         btnFetch.disabled = false;
         logPopup("ingest_fetch <- resposta:", response);
         if (response && response.ok) {
-          setFetchStatus(`Enfileirado (job #${response.jobId}).`, "success");
+          setFetchStatus(`Enfileirado (job #${response.jobId}).`, "pending");
+          jobPoller.start(response.jobId);
         } else {
           setFetchStatus((response && response.error) || "Falha ao enviar.", "error");
         }

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "KuraNAS Stream Grabber",
   "version": "1.24.0",
-  "version_name": "beta1.24",
+  "version_name": "beta1.25",
   "description": "Detect and capture media streams, sending them to your KuraNAS server.",
   "permissions": [
     "activeTab",

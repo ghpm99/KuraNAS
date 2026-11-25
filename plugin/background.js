@@ -73,6 +73,7 @@ const {
   submitFetch,
   listTargets: listIngestTargets,
   listPresets: listIngestPresets,
+  getJobStatus: getIngestJobStatus,
 } = fetcher;
 
 const hybridStateMachine = createHybridStateMachine({
@@ -161,6 +162,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     handleOffscreenStopped,
     handleSaveRecordingBlob,
     handleTitleDetected,
+    getIngestJobStatus,
     listIngestPresets,
     listIngestTargets,
     stopHybridRecording,

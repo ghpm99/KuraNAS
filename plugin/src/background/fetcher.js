@@ -31,7 +31,7 @@ export function createFetcher({ getApiBaseUrl, fetchImpl = fetch }) {
       if (!resp.ok) {
         return { ok: false, error: data.error || `HTTP ${resp.status}` };
       }
-      return { ok: true, jobId: data.job_id };
+      return { ok: true, jobId: data.job_id, downloadId: data.download_id };
     } catch (error) {
       return { ok: false, error: error.message };
     }
@@ -53,5 +53,19 @@ export function createFetcher({ getApiBaseUrl, fetchImpl = fetch }) {
     }
   }
 
-  return { submitFetch, listTargets, listPresets };
+  async function getJobStatus(jobId) {
+    try {
+      const job = await getJSON(`/jobs/${encodeURIComponent(jobId)}`);
+      return {
+        ok: true,
+        status: job.status,
+        progress: job.progress ? job.progress.progress : 0,
+        lastError: job.last_error || "",
+      };
+    } catch (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+
+  return { submitFetch, listTargets, listPresets, getJobStatus };
 }

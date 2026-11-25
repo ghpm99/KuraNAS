@@ -20,6 +20,7 @@ function createHandlers() {
       downloadDirect: async (url, name) => ({ kind: 'direct', url, name }),
       downloadHLS: async (url, name) => ({ kind: 'hls', url, name }),
       getDetectedMedia: (tabId) => [{ tabId, type: 'video' }],
+      getIngestJobStatus: async (jobId) => ({ ok: true, jobId }),
       getHybridStatus: (tabId) => ({ tabId, state: 'ARMED' }),
       getTitleForTab: (tabId) => ({ title: `tab-${tabId}`, source: 'test' }),
       handleBlobDetected: (tabId, msg) => calls.push(['blob', tabId, msg.blobUrl]),
@@ -97,4 +98,22 @@ test('routeRuntimeMessage returns false for unknown action', async () => {
   const { handlers } = createHandlers();
   const keepAlive = routeRuntimeMessage({ action: 'unknown' }, {}, () => {}, handlers);
   assert.equal(keepAlive, false);
+});
+
+test('routeRuntimeMessage routes ingest_job_status to the job status handler', async () => {
+  const { routeRuntimeMessage } = await import(messageRouterModuleUrl);
+  const { handlers } = createHandlers();
+  const responses = [];
+
+  const keepAlive = routeRuntimeMessage(
+    { action: 'ingest_job_status', jobId: 12 },
+    {},
+    (payload) => responses.push(payload),
+    handlers
+  );
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(keepAlive, true);
+  assert.deepEqual(responses[0], { ok: true, jobId: 12 });
 });

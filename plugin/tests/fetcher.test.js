@@ -102,3 +102,52 @@ test('listTargets reports failure without throwing', async () => {
   assert.equal(result.ok, false);
   assert.deepEqual(result.targets, []);
 });
+
+test('submitFetch exposes the download id returned by the server', async () => {
+  const { createFetcher } = await import(fetcherModuleUrl);
+  const fetcher = createFetcher({
+    getApiBaseUrl,
+    fetchImpl: async () => ({
+      ok: true,
+      status: 202,
+      json: async () => ({ job_id: 99, download_id: 7 }),
+    }),
+  });
+
+  const result = await fetcher.submitFetch({ url: 'https://youtu.be/abc', preset: 'p', targetRoot: '/r' });
+
+  assert.equal(result.downloadId, 7);
+});
+
+test('getJobStatus reads status and progress.progress from GET /jobs/:id', async () => {
+  const { createFetcher } = await import(fetcherModuleUrl);
+  const requestedUrls = [];
+  const fetcher = createFetcher({
+    getApiBaseUrl,
+    fetchImpl: async (url) => {
+      requestedUrls.push(url);
+      return {
+        ok: true,
+        json: async () => ({ id: 99, status: 'running', progress: { progress: 42 }, last_error: '' }),
+      };
+    },
+  });
+
+  const result = await fetcher.getJobStatus(99);
+
+  assert.deepEqual(result, { ok: true, status: 'running', progress: 42, lastError: '' });
+  assert.equal(requestedUrls[0], `${apiBase}/jobs/99`);
+});
+
+test('getJobStatus reports failure when the server answers with an error', async () => {
+  const { createFetcher } = await import(fetcherModuleUrl);
+  const fetcher = createFetcher({
+    getApiBaseUrl,
+    fetchImpl: async () => ({ ok: false, status: 404, json: async () => ({}) }),
+  });
+
+  const result = await fetcher.getJobStatus(1);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'HTTP 404');
+});
