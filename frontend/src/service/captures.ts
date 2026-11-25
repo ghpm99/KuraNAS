@@ -42,9 +42,7 @@ export const deleteCapture = async (id: number): Promise<DeleteCaptureResult> =>
     return response.data;
 };
 
-// captureThumbnailHref prefers the provenance thumbnail captured from the source
-// site; once the capture is promoted it falls back to the video thumbnail of the
-// final file. Returns an empty string when neither is available.
+/** Miniatura da origem; depois da promoção, a do vídeo final; string vazia quando não há nenhuma. */
 export const captureThumbnailHref = (capture: Capture): string => {
     if (capture.thumbnail_url) {
         return capture.thumbnail_url;

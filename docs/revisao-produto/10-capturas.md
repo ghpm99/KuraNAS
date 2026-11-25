@@ -82,7 +82,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [ ] 24. Estado vazio explica o que são capturas e aponta para a extensão — `RF-06`.
 - [ ] 25. Data relativa até 7 dias pelo formatador compartilhado — `00/RN-44`.
 - [ ] 26. Teste de render de `CapturesScreen` sem mock — regra do projeto, `00/RN-30`.
-- [ ] 27. Comentário de `service/captures.ts:48-50` removido.
+- [x] 27. Comentário de `service/captures.ts:48-50` removido.
 
 ### Plugin (toda lacuna sobe `version_name`)
 - [x] 28. `uploadToKuraNAS` envia `metadata` e `episode_key` no `init` — `RN-16`, `CA-05`.
