@@ -140,3 +140,22 @@ test('routeRuntimeMessage forwards tabId to download and blob upload handlers', 
     ['blob', 5, 'b', 'n'],
   ]);
 });
+
+test('routeRuntimeMessage routes save_server_address to the address validation handler', async () => {
+  const { routeRuntimeMessage } = await import(messageRouterModuleUrl);
+  const { handlers } = createHandlers();
+  const responses = [];
+  handlers.saveVerifiedServerAddress = async (address) => ({ ok: true, apiBaseUrl: address });
+
+  const keepAlive = routeRuntimeMessage(
+    { action: 'save_server_address', address: 'http://nas:8000' },
+    {},
+    (payload) => responses.push(payload),
+    handlers
+  );
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(keepAlive, true);
+  assert.deepEqual(responses[0], { ok: true, apiBaseUrl: 'http://nas:8000' });
+});

@@ -21,6 +21,11 @@ import {
 } from "./src/shared/utils.js";
 import { createMediaDetectionManager } from "./src/background/media-detection.js";
 import { routeRuntimeMessage } from "./src/background/message-router.js";
+import {
+  createReachabilityChecker,
+  createServerAddressSaver,
+  normalizeApiBaseUrl,
+} from "./src/background/server-address.js";
 import { createUploader } from "./src/background/uploader.js";
 import { createDownloader } from "./src/background/downloader.js";
 import { createFetcher } from "./src/background/fetcher.js";
@@ -71,6 +76,14 @@ const {
 } = downloader;
 
 const fetcher = createFetcher({ getApiBaseUrl });
+const isKuraNASApiReachable = createReachabilityChecker({
+  healthSuffix: DISCOVERY_HEALTH_SUFFIX,
+  timeoutMs: DISCOVERY_REQUEST_TIMEOUT_MS,
+});
+const saveVerifiedServerAddress = createServerAddressSaver({
+  isKuraNASApiReachable,
+  saveApiBaseUrl: (apiBaseUrl) => chrome.storage.sync.set({ apiBaseUrl }),
+});
 const {
   submitFetch,
   listTargets: listIngestTargets,
@@ -170,6 +183,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
     stopHybridRecording,
     submitFetch,
     uploadBlobCapture,
+    saveVerifiedServerAddress,
   }
 ));
 
@@ -688,50 +702,6 @@ function isLikelyLanHost(hostname) {
   if (nums[0] === 127) return true;
 
   return false;
-}
-
-function normalizeApiBaseUrl(url) {
-  if (!url || typeof url !== "string") return "";
-
-  const trimmed = url.trim().replace(/\/+$/g, "");
-  if (!trimmed) return "";
-
-  if (/\/api\/v1$/i.test(trimmed)) {
-    return trimmed;
-  }
-
-  return `${trimmed}/api/v1`;
-}
-
-async function isKuraNASApiReachable(apiBaseUrl) {
-  const healthUrl = `${apiBaseUrl}${DISCOVERY_HEALTH_SUFFIX}`;
-  try {
-    const response = await fetchWithTimeout(
-      healthUrl,
-      { method: "GET", cache: "no-store" },
-      DISCOVERY_REQUEST_TIMEOUT_MS
-    );
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const body = (await response.text()).toLowerCase();
-    return body.includes("kuranas");
-  } catch {
-    return false;
-  }
-}
-
-async function fetchWithTimeout(url, options, timeoutMs) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timeoutId);
-  }
 }
 
 // ---------------------------------------------------------------------------

@@ -88,7 +88,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [x] 28. `uploadToKuraNAS` envia `metadata` e `episode_key` no `init` — `RN-16`, `CA-05`.
 - [x] 29. Downloads de HLS, DASH, direto e blob usam os metadados detectados da aba — `RN-16`, `CA-05`. Depende da 28.
 - [ ] 30. Gravação híbrida sobrevive à queda de rede: reabre `init` com a mesma `episode_key`, realinha o offset e segue até um tempo máximo — `RN-01`, `RN-02`, `CA-04`.
-- [ ] 31. "Salvar" do popup só persiste o endereço depois de confirmar `/health` com "kuranas" — `RN-15`, `RF-12`, `CA-12`.
+- [x] 31. "Salvar" do popup só persiste o endereço depois de confirmar `/health` com "kuranas" — `RN-15`, `RF-12`, `CA-12`.
 - [ ] 32. Popup mostra a situação da conexão (conectado, não encontrado, `403`) — `RF-07`, `§9`. Depende da 31.
 - [ ] 33. "Baixar" e "Capturar" mostram o resultado no popup — `RF-11`. Depende da 29.
 - [ ] 34. `plugin/README.md` explica a limitação em conteúdo protegido — `§9`, `§4`.

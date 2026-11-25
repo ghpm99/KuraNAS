@@ -68,6 +68,7 @@
   const btnCloseModal = $("#btnCloseModal");
   const apiUrlInput = $("#apiUrl");
   const btnSaveSettings = $("#btnSaveSettings");
+  const settingsStatusEl = $("#settingsStatus");
   const detectedTitleEl = $("#detectedTitle");
   const fetchUrlInput = $("#fetchUrl");
   const fetchPresetSelect = $("#fetchPreset");
@@ -439,11 +440,30 @@
 
   btnCloseModal.addEventListener("click", closeQualityModal);
 
+  const serverAddressRefusalMessages = {
+    invalid_address: "Endereço inválido. Use http:// ou https://.",
+    unreachable: "Endereço recusado: o servidor não respondeu como KuraNAS em /health.",
+  };
+
   btnSaveSettings.addEventListener("click", () => {
-    const url = apiUrlInput.value.trim();
-    logPopup("salvar settings -> apiBaseUrl=", url);
-    chrome.storage.sync.set({ apiBaseUrl: url });
+    const typedAddress = apiUrlInput.value.trim();
+    logPopup("salvar settings -> address=", typedAddress);
+    setSettingsStatus("Verificando servidor...", "pending");
+    chrome.runtime.sendMessage({ action: "save_server_address", address: typedAddress }, (response) => {
+      if (response && response.ok) {
+        apiUrlInput.value = response.apiBaseUrl;
+        setSettingsStatus("Servidor aceito e salvo.", "success");
+        return;
+      }
+      const reason = response && response.reason;
+      setSettingsStatus(serverAddressRefusalMessages[reason] || serverAddressRefusalMessages.unreachable, "error");
+    });
   });
+
+  function setSettingsStatus(text, kind) {
+    settingsStatusEl.textContent = text;
+    settingsStatusEl.className = "fetch-status" + (kind ? ` fetch-status-${kind}` : "");
+  }
 
   // -----------------------------------------------------------------------
   // Server-side fetch (yt-dlp on the KuraNAS server)

@@ -109,6 +109,10 @@ export function routeRuntimeMessage(msg, sender, sendResponse, handlers) {
       handlers.listIngestPresets().then(sendResponse);
       return true;
 
+    case "save_server_address":
+      handlers.saveVerifiedServerAddress(msg.address).then(sendResponse);
+      return true;
+
     default:
       return false;
   }
