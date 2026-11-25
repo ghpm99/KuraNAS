@@ -64,7 +64,8 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [ ] 30. Falha mostra o `error` do servidor e "Tentar de novo" — `RF-04`, `RN-06`. Depende da 27.
 - [ ] 31. Histórico de importações com scroll infinito — `RF-05`, `00/RN-02 a RN-10`. Depende da 11 e 19.
 - [ ] 32. Importação em andamento aparece ao reabrir a tela, com atualização a cada 2 s — `CA-06`, `RF-06`. Depende da 31.
-- [ ] 33. Sair da tela durante o envio pede confirmação — `RF-06`.
+- [ ] 33. Sair da tela durante o envio pede confirmação ao fechar ou recarregar a aba (`beforeunload`) — `RF-06`.
+- [ ] 33.1. Navegação interna durante o envio pede confirmação — `RF-06`. Depende de migrar `AppProviders` de `BrowserRouter` para data router (`createBrowserRouter`), pré-requisito de `useBlocker` no react-router 7; mudança própria em todo o roteamento.
 - [ ] 34. Notificação de conclusão leva às fotos importadas — `CA-11`. Depende da 09 e 29.
 - [ ] 35. Teste de render sem mock de `TakeoutImportScreen` e `TakeoutDropZone` — `00/RN-30`.
 
