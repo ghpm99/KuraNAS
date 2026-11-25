@@ -555,6 +555,7 @@ func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
 	analytics.GET("/processing", handler.GetProcessingHandler)
 	analytics.GET("/health", handler.GetHealthHandler)
 	analytics.GET("/ai-usage", handler.GetAIUsageHandler)
+	analytics.GET("/trash", handler.GetTrashHandler)
 	analytics.GET("/insights", handler.GetInsightsHandler)
 }
 

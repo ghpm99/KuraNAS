@@ -111,7 +111,7 @@ func (m *analyticsAIMock) Execute(ctx context.Context, req ai.Request) (ai.Respo
 
 func TestServiceGetStorage(t *testing.T) {
 	stub := &repositoryStub{storageKpis: StorageKpisModel{UsedBytes: 100, GrowthBytes: 10, FilesAdded: 2, FilesTotal: 5, FoldersTotal: 3}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetStorage("30d")
 	if err != nil {
@@ -126,14 +126,14 @@ func TestServiceGetStorage(t *testing.T) {
 }
 
 func TestServiceGetStorageInvalidPeriod(t *testing.T) {
-	service := NewService(&repositoryStub{}, nil)
+	service := NewService(&repositoryStub{}, nil, nil)
 	if _, err := service.GetStorage("2d"); !errors.Is(err, ErrInvalidPeriod) {
 		t.Fatalf("expected ErrInvalidPeriod, got %v", err)
 	}
 }
 
 func TestServiceGetStorageRepoError(t *testing.T) {
-	service := NewService(&repositoryStub{err: sql.ErrConnDone}, nil)
+	service := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil)
 	if _, err := service.GetStorage("7d"); err == nil {
 		t.Fatalf("expected error")
 	}
@@ -142,7 +142,7 @@ func TestServiceGetStorageRepoError(t *testing.T) {
 func TestServiceGetTimeSeries(t *testing.T) {
 	now := time.Now()
 	stub := &repositoryStub{timeSeries: []StorageTimeSeriesModel{{Date: now, UsedBytes: 100}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetTimeSeries("")
 	if err != nil {
@@ -156,7 +156,7 @@ func TestServiceGetTimeSeries(t *testing.T) {
 		t.Fatalf("expected ErrInvalidPeriod, got %v", err)
 	}
 
-	service = NewService(&repositoryStub{err: sql.ErrConnDone}, nil)
+	service = NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil)
 	if _, err := service.GetTimeSeries("7d"); err == nil {
 		t.Fatalf("expected error")
 	}
@@ -164,7 +164,7 @@ func TestServiceGetTimeSeries(t *testing.T) {
 
 func TestServiceGetTypes(t *testing.T) {
 	stub := &repositoryStub{types: []TypeDistributionModel{{Category: "image", Count: 10, Bytes: 1000}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetTypes()
 	if err != nil {
@@ -174,14 +174,14 @@ func TestServiceGetTypes(t *testing.T) {
 		t.Fatalf("unexpected types: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetTypes(); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetTypes(); err == nil {
 		t.Fatalf("expected error")
 	}
 }
 
 func TestServiceGetExtensions(t *testing.T) {
 	stub := &repositoryStub{extensions: []ExtensionDistributionModel{{Extension: ".jpg", Count: 5, Bytes: 500}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetExtensions(12)
 	if err != nil {
@@ -191,7 +191,7 @@ func TestServiceGetExtensions(t *testing.T) {
 		t.Fatalf("unexpected extensions: %+v limit=%d", result, stub.capturedLimit)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetExtensions(5); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetExtensions(5); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -199,7 +199,7 @@ func TestServiceGetExtensions(t *testing.T) {
 func TestServiceGetRecentFiles(t *testing.T) {
 	now := time.Now()
 	stub := &repositoryStub{recentFiles: []RecentFileModel{{ID: 1, Name: "f.jpg", Size: 1024, CreatedAt: now, UpdatedAt: now}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetRecentFiles(50)
 	if err != nil {
@@ -209,7 +209,7 @@ func TestServiceGetRecentFiles(t *testing.T) {
 		t.Fatalf("unexpected recent files: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetRecentFiles(5); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetRecentFiles(5); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -217,7 +217,7 @@ func TestServiceGetRecentFiles(t *testing.T) {
 func TestServiceGetTopFolders(t *testing.T) {
 	now := time.Now()
 	stub := &repositoryStub{topFolders: []FolderUsageModel{{ParentPath: "/m", TotalFiles: 10, TotalBytes: 5000, LastModified: sql.NullTime{Time: now, Valid: true}}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetTopFolders(20)
 	if err != nil {
@@ -227,7 +227,7 @@ func TestServiceGetTopFolders(t *testing.T) {
 		t.Fatalf("unexpected top folders: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetTopFolders(5); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetTopFolders(5); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -235,7 +235,7 @@ func TestServiceGetTopFolders(t *testing.T) {
 func TestServiceGetHotFolders(t *testing.T) {
 	now := time.Now()
 	stub := &repositoryStub{hotFolders: []FolderHotModel{{ParentPath: "/hot", NewFiles: 5, AddedBytes: 100, LastEvent: sql.NullTime{Time: now, Valid: true}}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetHotFolders("7d", 3)
 	if err != nil {
@@ -249,14 +249,14 @@ func TestServiceGetHotFolders(t *testing.T) {
 		t.Fatalf("expected ErrInvalidPeriod, got %v", err)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetHotFolders("7d", 3); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetHotFolders("7d", 3); err == nil {
 		t.Fatalf("expected error")
 	}
 }
 
 func TestServiceGetDuplicatesSummary(t *testing.T) {
 	stub := &repositoryStub{duplicatesSum: DuplicatesSummaryModel{GroupsTotal: 2, FilesTotal: 6, ReclaimableBytes: 4096}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetDuplicatesSummary()
 	if err != nil {
@@ -266,7 +266,7 @@ func TestServiceGetDuplicatesSummary(t *testing.T) {
 		t.Fatalf("unexpected duplicates summary: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetDuplicatesSummary(); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetDuplicatesSummary(); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -276,7 +276,7 @@ func TestServiceGetImageDuplicates(t *testing.T) {
 		duplicatesSum:   DuplicatesSummaryModel{GroupsTotal: 1, FilesTotal: 2, ReclaimableBytes: 10},
 		duplicateGroups: []DuplicateGroupModel{{Signature: "abc", Copies: 2}},
 	}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	summary, err := service.GetImageDuplicatesSummary()
 	if err != nil || summary.Groups != 1 || summary.Files != 2 || summary.ReclaimableSize != 10 {
@@ -287,7 +287,7 @@ func TestServiceGetImageDuplicates(t *testing.T) {
 		t.Fatalf("unexpected groups %+v err=%v", groups, err)
 	}
 
-	failing := NewService(&repositoryStub{err: sql.ErrConnDone}, nil)
+	failing := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil)
 	if _, err := failing.GetImageDuplicatesSummary(); err == nil {
 		t.Fatal("expected summary error")
 	}
@@ -298,7 +298,7 @@ func TestServiceGetImageDuplicates(t *testing.T) {
 
 func TestServiceGetDuplicateGroups(t *testing.T) {
 	stub := &repositoryStub{duplicateGroups: []DuplicateGroupModel{{Signature: "abc", Copies: 3, ItemSize: 1024, ReclaimableSize: 2048, Paths: []string{"/a", "/b", "/c"}}}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetDuplicateGroups(20)
 	if err != nil {
@@ -308,14 +308,14 @@ func TestServiceGetDuplicateGroups(t *testing.T) {
 		t.Fatalf("unexpected duplicate groups: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetDuplicateGroups(5); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetDuplicateGroups(5); err == nil {
 		t.Fatalf("expected error")
 	}
 }
 
 func TestServiceGetLibrary(t *testing.T) {
 	stub := &repositoryStub{librarySummary: LibrarySummaryModel{CategorizedMedia: 4, AudioWithMetadata: 1, VideoWithMetadata: 2, ImageWithMetadata: 1, ImageClassified: 1}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetLibrary()
 	if err != nil {
@@ -325,14 +325,14 @@ func TestServiceGetLibrary(t *testing.T) {
 		t.Fatalf("unexpected library: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetLibrary(); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetLibrary(); err == nil {
 		t.Fatalf("expected error")
 	}
 }
 
 func TestServiceGetProcessing(t *testing.T) {
 	stub := &repositoryStub{processing: ProcessingSummaryModel{MetadataPending: 2, MetadataFailed: 1, ThumbnailPending: 3, ThumbnailFailed: 1, RecurringTimeouts: 0}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetProcessing()
 	if err != nil {
@@ -342,7 +342,7 @@ func TestServiceGetProcessing(t *testing.T) {
 		t.Fatalf("unexpected processing: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetProcessing(); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetProcessing(); err == nil {
 		t.Fatalf("expected error")
 	}
 }
@@ -357,7 +357,7 @@ func TestServiceGetHealth(t *testing.T) {
 		ErrorsLast24h: 3,
 		RecentErrors:  []LogErrorModel{{Name: "ScanFiles", Description: sql.NullString{String: "boom", Valid: true}, CreatedAt: now}},
 	}}
-	service := NewService(stub, nil)
+	service := NewService(stub, nil, nil)
 
 	result, err := service.GetHealth()
 	if err != nil {
@@ -367,20 +367,20 @@ func TestServiceGetHealth(t *testing.T) {
 		t.Fatalf("unexpected health: %+v", result)
 	}
 
-	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil).GetHealth(); err == nil {
+	if _, err := NewService(&repositoryStub{err: sql.ErrConnDone}, nil, nil).GetHealth(); err == nil {
 		t.Fatalf("expected error")
 	}
 }
 
 func TestServiceGetInsightsInvalidPeriod(t *testing.T) {
-	service := NewService(&repositoryStub{}, nil)
+	service := NewService(&repositoryStub{}, nil, nil)
 	if _, err := service.GetInsights("2d"); !errors.Is(err, ErrInvalidPeriod) {
 		t.Fatalf("expected ErrInvalidPeriod, got %v", err)
 	}
 }
 
 func TestServiceGetInsightsNilAI(t *testing.T) {
-	service := NewService(&repositoryStub{}, nil)
+	service := NewService(&repositoryStub{}, nil, nil)
 	result, err := service.GetInsights("7d")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -405,7 +405,7 @@ func TestServiceGetInsightsSuccess(t *testing.T) {
 		},
 	}
 
-	service := NewService(stub, aiMock)
+	service := NewService(stub, aiMock, nil)
 	result, err := service.GetInsights("7d")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -423,7 +423,7 @@ func TestServiceGetInsightsAIError(t *testing.T) {
 		},
 	}
 
-	service := NewService(stub, aiMock)
+	service := NewService(stub, aiMock, nil)
 	result, err := service.GetInsights("7d")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -439,7 +439,7 @@ func TestServiceGetInsightsRepoError(t *testing.T) {
 			return ai.Response{}, nil
 		},
 	}
-	service := NewService(&repositoryStub{err: sql.ErrConnDone}, aiMock)
+	service := NewService(&repositoryStub{err: sql.ErrConnDone}, aiMock, nil)
 	if _, err := service.GetInsights("7d"); err == nil {
 		t.Fatalf("expected error")
 	}
@@ -483,7 +483,7 @@ func TestServiceGetAIUsageMapsSnapshot(t *testing.T) {
 	ai.ResetUsageMetrics()
 	t.Cleanup(ai.ResetUsageMetrics)
 
-	service := NewService(&repositoryStub{}, nil)
+	service := NewService(&repositoryStub{}, nil, nil)
 	result, err := service.GetAIUsage()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

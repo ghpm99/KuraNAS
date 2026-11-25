@@ -22,10 +22,19 @@ var ErrInvalidPeriod = errors.New("invalid analytics period")
 type Service struct {
 	Repository RepositoryInterface
 	AIService  ai.ServiceInterface
+	Trash      TrashSummaryReader
 }
 
-func NewService(repository RepositoryInterface, aiService ai.ServiceInterface) ServiceInterface {
-	return &Service{Repository: repository, AIService: aiService}
+func NewService(repository RepositoryInterface, aiService ai.ServiceInterface, trashSummaryReader TrashSummaryReader) ServiceInterface {
+	return &Service{Repository: repository, AIService: aiService, Trash: trashSummaryReader}
+}
+
+func (s *Service) GetTrash() (TrashDto, error) {
+	summary, err := s.Trash.GetSummary()
+	if err != nil {
+		return TrashDto{}, err
+	}
+	return TrashDto{ItemCount: summary.Items, SizeBytes: summary.SizeBytes}, nil
 }
 
 func (s *Service) GetStorage(period string) (StorageStatsDto, error) {

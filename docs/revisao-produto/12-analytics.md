@@ -38,7 +38,7 @@ Spec: `docs/especificacao/16-analytics.md`. A seção "Situação em 2026-11-10"
 ### Backend
 - [ ] 02. Espaço total e livre somam os volumes das raízes habilitadas sem contar o mesmo volume duas vezes; falha de `statfs` não vira total = usado em silêncio — `RN-02`, `CA-01`.
 - [ ] 03. `storage` devolve `tiers.hot_bytes` e `tiers.cold_bytes` — `RF-02`, `RN-01`. Depende da 01.
-- [ ] 04. `GET /analytics/trash` → `{item_count, size_bytes}` pela mesma fonte de `/trash/summary` — `RF-02`, §7. Seam no handler.
+- [x] 04. `GET /analytics/trash` → `{item_count, size_bytes}` pela mesma fonte de `/trash/summary` — `RF-02`, §7. Seam no handler.
 - [x] 05. `type_distribution.sql` devolve só as cinco categorias (`archive` em `other`) — `RF-04`, `CA-02`. Teste `_Postgres` da soma.
 - [ ] 06. Query, repositório e service de falhas de processamento `{file_id, name, stage, error, failed_at}`, `error` traduzido, filtro `stage`, ordem estável — `RF-10`, §7, `00/RN-17`, `RN-41`.
 - [ ] 07. Handler e rota `GET /analytics/processing/failures` paginados, `400` em `stage` inválido — `RF-10`, `CA-11`. Depende da 06.

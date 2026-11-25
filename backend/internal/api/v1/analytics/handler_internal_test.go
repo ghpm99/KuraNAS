@@ -77,7 +77,10 @@ func (s *serviceStub) GetImageDuplicateGroups(limit int) ([]DuplicateGroupDto, e
 func (s *serviceStub) GetLibrary() (LibraryDto, error)       { return LibraryDto{}, s.err }
 func (s *serviceStub) GetProcessing() (ProcessingDto, error) { return ProcessingDto{}, s.err }
 func (s *serviceStub) GetHealth() (HealthDto, error)         { return HealthDto{}, s.err }
-func (s *serviceStub) GetAIUsage() (AIUsageDto, error)       { return AIUsageDto{}, s.err }
+func (s *serviceStub) GetTrash() (TrashDto, error) {
+	return TrashDto{ItemCount: 3, SizeBytes: 2048}, s.err
+}
+func (s *serviceStub) GetAIUsage() (AIUsageDto, error) { return AIUsageDto{}, s.err }
 func (s *serviceStub) GetInsights(period string) ([]string, error) {
 	s.capturedPeriod = period
 	return []string{}, s.err

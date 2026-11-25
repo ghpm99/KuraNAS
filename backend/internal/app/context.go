@@ -327,7 +327,6 @@ func NewContext(db *sql.DB) *AppContext {
 	diaryContext := newDiaryContext(dbContext, loggerService)
 	musicContext := newMusicContext(dbContext, loggerService, aiService, fileContext.Service, fileContext.RecentFileService)
 	videoContext := newVideoContext(dbContext, loggerService, fileContext.Service, fileContext.RecentFileService)
-	analyticsContext := newAnalyticsContext(dbContext, aiService)
 	configurationContext := newConfigurationContext(dbContext, loggerService)
 	documentTextContext := newDocumentTextContext(dbContext, jobsContext.Repository)
 	searchContext := newSearchContext(dbContext, aiService, documentTextContext.Service)
@@ -337,6 +336,7 @@ func NewContext(db *sql.DB) *AppContext {
 	watchFoldersContext := newWatchFoldersContext(dbContext, loggerService)
 	accessControlContext := newAccessControlContext(dbContext, loggerService)
 	trashContext := newTrashContext(dbContext, loggerService, fileContext.Service)
+	analyticsContext := newAnalyticsContext(dbContext, aiService, trashContext.Service)
 	// Delete-to-trash: files cannot import trash (trash already leans on
 	// files), so the bin arrives by interface after both contexts exist.
 	fileContext.Service.SetTrashBin(trashContext.Service)
@@ -595,9 +595,9 @@ func newDiaryContext(dbContext *database.DbContext, logger logger.LoggerServiceI
 	}
 }
 
-func newAnalyticsContext(dbContext *database.DbContext, aiService ai.ServiceInterface) *AnalyticsContext {
+func newAnalyticsContext(dbContext *database.DbContext, aiService ai.ServiceInterface, trashService analytics.TrashSummaryReader) *AnalyticsContext {
 	repository := analytics.NewRepository(dbContext)
-	service := analytics.NewService(repository, aiService)
+	service := analytics.NewService(repository, aiService, trashService)
 	handler := analytics.NewHandler(service)
 	return &AnalyticsContext{
 		Handler:    handler,

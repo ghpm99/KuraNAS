@@ -121,3 +121,8 @@ type AIUsageDto struct {
 	TotalTokens  uint64 `json:"total_tokens"`
 	AvgLatencyMs int64  `json:"avg_latency_ms"`
 }
+
+type TrashDto struct {
+	ItemCount int   `json:"item_count"`
+	SizeBytes int64 `json:"size_bytes"`
+}

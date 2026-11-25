@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"nas-go/api/internal/api/v1/trash"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/utils"
 )
@@ -24,6 +25,10 @@ type RepositoryInterface interface {
 	GetHealth() (HealthModel, error)
 }
 
+type TrashSummaryReader interface {
+	GetSummary() (trash.TrashSummaryDto, error)
+}
+
 type ServiceInterface interface {
 	GetStorage(period string) (StorageStatsDto, error)
 	GetTimeSeries(period string) ([]TimeSeriesPointDto, error)
@@ -41,5 +46,6 @@ type ServiceInterface interface {
 	GetProcessing() (ProcessingDto, error)
 	GetHealth() (HealthDto, error)
 	GetAIUsage() (AIUsageDto, error)
+	GetTrash() (TrashDto, error)
 	GetInsights(period string) ([]string, error)
 }

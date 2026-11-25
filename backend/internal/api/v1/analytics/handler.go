@@ -151,6 +151,11 @@ func (handler *Handler) GetAIUsageHandler(c *gin.Context) {
 	handler.respond(c, result, err)
 }
 
+func (handler *Handler) GetTrashHandler(c *gin.Context) {
+	result, err := handler.service.GetTrash()
+	handler.respond(c, result, err)
+}
+
 func (handler *Handler) GetInsightsHandler(c *gin.Context) {
 	result, err := handler.service.GetInsights(c.DefaultQuery("period", "7d"))
 	handler.respond(c, gin.H{"insights": result}, err)
