@@ -4,15 +4,19 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"syscall"
 	"testing"
 
 	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/libraries"
+	"nas-go/api/internal/api/v1/notifications"
+	"nas-go/api/pkg/i18n"
 )
 
 type librariesProviderMock struct {
@@ -594,5 +598,129 @@ func TestPromoteCaptureStopsWhenMarkingPromotingFails(t *testing.T) {
 
 	if err := service.PromoteCapture(1); err == nil {
 		t.Fatal("expected error when marking promoting fails")
+	}
+}
+
+type prePlacementFailureOutcome struct {
+	failureReason        string
+	receivedFilePath     string
+	stagingFilePath      string
+	failureNotifications int
+	promoteErr           error
+}
+
+func runPromoteWithPreparedFailure(t *testing.T, lib LibrariesProviderInterface, fp FilesProviderInterface, updateErr error) prePlacementFailureOutcome {
+	t.Helper()
+	stagingFilePath := filepath.Join(t.TempDir(), "capturas", "show", "recording.mp4")
+	if err := os.MkdirAll(filepath.Dir(stagingFilePath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(stagingFilePath, []byte("received-bytes"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	outcome := prePlacementFailureOutcome{stagingFilePath: stagingFilePath}
+	mock := &repoMock{
+		getByIDFn: func(id int) (CaptureModel, error) {
+			return CaptureModel{ID: id, Name: "show", FileName: "recording.mp4", FilePath: stagingFilePath, RawMetadata: json.RawMessage(`{"title":"Show"}`)}, nil
+		},
+		updatePromotionFn: func(tx *sql.Tx, capture CaptureModel) error { return updateErr },
+		markFailedFn: func(tx *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error {
+			outcome.failureReason = failureReason
+			outcome.receivedFilePath = receivedFilePath
+			return nil
+		},
+	}
+	service := newPromoteServiceForTest(mock, lib, fp)
+	service.NotificationService = &notificationServiceMock{
+		groupOrCreateFn: func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+			if dto.Type == string(notifications.NotificationTypeError) {
+				outcome.failureNotifications++
+			}
+			return notifications.NotificationDto{ID: 1}, nil
+		},
+	}
+	outcome.promoteErr = service.PromoteCapture(1)
+	return outcome
+}
+
+func assertPreservedAndFailed(t *testing.T, outcome prePlacementFailureOutcome, expectedReasonKey string) {
+	t.Helper()
+	if outcome.promoteErr == nil {
+		t.Fatal("expected promotion error")
+	}
+	expectedReason := i18n.GetMessage(expectedReasonKey)
+	if outcome.failureReason != expectedReason {
+		t.Fatalf("expected failure reason %q, got %q", expectedReason, outcome.failureReason)
+	}
+	if outcome.receivedFilePath != outcome.stagingFilePath {
+		t.Fatalf("expected received path %q, got %q", outcome.stagingFilePath, outcome.receivedFilePath)
+	}
+	if _, err := os.Stat(outcome.stagingFilePath); err != nil {
+		t.Fatalf("expected staging file to be preserved: %v", err)
+	}
+	if outcome.failureNotifications != 1 {
+		t.Fatalf("expected 1 failure notification, got %d", outcome.failureNotifications)
+	}
+}
+
+func TestPromoteCaptureFailsWhenVideosLibraryIsUnavailable(t *testing.T) {
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{}, errors.New("library not found")
+	}}
+
+	outcome := runPromoteWithPreparedFailure(t, lib, &filesProviderMock{}, nil)
+
+	assertPreservedAndFailed(t, outcome, "CAPTURE_PROMOTION_FAILED_LIBRARY_UNAVAILABLE")
+}
+
+func TestPromoteCaptureFailsWithNoSpaceWhenVideosLibraryLookupHasNoFreeSpace(t *testing.T) {
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{}, &os.PathError{Op: "mkdir", Path: "/videos", Err: syscall.ENOSPC}
+	}}
+
+	outcome := runPromoteWithPreparedFailure(t, lib, &filesProviderMock{}, nil)
+
+	assertPreservedAndFailed(t, outcome, "CAPTURE_PROMOTION_FAILED_NO_SPACE")
+}
+
+func TestPromoteCaptureFailsWhenFileRecordCannotBeCreated(t *testing.T) {
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{Path: filepath.Join(t.TempDir(), "videos")}, nil
+	}}
+	fp := &filesProviderMock{createFileFn: func(files.FileDto) (files.FileDto, error) {
+		return files.FileDto{}, errors.New("insert failed")
+	}}
+
+	outcome := runPromoteWithPreparedFailure(t, lib, fp, nil)
+
+	assertPreservedAndFailed(t, outcome, "CAPTURE_PROMOTION_FAILED_REGISTER")
+}
+
+func TestPromoteCaptureFailsWithNoSpaceWhenFileRecordCreationHasNoFreeSpace(t *testing.T) {
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{Path: filepath.Join(t.TempDir(), "videos")}, nil
+	}}
+	fp := &filesProviderMock{createFileFn: func(files.FileDto) (files.FileDto, error) {
+		return files.FileDto{}, fmt.Errorf("insert: %w", syscall.ENOSPC)
+	}}
+
+	outcome := runPromoteWithPreparedFailure(t, lib, fp, nil)
+
+	assertPreservedAndFailed(t, outcome, "CAPTURE_PROMOTION_FAILED_NO_SPACE")
+}
+
+func TestPromoteCaptureFailsWhenCapturePromotionCannotBePersisted(t *testing.T) {
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{Path: filepath.Join(t.TempDir(), "videos")}, nil
+	}}
+	deletedFileRecords := 0
+	fp := &filesProviderMock{deleteFn: func(int) error { deletedFileRecords++; return nil }}
+
+	outcome := runPromoteWithPreparedFailure(t, lib, fp, errors.New("update failed"))
+
+	assertPreservedAndFailed(t, outcome, "CAPTURE_PROMOTION_FAILED_REGISTER")
+	if deletedFileRecords != 1 {
+		t.Fatalf("expected pre-registered home_file to be deleted, got %d", deletedFileRecords)
 	}
 }

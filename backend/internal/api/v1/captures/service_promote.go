@@ -3,6 +3,7 @@ package captures
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"nas-go/api/internal/api/v1/files"
@@ -18,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -59,14 +61,14 @@ func (s *Service) PromoteCapture(captureID int) error {
 	}
 
 	stagingPath := capture.FilePath
-	receivedFileName := capture.FileName
 	stagingDir := filepath.Dir(stagingPath)
 
 	meta := parseCaptureMetadata(capture.RawMetadata)
 
 	lib, err := s.LibrariesProvider.GetLibraryByCategory(libraries.LibraryCategoryVideos)
 	if err != nil {
-		return fmt.Errorf("PromoteCapture: resolve videos library: %w", err)
+		return s.failPromotion(capture, stagingPath, promotionFailureReasonKey(err, "CAPTURE_PROMOTION_FAILED_LIBRARY_UNAVAILABLE"),
+			fmt.Errorf("PromoteCapture: resolve videos library: %w", err))
 	}
 
 	finalPath := collisionAvoidantPath(filepath.Join(lib.Path, buildCaptureRelPath(meta, capture)))
@@ -74,7 +76,8 @@ func (s *Service) PromoteCapture(captureID int) error {
 	finalDir := filepath.Dir(finalPath)
 
 	if mkdirErr := os.MkdirAll(finalDir, 0755); mkdirErr != nil {
-		return fmt.Errorf("PromoteCapture: create destination dir: %w", mkdirErr)
+		return s.failPromotion(capture, stagingPath, promotionFailureReasonKey(mkdirErr, "CAPTURE_PROMOTION_FAILED_LIBRARY_UNAVAILABLE"),
+			fmt.Errorf("PromoteCapture: create destination dir: %w", mkdirErr))
 	}
 
 	now := time.Now()
@@ -90,10 +93,12 @@ func (s *Service) PromoteCapture(captureID int) error {
 	}
 	created, createErr := s.FilesProvider.CreateFile(stub)
 	if createErr != nil {
-		return fmt.Errorf("PromoteCapture: pre-register home_file: %w", createErr)
+		return s.failPromotion(capture, stagingPath, promotionFailureReasonKey(createErr, "CAPTURE_PROMOTION_FAILED_REGISTER"),
+			fmt.Errorf("PromoteCapture: pre-register home_file: %w", createErr))
 	}
 	fileID := created.ID
 
+	promotingCapture := capture
 	capture.FileID = &fileID
 	capture.FileName = finalName
 	capture.FilePath = finalPath
@@ -104,7 +109,8 @@ func (s *Service) PromoteCapture(captureID int) error {
 		return s.Repository.UpdateCapturePromotion(tx, capture)
 	}); updateErr != nil {
 		_ = s.FilesProvider.DeleteFileRecord(fileID)
-		return fmt.Errorf("PromoteCapture: persist capture metadata: %w", updateErr)
+		return s.failPromotion(promotingCapture, stagingPath, promotionFailureReasonKey(updateErr, "CAPTURE_PROMOTION_FAILED_REGISTER"),
+			fmt.Errorf("PromoteCapture: persist capture metadata: %w", updateErr))
 	}
 
 	// Poster is fetched before the move and never gates promotion: a failed
@@ -112,10 +118,9 @@ func (s *Service) PromoteCapture(captureID int) error {
 	s.downloadPoster(meta, fileID)
 
 	if placementErr := placeRecordingInLibrary(stagingPath, finalPath); placementErr != nil {
-		s.rollbackPromotion(captureID, fileID, receivedFileName, stagingPath, placementErr.failureReason())
-		promoteErr := fmt.Errorf("PromoteCapture: place recording into library: %w", placementErr)
-		s.emitPromotionFailedNotification(capture, promoteErr)
-		return promoteErr
+		s.deletePreRegisteredFile(captureID, fileID)
+		return s.failPromotion(promotingCapture, stagingPath, placementErr.reasonKey,
+			fmt.Errorf("PromoteCapture: place recording into library: %w", placementErr))
 	}
 
 	_ = os.RemoveAll(stagingDir)
@@ -199,19 +204,29 @@ func ffmpegRemuxForPlayback(srcPath, destPath string) error {
 	return nil
 }
 
-// rollbackPromotion undoes the DB side of a promotion whose placement failed:
-// the pre-registered home_file stub is removed and the capture is flipped to
-// failed with the stored reason, its file_id detached and its file_name/file_path
-// pointing back at the received file kept in staging for a retry.
-func (s *Service) rollbackPromotion(captureID int, fileID int, receivedFileName string, receivedFilePath string, failureReason string) {
+func promotionFailureReasonKey(cause error, defaultReasonKey string) string {
+	if errors.Is(cause, syscall.ENOSPC) {
+		return "CAPTURE_PROMOTION_FAILED_NO_SPACE"
+	}
+	return defaultReasonKey
+}
+
+func (s *Service) deletePreRegisteredFile(captureID int, fileID int) {
 	if delErr := s.FilesProvider.DeleteFileRecord(fileID); delErr != nil {
 		applog.Error("captures: rollback delete home_file failed", "capture_id", captureID, "file_id", fileID, "error", delErr)
 	}
+}
+
+func (s *Service) failPromotion(capture CaptureModel, receivedFilePath string, reasonKey string, promoteErr error) error {
+	failureReason := i18n.GetMessage(reasonKey)
 	if statusErr := s.withTransaction(func(tx *sql.Tx) error {
-		return s.Repository.MarkCapturePromotionFailed(tx, captureID, receivedFileName, receivedFilePath, failureReason)
+		return s.Repository.MarkCapturePromotionFailed(tx, capture.ID, capture.FileName, receivedFilePath, failureReason)
 	}); statusErr != nil {
-		applog.Error("captures: rollback capture status failed", "capture_id", captureID, "error", statusErr)
+		applog.Error("captures: mark capture promotion failed", "capture_id", capture.ID, "error", statusErr)
 	}
+	applog.Error("captures: promotion failed", "capture_id", capture.ID, "reason_key", reasonKey, "error", promoteErr)
+	s.emitPromotionFailedNotification(capture, promoteErr)
+	return promoteErr
 }
 
 // posterSourcePath is the agreed location of a capture's source poster:
