@@ -27,7 +27,7 @@ export function createUploader({
 }) {
   const wait = waitFn || ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
 
-  async function uploadToKuraNAS(blob, name, mediaType) {
+  async function uploadToKuraNAS(blob, name, mediaType, captureMetadata, episodeKey) {
     const ext = guessExtension(blob.type, mediaType);
     const fileName = `${sanitizeFileName(name)}.${ext}`;
     const apiUrl = await getApiBaseUrl();
@@ -36,6 +36,8 @@ export function createUploader({
       mediaType,
       mimeType: blob.type || "application/octet-stream",
       fileName,
+      captureMetadata,
+      episodeKey,
     });
   }
 
@@ -56,6 +58,8 @@ export function createUploader({
         mime_type: metadata.mimeType,
         size: blob.size,
         file_name: metadata.fileName,
+        ...(metadata.captureMetadata ? { metadata: metadata.captureMetadata } : {}),
+        ...(metadata.episodeKey ? { episode_key: metadata.episodeKey } : {}),
       }),
     });
 

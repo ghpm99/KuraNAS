@@ -85,7 +85,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [ ] 27. Comentário de `service/captures.ts:48-50` removido.
 
 ### Plugin (toda lacuna sobe `version_name`)
-- [ ] 28. `uploadToKuraNAS` envia `metadata` e `episode_key` no `init` — `RN-16`, `CA-05`.
+- [x] 28. `uploadToKuraNAS` envia `metadata` e `episode_key` no `init` — `RN-16`, `CA-05`.
 - [ ] 29. Downloads de HLS, DASH, direto e blob usam os metadados detectados da aba — `RN-16`, `CA-05`. Depende da 28.
 - [ ] 30. Gravação híbrida sobrevive à queda de rede: reabre `init` com a mesma `episode_key`, realinha o offset e segue até um tempo máximo — `RN-01`, `RN-02`, `CA-04`.
 - [ ] 31. "Salvar" do popup só persiste o endereço depois de confirmar `/health` com "kuranas" — `RN-15`, `RF-12`, `CA-12`.

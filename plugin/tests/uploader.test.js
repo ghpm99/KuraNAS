@@ -182,3 +182,59 @@ test('uploadToKuraNAS fails on 409 without a valid received_size', async () => {
     /Chunk upload failed \(409\)/
   );
 });
+
+function createInitRecordingUploader() {
+  const initBodies = [];
+  const fetchImpl = async (url, options = {}) => {
+    if (url.endsWith('/captures/upload/init')) {
+      initBodies.push(JSON.parse(options.body));
+      return { ok: true, json: async () => ({ upload_id: 'upload-1', chunk_size: 10 }) };
+    }
+    if (url.endsWith('/captures/upload/chunk')) {
+      return { ok: true, text: async () => '' };
+    }
+    return { ok: true, json: async () => ({ ok: true }) };
+  };
+  return { initBodies, fetchImpl };
+}
+
+test('uploadToKuraNAS sends metadata and episode_key in the init body when provided', async () => {
+  const { createUploader } = await import(uploaderModuleUrl);
+  const { initBodies, fetchImpl } = createInitRecordingUploader();
+  const uploader = createUploader({
+    getApiBaseUrl: async () => 'http://api.local/api/v1',
+    guessExtension: () => 'mp4',
+    sanitizeFileName: (name) => name,
+    waitFn: async () => {},
+    fetchImpl,
+  });
+
+  const captureMetadata = { title: 'Show', episode: 3 };
+  await uploader.uploadToKuraNAS(
+    new Blob(['abc'], { type: 'video/mp4' }),
+    'video_name',
+    'direct',
+    captureMetadata,
+    'show-s01e03'
+  );
+
+  assert.deepEqual(initBodies[0].metadata, captureMetadata);
+  assert.equal(initBodies[0].episode_key, 'show-s01e03');
+});
+
+test('uploadToKuraNAS omits metadata and episode_key from the init body when absent', async () => {
+  const { createUploader } = await import(uploaderModuleUrl);
+  const { initBodies, fetchImpl } = createInitRecordingUploader();
+  const uploader = createUploader({
+    getApiBaseUrl: async () => 'http://api.local/api/v1',
+    guessExtension: () => 'mp4',
+    sanitizeFileName: (name) => name,
+    waitFn: async () => {},
+    fetchImpl,
+  });
+
+  await uploader.uploadToKuraNAS(new Blob(['abc'], { type: 'video/mp4' }), 'video_name', 'direct');
+
+  assert.equal('episode_key' in initBodies[0], false);
+  assert.equal('metadata' in initBodies[0], false);
+});
