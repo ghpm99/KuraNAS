@@ -201,14 +201,14 @@ Mapa (`GET /vacuum/map`): coordenadas em milímetros, no mesmo sistema do caminh
 - [ ] **CA-14** — Com só identificador e chave gravados, "Procurar robô" encontra o endereço e "Testar conexão" passa a responder sucesso.
 - [ ] **CA-15** — Trocar o endereço do robô no roteador com a tela aberta: em até dois minutos a tela volta a atualizar sozinha, sem ninguém mexer nas Configurações.
 - [ ] **CA-16** — Com a chave errada, "Procurar robô" não grava endereço nenhum e mostra a mensagem de busca sem resultado.
-- [ ] **CA-17** — Com as credenciais da nuvem gravadas, `/vacuum` mostra o mapa da casa com as paredes, cada cômodo numa cor e a base, na mesma forma da planta real.
+- [x] **CA-17** — Com as credenciais da nuvem gravadas, `/vacuum` mostra o mapa da casa com as paredes, cada cômodo numa cor e a base, na mesma forma da planta real.
 - [ ] **CA-18** — Sem credenciais da nuvem, o bloco do mapa explica o que falta e leva às Configurações; estado, comandos e os outros blocos funcionam.
-- [ ] **CA-19** — Nenhuma resposta da API e nenhum arquivo de log contém o segredo de acesso da nuvem.
+- [x] **CA-19** — Nenhuma resposta da API e nenhum arquivo de log contém o segredo de acesso da nuvem.
 - [ ] **CA-20** — Com o serviço do robô não autorizado no projeto da nuvem, o bloco do mapa mostra a mensagem que manda autorizá-lo.
-- [ ] **CA-21** — Iniciar uma limpeza com a tela aberta: a posição do robô e o caminho avançam sobre o mapa sem recarregar a página, sobre o piso e não atravessando paredes.
-- [ ] **CA-22** — Selecionar um cômodo e "Limpar selecionados": o robô vai até aquele cômodo e limpa lá; o estado passa a "limpando".
-- [ ] **CA-23** — Tocar num ponto do piso e "Limpar aqui": o robô vai até o ponto e limpa em volta dele.
-- [ ] **CA-24** — Dar nome a um cômodo: o nome aparece no mapa e na lista e continua depois de recarregar a página.
+- [x] **CA-21** — Iniciar uma limpeza com a tela aberta: a posição do robô e o caminho avançam sobre o mapa sem recarregar a página, sobre o piso e não atravessando paredes.
+- [x] **CA-22** — Selecionar um cômodo e "Limpar selecionados": o robô vai até aquele cômodo e limpa lá; o estado passa a "limpando".
+- [x] **CA-23** — Tocar num ponto do piso e "Limpar aqui": o robô vai até o ponto e limpa em volta dele.
+- [x] **CA-24** — Dar nome a um cômodo: o nome aparece no mapa e na lista e continua depois de recarregar a página.
 - [ ] **CA-25** — No navegador do celular, o mapa cabe na largura da tela sem rolagem horizontal e o toque seleciona o cômodo certo.
 - [ ] **CA-26** — Sem internet: o bloco do mapa mostra a falha da nuvem; estado, comandos e caminho continuam funcionando.
 
