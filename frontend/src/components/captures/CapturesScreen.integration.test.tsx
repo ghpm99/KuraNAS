@@ -1,5 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SnackbarProvider } from 'notistack';
 import CapturesScreen from './CapturesScreen';
 import { apiBase } from '@/service';
 
@@ -34,7 +35,9 @@ const renderScreen = () => {
 	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 	return render(
 		<QueryClientProvider client={client}>
-			<CapturesScreen />
+			<SnackbarProvider>
+				<CapturesScreen />
+			</SnackbarProvider>
 		</QueryClientProvider>
 	);
 };
@@ -60,5 +63,45 @@ describe('CapturesScreen (seam)', () => {
 		await waitFor(() =>
 			expect(mockedApi.get.mock.calls.length).toBeGreaterThan(listLoadsBefore)
 		);
+	});
+
+	const confirmDeletion = () => {
+		fireEvent.click(screen.getByLabelText('CAPTURES_DELETE'));
+		fireEvent.click(screen.getByRole('button', { name: 'CAPTURES_DELETE' }));
+	};
+
+	it('shows the library-kept message when the video stays in the library', async () => {
+		mockedApi.delete.mockResolvedValue({ data: { deleted: true, library_file_kept: true } });
+		renderScreen();
+		await screen.findByText('recording_1');
+
+		confirmDeletion();
+
+		expect(await screen.findByText('CAPTURE_DELETED_LIBRARY_FILE_KEPT')).toBeInTheDocument();
+	});
+
+	it('shows the plain deleted message when no library file was kept', async () => {
+		mockedApi.delete.mockResolvedValue({ data: { deleted: true, library_file_kept: false } });
+		renderScreen();
+		await screen.findByText('recording_1');
+
+		confirmDeletion();
+
+		expect(await screen.findByText('CAPTURE_DELETED')).toBeInTheDocument();
+		expect(screen.queryByText('CAPTURE_DELETED_LIBRARY_FILE_KEPT')).not.toBeInTheDocument();
+	});
+
+	it('shows the server message verbatim and keeps the item when deletion fails', async () => {
+		mockedApi.delete.mockRejectedValue({
+			response: { data: { error: 'A captura está sendo promovida' } },
+		});
+		renderScreen();
+		await screen.findByText('recording_1');
+
+		confirmDeletion();
+
+		expect(await screen.findByText('A captura está sendo promovida')).toBeInTheDocument();
+		expect(screen.getByText('recording_1')).toBeInTheDocument();
+		expect(screen.queryByText('CAPTURE_DELETED')).not.toBeInTheDocument();
 	});
 });

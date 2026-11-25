@@ -5,6 +5,7 @@ import { formatSize } from '@/shared/utils/formatSize';
 import type { Capture, CaptureStatus } from '@/types/captures';
 import type { Pagination } from '@/types/pagination';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSnackbar } from 'notistack';
 import { useMemo, useState } from 'react';
 
 export const captureStatusLabelKey = (status: CaptureStatus): string => {
@@ -25,6 +26,7 @@ export const captureStatusLabelKey = (status: CaptureStatus): string => {
 export const useCapturesScreen = () => {
     const { t } = useI18n();
     const queryClient = useQueryClient();
+    const { enqueueSnackbar } = useSnackbar();
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [captureAwaitingDeletion, setCaptureAwaitingDeletion] = useState<Capture | null>(null);
 
@@ -37,6 +39,17 @@ export const useCapturesScreen = () => {
     const removeMutation = useMutation({
         mutationFn: (id: number) => deleteCapture(id),
         onMutate: (id: number) => setDeletingId(id),
+        onSuccess: (deletion) => {
+            const messageKey = deletion?.library_file_kept
+                ? 'CAPTURE_DELETED_LIBRARY_FILE_KEPT'
+                : 'CAPTURE_DELETED';
+            enqueueSnackbar(t(messageKey), { variant: 'success' });
+        },
+        onError: (deletionError) => {
+            enqueueSnackbar(extractBackendErrorMessage(deletionError) ?? t('CAPTURE_DELETE_ERROR'), {
+                variant: 'error',
+            });
+        },
         onSettled: () => {
             setDeletingId(null);
             queryClient.invalidateQueries({ queryKey: ['captures'] });
