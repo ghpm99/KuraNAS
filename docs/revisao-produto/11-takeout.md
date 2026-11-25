@@ -54,7 +54,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 20. Erro do envio mostra a mensagem do servidor; fallback `TAKEOUT_UPLOAD_ERROR` sem `%s` — `RF-04`, `00/RN-41`.
 - [ ] 21. Fila de vários zips, um por vez, recusa individual de não-`.zip` — `RF-01`, `RN-01`.
 - [ ] 22. Área de soltar e `<input>` aceitam vários arquivos — `RF-01`. Depende da 21.
-- [ ] 23. Explicação curta de como gerar a exportação no Google — `RF-01`.
+- [x] 23. Explicação curta de como gerar a exportação no Google — `RF-01`.
 - [ ] 24. Retomada do envio pelo `received_size` com espera crescente — `RN-02`, `CA-05`. Depende da 02 e 19.
 - [ ] 25. "Cancelar" por zip chama `DELETE /takeout/upload/:upload_id` — `RF-02`. Seam. Depende da 04 e 19.
 - [ ] 26. Velocidade e tempo restante na barra do envio — `RF-02`.

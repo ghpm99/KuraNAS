@@ -56,6 +56,18 @@ describe('TakeoutImportScreen', () => {
 		expect(screen.getByText('TAKEOUT_PAGE_DESCRIPTION')).toBeInTheDocument();
 	});
 
+	it('renders the Google export guide with a safe external link', () => {
+		render(<TakeoutImportScreen />);
+		expect(screen.getByText('TAKEOUT_GUIDE_TITLE')).toBeInTheDocument();
+		expect(screen.getByText('TAKEOUT_GUIDE_STEP_SELECT')).toBeInTheDocument();
+		expect(screen.getByText('TAKEOUT_GUIDE_STEP_FORMAT')).toBeInTheDocument();
+		expect(screen.getByText('TAKEOUT_GUIDE_STEP_DROP')).toBeInTheDocument();
+		const takeoutLink = screen.getByRole('link', { name: 'TAKEOUT_GUIDE_LINK' });
+		expect(takeoutLink).toHaveAttribute('href', 'https://takeout.google.com');
+		expect(takeoutLink).toHaveAttribute('target', '_blank');
+		expect(takeoutLink).toHaveAttribute('rel', 'noopener noreferrer');
+	});
+
 	it('renders drop zone in idle state', () => {
 		render(<TakeoutImportScreen />);
 		expect(screen.getByTestId('drop-zone')).toBeInTheDocument();
