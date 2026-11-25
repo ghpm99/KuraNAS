@@ -47,7 +47,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [ ] 15. Mensagens de zip inválido dizem que o arquivo está corrompido ou ilegível — `RN-12`, `CA-08`.
 - [x] 16. `classifyFile` usa `utils.VideoFormats` e a classificação de imagem compartilhada — `RN-04`, `06/RN-01`.
 - [ ] 17. Textos pt-BR com acento nas chaves `TAKEOUT_*` e remoção das chaves sem uso — `00/RN-43`.
-- [ ] 18. Testes de handler fixam os campos de `init`, `chunk` e `complete` — `00/CA-16`. Só teste.
+- [x] 18. Testes de handler fixam os campos de `init`, `chunk` e `complete` — `00/CA-16`. Só teste.
 
 ### Frontend
 - [ ] 19. `service/takeout.ts`: status e cancelamento da sessão, lista e detalhe de importações; `received_size`/`resumed` no tipo do `init`; payload sem `items` é erro — `00/RN-11`, `§7`. Depende da 02, 03, 04, 11, 12. Seam test.
