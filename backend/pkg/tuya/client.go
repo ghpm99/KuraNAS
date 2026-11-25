@@ -15,13 +15,14 @@ const (
 
 // Client talks the local Tuya protocol version 3.3 over TCP, one connection per call.
 type Client struct {
-	timeout time.Duration
-	now     func() time.Time
+	timeout           time.Duration
+	heartbeatInterval time.Duration
+	now               func() time.Time
 }
 
 // NewClient creates a Client whose timeout applies to the dial and to each read and write.
 func NewClient(timeout time.Duration) *Client {
-	return &Client{timeout: timeout, now: time.Now}
+	return &Client{timeout: timeout, heartbeatInterval: defaultHeartbeatInterval, now: time.Now}
 }
 
 // ReadDataPoints returns the device data points keyed by their id as a string (for example "101").

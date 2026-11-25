@@ -12,6 +12,9 @@ const (
 	commandWrite uint32 = 0x07
 	commandRead  uint32 = 0x0a
 
+	commandHeartbeat  uint32 = 0x09
+	commandStatusPush uint32 = 0x08
+
 	framePrefix      uint32 = 0x000055AA
 	frameSuffix      uint32 = 0x0000AA55
 	frameHeaderSize         = 16
