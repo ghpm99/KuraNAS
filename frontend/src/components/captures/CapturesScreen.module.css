@@ -71,6 +71,13 @@
     font-size: 0.9rem;
 }
 
+.failureReason {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #f44336;
+    overflow-wrap: anywhere;
+}
+
 .meta {
     display: flex;
     flex-wrap: wrap;

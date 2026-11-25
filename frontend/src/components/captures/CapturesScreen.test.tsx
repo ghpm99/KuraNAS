@@ -176,4 +176,23 @@ describe('CapturesScreen', () => {
 
         await waitFor(() => expect(mockedDeleteCapture).toHaveBeenCalledWith(5));
     });
+
+    it('shows the failure reason verbatim only for a failed capture that has one', async () => {
+        mockedGetCaptures.mockResolvedValue({
+            items: [
+                capture({ id: 1, name: 'failed_with_reason', status: 'failed', failure_reason: 'ffmpeg não conseguiu remuxar' }),
+                capture({ id: 2, name: 'failed_without_reason', status: 'failed' }),
+                capture({ id: 3, name: 'failed_empty_reason', status: 'failed', failure_reason: '' }),
+                capture({ id: 4, name: 'uploaded_with_reason', status: 'uploaded', failure_reason: 'motivo antigo' }),
+            ],
+            pagination: {},
+        });
+        const { container } = renderScreen();
+        await screen.findByText('failed_with_reason');
+
+        expect(screen.getByText('ffmpeg não conseguiu remuxar')).toBeInTheDocument();
+        expect(screen.queryByText('motivo antigo')).not.toBeInTheDocument();
+        expect(container.querySelectorAll('[class*="failureReason"]')).toHaveLength(1);
+        expect(screen.queryByText('undefined')).not.toBeInTheDocument();
+    });
 });

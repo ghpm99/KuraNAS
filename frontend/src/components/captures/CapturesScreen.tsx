@@ -113,6 +113,12 @@ const CapturesScreen = () => {
                                             </p>
                                         )}
 
+                                        {capture.status === 'failed' && capture.failure_reason && (
+                                            <p className={styles.failureReason}>
+                                                {capture.failure_reason}
+                                            </p>
+                                        )}
+
                                         <div className={styles.meta}>
                                             {capture.platform && (
                                                 <Chip
