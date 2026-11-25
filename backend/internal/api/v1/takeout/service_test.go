@@ -39,11 +39,13 @@ func (m *uploadDispatcherMock) CreateStep(tx *sql.Tx, step jobs.StepModel) (jobs
 }
 
 type notificationServiceMock struct {
-	called bool
+	called   bool
+	received []notifications.CreateNotificationDto
 }
 
 func (m *notificationServiceMock) GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
 	m.called = true
+	m.received = append(m.received, dto)
 	return notifications.NotificationDto{ID: 1}, nil
 }
 
@@ -393,7 +395,7 @@ func TestSaveAndLoadTakeoutSessionRoundTrip(t *testing.T) {
 func TestEmitImportStartedNotification(t *testing.T) {
 	mock := &notificationServiceMock{}
 	service := &Service{NotificationService: mock}
-	service.emitImportStartedNotification("takeout.zip", "u1")
+	service.emitImportStartedNotification("takeout.zip", 7, 1)
 	if !mock.called {
 		t.Fatalf("expected notification call")
 	}
@@ -673,5 +675,54 @@ func TestUploadChunkRejectsChunkBeyondDeclaredSize(t *testing.T) {
 	}
 	if info.Size() != 5 {
 		t.Fatalf("expected temp file size 5, got %d", info.Size())
+	}
+}
+
+func TestInitUploadEmitsNoNotification(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	notificationMock := &notificationServiceMock{}
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.NotificationService = notificationMock
+
+	if _, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5}); err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if _, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5}); err != nil {
+		t.Fatalf("resumed InitUpload returned error: %v", err)
+	}
+	if len(notificationMock.received) != 0 {
+		t.Fatalf("expected no notification on init, got %d", len(notificationMock.received))
+	}
+}
+
+func TestCompleteUploadEmitsOneStartedNotificationWithImportAndJobIDs(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	notificationMock := &notificationServiceMock{}
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.ImportCreator = &importCreatorMock{createdImportID: 42}
+	service.NotificationService = notificationMock
+
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 5})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	chunk := buildChunkHeader(t, "chunk.bin", "hello")
+	if err := service.UploadChunk(chunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+	completeResult, err := service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: initResult.UploadID})
+	if err != nil {
+		t.Fatalf("CompleteUpload returned error: %v", err)
+	}
+
+	if len(notificationMock.received) != 1 {
+		t.Fatalf("expected exactly one notification, got %d", len(notificationMock.received))
+	}
+	metadata, isMap := notificationMock.received[0].Metadata.(map[string]any)
+	if !isMap {
+		t.Fatalf("expected map metadata")
+	}
+	if metadata["event"] != "takeout_import_started" || metadata["import_id"] != 42 || metadata["job_id"] != completeResult.JobID {
+		t.Fatalf("unexpected metadata: %+v", metadata)
 	}
 }

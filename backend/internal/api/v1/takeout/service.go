@@ -114,7 +114,6 @@ func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultD
 		return InitTakeoutUploadResultDto{}, err
 	}
 
-	s.emitImportStartedNotification(fileName, uploadID)
 	return InitTakeoutUploadResultDto{
 		UploadID:  uploadID,
 		ChunkSize: takeoutUploadChunkSize,
@@ -318,6 +317,7 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 		return TakeoutImportResultDto{}, fmt.Errorf("CompleteUpload create job: %w", err)
 	}
 
+	s.emitImportStartedNotification(session.FileName, importID, createdJob.ID)
 	return TakeoutImportResultDto{
 		JobID:    createdJob.ID,
 		ImportID: importID,
@@ -374,7 +374,7 @@ func (s *Service) loadTakeoutUploadSession(uploadID string) (TakeoutUploadSessio
 	return session, nil
 }
 
-func (s *Service) emitImportStartedNotification(fileName string, uploadID string) {
+func (s *Service) emitImportStartedNotification(fileName string, importID int, jobID int) {
 	if s.NotificationService == nil {
 		return
 	}
@@ -386,7 +386,8 @@ func (s *Service) emitImportStartedNotification(fileName string, uploadID string
 		GroupKey: "takeout_import",
 		Metadata: map[string]any{
 			"event":     "takeout_import_started",
-			"upload_id": uploadID,
+			"import_id": importID,
+			"job_id":    jobID,
 			"file_name": fileName,
 		},
 	})
