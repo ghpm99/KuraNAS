@@ -1,12 +1,15 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getIngestDownloads, getIngestPresets } from '@/service/ingest';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import type { IngestDownload } from '@/types/ingest';
-import { activeIngestDownloadsQueryKey } from './ingestQueryKeys';
+import { activeIngestDownloadsQueryKey, finishedIngestDownloadsQueryKey } from './ingestQueryKeys';
 
 export const ACTIVE_DOWNLOADS_POLL_INTERVAL_MS = 2000;
 
 export const useActiveIngestDownloads = () => {
+    const queryClient = useQueryClient();
+    const previousActiveIdsRef = useRef<Set<number>>(new Set());
     const downloadsQuery = useQuery({
         queryKey: activeIngestDownloadsQueryKey,
         queryFn: () => getIngestDownloads({ page: 1, pageSize: 50, state: 'active' }),
@@ -26,6 +29,21 @@ export const useActiveIngestDownloads = () => {
     const downloads: IngestDownload[] = Array.isArray(downloadsQuery.data?.items)
         ? downloadsQuery.data.items
         : [];
+
+    useEffect(() => {
+        const activeItems = downloadsQuery.data?.items;
+        const currentIds = new Set(
+            Array.isArray(activeItems) ? activeItems.map((download) => download.id) : []
+        );
+        const hasLeftActiveList = [...previousActiveIdsRef.current].some(
+            (downloadId) => !currentIds.has(downloadId)
+        );
+        previousActiveIdsRef.current = currentIds;
+        if (hasLeftActiveList) {
+            void queryClient.invalidateQueries({ queryKey: finishedIngestDownloadsQueryKey });
+        }
+    }, [downloadsQuery.data?.items, queryClient]);
+
     const presets = Array.isArray(presetsQuery.data) ? presetsQuery.data : [];
     const presetLabelsByKey = new Map(presets.map((preset) => [preset.key, preset.label]));
 

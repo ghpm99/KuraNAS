@@ -30,3 +30,8 @@
 .progressBar {
     flex: 1;
 }
+
+.actionsRow {
+    display: flex;
+    gap: 8px;
+}
