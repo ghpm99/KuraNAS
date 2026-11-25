@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -30,12 +31,11 @@ func parseTakeoutMetadata(jsonBytes []byte) (TakeoutMetadata, error) {
 }
 
 func classifyFile(fileName string, mimeType string) libraries.LibraryCategory {
-	ext := strings.ToLower(filepath.Ext(fileName))
-	if utils.GetFormatTypeByExtension(ext).Type == utils.FormatTypeImage || ext == ".raw" {
+	extension := utils.ExtensionOf(fileName)
+	if utils.GetFormatTypeByExtension(extension).Type == utils.FormatTypeImage {
 		return libraries.LibraryCategoryImages
 	}
-	switch ext {
-	case ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".ts":
+	if slices.Contains(utils.VideoFormats, extension) {
 		return libraries.LibraryCategoryVideos
 	}
 

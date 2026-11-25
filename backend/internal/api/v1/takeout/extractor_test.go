@@ -75,6 +75,26 @@ func TestClassifyFile(t *testing.T) {
 	}
 }
 
+func TestClassifyFileUsesSharedExtensionLists(t *testing.T) {
+	cases := []struct {
+		fileName string
+		expected libraries.LibraryCategory
+	}{
+		{"clip.3gp", libraries.LibraryCategoryVideos},
+		{"clip.MPG", libraries.LibraryCategoryVideos},
+		{"clip.m2ts", libraries.LibraryCategoryVideos},
+		{"clip.ts", ""},
+		{"notes.txt", ""},
+		{"photo.JPG", libraries.LibraryCategoryImages},
+		{"photo.cr2", libraries.LibraryCategoryImages},
+	}
+	for _, testCase := range cases {
+		if got := classifyFile(testCase.fileName, ""); got != testCase.expected {
+			t.Fatalf("classifyFile(%q) = %q, expected %q", testCase.fileName, got, testCase.expected)
+		}
+	}
+}
+
 func TestBuildDestinationPath(t *testing.T) {
 	got, err := buildDestinationPath("/data/Imagens", "IMG_01.jpg")
 	if err != nil {

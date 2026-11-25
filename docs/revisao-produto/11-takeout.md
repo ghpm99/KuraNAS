@@ -45,7 +45,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 13.2. `CloseImportFailed` grava também as contagens — `RN-12`. Depende da 13.
 - [ ] 14. Falta de espaço ou de permissão durante a importação falha com motivo traduzido próprio — `§8`, `RN-12`. Depende da 13.
 - [ ] 15. Mensagens de zip inválido dizem que o arquivo está corrompido ou ilegível — `RN-12`, `CA-08`.
-- [ ] 16. `classifyFile` usa `utils.VideoFormats` e a classificação de imagem compartilhada — `RN-04`, `06/RN-01`.
+- [x] 16. `classifyFile` usa `utils.VideoFormats` e a classificação de imagem compartilhada — `RN-04`, `06/RN-01`.
 - [ ] 17. Textos pt-BR com acento nas chaves `TAKEOUT_*` e remoção das chaves sem uso — `00/RN-43`.
 - [ ] 18. Testes de handler fixam os campos de `init`, `chunk` e `complete` — `00/CA-16`. Só teste.
 
