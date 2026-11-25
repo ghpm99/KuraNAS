@@ -24,3 +24,6 @@ var UpdateCapturePromotionQuery string
 
 //go:embed mark_capture_promotion_failed.sql
 var MarkCapturePromotionFailedQuery string
+
+//go:embed mark_capture_promoting.sql
+var MarkCapturePromotingQuery string

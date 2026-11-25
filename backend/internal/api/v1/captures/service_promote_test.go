@@ -3,10 +3,12 @@ package captures
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"nas-go/api/internal/api/v1/files"
@@ -500,5 +502,97 @@ func TestPromoteCapturePreRegistersLowercaseFormatForUppercaseExtension(t *testi
 	}
 	if registeredFormat != ".mp4" {
 		t.Fatalf("expected registered format .mp4, got %q", registeredFormat)
+	}
+}
+
+func TestPromoteCaptureRecordsPromotingBeforePromoted(t *testing.T) {
+	dir := t.TempDir()
+	stagingFile := filepath.Join(dir, "capturas", "show", "recording.mp4")
+	if err := os.MkdirAll(filepath.Dir(stagingFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(stagingFile, []byte("video-bytes"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	swapRemux(t, func(src, dest string) error { return os.WriteFile(dest, []byte("remuxed"), 0644) })
+
+	recordedStatuses := []CaptureStatus{}
+	mock := &repoMock{
+		getByIDFn: func(id int) (CaptureModel, error) {
+			return CaptureModel{ID: id, Name: "show", FileName: "recording.mp4", FilePath: stagingFile, Status: CaptureStatusUploaded, RawMetadata: json.RawMessage(`{"title":"Show"}`)}, nil
+		},
+		markPromotingFn: func(tx *sql.Tx, id int) error {
+			recordedStatuses = append(recordedStatuses, CaptureStatusPromoting)
+			return nil
+		},
+		updatePromotionFn: func(tx *sql.Tx, capture CaptureModel) error {
+			recordedStatuses = append(recordedStatuses, capture.Status)
+			return nil
+		},
+	}
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{Path: filepath.Join(dir, "videos")}, nil
+	}}
+	service := newPromoteServiceForTest(mock, lib, &filesProviderMock{})
+
+	if err := service.PromoteCapture(1); err != nil {
+		t.Fatalf("PromoteCapture returned error: %v", err)
+	}
+
+	expectedStatuses := []CaptureStatus{CaptureStatusPromoting, CaptureStatusPromoted}
+	if !reflect.DeepEqual(recordedStatuses, expectedStatuses) {
+		t.Fatalf("expected status sequence %v, got %v", expectedStatuses, recordedStatuses)
+	}
+}
+
+func TestPromoteCaptureRecordsPromotingBeforeFailed(t *testing.T) {
+	dir := t.TempDir()
+	staging := filepath.Join(dir, "capturas", "gone", "missing.mp4")
+	swapRemux(t, func(src, dest string) error { return os.ErrNotExist })
+
+	recordedStatuses := []CaptureStatus{}
+	mock := &repoMock{
+		getByIDFn: func(id int) (CaptureModel, error) {
+			return CaptureModel{ID: id, Name: "gone", FileName: "missing.mp4", FilePath: staging, Status: CaptureStatusUploaded, RawMetadata: json.RawMessage(`{"title":"Gone"}`)}, nil
+		},
+		markPromotingFn: func(tx *sql.Tx, id int) error {
+			recordedStatuses = append(recordedStatuses, CaptureStatusPromoting)
+			return nil
+		},
+		updatePromotionFn: func(tx *sql.Tx, capture CaptureModel) error {
+			recordedStatuses = append(recordedStatuses, capture.Status)
+			return nil
+		},
+		markFailedFn: func(tx *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error {
+			recordedStatuses = append(recordedStatuses, CaptureStatusFailed)
+			return nil
+		},
+	}
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{Path: filepath.Join(dir, "videos")}, nil
+	}}
+	service := newPromoteServiceForTest(mock, lib, &filesProviderMock{})
+
+	if err := service.PromoteCapture(1); err == nil {
+		t.Fatal("expected placement failure error")
+	}
+
+	expectedStatuses := []CaptureStatus{CaptureStatusPromoting, CaptureStatusPromoted, CaptureStatusFailed}
+	if !reflect.DeepEqual(recordedStatuses, expectedStatuses) {
+		t.Fatalf("expected status sequence %v, got %v", expectedStatuses, recordedStatuses)
+	}
+}
+
+func TestPromoteCaptureStopsWhenMarkingPromotingFails(t *testing.T) {
+	mock := &repoMock{
+		getByIDFn: func(id int) (CaptureModel, error) { return CaptureModel{ID: id}, nil },
+		markPromotingFn: func(tx *sql.Tx, id int) error {
+			return errors.New("db error")
+		},
+	}
+	service := newPromoteServiceForTest(mock, &librariesProviderMock{}, &filesProviderMock{})
+
+	if err := service.PromoteCapture(1); err == nil {
+		t.Fatal("expected error when marking promoting fails")
 	}
 }

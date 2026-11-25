@@ -52,6 +52,12 @@ func (s *Service) PromoteCapture(captureID int) error {
 		return fmt.Errorf("PromoteCapture: load capture %d: %w", captureID, err)
 	}
 
+	if markErr := s.withTransaction(func(tx *sql.Tx) error {
+		return s.Repository.MarkCapturePromoting(tx, captureID)
+	}); markErr != nil {
+		return fmt.Errorf("PromoteCapture: mark capture %d as promoting: %w", captureID, markErr)
+	}
+
 	stagingPath := capture.FilePath
 	receivedFileName := capture.FileName
 	stagingDir := filepath.Dir(stagingPath)

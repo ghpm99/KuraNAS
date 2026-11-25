@@ -53,7 +53,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 ## Lacunas (uma alteração cada)
 
 ### Backend
-- [ ] 01. `PromoteCapture` grava `promoting` ao começar (método novo no repositório, `.sql` próprio que também zera `failure_reason`) — `RF-03`, `CA-07`. Pronto quando: teste do serviço cobre `uploaded` → `promoting` → `promoted`/`failed`.
+- [x] 01. `PromoteCapture` grava `promoting` ao começar (método novo no repositório, `.sql` próprio que também zera `failure_reason`) — `RF-03`, `CA-07`. Pronto quando: teste do serviço cobre `uploaded` → `promoting` → `promoted`/`failed`.
 - [ ] 02. Falha de promoção antes da colocação do arquivo marca a captura `failed` com motivo i18n, preserva o recebido e emite a notificação de falha (chaves próprias nos dois idiomas) — `RN-09`, `RN-12`, `§9`, `CA-10`. Depende da 01.
 - [ ] 03. `POST /captures/:id/promote`: `202` com `{"job_id"}` via `CreateCaptureProcessJob`; `409` quando não está `failed`; `404` quando não existe — `§8`, `RF-04`, `CA-10`. Seam: teste do handler decodifica `job_id`.
 - [ ] 04. `GET /captures` aceita `status` (`uploaded|promoting|promoted|failed`) e `platform`, `400` em valor inválido — `§8`, `RF-02`, `00/RN-52`.

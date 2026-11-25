@@ -190,3 +190,26 @@ func TestDeleteFailedCaptureRemovesReceivedFile_Postgres(t *testing.T) {
 		t.Fatal("expected capture row gone")
 	}
 }
+
+func TestMarkCapturePromotingSetsStatusAndClearsFailureReason_Postgres(t *testing.T) {
+	_, repository, receivedPath, _ := newPostgresPromoteFixture(t)
+	created := insertReceivedCapture(t, repository, receivedPath)
+
+	err := repository.GetDbContext().ExecTx(func(tx *sql.Tx) error {
+		if markErr := repository.MarkCapturePromotionFailed(tx, created.ID, "recording.mp4", receivedPath, "previous failure"); markErr != nil {
+			return markErr
+		}
+		return repository.MarkCapturePromoting(tx, created.ID)
+	})
+	if err != nil {
+		t.Fatalf("mark promoting: %v", err)
+	}
+
+	promoting, err := repository.GetCaptureByID(created.ID)
+	if err != nil {
+		t.Fatalf("reload capture: %v", err)
+	}
+	if promoting.Status != CaptureStatusPromoting || promoting.FailureReason != "" {
+		t.Fatalf("expected promoting without reason, got %s %q", promoting.Status, promoting.FailureReason)
+	}
+}

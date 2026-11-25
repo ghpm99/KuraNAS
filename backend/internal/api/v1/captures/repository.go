@@ -276,6 +276,15 @@ func (r *Repository) UpdateCapturePromotion(transaction *sql.Tx, capture Capture
 	return nil
 }
 
+// MarkCapturePromoting flips the capture to promoting and clears any failure
+// reason left by a previous attempt.
+func (r *Repository) MarkCapturePromoting(transaction *sql.Tx, id int) error {
+	if _, err := transaction.Exec(queries.MarkCapturePromotingQuery, id); err != nil {
+		return fmt.Errorf("MarkCapturePromoting: %w", err)
+	}
+	return nil
+}
+
 // MarkCapturePromotionFailed flips the capture to failed, detaches its file_id
 // and points file_name/file_path back at the received file so a retry or a
 // delete operates on what is actually on disk.

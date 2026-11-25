@@ -16,6 +16,7 @@ type RepositoryInterface interface {
 	GetCaptureByID(id int) (CaptureModel, error)
 	GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error)
 	UpdateCapturePromotion(transaction *sql.Tx, capture CaptureModel) error
+	MarkCapturePromoting(transaction *sql.Tx, id int) error
 	MarkCapturePromotionFailed(transaction *sql.Tx, id int, receivedFileName string, receivedFilePath string, failureReason string) error
 	DeleteCapture(transaction *sql.Tx, id int) error
 }
