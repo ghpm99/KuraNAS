@@ -2554,5 +2554,6 @@
 	"INGEST_ACTIVE_FORMAT": "Formato: {{format}}",
 	"INGEST_ACTIVE_SPEED": "{{speed}}/s",
 	"INGEST_ACTIVE_ETA": "Faltam {{time}}",
-	"INGEST_ACTIVE_ETA_UNKNOWN": "Tempo restante indefinido"
+	"INGEST_ACTIVE_ETA_UNKNOWN": "Tempo restante indefinido",
+	"TAKEOUT_UPLOAD_ALREADY_COMPLETED": "Este upload já foi concluído e a importação já foi iniciada"
 }

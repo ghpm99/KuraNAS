@@ -2554,5 +2554,6 @@
 	"INGEST_ACTIVE_FORMAT": "Format: {{format}}",
 	"INGEST_ACTIVE_SPEED": "{{speed}}/s",
 	"INGEST_ACTIVE_ETA": "{{time}} left",
-	"INGEST_ACTIVE_ETA_UNKNOWN": "Time left unknown"
+	"INGEST_ACTIVE_ETA_UNKNOWN": "Time left unknown",
+	"TAKEOUT_UPLOAD_ALREADY_COMPLETED": "This upload was already completed and its import has already started"
 }
