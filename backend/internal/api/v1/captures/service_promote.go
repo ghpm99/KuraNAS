@@ -225,7 +225,7 @@ func (s *Service) failPromotion(capture CaptureModel, receivedFilePath string, r
 		applog.Error("captures: mark capture promotion failed", "capture_id", capture.ID, "error", statusErr)
 	}
 	applog.Error("captures: promotion failed", "capture_id", capture.ID, "reason_key", reasonKey, "error", promoteErr)
-	s.emitPromotionFailedNotification(capture, promoteErr)
+	s.emitPromotionFailedNotification(capture, failureReason)
 	return promoteErr
 }
 
@@ -313,7 +313,7 @@ func (s *Service) emitPromotionCompletedNotification(capture CaptureModel) {
 	})
 }
 
-func (s *Service) emitPromotionFailedNotification(capture CaptureModel, promoteErr error) {
+func (s *Service) emitPromotionFailedNotification(capture CaptureModel, failureReason string) {
 	if s.NotificationService == nil {
 		return
 	}
@@ -325,7 +325,7 @@ func (s *Service) emitPromotionFailedNotification(capture CaptureModel, promoteE
 		Metadata: map[string]any{
 			"event":      "capture_promotion_failed",
 			"capture_id": capture.ID,
-			"error":      promoteErr.Error(),
+			"error":      failureReason,
 		},
 	})
 }

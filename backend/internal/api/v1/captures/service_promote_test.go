@@ -724,3 +724,51 @@ func TestPromoteCaptureFailsWhenCapturePromotionCannotBePersisted(t *testing.T) 
 		t.Fatalf("expected pre-registered home_file to be deleted, got %d", deletedFileRecords)
 	}
 }
+
+func TestPromotionFailureNotificationCarriesTranslatedReasonWithoutRawError(t *testing.T) {
+	var metadata map[string]any
+	lib := &librariesProviderMock{getByCategoryFn: func(libraries.LibraryCategory) (libraries.LibraryDto, error) {
+		return libraries.LibraryDto{}, errors.New("open /srv/secret/path: boom")
+	}}
+	mock := &repoMock{
+		getByIDFn: func(id int) (CaptureModel, error) {
+			return CaptureModel{ID: id, Name: "show", FileName: "recording.mp4", FilePath: filepath.Join(t.TempDir(), "recording.mp4")}, nil
+		},
+	}
+	service := newPromoteServiceForTest(mock, lib, &filesProviderMock{})
+	service.NotificationService = &notificationServiceMock{
+		groupOrCreateFn: func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+			metadata, _ = dto.Metadata.(map[string]any)
+			return notifications.NotificationDto{ID: 1}, nil
+		},
+	}
+	_ = service.PromoteCapture(1)
+
+	expectedReason := i18n.GetMessage("CAPTURE_PROMOTION_FAILED_LIBRARY_UNAVAILABLE")
+	if metadata["error"] != expectedReason {
+		t.Fatalf("expected translated reason %q, got %v", expectedReason, metadata["error"])
+	}
+	if metadata["event"] != "capture_promotion_failed" {
+		t.Fatalf("expected event to be kept, got %v", metadata["event"])
+	}
+}
+
+func TestUploadFailureNotificationCarriesTranslatedReasonWithoutRawError(t *testing.T) {
+	var metadata map[string]any
+	service := &Service{NotificationService: &notificationServiceMock{
+		groupOrCreateFn: func(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error) {
+			metadata, _ = dto.Metadata.(map[string]any)
+			return notifications.NotificationDto{ID: 1}, nil
+		},
+	}}
+
+	service.emitUploadFailedNotification("up1", "show", fmt.Errorf("finalize: rename /srv/secret/path: %w", errors.New("disk")))
+
+	expectedReason := i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")
+	if metadata["error"] != expectedReason {
+		t.Fatalf("expected translated reason %q, got %v", expectedReason, metadata["error"])
+	}
+	if metadata["event"] != "capture_upload_failed" {
+		t.Fatalf("expected event to be kept, got %v", metadata["event"])
+	}
+}

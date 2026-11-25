@@ -397,6 +397,8 @@ func (s *Service) emitUploadFailedNotification(uploadID string, captureName stri
 		return
 	}
 
+	applog.Error("captures: upload failed", "upload_id", uploadID, "capture_name", captureName, "error", uploadErr)
+
 	messageName := captureName
 	if strings.TrimSpace(messageName) == "" {
 		messageName = uploadID
@@ -411,9 +413,22 @@ func (s *Service) emitUploadFailedNotification(uploadID string, captureName stri
 			"event":        "capture_upload_failed",
 			"upload_id":    uploadID,
 			"capture_name": captureName,
-			"error":        uploadErr.Error(),
+			"error":        uploadFailureReason(uploadErr),
 		},
 	})
+}
+
+func uploadFailureReason(uploadErr error) string {
+	var incompleteUpload *IncompleteUploadError
+	switch {
+	case errors.Is(uploadErr, ErrEmptyCapture):
+		return i18n.GetMessage("ERROR_CAPTURE_UPLOAD_EMPTY")
+	case errors.Is(uploadErr, ErrUploadSessionNotFound):
+		return i18n.GetMessage("ERROR_CAPTURE_UPLOAD_SESSION_NOT_FOUND")
+	case errors.As(uploadErr, &incompleteUpload):
+		return i18n.Translate("ERROR_CAPTURE_UPLOAD_INCOMPLETE", incompleteUpload.ReceivedSize, incompleteUpload.ExpectedSize)
+	}
+	return i18n.GetMessage("ERROR_CAPTURE_UPLOAD_FAILED")
 }
 
 func (s *Service) persistCaptureAndDispatch(
