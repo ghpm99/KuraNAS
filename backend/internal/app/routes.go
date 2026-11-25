@@ -596,6 +596,7 @@ func RegisterCapturesRoutes(router *gin.RouterGroup, context *AppContext) {
 	capturesGroup.GET("", context.Captures.Handler.GetCapturesHandler)
 	capturesGroup.GET("/:id", context.Captures.Handler.GetCaptureByIDHandler)
 	capturesGroup.DELETE("/:id", context.Captures.Handler.DeleteCaptureHandler)
+	capturesGroup.POST("/:id/promote", context.Captures.Handler.RetryCapturePromotionHandler)
 }
 
 func RegisterLibrariesRoutes(router *gin.RouterGroup, context *AppContext) {

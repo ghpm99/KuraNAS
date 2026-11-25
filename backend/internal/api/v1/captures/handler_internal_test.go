@@ -52,6 +52,10 @@ func (m *capturesHandlerServiceMock) PromoteCapture(captureID int) error {
 	return nil
 }
 
+func (m *capturesHandlerServiceMock) RetryCapturePromotion(captureID int) (int, error) {
+	return 7, nil
+}
+
 func (m *capturesHandlerServiceMock) DeleteCapture(id int) (bool, error) {
 	return m.libraryFileKept, nil
 }
