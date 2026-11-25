@@ -2569,5 +2569,7 @@
 	"INGEST_HISTORY_STATE_CANCELED": "Canceled",
 	"INGEST_HISTORY_OPEN": "Open",
 	"INGEST_HISTORY_OPEN_FOLDER": "Show in folder",
-	"INGEST_HISTORY_LOCATION_ERROR": "Could not locate the downloaded file."
+	"INGEST_HISTORY_LOCATION_ERROR": "Could not locate the downloaded file.",
+	"INGEST_ACTIVE_CANCEL": "Cancel",
+	"INGEST_ACTIVE_CANCEL_ERROR": "Could not cancel the download."
 }
