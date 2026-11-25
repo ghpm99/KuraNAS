@@ -1,10 +1,10 @@
 //go:build windows
 
-package tiering
+package diskspace
 
 import "golang.org/x/sys/windows"
 
-func availableBytesAt(path string) (int64, error) {
+func AvailableBytesAt(path string) (int64, error) {
 	pathPtr, err := windows.UTF16PtrFromString(path)
 	if err != nil {
 		return 0, err

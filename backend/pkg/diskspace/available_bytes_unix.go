@@ -1,10 +1,10 @@
 //go:build !windows
 
-package tiering
+package diskspace
 
 import "syscall"
 
-func availableBytesAt(path string) (int64, error) {
+func AvailableBytesAt(path string) (int64, error) {
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs(path, &stat); err != nil {
 		return 0, err

@@ -7,6 +7,7 @@ import (
 
 	"nas-go/api/internal/roots"
 	tieringengine "nas-go/api/internal/worker/tiering"
+	"nas-go/api/pkg/diskspace"
 )
 
 // ErrInvalidColdDir flags a cold directory that is empty, relative or inside an
@@ -25,7 +26,7 @@ func NewService(repository RepositoryInterface) *Service {
 		repository:     repository,
 		listRoots:      roots.Enabled,
 		promote:        tieringengine.Promote,
-		availableBytes: availableBytesAt,
+		availableBytes: diskspace.AvailableBytesAt,
 	}
 }
 
