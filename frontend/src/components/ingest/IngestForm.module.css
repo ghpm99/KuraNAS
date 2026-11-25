@@ -1,0 +1,22 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 640px;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.row > :first-child {
+    flex: 1 1 auto;
+}
+
+.subfolder {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}

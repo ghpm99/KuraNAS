@@ -47,7 +47,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 
 ### Frontend
 - [x] 15. `service/ingest.ts`: `fetchFromUrl`, `getIngestTargets`, `getIngestPresets`, `getIngestDownloads` (paginado, usando o adaptador de paginação compartilhado — `00/RN-53`) e `retryIngestDownload`, com tipos iguais ao item de `11 §7`. Depende da 31 e da 33.
-- [ ] 16. Tela "Baixar de URL" — formulário: endereço (com botão colar), destino (raiz + subpasta pelo seletor de pasta), formato; validação no campo antes de enviar (`http`/`https`, até 2 048 caracteres); erro do servidor exibido no formulário; ao enviar, o formulário limpa o endereço e fica pronto para o próximo — `11/RF-01` a `RF-03`, `CA-05`. Seam test do `POST /ingest/fetch`; teste de render sem mock.
+- [x] 16. Tela "Baixar de URL" — formulário: endereço (com botão colar), destino (raiz + subpasta pelo seletor de pasta), formato; validação no campo antes de enviar (`http`/`https`, até 2 048 caracteres); erro do servidor exibido no formulário; ao enviar, o formulário limpa o endereço e fica pronto para o próximo — `11/RF-01` a `RF-03`, `CA-05`. Seam test do `POST /ingest/fetch`; teste de render sem mock.
 - [ ] 16.1. Último destino e último formato usados vêm preenchidos (guardados no dispositivo) — `11/RF-01`.
 - [ ] 16.2. Sem yt-dlp instalado (`GET /ingest/ytdlp/status`), a tela mostra o aviso com atalho para `/settings#ferramenta-de-download` e desabilita o envio — `11/RN-12`, `CA-10`.
 - [ ] 17. Rota `/ingest` e item "Baixar de URL" no grupo Ferramentas do menu — `01/RF-01`, `11/RF-01`.
