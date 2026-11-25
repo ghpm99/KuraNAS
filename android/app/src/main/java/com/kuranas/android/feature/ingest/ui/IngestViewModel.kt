@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.ingest.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuranas.android.core.network.AppResult
@@ -8,6 +9,7 @@ import com.kuranas.android.feature.ingest.data.IngestDownloadDto
 import com.kuranas.android.feature.ingest.data.IngestPresetDto
 import com.kuranas.android.feature.ingest.data.IngestRepository
 import com.kuranas.android.feature.ingest.data.IngestTargetDto
+import com.kuranas.android.navigation.AppRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,10 +49,13 @@ data class IngestUiState(
 )
 
 @HiltViewModel
-class IngestViewModel @Inject constructor(private val repository: IngestRepository) : ViewModel() {
+class IngestViewModel @Inject constructor(
+    private val repository: IngestRepository,
+    savedStateHandle: SavedStateHandle,
+) : ViewModel() {
 
     private val downloadsLoader = PagedListLoader<IngestDownloadDto>(viewModelScope) { it.id }
-    private val form = MutableStateFlow(IngestFormState())
+    private val form = MutableStateFlow(IngestFormState(url = savedStateHandle.get<String>(AppRoute.INGEST_URL_ARGUMENT).orEmpty()))
     private val actionErrorMessage = MutableStateFlow<String?>(null)
 
     val state: StateFlow<IngestUiState> = combine(downloadsLoader.state, form, actionErrorMessage) { downloads, currentForm, actionError ->

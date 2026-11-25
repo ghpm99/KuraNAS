@@ -56,6 +56,12 @@ fun NavHostController.openTransfers() {
     navigate(AppRoute.TRANSFERS) { launchSingleTop = true }
 }
 
+fun NavHostController.openIngest(url: String) {
+    navigate(AppRoute.ingest(url)) {
+        popUpTo(AppRoute.INGEST_ROUTE) { inclusive = true }
+    }
+}
+
 private fun NavHostController.openSearch() = navigate(AppRoute.SEARCH) { launchSingleTop = true }
 
 private fun NavHostController.openImage(id: String) = navigate(AppRoute.imageViewer(id))
@@ -213,7 +219,10 @@ private fun NavGraphBuilder.moreGraph(navController: NavHostController) {
         composable(AppRoute.TRASH) { TrashScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.NOTIFICATIONS) { NotificationsScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.JOBS) { JobsScreen(onNavigateBack = { navController.popBackStack() }) }
-        composable(AppRoute.INGEST) { IngestScreen(onNavigateBack = { navController.popBackStack() }) }
+        composable(
+            route = AppRoute.INGEST_ROUTE,
+            arguments = listOf(navArgument(AppRoute.INGEST_URL_ARGUMENT) { type = NavType.StringType; defaultValue = "" }),
+        ) { IngestScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.DIARY) { DiaryScreen(onNavigateBack = { navController.popBackStack() }) }
         composable(AppRoute.SETTINGS) {
             SettingsScreen(

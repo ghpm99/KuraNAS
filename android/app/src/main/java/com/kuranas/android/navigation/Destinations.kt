@@ -43,6 +43,8 @@ object AppRoute {
     const val CAMERA_UPLOAD = "camera-upload"
     const val JOBS = "jobs"
     const val INGEST = "ingest"
+    const val INGEST_URL_ARGUMENT = "url"
+    const val INGEST_ROUTE = "ingest?url={url}"
     const val JOB_DETAIL = "jobs/{id}"
     const val HOME = "home"
     const val FILES = "files"
@@ -70,5 +72,6 @@ object AppRoute {
     fun musicFolder(key: String) = "music/folder/${android.net.Uri.encode(key)}"
     fun musicPlaylist(id: Int) = "music/playlist/$id"
     fun videoPlaylist(id: Int) = "video/playlist/$id"
+    fun ingest(url: String) = "ingest?url=${android.net.Uri.encode(url)}"
     fun jobDetail(id: String) = "jobs/$id"
 }

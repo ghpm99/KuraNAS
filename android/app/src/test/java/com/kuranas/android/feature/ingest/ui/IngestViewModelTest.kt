@@ -1,5 +1,6 @@
 package com.kuranas.android.feature.ingest.ui
 
+import androidx.lifecycle.SavedStateHandle
 import com.kuranas.android.core.network.AppResult
 import com.kuranas.android.core.paging.ListPage
 import com.kuranas.android.feature.ingest.data.IngestDownloadDto
@@ -48,7 +49,7 @@ class IngestViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun loadedViewModel() = IngestViewModel(repository).also { it.load() }
+    private fun loadedViewModel() = IngestViewModel(repository, SavedStateHandle()).also { it.load() }
 
     @Test
     fun `load fills the options with the first target and preset selected and lists the downloads`() {
@@ -158,5 +159,20 @@ class IngestViewModelTest {
         val viewModel = loadedViewModel()
 
         assertEquals("histórico indisponível", viewModel.state.value.error)
+    }
+
+    @Test
+    fun `starts with the url form field empty when no url is passed`() {
+        assertEquals("", IngestViewModel(repository, SavedStateHandle()).state.value.form.url)
+    }
+
+    @Test
+    fun `prefills the url form field with the shared url`() {
+        val handle = SavedStateHandle(mapOf("url" to "https://youtu.be/abc"))
+
+        val viewModel = IngestViewModel(repository, handle).also { it.load() }
+
+        assertEquals("https://youtu.be/abc", viewModel.state.value.form.url)
+        assertTrue(viewModel.state.value.form.canSubmit)
     }
 }

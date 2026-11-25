@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.kuranas.android.core.server.ServerConnectionMonitor
+import com.kuranas.android.feature.ingest.ui.IngestIntents
 import com.kuranas.android.feature.transfers.ui.TransfersIntents
 import com.kuranas.android.navigation.KuranasRoot
 import com.kuranas.android.ui.theme.KuranasTheme
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
     lateinit var serverConnectionMonitor: ServerConnectionMonitor
 
     private var shouldOpenTransfers by mutableStateOf(false)
+    private var requestedIngestUrl by mutableStateOf<String?>(null)
 
     override fun onStart() {
         super.onStart()
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (TransfersIntents.requestsOpenTransfers(intent)) shouldOpenTransfers = true
+        IngestIntents.requestedIngestUrl(intent)?.let { requestedIngestUrl = it }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,12 +56,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         ensureNotificationPermission()
         if (savedInstanceState == null) shouldOpenTransfers = TransfersIntents.requestsOpenTransfers(intent)
+        if (savedInstanceState == null) requestedIngestUrl = IngestIntents.requestedIngestUrl(intent)
         setContent {
             KuranasTheme {
                 KuranasRoot(
                     modifier = Modifier.fillMaxSize(),
                     shouldOpenTransfers = shouldOpenTransfers,
                     onOpenTransfersHandled = { shouldOpenTransfers = false },
+                    requestedIngestUrl = requestedIngestUrl,
+                    onIngestUrlHandled = { requestedIngestUrl = null },
                 )
             }
         }

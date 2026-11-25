@@ -47,6 +47,8 @@ fun KuranasRoot(
     modifier: Modifier = Modifier,
     shouldOpenTransfers: Boolean = false,
     onOpenTransfersHandled: () -> Unit = {},
+    requestedIngestUrl: String? = null,
+    onIngestUrlHandled: () -> Unit = {},
     rootViewModel: RootViewModel = hiltViewModel(),
 ) {
     val destination by rootViewModel.destination.collectAsStateWithLifecycle()
@@ -55,14 +57,19 @@ fun KuranasRoot(
         when (val currentDestination = destination) {
             RootDestination.Checking -> LoadingView()
             RootDestination.Connection -> ConnectionScreen()
-            RootDestination.App -> AuthenticatedApp(shouldOpenTransfers, onOpenTransfersHandled)
+            RootDestination.App -> AuthenticatedApp(shouldOpenTransfers, onOpenTransfersHandled, requestedIngestUrl, onIngestUrlHandled)
             is RootDestination.AccessDenied -> AccessDeniedScreen(currentDestination.denial)
         }
     }
 }
 
 @Composable
-private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandled: () -> Unit) {
+private fun AuthenticatedApp(
+    shouldOpenTransfers: Boolean,
+    onOpenTransfersHandled: () -> Unit,
+    requestedIngestUrl: String?,
+    onIngestUrlHandled: () -> Unit,
+) {
     val navController = rememberNavController()
     val activityOwner = LocalActivity.current as ComponentActivity
     val transfersIndicatorViewModel: TransfersIndicatorViewModel = hiltViewModel(activityOwner)
@@ -82,6 +89,12 @@ private fun AuthenticatedApp(shouldOpenTransfers: Boolean, onOpenTransfersHandle
         if (!shouldOpenTransfers) return@LaunchedEffect
         navController.openTransfers()
         onOpenTransfersHandled()
+    }
+
+    LaunchedEffect(requestedIngestUrl) {
+        val sharedUrl = requestedIngestUrl ?: return@LaunchedEffect
+        navController.openIngest(sharedUrl)
+        onIngestUrlHandled()
     }
 
     LaunchedEffect(currentRoute) {
