@@ -136,6 +136,10 @@ func (h *Handler) UploadCaptureChunkHandler(c *gin.Context) {
 
 	if err := h.service.UploadCaptureChunk(file, dto); err != nil {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
+		if errors.Is(err, ErrUploadSessionNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_SESSION_NOT_FOUND")})
+			return
+		}
 		var offsetMismatch *ChunkOffsetMismatchError
 		if errors.As(err, &offsetMismatch) {
 			c.JSON(http.StatusConflict, gin.H{
@@ -173,6 +177,10 @@ func (h *Handler) CompleteCaptureUploadHandler(c *gin.Context) {
 		h.logService.CompleteWithErrorLog(loggerModel, err)
 		if errors.Is(err, ErrEmptyCapture) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_EMPTY")})
+			return
+		}
+		if errors.Is(err, ErrUploadSessionNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("ERROR_CAPTURE_UPLOAD_SESSION_NOT_FOUND")})
 			return
 		}
 		var incompleteUpload *IncompleteUploadError

@@ -30,6 +30,8 @@ const captureUploadChunkSize int64 = 2 * 1024 * 1024
 // maps it to 400, not 500.
 var ErrEmptyCapture = errors.New("capture upload is empty")
 
+var ErrUploadSessionNotFound = errors.New("capture upload session not found")
+
 type ChunkOffsetMismatchError struct {
 	ReceivedSize int64
 	GivenOffset  int64
@@ -659,10 +661,13 @@ func (s *Service) saveCaptureUploadSession(session captureUploadSession) error {
 
 func (s *Service) loadCaptureUploadSession(uploadID string) (captureUploadSession, error) {
 	if !isValidUploadID(uploadID) {
-		return captureUploadSession{}, fmt.Errorf("loadCaptureUploadSession: invalid upload id")
+		return captureUploadSession{}, fmt.Errorf("loadCaptureUploadSession: %w: malformed upload id", ErrUploadSessionNotFound)
 	}
 
 	data, err := os.ReadFile(s.captureUploadSessionMetaPath(uploadID))
+	if os.IsNotExist(err) {
+		return captureUploadSession{}, fmt.Errorf("loadCaptureUploadSession: %w", ErrUploadSessionNotFound)
+	}
 	if err != nil {
 		return captureUploadSession{}, fmt.Errorf("loadCaptureUploadSession: read session meta: %w", err)
 	}

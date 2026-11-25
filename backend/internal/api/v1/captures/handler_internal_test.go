@@ -566,3 +566,45 @@ func TestCapturesHandlerChunkOffsetMismatchRespondsConflictWithReceivedSize(t *t
 		t.Fatal("expected error message")
 	}
 }
+
+type capturesHandlerSessionNotFoundServiceMock struct {
+	capturesHandlerErrServiceMock
+}
+
+func (m *capturesHandlerSessionNotFoundServiceMock) UploadCaptureChunk(file *multipart.FileHeader, dto UploadCaptureChunkDto) error {
+	return fmt.Errorf("chunk: %w", ErrUploadSessionNotFound)
+}
+
+func (m *capturesHandlerSessionNotFoundServiceMock) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error) {
+	return CaptureDto{}, fmt.Errorf("complete: %w", ErrUploadSessionNotFound)
+}
+
+func TestCapturesHandlerChunkUnknownSessionRespondsNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&capturesHandlerSessionNotFoundServiceMock{}, &capturesLoggerMock{})
+	router := gin.New()
+	router.POST("/captures/upload/chunk", handler.UploadCaptureChunkHandler)
+
+	req := buildChunkUploadRequest(t, "/captures/upload/chunk", "abc", 0, true)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected %d, got %d, body=%s", http.StatusNotFound, w.Code, w.Body.String())
+	}
+}
+
+func TestCapturesHandlerCompleteUnknownSessionRespondsNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	handler := NewHandler(&capturesHandlerSessionNotFoundServiceMock{}, &capturesLoggerMock{})
+	router := gin.New()
+	router.POST("/captures/upload/complete", handler.CompleteCaptureUploadHandler)
+
+	req := buildJSONRequest(t, http.MethodPost, "/captures/upload/complete", CompleteCaptureUploadDto{UploadID: "abc"})
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected %d, got %d, body=%s", http.StatusNotFound, w.Code, w.Body.String())
+	}
+}

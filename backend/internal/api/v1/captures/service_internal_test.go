@@ -1120,3 +1120,22 @@ func TestServiceCompleteCaptureUploadSizeMismatchReturnsIncompleteErrorAndKeepsS
 		t.Fatalf("expected temp file to remain, stat err = %v", statErr)
 	}
 }
+
+func TestServiceUploadAndCompleteRejectUnknownOrMalformedUploadIDs(t *testing.T) {
+	setEntryPointForTest(t, t.TempDir())
+	service := newServiceForTest(t, &repoMock{}, nil, nil)
+	unknownWellFormedID := "0123456789abcdef0123456789abcdef"
+
+	for _, uploadID := range []string{unknownWellFormedID, "../x", "..", ""} {
+		chunk := buildTestFileHeader(t, "chunk.bin", "abcd")
+		chunkErr := service.UploadCaptureChunk(chunk, UploadCaptureChunkDto{UploadID: uploadID})
+		if !errors.Is(chunkErr, ErrUploadSessionNotFound) {
+			t.Fatalf("chunk %q: expected ErrUploadSessionNotFound, got %v", uploadID, chunkErr)
+		}
+
+		_, completeErr := service.CompleteCaptureUpload(CompleteCaptureUploadDto{UploadID: uploadID})
+		if !errors.Is(completeErr, ErrUploadSessionNotFound) {
+			t.Fatalf("complete %q: expected ErrUploadSessionNotFound, got %v", uploadID, completeErr)
+		}
+	}
+}
