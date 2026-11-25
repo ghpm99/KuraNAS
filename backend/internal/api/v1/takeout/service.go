@@ -12,6 +12,7 @@ import (
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/notifications"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/diskspace"
 	"nas-go/api/pkg/i18n"
 	"os"
 	"path/filepath"
@@ -32,6 +33,7 @@ type Service struct {
 	LibraryResolver     LibraryResolverInterface
 	NotificationService notificationServiceInterface
 	ImportCreator       ImportCreatorInterface
+	AvailableBytesAt    func(path string) (int64, error)
 }
 
 func NewService(
@@ -45,6 +47,7 @@ func NewService(
 		LibraryResolver:     libraryResolver,
 		NotificationService: notificationService,
 		ImportCreator:       importCreator,
+		AvailableBytesAt:    diskspace.AvailableBytesAt,
 	}
 }
 
@@ -72,6 +75,14 @@ func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultD
 	}
 
 	openSession, hasOpenSession := s.findOpenSessionByFile(fileName, dto.Size)
+	requiredBytes := dto.Size
+	if hasOpenSession {
+		requiredBytes = dto.Size - openSession.ReceivedSize
+	}
+	if err := s.ensureFreeSpace(requiredBytes); err != nil {
+		return InitTakeoutUploadResultDto{}, err
+	}
+
 	if hasOpenSession {
 		return InitTakeoutUploadResultDto{
 			UploadID:     openSession.UploadID,
@@ -108,6 +119,35 @@ func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultD
 		UploadID:  uploadID,
 		ChunkSize: takeoutUploadChunkSize,
 	}, nil
+}
+
+func (s *Service) ensureFreeSpace(requiredBytes int64) error {
+	availableBytes, err := s.availableBytesAtUploadRoot()
+	if err != nil {
+		return fmt.Errorf("InitUpload read free space: %w", err)
+	}
+	if availableBytes < requiredBytes {
+		return ErrInsufficientStorage
+	}
+	return nil
+}
+
+func (s *Service) availableBytesAtUploadRoot() (int64, error) {
+	measure := s.AvailableBytesAt
+	if measure == nil {
+		measure = diskspace.AvailableBytesAt
+	}
+	existingPath := s.takeoutUploadRootDir()
+	for {
+		if _, err := os.Stat(existingPath); err == nil {
+			return measure(existingPath)
+		}
+		parentPath := filepath.Dir(existingPath)
+		if parentPath == existingPath {
+			return measure(existingPath)
+		}
+		existingPath = parentPath
+	}
 }
 
 func (s *Service) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error) {

@@ -295,6 +295,7 @@ func TestInitUploadHandlerRejectsInvalidInput(t *testing.T) {
 	}{
 		{"size zero", `{"file_name":"takeout.zip","size":0}`, ErrInvalidUploadSize, "TAKEOUT_UPLOAD_SIZE_INVALID", http.StatusBadRequest},
 		{"rar name", `{"file_name":"takeout.rar","size":10}`, ErrInvalidUploadFileName, "TAKEOUT_UPLOAD_FILE_NAME_INVALID", http.StatusBadRequest},
+		{"insufficient storage", `{"file_name":"takeout.zip","size":10}`, ErrInsufficientStorage, "TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE", http.StatusInsufficientStorage},
 		{"uppercase zip", `{"file_name":"FOTOS.ZIP","size":10}`, nil, "", http.StatusOK},
 	}
 	for _, testCase := range cases {

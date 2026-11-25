@@ -11,4 +11,5 @@ var (
 	ErrUploadIncomplete      = errors.New("upload incomplete")
 	ErrInvalidUploadSize     = errors.New("upload size must be greater than zero")
 	ErrInvalidUploadFileName = errors.New("upload file name must end in .zip")
+	ErrInsufficientStorage   = errors.New("insufficient storage for upload")
 )

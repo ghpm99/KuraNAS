@@ -574,3 +574,67 @@ func TestCancelUploadMalformedIDNeverDeletesOutsideSession(t *testing.T) {
 		t.Fatalf("sessions root must survive: %v", err)
 	}
 }
+
+func fixedFreeSpace(availableBytes int64) func(string) (int64, error) {
+	return func(string) (int64, error) { return availableBytes, nil }
+}
+
+func TestInitUploadRejectsSizeLargerThanFreeSpace(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.AvailableBytesAt = fixedFreeSpace(9)
+
+	_, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+
+	if !errors.Is(err, ErrInsufficientStorage) {
+		t.Fatalf("expected ErrInsufficientStorage, got %v", err)
+	}
+	if entries, _ := os.ReadDir(service.takeoutUploadRootDir()); len(entries) != 0 {
+		t.Fatalf("no session must be created, found %d entries", len(entries))
+	}
+}
+
+func TestInitUploadAcceptsSizeEqualToFreeSpace(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.AvailableBytesAt = fixedFreeSpace(10)
+
+	if _, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10}); err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+}
+
+func TestInitUploadResumedSessionNeedsOnlyRemainingBytes(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	firstInit, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if err := service.UploadChunk(buildChunkHeader(t, "chunk.bin", "hello"), UploadTakeoutChunkDto{UploadID: firstInit.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+
+	service.AvailableBytesAt = fixedFreeSpace(5)
+	resumed, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil || !resumed.Resumed {
+		t.Fatalf("expected resume with 5 bytes free, got %+v err=%v", resumed, err)
+	}
+
+	service.AvailableBytesAt = fixedFreeSpace(4)
+	if _, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10}); !errors.Is(err, ErrInsufficientStorage) {
+		t.Fatalf("expected ErrInsufficientStorage with 4 bytes free, got %v", err)
+	}
+}
+
+func TestInitUploadReturnsErrorWhenFreeSpaceCannotBeRead(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	service.AvailableBytesAt = func(string) (int64, error) { return 0, errors.New("statfs failed") }
+
+	_, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+
+	if err == nil || errors.Is(err, ErrInsufficientStorage) {
+		t.Fatalf("expected generic error, got %v", err)
+	}
+}

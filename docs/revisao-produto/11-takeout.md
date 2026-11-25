@@ -32,7 +32,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 02. `init` com o mesmo `file_name` e `size` de uma sessão aberta devolve o mesmo `upload_id`, `received_size` e `resumed: true`; nova sessão devolve `received_size: 0`, `resumed: false` — `RN-02`, `§7`, `CA-05`. Seam no handler.
 - [x] 03. `GET /takeout/upload/:upload_id` devolve `{upload_id, size, received_size}`; `404` quando não existe — `RN-02`, `§7`.
 - [x] 04. `DELETE /takeout/upload/:upload_id` apaga a sessão, `204`; `404` quando não existe — `RF-02`, `§7`.
-- [ ] 05. `init` responde `507` quando o espaço livre é menor que `size` — `RN-09`, `§7`, `§8`. Depende da 01.
+- [x] 05. `init` responde `507` quando o espaço livre é menor que `size` — `RN-09`, `§7`, `§8`. Depende da 01.
 - [ ] 06. `chunk` recusa parte que ultrapassa o `size` declarado — `RN-02`.
 - [ ] 07. Erros do envio com chaves `TAKEOUT_*` próprias, sessão inexistente `404`, `TAKEOUT_UPLOAD_INCOMPLETE` com `i18n.Translate`, `file_name` vazio `400` — `00/RN-40`, `RN-41`. Depende da 01.
 - [ ] 08. Notificação "Importação iniciada" sai do `init` para o `complete`, com `event` e `import_id` no metadata — `RN-11`, `CA-11`.

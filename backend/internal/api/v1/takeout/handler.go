@@ -50,6 +50,9 @@ func (h *Handler) InitUploadHandler(c *gin.Context) {
 		case errors.Is(err, ErrInvalidUploadFileName):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_FILE_NAME_INVALID")})
 			return
+		case errors.Is(err, ErrInsufficientStorage):
+			c.JSON(http.StatusInsufficientStorage, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE")})
+			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
 		return
