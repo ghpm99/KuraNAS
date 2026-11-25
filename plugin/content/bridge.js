@@ -1,8 +1,3 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Bridge (ISOLATED world)
- * Relays between MAIN world events and background service worker.
- * ======================================================================== */
-
 (function () {
   "use strict";
 
@@ -10,21 +5,12 @@
   let lastSnapshot = null;
   let rafId = null;
 
-  // -----------------------------------------------------------------------
-  // Safe runtime messaging
-  // -----------------------------------------------------------------------
-
   function safeRuntimeSendMessage(msg) {
     try {
       chrome.runtime.sendMessage(msg).catch(() => {});
     } catch {
-      // Extension context invalidated
     }
   }
-
-  // -----------------------------------------------------------------------
-  // 1. Blob Relay — MAIN → Background
-  // -----------------------------------------------------------------------
 
   window.addEventListener("__stream_grabber_blob__", (e) => {
     const detail = e.detail || {};
@@ -47,10 +33,6 @@
     });
   });
 
-  // -----------------------------------------------------------------------
-  // 1b. Title Relay — MAIN → Background
-  // -----------------------------------------------------------------------
-
   window.addEventListener("__stream_grabber_title__", (e) => {
     const detail = e.detail || {};
     safeRuntimeSendMessage({
@@ -62,10 +44,6 @@
     });
   });
 
-  // -----------------------------------------------------------------------
-  // 1c. Metadata Relay — MAIN → Background
-  // -----------------------------------------------------------------------
-
   window.addEventListener("__stream_grabber_metadata__", (e) => {
     const detail = e.detail || {};
     safeRuntimeSendMessage({
@@ -74,18 +52,12 @@
     });
   });
 
-  // -----------------------------------------------------------------------
-  // 2. Capture MediaSource Relay
-  // -----------------------------------------------------------------------
-
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === "request_title") {
-      // Ask MAIN world title-detector to re-run and emit
       window.dispatchEvent(new Event("__stream_grabber_request_title__"));
     }
 
     if (msg.action === "request_metadata") {
-      // Ask MAIN world metadata-detector to re-run and emit
       window.dispatchEvent(new Event("__stream_grabber_request_metadata__"));
     }
 
@@ -122,12 +94,6 @@
     }
   }
 
-  // Prepare the page before recording.
-  //   "auto" (Armar):    rewind to 0, wait for the controls overlay to auto-hide,
-  //                      then resume playback — a clean capture from the start.
-  //   "dom"  (Armar v2): ONLY edit the DOM (control-hider strategy) to hide the
-  //                      controls. No rewind, no forced play — playback is left
-  //                      exactly as-is and we record from the current position.
   function prepareCapture(mode, settleMs) {
     const video = getMainVideo();
     if (!video) {
@@ -152,31 +118,23 @@
       return;
     }
 
-    // "auto" mode
     try {
       video.currentTime = 0;
     } catch {
-      // some players block seeking; proceed anyway
     }
     setTimeout(() => playVideo(getMainVideo() || video, done), settleMs);
   }
 
-  // Undo the DOM edits made by the "dom" strategy (called when recording stops).
   function restoreDom() {
     if (domStrategy && domStrategyVideo) {
       try {
         domStrategy.restore(domStrategyVideo);
       } catch {
-        // best effort
       }
     }
     domStrategy = null;
     domStrategyVideo = null;
   }
-
-  // -----------------------------------------------------------------------
-  // 3. Hybrid Video Monitor
-  // -----------------------------------------------------------------------
 
   function getMainVideo() {
     const videos = document.querySelectorAll("video");
@@ -275,10 +233,6 @@
     unbindVideoEvents();
   }
 
-  // -----------------------------------------------------------------------
-  // 4. Event Listeners for Immediate Snapshots
-  // -----------------------------------------------------------------------
-
   const videoEventNames = ["play", "pause", "ended", "seeked"];
   const docEventNames = ["fullscreenchange"];
   const winEventNames = ["resize"];
@@ -310,10 +264,6 @@
       window.removeEventListener(name, onImmediateEvent);
     }
   }
-
-  // -----------------------------------------------------------------------
-  // 5. URL Change Hooks (SPA navigation)
-  // -----------------------------------------------------------------------
 
   const originalPushState = history.pushState;
   history.pushState = function (...args) {

@@ -34,8 +34,6 @@ export function createHybridStateMachine({
     };
   }
 
-  // mode: "auto" (Armar — wait for controls to auto-hide) or "dom" (Armar v2 —
-  // edit the DOM to hide controls). Defaults to "auto".
   function armHybrid(tabId, mode = "auto") {
     let state = hybridStates.get(tabId);
     if (!state) {
@@ -122,9 +120,6 @@ export function createHybridStateMachine({
     });
 
     if (state.recordingState === "ARMED") {
-      // Precondition met (playing + fullscreen). Ask the page to rewind to 0,
-      // let the controls overlay fade, then resume playback — only then record,
-      // so the capture starts clean from the beginning. Fire once per arm.
       if (shouldRecord) {
         if (!state.preparing) {
           clearTimeoutFn(state.stabilityTimer);
@@ -184,8 +179,6 @@ export function createHybridStateMachine({
     state.lastUrl = snapshot.url;
   }
 
-  // The page finished the prepare sequence (rewound + settled + playing). Now
-  // that no controls overlay is showing, begin the actual recording.
   function handleHybridPrepared(tabId) {
     const state = hybridStates.get(tabId);
     if (!state || !state.armed || state.recordingState !== "ARMED") {
@@ -232,10 +225,6 @@ export function createHybridStateMachine({
     clearTimeoutFn(state.stabilityTimer);
     clearTimeoutFn(state.graceTimer);
     state.graceTimer = null;
-    // Reset the prepare guard. It was set true when THIS recording was prepared
-    // and is never cleared elsewhere — without zeroing it here, re-arming for the
-    // next episode (continuous capture) would see preparing=true and never start
-    // the prepare→record sequence again, so only the first episode ever recorded.
     state.preparing = false;
     state.recordingState = "STOPPED";
     broadcastHybridStatus(tabId);

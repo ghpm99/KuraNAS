@@ -92,7 +92,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [x] 32. Popup mostra a situação da conexão (conectado, não encontrado, `403`) — `RF-07`, `§9`. Depende da 31.
 - [x] 33. "Baixar" e "Capturar" mostram o resultado no popup — `RF-11`. Depende da 29.
 - [x] 34. `plugin/README.md` explica a limitação em conteúdo protegido — `§9`, `§4`.
-- [ ] 35. Comentários de corpo removidos de `plugin/`.
+- [x] 35. Comentários de corpo removidos de `plugin/`.
 
 Ordem de execução: backend 01 → 13; frontend 14 → 27 (18 depois da 19 e 20); plugin 28 → 29 → 31 → 32 → 30 → 33 → 34 → 35. Backend e plugin são independentes; o frontend depende da 03 e 04.
 

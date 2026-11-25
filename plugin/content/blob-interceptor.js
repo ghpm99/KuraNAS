@@ -1,25 +1,5 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Blob Interceptor (MAIN world)
- *
- * Detects blob/MediaSource usage on the page so the popup can list it. It is
- * DETECTION-ONLY: it never retains the media bytes.
- *
- * A previous version deep-copied every segment appended to a MediaSource into an
- * unbounded array (sourceBuffer.__sg_chunks) to allow "downloading" the MSE
- * stream. That feeder was dead code (no message ever triggered the download), yet
- * it duplicated the entire audio+video stream in the page heap for the whole
- * playback — a steadily growing memory leak on every MSE site (Netflix,
- * Crunchyroll, YouTube, Prime…), visible during long recordings. The hybrid
- * tab-capture recorder owns the real bytes, so here we only emit lightweight
- * detection events (running count/size) and keep nothing.
- * ======================================================================== */
-
 (function () {
   "use strict";
-
-  // -----------------------------------------------------------------------
-  // 1. URL.createObjectURL — announce blob/MediaSource creation (no retention)
-  // -----------------------------------------------------------------------
 
   const originalCreateObjectURL = URL.createObjectURL;
   URL.createObjectURL = function (obj) {
@@ -40,10 +20,6 @@
 
     return url;
   };
-
-  // -----------------------------------------------------------------------
-  // 2. MediaSource.prototype.addSourceBuffer — COUNT appended media, keep nothing
-  // -----------------------------------------------------------------------
 
   if (typeof MediaSource !== "undefined") {
     const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;

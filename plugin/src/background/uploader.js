@@ -43,9 +43,6 @@ export function createUploader({
   }
 
   async function uploadCaptureChunked(apiUrl, blob, metadata) {
-    // An empty blob (e.g. a recording that captured nothing) would init a session,
-    // send zero chunks, and make /complete fail server-side. Stop before the
-    // round-trip and surface a clear error instead.
     if (!blob || blob.size === 0) {
       throw new Error("Capture is empty: nothing to upload");
     }
@@ -186,7 +183,6 @@ export function createUploader({
       const name = msg.name || `recording_${Date.now()}`;
       await uploadToKuraNAS(blob, name, "recording");
     } catch {
-      // Blob URL may have been revoked
     }
   }
 

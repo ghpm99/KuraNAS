@@ -1,28 +1,13 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Title Detector (MAIN world)
- *
- * Detects the current media title by inspecting domain-specific metadata,
- * structured data, and page elements. Dispatches results to the bridge
- * via CustomEvent.
- * ======================================================================== */
-
 (function () {
   "use strict";
 
-  // -----------------------------------------------------------------------
-  // Domain registry — each extractor returns a title string or null
-  // -----------------------------------------------------------------------
-
   const domainExtractors = {
-    // ----- YouTube -----
     "youtube.com": function () {
-      // ytInitialPlayerResponse is the richest source
       if (window.ytInitialPlayerResponse) {
         const vd = window.ytInitialPlayerResponse.videoDetails;
         if (vd && vd.title) return vd.title;
       }
 
-      // ytInitialData for playlist / channel page titles
       if (window.ytInitialData) {
         try {
           const contents =
@@ -36,17 +21,14 @@
             }
           }
         } catch {
-          // structure changed, fall through
         }
       }
 
-      // DOM fallback — meta tag
       const metaTitle = document.querySelector(
         'meta[name="title"], meta[property="og:title"]'
       );
       if (metaTitle && metaTitle.content) return metaTitle.content;
 
-      // DOM fallback — heading
       const h1 = document.querySelector(
         "h1.ytd-watch-metadata yt-formatted-string, #title h1 yt-formatted-string"
       );
@@ -55,9 +37,7 @@
       return null;
     },
 
-    // ----- Netflix -----
     "netflix.com": function () {
-      // Netflix player API exposed on the cadmium player
       const videoPlayer = window.netflix?.appContext
         ?.getPlayerApp?.()
         ?.getAPI?.();
@@ -70,34 +50,27 @@
             );
             if (player) {
               const titleId = player.getMovieId?.();
-              // Try to get from metadata cache
               const metadataCache =
                 window.netflix?.reactContext?.models?.userInfo?.data
                   ?.memberContext;
               if (metadataCache) {
-                // Sometimes available
               }
             }
           }
         } catch {
-          // API changed
         }
       }
 
-      // Netflix renders the title in various places
       const nfTitle = document.querySelector(
         '[data-uia="video-title"], .video-title h4, .video-title'
       );
       if (nfTitle && nfTitle.textContent.trim())
         return nfTitle.textContent.trim();
 
-      // Preload link with title
       const preloadLink = document.querySelector('link[rel="preload"][as="fetch"][href*="/metadata"]');
-      // Not always useful, but og:title usually works
       return extractOpenGraphTitle();
     },
 
-    // ----- Disney+ -----
     "disneyplus.com": function () {
       const titleEl = document.querySelector(
         '[data-testid="title-field"], .title-field, h2[class*="title"]'
@@ -108,9 +81,7 @@
       return extractOpenGraphTitle();
     },
 
-    // ----- Amazon Prime Video -----
     "primevideo.com": function () {
-      // Prime exposes catalog data in a script tag
       const scripts = document.querySelectorAll(
         'script[type="text/template"]'
       );
@@ -121,7 +92,6 @@
           if (data.catalogMetadata?.catalog?.title)
             return data.catalogMetadata.catalog.title;
         } catch {
-          // not JSON or wrong structure
         }
       }
 
@@ -138,7 +108,6 @@
       return domainExtractors["primevideo.com"]();
     },
 
-    // ----- HBO Max / Max -----
     "max.com": function () {
       const titleEl = document.querySelector(
         '[class*="StyledPlayerMetaTitle"], [data-testid="player-title"]'
@@ -153,9 +122,7 @@
       return domainExtractors["max.com"]();
     },
 
-    // ----- Twitch -----
     "twitch.tv": function () {
-      // Twitch has rich structured data
       const ldJson = extractLdJsonTitle();
       if (ldJson) return ldJson;
 
@@ -165,7 +132,6 @@
       if (titleEl && titleEl.textContent.trim())
         return titleEl.textContent.trim();
 
-      // Channel name as fallback
       const channel = document.querySelector(
         'h1[data-a-target="stream-channel-link"], a[data-a-target="user-channel-header-item"] h1'
       );
@@ -175,18 +141,13 @@
       return extractOpenGraphTitle();
     },
 
-    // ----- Crunchyroll -----
     "crunchyroll.com": function () {
-      // Structured TVEpisode data first (series + SxxExx); the player's class
-      // names are obfuscated and unstable, so scraping them is unreliable.
       const episodeName = extractEpisodeFromLdJson();
       if (episodeName) return episodeName;
 
-      // og:title carries the episode line ("Season 1 | E1 - ...") but no show.
       return extractOpenGraphTitle();
     },
 
-    // ----- Vimeo -----
     "vimeo.com": function () {
       if (window.vimeo?.clip_page_config?.clip?.title) {
         return window.vimeo.clip_page_config.clip.title;
@@ -198,7 +159,6 @@
       return extractOpenGraphTitle();
     },
 
-    // ----- Dailymotion -----
     "dailymotion.com": function () {
       const titleEl = document.querySelector(
         '[class*="VideoInfoTitle"], .VideoInfoTitle'
@@ -209,7 +169,6 @@
       return extractOpenGraphTitle();
     },
 
-    // ----- Globoplay -----
     "globoplay.globo.com": function () {
       const titleEl = document.querySelector(
         '[class*="playback-title"], .playback-title'
@@ -220,7 +179,6 @@
       return extractOpenGraphTitle();
     },
 
-    // ----- Pluto TV -----
     "pluto.tv": function () {
       const titleEl = document.querySelector(
         '[class*="MetadataTitle"], .player-metadata-title'
@@ -231,10 +189,6 @@
       return extractOpenGraphTitle();
     },
   };
-
-  // -----------------------------------------------------------------------
-  // Generic extractors (used as fallback chain)
-  // -----------------------------------------------------------------------
 
   function extractOpenGraphTitle() {
     const og = document.querySelector('meta[property="og:title"]');
@@ -263,7 +217,6 @@
           ) {
             if (item.name) return item.name;
           }
-          // Check nested items (e.g., @graph)
           if (item["@graph"]) {
             for (const node of item["@graph"]) {
               if (
@@ -278,7 +231,6 @@
           }
         }
       } catch {
-        // invalid JSON
       }
     }
     return null;
@@ -288,9 +240,6 @@
     return String(n).padStart(2, "0");
   }
 
-  // Build a rich, unique-per-episode name from a TVEpisode node, e.g.
-  // "I Made Friends ... in My Class - S01E02". Falls back to series + the raw
-  // node name, or null if there isn't enough structured data.
   function buildEpisodeName(node) {
     const series = node.partOfSeries && node.partOfSeries.name;
     const epNum = node.episodeNumber;
@@ -303,9 +252,6 @@
     return null;
   }
 
-  // Prefer structured episode metadata (schema.org TVEpisode in JSON-LD) over
-  // scraping CSS classes — it carries the show, season and episode reliably and
-  // survives the site changing its markup (Crunchyroll obfuscates class names).
   function extractEpisodeFromLdJson() {
     const scripts = document.querySelectorAll(
       'script[type="application/ld+json"]'
@@ -346,7 +292,6 @@
     const title = document.title;
     if (!title) return null;
 
-    // Clean common suffixes like " - YouTube", " | Netflix", " — Twitch"
     return title
       .replace(/\s*[-|—]\s*(YouTube|Netflix|Twitch|Disney\+|Prime Video|HBO Max|Max|Crunchyroll|Vimeo|Dailymotion|Globoplay).*$/i, "")
       .trim() || null;
@@ -359,21 +304,14 @@
       const segments = pathname.split("/").filter(Boolean);
       const last = segments[segments.length - 1];
       if (!last) return null;
-      // Remove extension and decode
       const name = decodeURIComponent(last.replace(/\.[^.]+$/, ""));
-      // Only use if it looks like a meaningful name (not a hash/uuid)
       if (name.length > 3 && !/^[a-f0-9-]{20,}$/i.test(name)) {
         return name.replace(/[_-]+/g, " ");
       }
     } catch {
-      // invalid URL
     }
     return null;
   }
-
-  // -----------------------------------------------------------------------
-  // Main detection logic
-  // -----------------------------------------------------------------------
 
   function matchDomain(hostname) {
     for (const domain of Object.keys(domainExtractors)) {
@@ -388,37 +326,26 @@
     const hostname = location.hostname;
     let title = null;
 
-    // 1. Try domain-specific extractor
     const domain = matchDomain(hostname);
     if (domain) {
       try {
         title = domainExtractors[domain]();
       } catch {
-        // extractor failed, continue to fallback
       }
     }
 
-    // 2. Structured episode metadata (TVEpisode) — best for anime/TV sites.
     if (!title) title = extractEpisodeFromLdJson();
 
-    // 3. JSON-LD structured data (generic name)
     if (!title) title = extractLdJsonTitle();
 
-    // 3. OpenGraph / Twitter meta
     if (!title) title = extractOpenGraphTitle();
 
-    // 4. Video element attributes
     if (!title) title = extractFromVideoElement();
 
-    // 5. Document title (cleaned)
     if (!title) title = extractFromDocumentTitle();
 
     return title;
   }
-
-  // -----------------------------------------------------------------------
-  // Dispatch & observe
-  // -----------------------------------------------------------------------
 
   let lastTitle = null;
 
@@ -426,9 +353,6 @@
     if (!title || title === lastTitle) return;
     lastTitle = title;
 
-    // Dispatch on window: the bridge (ISOLATED world) listens with
-    // window.addEventListener. A CustomEvent on document does NOT reach window
-    // unless it bubbles, which is why the title never got relayed before.
     window.dispatchEvent(
       new CustomEvent("__stream_grabber_title__", {
         detail: {
@@ -446,13 +370,11 @@
     if (title) emitTitle(title, source || "auto");
   }
 
-  // Listen for explicit requests from bridge (e.g., popup asking for title)
   window.addEventListener("__stream_grabber_request_title__", () => {
-    lastTitle = null; // force re-emit
+    lastTitle = null;
     runDetection("request");
   });
 
-  // Listen for stream URL hint to try extracting name from URL
   window.addEventListener("__stream_grabber_title_hint__", (e) => {
     const url = e.detail && e.detail.url;
     const fromUrl = extractFromStreamUrl(url);
@@ -461,14 +383,6 @@
     }
   });
 
-  // -----------------------------------------------------------------------
-  // Observation strategy:
-  // 1. Run on load
-  // 2. Re-run on URL changes (SPA navigation)
-  // 3. Re-run on DOM mutations to <head> or title-like elements
-  // -----------------------------------------------------------------------
-
-  // Initial detection — wait for DOM to settle
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => runDetection("dom_ready"), 500);
@@ -477,7 +391,6 @@
     setTimeout(() => runDetection("immediate"), 300);
   }
 
-  // Re-detect on SPA navigation
   let lastUrl = location.href;
   const urlObserver = new MutationObserver(() => {
     if (location.href !== lastUrl) {
@@ -491,7 +404,6 @@
     subtree: true,
   });
 
-  // Re-detect when <title> or meta tags change
   const headObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (

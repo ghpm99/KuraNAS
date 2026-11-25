@@ -1,31 +1,5 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Metadata Detector (MAIN world)
- *
- * Builds a STANDARDIZED metadata object for the media currently playing, so the
- * server can persist it (metadata.json) beside the recording. The canonical keys
- * below are platform-agnostic; each streaming site does its own "de→para",
- * mapping its internal/DOM/structured data onto these keys. A generic layer
- * (schema.org JSON-LD + OpenGraph + the <video> element) fills whatever a site
- * strategy does not, so unknown sites still yield useful metadata.
- *
- * Canonical keys (all optional — only what we could resolve is sent):
- *   platform, source_url, content_type ("movie"|"episode"|"series"|"clip"|"live"),
- *   title, episode_title, season, episode, episode_key,
- *   content_id, series_id,
- *   duration_seconds, description, release_year,
- *   genres[], content_rating, cast[], directors[], studio,
- *   audio_language, subtitle_language,
- *   thumbnail_url, poster_url,
- *   next_episode_title, next_episode_url,
- *   captured_at
- * ======================================================================== */
-
 (function () {
   "use strict";
-
-  // -----------------------------------------------------------------------
-  // Small DOM / parsing helpers
-  // -----------------------------------------------------------------------
 
   function text(el) {
     return el && el.textContent ? el.textContent.trim() : null;
@@ -48,7 +22,6 @@
     return null;
   }
 
-  // Parse an ISO 8601 duration ("PT1H23M9S") into seconds. Returns null on miss.
   function parseIsoDuration(value) {
     if (!value || typeof value !== "string") return null;
     const m = value.match(/^P(?:\d+D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?$/);
@@ -91,7 +64,6 @@
     return match ? Number(match[1]) : null;
   }
 
-  // Merge `src` onto `dst` without letting empty values clobber filled ones.
   function mergeDefined(dst, src) {
     if (!src) return dst;
     for (const key of Object.keys(src)) {
@@ -102,10 +74,6 @@
     }
     return dst;
   }
-
-  // -----------------------------------------------------------------------
-  // Generic schema.org JSON-LD layer (covers Crunchyroll, Vimeo, many sites)
-  // -----------------------------------------------------------------------
 
   const VIDEO_TYPES = new Set(["TVEpisode", "Movie", "VideoObject", "TVSeries", "Episode"]);
 
@@ -163,10 +131,6 @@
     return out;
   }
 
-  // -----------------------------------------------------------------------
-  // Generic OpenGraph / <video> / document fallbacks
-  // -----------------------------------------------------------------------
-
   function fromOpenGraph() {
     return {
       title: metaContent(['meta[property="og:title"]', 'meta[name="twitter:title"]']),
@@ -192,13 +156,7 @@
     return out;
   }
 
-  // -----------------------------------------------------------------------
-  // Per-site de→para strategies (override the generic layer)
-  // -----------------------------------------------------------------------
-
   const siteStrategies = {
-    // Netflix renders the title as stacked spans: show title, "E<n>" badge and the
-    // episode title. Structured data is absent, so read the player overlay.
     "netflix.com": function () {
       const out = {};
       const title = firstText([
@@ -209,7 +167,7 @@
       if (title) out.title = title;
       const spans = document.querySelectorAll('[data-uia="video-title"] span');
       if (spans.length >= 2) {
-        const epBadge = text(spans[0]); // e.g. "E1"
+        const epBadge = text(spans[0]);
         const epNum = epBadge && epBadge.match(/E(\d+)/i);
         if (epNum) out.episode = Number(epNum[1]);
         const epTitle = text(spans[spans.length - 1]);
@@ -231,8 +189,6 @@
     },
 
     "crunchyroll.com": function () {
-      // JSON-LD already carries the show/season/episode reliably; only force the
-      // content type so unknown JSON-LD shapes still classify as an episode.
       return { content_type: "episode" };
     },
 
@@ -281,13 +237,8 @@
         return PLATFORM_NAMES[domain];
       }
     }
-    // Fall back to the registrable-ish host (drop a leading "www.").
     return hostname.replace(/^www\./, "");
   }
-
-  // -----------------------------------------------------------------------
-  // Build + emit
-  // -----------------------------------------------------------------------
 
   function buildEpisodeKey(meta) {
     if (meta.content_id) return `${meta.platform}:${meta.content_id}`;
@@ -301,7 +252,6 @@
     const hostname = location.hostname;
     const meta = {};
 
-    // Generic layers first (lowest precedence), then the site strategy on top.
     mergeDefined(meta, fromOpenGraph());
     mergeDefined(meta, fromVideoElement());
     mergeDefined(meta, fromJsonLd());
@@ -311,7 +261,6 @@
       try {
         mergeDefined(meta, strategy());
       } catch {
-        // a broken strategy never blocks the generic metadata
       }
     }
 
@@ -349,15 +298,11 @@
     setTimeout(emitMetadata, delay);
   }
 
-  // Explicit re-detect request (e.g. just before recording starts).
   window.addEventListener("__stream_grabber_request_metadata__", () => {
     lastSerialized = null;
     emitMetadata();
   });
 
-  // Initial detection plus a few delayed re-runs: sites such as Crunchyroll
-  // inject the rich TVEpisode JSON-LD a beat AFTER the first paint, so an early
-  // single pass only sees the generic OpenGraph snapshot.
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => scheduleEmit(600));
   } else {
@@ -366,7 +311,6 @@
   scheduleEmit(1500);
   scheduleEmit(3000);
 
-  // Re-detect on SPA navigation (URL change).
   let lastUrl = location.href;
   const urlObserver = new MutationObserver(() => {
     if (location.href !== lastUrl) {
@@ -378,10 +322,6 @@
   });
   urlObserver.observe(document.documentElement, { childList: true, subtree: true });
 
-  // Re-detect when structured data (JSON-LD) or title/meta tags are added or
-  // changed on the SAME url. This is the fix for the first episode keeping only
-  // the early generic snapshot: the episode's TVEpisode JSON-LD lands after load,
-  // and dedup (lastSerialized) makes these extra passes cheap no-ops otherwise.
   const head = document.head || document.documentElement;
   const dataObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {

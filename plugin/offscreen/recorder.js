@@ -1,20 +1,3 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Offscreen Recorder
- * Invisible document that performs actual tab capture recording.
- *
- * Two encode paths, picked by capability:
- *   - WebCodecs (preferred): H.264 video + AAC/Opus audio muxed into a
- *     fragmented MP4. VideoEncoder runs with `hardwareAcceleration:
- *     "prefer-hardware"`, so the encode runs on the GPU when one is available
- *     — far cheaper on CPU than the libvpx VP9 software encoder, and it lands
- *     a universal MP4 straight in the library (no server-side transcode).
- *   - MediaRecorder/WebM (fallback): the original VP9 software path, used when
- *     WebCodecs/H.264 is unavailable.
- * The chosen container is reported to the service worker via
- * `offscreen_probe_format` BEFORE the upload session is created, so the server
- * names the file and stores the mime type correctly.
- * ======================================================================== */
-
 import { Muxer, ArrayBufferTarget, StreamTarget } from "../vendor/mp4-muxer.mjs";
 
 const recordings = new Map();
@@ -23,21 +6,14 @@ const LOG_PREFIX = "[KuraNAS rec]";
 
 function logRec(tabId, ...args) {
   console.log(LOG_PREFIX, `tab=${tabId}`, ...args);
-  // Mirror into the service worker console (the offscreen doc console is hidden).
   try {
     chrome.runtime
       .sendMessage({ action: "kuranas_log", source: LOG_PREFIX, args: [`tab=${tabId}`, ...args] })
       .catch(() => {});
   } catch (_e) {
-    // sendMessage can throw if the SW is momentarily unavailable; the local
-    // console.log above still happened.
   }
 }
 
-// describeTrack dumps everything that tells empty-frame-by-DRM apart from other
-// causes: a Widevine-protected tab capture typically hands back a video track
-// that is `muted: true` and/or reports 0x0 with no real frames, while a normal
-// capture reports the page's dimensions and `muted: false`.
 function describeTrack(track) {
   const settings = typeof track.getSettings === "function" ? track.getSettings() : {};
   return {
@@ -68,7 +44,6 @@ function logStreamDiagnostics(tabId, stream) {
         "track de vídeo está MUTED — forte indício de DRM/Widevine (frames não chegam)."
       );
     }
-    // DRM/policy changes can mute the track AFTER capture starts; watch for it.
     track.onmute = () =>
       console.warn(LOG_PREFIX, `tab=${tabId}`, "vídeo MUTED durante a gravação (DRM?).");
     track.onunmute = () => logRec(tabId, "vídeo UNMUTED (frames voltaram).");
@@ -78,11 +53,6 @@ function logStreamDiagnostics(tabId, stream) {
   audioTracks.forEach((track, i) => logRec(tabId, `áudio[${i}]`, describeTrack(track)));
 }
 
-// setupAudioPassthrough re-plays the captured tab audio through the speakers.
-// tabCapture redirects the tab's audio into the stream, so the owner stops
-// hearing it; piping the stream's audio to the AudioContext destination gives
-// the sound back while the recording still captures it. Returns the context so
-// cleanup can close it (returns null when there is no audio track / on failure).
 function setupAudioPassthrough(tabId, stream) {
   try {
     if (stream.getAudioTracks().length === 0) return null;
@@ -102,13 +72,10 @@ function setupAudioPassthrough(tabId, stream) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.action === "offscreen_probe_format") {
-    // Report the container we will record in so the service worker can name the
-    // upload file and set its mime type BEFORE the recording starts. Deterministic
-    // and cached, so it matches what startRecording later produces.
     chooseRecordingFormat()
       .then((fmt) => sendResponse({ mimeType: fmt.mimeType, fileExt: fmt.fileExt, container: fmt.container }))
       .catch(() => sendResponse({ mimeType: "video/webm", fileExt: "webm", container: "webm" }));
-    return true; // keep the message channel open for the async sendResponse
+    return true;
   }
   if (msg.action === "offscreen_start_recording") {
     startRecording(msg.tabId, msg.streamId, Boolean(msg.streamUpload));
@@ -117,13 +84,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     stopRecording(msg.tabId);
   }
   if (msg.action === "offscreen_revoke_url" && msg.url) {
-    // The service worker finished reading a streamed chunk's blob URL. Revoke it
-    // here (the doc that created it) since URL.revokeObjectURL is unavailable in
-    // the service worker.
     try {
       URL.revokeObjectURL(msg.url);
     } catch (_e) {
-      // best effort
     }
   }
   return undefined;
@@ -150,8 +113,6 @@ async function startRecording(tabId, streamId, streamUpload) {
       },
     });
   } catch (err) {
-    // getUserMedia/tabCapture failed outright (permission, invalid streamId, or
-    // the capture was denied for the protected content).
     console.error(LOG_PREFIX, `tab=${tabId}`, "falha ao iniciar captura:", err.message);
     chrome.runtime.sendMessage({
       action: "hybrid_offscreen_error",
@@ -171,10 +132,6 @@ async function startRecording(tabId, streamId, streamUpload) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// WebCodecs (GPU) path — H.264 + AAC/Opus → fragmented MP4
-// ---------------------------------------------------------------------------
-
 async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
   const startedAt = Date.now();
   const videoTrack = stream.getVideoTracks()[0];
@@ -186,9 +143,6 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
   const frameRate = Math.min(vs.frameRate || 60, 60);
   const { videoBitsPerSecond, audioBitsPerSecond } = selectBitrates(stream);
 
-  // Audio passthrough drives the speakers from the captured stream; the encoder
-  // reads a CLONE of the audio track so cancelling the encoder's reader on stop
-  // does not cut the passthrough (both clones pull from the same source).
   const audioContext = setupAudioPassthrough(tabId, stream);
   const audioForEncode =
     audioTrack && fmt.audio && typeof audioTrack.clone === "function" ? audioTrack.clone() : null;
@@ -204,13 +158,9 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
   let streamedBytes = 0;
   let target;
   if (streamUpload) {
-    // Fragmented MP4 written sequentially: every onData buffer, concatenated in
-    // arrival order, is a valid growing MP4. Forward each as a streamed chunk via
-    // a blob: URL (a Blob/Uint8Array cannot cross chrome.runtime.sendMessage; the
-    // SW fetches the URL to recover the bytes — same trick the WebM path uses).
     target = new StreamTarget({
       onData: (data, _position) => {
-        const copy = new Uint8Array(data); // copy: the muxer may reuse the buffer
+        const copy = new Uint8Array(data);
         streamedBytes += copy.byteLength;
         const chunkUrl = URL.createObjectURL(new Blob([copy], { type: fmt.mimeType }));
         chrome.runtime
@@ -256,7 +206,6 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
     cleanupRecording(tabId);
   };
 
-  // Video encoder (GPU-preferred).
   const videoEncoder = new VideoEncoder({
     output: (chunk, meta) => {
       rec.videoChunks += 1;
@@ -279,7 +228,6 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
   });
   rec.videoEncoder = videoEncoder;
 
-  // Audio encoder (optional).
   if (audioForEncode) {
     const audioEncoder = new AudioEncoder({
       output: (chunk, meta) => {
@@ -300,9 +248,7 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
     rec.audioEncoder = audioEncoder;
   }
 
-  // Pump frames from the tracks into the encoders. MediaStreamTrackProcessor
-  // exposes each track as a stream of VideoFrame/AudioData we feed and close.
-  const keyFrameEvery = Math.max(1, Math.round(frameRate * 2)); // keyframe ~every 2s
+  const keyFrameEvery = Math.max(1, Math.round(frameRate * 2));
   const videoReader = new MediaStreamTrackProcessor({ track: videoTrack }).readable.getReader();
   rec.videoReader = videoReader;
   let frameIndex = 0;
@@ -317,7 +263,6 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
           frameIndex += 1;
         }
       } catch (_e) {
-        // encoder may have closed mid-stop; the frame is closed below regardless
       } finally {
         frame.close();
       }
@@ -337,7 +282,6 @@ async function startWebCodecsRecording(tabId, stream, streamUpload, fmt) {
             rec.audioEncoder.encode(data);
           }
         } catch (_e) {
-          // ditto
         } finally {
           data.close();
         }
@@ -356,25 +300,21 @@ async function finishWebCodecsRecording(tabId, rec) {
   try {
     await rec.videoPump;
   } catch (_e) {
-    // pump already settled
   }
   if (rec.audioPump) {
     try {
       await rec.audioPump;
     } catch (_e) {
-      // ditto
     }
   }
 
   try {
     if (rec.videoEncoder && rec.videoEncoder.state === "configured") await rec.videoEncoder.flush();
   } catch (_e) {
-    // flush can reject if the encoder errored; the empty-frame check below still runs
   }
   try {
     if (rec.audioEncoder && rec.audioEncoder.state === "configured") await rec.audioEncoder.flush();
   } catch (_e) {
-    // ditto
   }
 
   let finalizeOk = true;
@@ -389,9 +329,6 @@ async function finishWebCodecsRecording(tabId, rec) {
   logRec(tabId, `WebCodecs STOP: ${elapsedMs}ms, ${rec.videoChunks} chunks de vídeo encodados`);
 
   if (rec.videoChunks === 0 || !finalizeOk) {
-    // No frames reached the encoder — typical of DRM-protected playback (Widevine)
-    // or a recording stopped before the first frame. Fail loudly instead of
-    // shipping an unplayable file.
     console.warn(
       LOG_PREFIX,
       `tab=${tabId}`,
@@ -419,10 +356,6 @@ async function finishWebCodecsRecording(tabId, rec) {
   chrome.runtime.sendMessage({ action: "hybrid_offscreen_stopped", tabId });
   cleanupRecording(tabId);
 }
-
-// ---------------------------------------------------------------------------
-// MediaRecorder (fallback) path — VP9 → WebM, original software encode
-// ---------------------------------------------------------------------------
 
 function startMediaRecorderRecording(tabId, stream, streamUpload, fmt) {
   const audioContext = setupAudioPassthrough(tabId, stream);
@@ -462,10 +395,6 @@ function startMediaRecorderRecording(tabId, stream, streamUpload, fmt) {
     logRec(tabId, `ondataavailable #${dataEvents}: ${e.data.size} bytes`);
 
     if (streamUpload) {
-      // A Blob does NOT survive chrome.runtime.sendMessage (JSON serialization
-      // turns it into {}), which silently dropped every streamed chunk. Pass a
-      // blob: URL string instead — the service worker fetches it to get the
-      // bytes. Same proven trick the non-stream path uses for the final blob.
       streamedBytes += e.data.size;
       const chunkUrl = URL.createObjectURL(e.data);
       chrome.runtime
@@ -502,11 +431,6 @@ function startMediaRecorderRecording(tabId, stream, streamUpload, fmt) {
         .catch(() => {});
     } else {
       if (totalBytes === 0) {
-        // The stream produced no media data, so the recording is empty. This is
-        // typical of DRM-protected playback (e.g. Widevine on Crunchyroll) or a
-        // recording stopped before any frame was captured. Fail loudly here
-        // instead of creating an empty blob that the backend would reject.
-        // The diagnostics above (track muted?, dataEvents, elapsedMs) tell which.
         const likelyDrm = dataEvents === 0 || emptyDataEvents === dataEvents;
         console.warn(
           LOG_PREFIX,
@@ -592,21 +516,18 @@ function cleanupRecording(tabId) {
     try {
       rec.audioForEncode.stop();
     } catch (_e) {
-      // best effort
     }
   }
   if (rec.videoEncoder && rec.videoEncoder.state !== "closed") {
     try {
       rec.videoEncoder.close();
     } catch (_e) {
-      // best effort
     }
   }
   if (rec.audioEncoder && rec.audioEncoder.state !== "closed") {
     try {
       rec.audioEncoder.close();
     } catch (_e) {
-      // best effort
     }
   }
   if (rec.audioContext) {
@@ -618,26 +539,11 @@ function cleanupRecording(tabId) {
   recordings.delete(tabId);
 }
 
-// ---------------------------------------------------------------------------
-// Quality target. The design goal is to save the capture as close to the frames
-// the browser actually rendered as practical — the LAN (2.5 Gbps) and the server
-// favor quality over size, and the recording machine only records (all heavy
-// processing is async on the server). So we provision a HIGH bitrate sized to the
-// real captured resolution/framerate via a bits-per-pixel-per-frame budget, with
-// a ceiling. The codecs (VP9 / H.264) are VBR: complex scenes spend up to this
-// ceiling while calm scenes stay small, so over-provisioning costs little.
-//
-// Tuned for 1080p (the primary capture resolution): 0.20 bpp puts 1080p60 at
-// ~25 Mbps (transparent), with the budget scaling up for the 3440x1440
-// ultrawide and down for the 1366x768 panel. The ceiling drops the unused 4K
-// headroom while still covering the ultrawide at 60 fps.
-const QUALITY_BITS_PER_PIXEL = 0.2; // ~visually lossless 1080p for screen capture
-const MIN_VIDEO_BITS_PER_SECOND = 12000000; // 12 Mbps floor (low-res panels stay crisp)
-const MAX_VIDEO_BITS_PER_SECOND = 60000000; // 60 Mbps ceiling (covers 3440x1440@60)
-const AUDIO_BITS_PER_SECOND = 320000; // 320 kbps (transparent)
+const QUALITY_BITS_PER_PIXEL = 0.2;
+const MIN_VIDEO_BITS_PER_SECOND = 12000000;
+const MAX_VIDEO_BITS_PER_SECOND = 60000000;
+const AUDIO_BITS_PER_SECOND = 320000;
 
-// selectBitrates derives the encoder bitrate from the ACTUAL captured track
-// (its rendered width/height/frameRate), so 4K60 gets far more than 1080p30.
 function selectBitrates(stream) {
   const track = stream.getVideoTracks()[0];
   const settings =
@@ -654,22 +560,8 @@ function selectBitrates(stream) {
   return { videoBitsPerSecond, audioBitsPerSecond: AUDIO_BITS_PER_SECOND };
 }
 
-// ---------------------------------------------------------------------------
-// Format selection — prefer a GPU-encoded MP4, fall back to MediaRecorder WebM.
-// The decision is deterministic and cached so the probe (which sizes the upload
-// session) matches what startRecording later produces.
-// ---------------------------------------------------------------------------
-
 let cachedFormat = null;
 
-// H.264 codec strings ordered widest-coverage first. The exact level only needs
-// to pass isConfigSupported; the real avcC (and its level) comes from the
-// encoder's decoderConfig and is written by the muxer, so the precise string
-// here is a capability probe, not the final stored profile.
-//   avc1.640033 = High @ L5.1 (covers 4K)
-//   avc1.64002A = High @ L4.2 (1080p60)
-//   avc1.640028 = High @ L4.0 (1080p30)
-//   avc1.42E01F = Baseline @ L3.1 (broadest)
 const H264_CODECS = ["avc1.640033", "avc1.64002A", "avc1.640028", "avc1.42E01F"];
 
 async function chooseRecordingFormat() {
@@ -692,9 +584,9 @@ async function detectRecordingFormat() {
         container: "mp4",
         mimeType: "video/mp4",
         fileExt: "mp4",
-        videoCodec, // WebCodecs codec string (e.g. avc1.640028)
+        videoCodec,
         muxerVideoCodec: "avc",
-        audio, // { codec, muxerCodec } | null
+        audio,
       };
     }
   }
@@ -719,7 +611,6 @@ async function firstSupportedH264() {
       });
       if (res && res.supported) return codec;
     } catch (_e) {
-      // unsupported codec string throws on some builds; try the next
     }
   }
   return null;
@@ -727,7 +618,7 @@ async function firstSupportedH264() {
 
 async function firstSupportedAudio() {
   const candidates = [
-    { codec: "mp4a.40.2", muxerCodec: "aac" }, // AAC-LC — most universal in MP4
+    { codec: "mp4a.40.2", muxerCodec: "aac" },
     { codec: "opus", muxerCodec: "opus" },
   ];
   for (const candidate of candidates) {
@@ -740,10 +631,9 @@ async function firstSupportedAudio() {
       });
       if (res && res.supported) return candidate;
     } catch (_e) {
-      // try the next
     }
   }
-  return null; // video-only MP4 if no audio codec is available
+  return null;
 }
 
 function selectWebmMimeType() {

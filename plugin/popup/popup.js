@@ -1,7 +1,3 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Popup UI
- * ======================================================================== */
-
 (function () {
   "use strict";
 
@@ -10,18 +6,14 @@
   const LOG_PREFIX = "[KuraNAS popup]";
   const logPopup = (...args) => {
     console.log(LOG_PREFIX, ...args);
-    // Mirror into the service worker console so all plugin logs land in one place.
     try {
       chrome.runtime
         .sendMessage({ action: "kuranas_log", source: LOG_PREFIX, args })
         .catch(() => {});
     } catch (_e) {
-      // Ignore: the local console.log above already happened.
     }
   };
 
-  // Describe a clicked element for the log: prefer its id, then a data-action,
-  // then a trimmed text label, finally the tag name.
   const describeTarget = (el) => {
     if (el.id) return `#${el.id}`;
     const action = el.getAttribute("data-action");
@@ -31,9 +23,6 @@
     return el.tagName.toLowerCase();
   };
 
-  // Log EVERY click that lands on an actionable element — buttons, links,
-  // list items — including ones created dynamically later. Capture phase so it
-  // runs before the specific handlers, and it never interferes with them.
   document.addEventListener(
     "click",
     (e) => {
@@ -47,8 +36,6 @@
     true
   );
 
-  // Single source of truth for the version label: manifest version_name (falls
-  // back to version). The <h1> shows it so you always know which build is live.
   const manifest = chrome.runtime.getManifest();
   const versionLabel = manifest.version_name || manifest.version;
   const appTitleEl = $("#appTitle");
@@ -81,10 +68,6 @@
 
   let currentTabId = null;
 
-  // -----------------------------------------------------------------------
-  // Init
-  // -----------------------------------------------------------------------
-
   async function init() {
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -103,7 +86,6 @@
       fetchUrlInput.value = tab.url;
     }
 
-    // Ask content script to re-detect title (in case it wasn't detected yet)
     chrome.tabs.sendMessage(currentTabId, { action: "request_title" }).catch(() => {});
   }
 
@@ -149,10 +131,6 @@
       }
     );
   }
-
-  // -----------------------------------------------------------------------
-  // Render Media List
-  // -----------------------------------------------------------------------
 
   function renderMediaList(mediaItems) {
     if (!mediaItems || mediaItems.length === 0) {
@@ -268,10 +246,6 @@
     return btn;
   }
 
-  // -----------------------------------------------------------------------
-  // Download Handlers
-  // -----------------------------------------------------------------------
-
   async function getAutoTitle() {
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
@@ -373,10 +347,6 @@
     });
   }
 
-  // -----------------------------------------------------------------------
-  // Quality Modal
-  // -----------------------------------------------------------------------
-
   function showQualityModal(type, items, onSelect) {
     qualityListEl.innerHTML = "";
 
@@ -405,10 +375,6 @@
   function closeQualityModal() {
     qualityModal.classList.add("hidden");
   }
-
-  // -----------------------------------------------------------------------
-  // Hybrid Controls
-  // -----------------------------------------------------------------------
 
   function updateHybridUI(status) {
     hybridStatusEl.className = "hybrid-badge";
@@ -448,10 +414,6 @@
       btnStopNow.classList.add("hidden");
     }
   }
-
-  // -----------------------------------------------------------------------
-  // Event Listeners
-  // -----------------------------------------------------------------------
 
   btnArm.addEventListener("click", () => {
     logPopup("hybrid_arm (auto) ->", "tabId=", currentTabId);
@@ -523,10 +485,6 @@
     settingsStatusEl.textContent = text;
     settingsStatusEl.className = "fetch-status" + (kind ? ` fetch-status-${kind}` : "");
   }
-
-  // -----------------------------------------------------------------------
-  // Server-side fetch (yt-dlp on the KuraNAS server)
-  // -----------------------------------------------------------------------
 
   function loadFetchOptions() {
     chrome.runtime.sendMessage({ action: "ingest_presets" }, (response) => {
@@ -617,7 +575,6 @@
     );
   });
 
-  // Real-time updates
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.action === "media_detected" && msg.tabId === currentTabId) {
       loadMedia();
@@ -631,10 +588,6 @@
       detectedTitleEl.classList.remove("hidden");
     }
   });
-
-  // -----------------------------------------------------------------------
-  // Utilities
-  // -----------------------------------------------------------------------
 
   function truncateUrl(url) {
     if (!url) return "";
@@ -664,6 +617,5 @@
     navigator.clipboard.writeText(text).catch(() => {});
   }
 
-  // -----------------------------------------------------------------------
   init();
 })();

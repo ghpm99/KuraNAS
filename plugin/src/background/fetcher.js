@@ -1,9 +1,3 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Server-side fetch
- * Asks the KuraNAS server to pull a URL (yt-dlp) straight into the library,
- * instead of capturing it through the browser. Talks to the /ingest API.
- * ======================================================================== */
-
 export function createFetcher({ getApiBaseUrl, fetchImpl = fetch }) {
   async function getJSON(path) {
     const apiUrl = await getApiBaseUrl();

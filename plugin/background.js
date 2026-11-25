@@ -1,7 +1,3 @@
-/* ========================================================================
- * KuraNAS Stream Grabber — Background Service Worker (MV3)
- * ======================================================================== */
-
 import {
   DEFAULT_KURANAS_API_BASE,
   DISCOVERY_HEALTH_SUFFIX,
@@ -33,18 +29,11 @@ import { createDownloader } from "./src/background/downloader.js";
 import { createFetcher } from "./src/background/fetcher.js";
 import { createHybridStateMachine } from "./src/background/hybrid-state.js";
 
-// ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
-
 const detectedMedia = new Map();
 const hybridStates = new Map();
 const detectedTitles = new Map();
 const detectedMetadata = new Map();
 
-// Load probe: this prints the moment the service worker starts. If you reload
-// the extension (chrome://extensions -> reload) and open the "service worker"
-// console, seeing this line proves the new code is the one running.
 console.log(
   `[KuraNAS bg] service worker carregado — ${
     chrome.runtime.getManifest().version_name || chrome.runtime.getManifest().version
@@ -127,10 +116,6 @@ const {
   stopHybridRecording,
 } = hybridStateMachine;
 
-// ---------------------------------------------------------------------------
-// 1. Media Detection via Network
-// ---------------------------------------------------------------------------
-
 const mediaDetectionManager = createMediaDetectionManager({
   chromeApi: chrome,
   detectedMedia,
@@ -141,14 +126,6 @@ const addMedia = mediaDetectionManager.addMedia;
 const updateBadge = mediaDetectionManager.updateBadge;
 mediaDetectionManager.registerNetworkListeners();
 
-// ---------------------------------------------------------------------------
-// 2. Message Router
-// ---------------------------------------------------------------------------
-
-// Central log relay: the popup and the (hidden) offscreen document forward
-// their console output here via { action: "kuranas_log" }, so EVERY plugin log
-// also shows up in the one console that is trivial to open — the service
-// worker's. This is purely additive; the relay never answers the message.
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg && msg.action === "kuranas_log") {
     console.log(msg.source || "[KuraNAS]", ...(Array.isArray(msg.args) ? msg.args : []));
@@ -192,10 +169,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => routeRuntime
   }
 ));
 
-// ---------------------------------------------------------------------------
-// 3. Blob Detection
-// ---------------------------------------------------------------------------
-
 function handleBlobDetected(tabId, msg) {
   addMedia(tabId, {
     url: msg.blobUrl || "blob",
@@ -206,10 +179,6 @@ function handleBlobDetected(tabId, msg) {
     timestamp: Date.now(),
   });
 }
-
-// ---------------------------------------------------------------------------
-// 3b. Title Detection
-// ---------------------------------------------------------------------------
 
 function handleTitleDetected(tabId, msg) {
   if (!tabId || !msg.title) return;
@@ -228,10 +197,6 @@ function getTitleForTab(tabId) {
   return { title: null, source: null };
 }
 
-// ---------------------------------------------------------------------------
-// 3c. Metadata Detection
-// ---------------------------------------------------------------------------
-
 function handleMetadataDetected(tabId, msg) {
   if (!tabId || !msg.metadata) return;
   detectedMetadata.set(tabId, { metadata: msg.metadata, timestamp: Date.now() });
@@ -242,19 +207,12 @@ function getMetadataForTab(tabId) {
   return entry ? entry.metadata : null;
 }
 
-// ---------------------------------------------------------------------------
-// 4. Hybrid State Machine
-// ---------------------------------------------------------------------------
-
 function stopOffscreenRecording(tabId) {
   chrome.runtime
     .sendMessage({ action: "offscreen_stop_recording", tabId })
     .catch(() => {});
 }
 
-// Resolve the capture name from the page title. Title detection is async (and
-// the title is cleared on SPA navigation), so if it is not ready yet, ask the
-// page to re-detect and wait briefly for it before falling back to a timestamp.
 async function resolveCaptureName(tabId) {
   const current = getTitleForTab(tabId);
   if (current && current.title && current.title.trim()) {
@@ -275,15 +233,7 @@ async function resolveCaptureName(tabId) {
   return `recording_${tabId}_${Date.now()}`;
 }
 
-// Resolve the standardized metadata for the capture. Like the title, it is
-// detected asynchronously and reset on SPA navigation, so ask the page to
-// re-detect and wait briefly for a fresh object before giving up (null is fine —
-// a capture may legitimately carry no metadata).
 async function resolveCaptureMetadata(tabId) {
-  // Prefer "rich" metadata (a resolved title, which on structured-data sites like
-  // Crunchyroll only appears once the TVEpisode JSON-LD is injected — a beat after
-  // load). Keep the best snapshot seen and wait briefly for the title to arrive,
-  // re-asking the page to detect; fall back to whatever partial we have (or null).
   chrome.tabs.sendMessage(tabId, { action: "request_metadata" }).catch(() => {});
 
   let latest = getMetadataForTab(tabId);
@@ -315,16 +265,12 @@ function extractEpisodeKey(captureMetadata) {
   return (captureMetadata && captureMetadata.episode_key) || "";
 }
 
-// probeOffscreenFormat asks the (ensured) offscreen recorder which container it
-// will record in, so the upload session is created with the matching mime type
-// and file extension. Defaults to WebM if the recorder cannot be reached.
 async function probeOffscreenFormat() {
   try {
     await ensureOffscreen();
     const res = await chrome.runtime.sendMessage({ action: "offscreen_probe_format" });
     if (res && res.mimeType && res.fileExt) return res;
   } catch (_e) {
-    // fall through to the WebM default
   }
   return { mimeType: "video/webm", fileExt: "webm", container: "webm" };
 }
@@ -339,23 +285,12 @@ async function initHybridUploadSession(tabId) {
   }
 
   const apiUrl = await getApiBaseUrl();
-  // Name the capture after the detected page title (show + episode, e.g.
-  // "Anime - S1 E2 - Título") so the file says which episode it is and episode 2
-  // does not overwrite episode 1. Fall back to a timestamped name when no title
-  // could be resolved.
   const name = await resolveCaptureName(tabId);
-  // The recorder decides its container by capability (GPU-encoded MP4 when
-  // available, else WebM). Ask it BEFORE creating the session so the server
-  // stores the right mime type and names the file with the right extension.
   const fmt = await probeOffscreenFormat();
   const mimeType = fmt.mimeType;
   const fileName = `${sanitizeFileName(name)}.${fmt.fileExt}`;
   logBg(tabId, `nome da captura: "${name}" (${mimeType})`);
 
-  // Standardized metadata (title, episode, duration, origin, …) is persisted by
-  // the server as metadata.json beside the recording. The episode_key (when the
-  // page yields a stable per-episode id) also drives the server's idempotency, so
-  // re-arming on the same episode resumes instead of recording a duplicate.
   const metadata = await resolveCaptureMetadata(tabId);
   const episodeKey = extractEpisodeKey(metadata);
   if (metadata) {
@@ -385,9 +320,6 @@ async function initHybridUploadSession(tabId) {
 
   const payload = await initResp.json();
 
-  // This episode is already archived (episode_key idempotency): there is no
-  // upload_id and nothing to record. Throw so the state machine reverts to ARMED
-  // without starting the offscreen recorder (it will move on at the next episode).
   if (payload.already_complete) {
     logBg(tabId, `episódio já capturado (episode_key="${episodeKey}") — pulando gravação`);
     throw new Error("capture already complete for this episode");
@@ -397,8 +329,6 @@ async function initHybridUploadSession(tabId) {
     throw new Error("Invalid hybrid upload init response: upload_id is required");
   }
 
-  // On a resumed session the server already holds received_size bytes; chunks
-  // must continue from that offset or the very first chunk fails on a mismatch.
   const startOffset = Number(payload.received_size || 0);
 
   state.uploadSession = createHybridUploadSession({
@@ -426,21 +356,12 @@ function logBg(tabId, ...args) {
   console.log("[KuraNAS bg]", `tab=${tabId}`, ...args);
 }
 
-// Logged-once guard so the per-chunk handler (called ~hundreds of times) emits a
-// single line for a dropped-chunk reason instead of flooding the console.
 const chunkDropLogged = new Set();
 const chunkFetchChains = new Map();
 
-// Streamed chunks arrive as a blob: URL string (a Blob cannot cross
-// chrome.runtime messaging). Fetch it here to recover the real bytes, then
-// revoke so a long recording does not leak blob URLs.
 async function fetchChunkBlob(chunkUrl) {
   const resp = await fetch(chunkUrl);
   const blob = await resp.blob();
-  // URL.revokeObjectURL does NOT exist in the MV3 service worker (it threw
-  // "is not a function" and failed the whole upload). The bytes are already read
-  // above, so ask the offscreen document — which created the blob URL and where
-  // URL.revokeObjectURL does exist — to revoke it.
   chrome.runtime
     .sendMessage({ action: "offscreen_revoke_url", url: chunkUrl })
     .catch(() => {});
@@ -528,10 +449,6 @@ function broadcastHybridStatus(tabId) {
     .catch(() => {});
 }
 
-// ---------------------------------------------------------------------------
-// 5. Offscreen Document Management
-// ---------------------------------------------------------------------------
-
 let creatingOffscreen = null;
 
 async function ensureOffscreen() {
@@ -547,9 +464,6 @@ async function ensureOffscreen() {
 
   creatingOffscreen = chrome.offscreen.createDocument({
     url: "offscreen/recorder.html",
-    // USER_MEDIA: tabCapture recording. AUDIO_PLAYBACK: re-play the captured tab
-    // audio back to the speakers so the owner can still hear while recording
-    // (tabCapture otherwise swallows the tab's audio output).
     reasons: ["USER_MEDIA", "AUDIO_PLAYBACK"],
     justification: "Tab capture recording and audio passthrough",
   });
@@ -557,10 +471,6 @@ async function ensureOffscreen() {
   await creatingOffscreen;
   creatingOffscreen = null;
 }
-
-// ---------------------------------------------------------------------------
-// 6. Save Recording Blob → Upload to KuraNAS
-// ---------------------------------------------------------------------------
 
 async function getApiBaseUrl() {
   const configured = await getConfiguredApiBaseUrl();
@@ -606,7 +516,6 @@ async function persistApiBaseUrl(apiBaseUrl) {
   try {
     await chrome.storage.sync.set({ apiBaseUrl });
   } catch {
-    // Keep runtime behavior even if sync storage is unavailable.
   }
 }
 
@@ -708,10 +617,6 @@ function isLikelyLanHost(hostname) {
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// Tab Cleanup
-// ---------------------------------------------------------------------------
-
 chrome.tabs.onRemoved.addListener((tabId) => {
   detectedMedia.delete(tabId);
   detectedTitles.delete(tabId);
@@ -726,7 +631,6 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
     detectedTitles.delete(tabId);
     detectedMetadata.delete(tabId);
     updateBadge(tabId);
-    // Ask content scripts to re-detect title + metadata for the new page
     chrome.tabs.sendMessage(tabId, { action: "request_title" }).catch(() => {});
     chrome.tabs.sendMessage(tabId, { action: "request_metadata" }).catch(() => {});
   }
