@@ -1306,6 +1306,7 @@
 	"ERROR_CAPTURE_UPLOAD_FAILED": "Falha ao salvar captura",
 	"ERROR_CAPTURE_CHUNK_OFFSET_MISMATCH": "A posição do trecho não confere com o que o servidor já recebeu",
 	"ERROR_CAPTURE_UPLOAD_EMPTY": "A captura esta vazia: nenhum dado foi recebido",
+	"ERROR_CAPTURE_UPLOAD_SESSION_NOT_FOUND": "Sessão de envio da captura não encontrada",
 	"ERROR_CAPTURE_UPLOAD_INCOMPLETE": "A captura está incompleta: %d bytes recebidos de %d esperados",
 	"ERROR_CAPTURE_NOT_FOUND": "Captura nao encontrada",
 	"ERROR_CAPTURE_LIST_FAILED": "Falha ao listar capturas",
