@@ -32,7 +32,7 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 08 | [Lixeira](08-lixeira.md) | ✅ concluída (2026-11-10) | 30 lacunas (web, backend e Android); 31–36 🚫 aguardam decisão do dono; Android validado só por build e testes unitários; `make ci` verde |
 | 09 | [Downloads / ingestão por URL](09-ingestao-por-url.md) | em execução | parado atrás das tasks 20–46 de `docs/melhorias/`; lacunas 01–09 resolvidas, ordem das demais no fim do arquivo |
 | 10 | [Capturas (plugin)](10-capturas.md) | em execução | em paralelo com o fim do 09 (pedido do dono 2026-11-25); 35 lacunas, D1–D5 🚫 |
-| 11 | Takeout | pendente | |
+| 11 | [Takeout](11-takeout.md) | em execução | em paralelo com 09 e 10 (pedido do dono 2026-11-25); D1–D2 🚫 |
 | 12 | Analytics | pendente | |
 | 13 | Notificações e jobs | pendente | |
 | 14 | Diário de atividades | pendente | |
