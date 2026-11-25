@@ -2541,5 +2541,11 @@
 	"TAKEOUT_UPLOAD_CHUNK_ERROR": "Não foi possível gravar a parte do envio do Takeout. Tente novamente.",
 	"TAKEOUT_UPLOAD_STATUS_ERROR": "Não foi possível consultar o andamento do envio do Takeout. Tente novamente.",
 	"TAKEOUT_UPLOAD_COMPLETE_ERROR": "Não foi possível concluir o envio do Takeout. Tente novamente.",
-	"TAKEOUT_UPLOAD_INCOMPLETE_GENERIC": "Upload incompleto: nem todos os bytes foram recebidos"
+	"TAKEOUT_UPLOAD_INCOMPLETE_GENERIC": "Upload incompleto: nem todos os bytes foram recebidos",
+	"TAKEOUT_GUIDE_TITLE": "Como gerar a exportação no Google",
+	"TAKEOUT_GUIDE_STEP_OPEN": "Acesse o Google Takeout:",
+	"TAKEOUT_GUIDE_LINK": "takeout.google.com",
+	"TAKEOUT_GUIDE_STEP_SELECT": "Desmarque tudo e selecione somente o Google Fotos.",
+	"TAKEOUT_GUIDE_STEP_FORMAT": "Escolha o formato .zip para a exportação.",
+	"TAKEOUT_GUIDE_STEP_DROP": "Baixe os arquivos gerados e solte-os aqui abaixo."
 }

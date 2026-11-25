@@ -2541,5 +2541,11 @@
 	"TAKEOUT_UPLOAD_CHUNK_ERROR": "Could not store the Takeout upload chunk. Try again.",
 	"TAKEOUT_UPLOAD_STATUS_ERROR": "Could not read the Takeout upload progress. Try again.",
 	"TAKEOUT_UPLOAD_COMPLETE_ERROR": "Could not complete the Takeout upload. Try again.",
-	"TAKEOUT_UPLOAD_INCOMPLETE_GENERIC": "Upload incomplete: not all bytes were received"
+	"TAKEOUT_UPLOAD_INCOMPLETE_GENERIC": "Upload incomplete: not all bytes were received",
+	"TAKEOUT_GUIDE_TITLE": "How to generate the export in Google",
+	"TAKEOUT_GUIDE_STEP_OPEN": "Go to Google Takeout:",
+	"TAKEOUT_GUIDE_LINK": "takeout.google.com",
+	"TAKEOUT_GUIDE_STEP_SELECT": "Deselect everything and select only Google Photos.",
+	"TAKEOUT_GUIDE_STEP_FORMAT": "Choose the .zip format for the export.",
+	"TAKEOUT_GUIDE_STEP_DROP": "Download the generated files and drop them below."
 }
