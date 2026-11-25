@@ -638,3 +638,39 @@ func TestInitUploadReturnsErrorWhenFreeSpaceCannotBeRead(t *testing.T) {
 		t.Fatalf("expected generic error, got %v", err)
 	}
 }
+
+func TestUploadChunkRejectsChunkBeyondDeclaredSize(t *testing.T) {
+	root := t.TempDir()
+	setEntryPoint(t, root)
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 8})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	firstChunk := buildChunkHeader(t, "chunk.bin", "hello")
+	if err := service.UploadChunk(firstChunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("first chunk returned error: %v", err)
+	}
+
+	oversizedChunk := buildChunkHeader(t, "chunk.bin", "world!")
+	err = service.UploadChunk(oversizedChunk, UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 5})
+	if !errors.Is(err, ErrUploadChunkExceedsSize) {
+		t.Fatalf("expected ErrUploadChunkExceedsSize, got %v", err)
+	}
+
+	session, err := service.loadTakeoutUploadSession(initResult.UploadID)
+	if err != nil {
+		t.Fatalf("load session: %v", err)
+	}
+	if session.ReceivedSize != 5 {
+		t.Fatalf("expected received size 5, got %d", session.ReceivedSize)
+	}
+	info, err := os.Stat(service.takeoutUploadTempFilePath(initResult.UploadID))
+	if err != nil {
+		t.Fatalf("stat temp file: %v", err)
+	}
+	if info.Size() != 5 {
+		t.Fatalf("expected temp file size 5, got %d", info.Size())
+	}
+}

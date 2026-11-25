@@ -267,6 +267,30 @@ func TestTakeoutHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("UploadChunkHandler chunk exceeds declared size", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(rec)
+		ctx.Request = buildChunkRequest(t, "u1", "0", true)
+
+		handler := NewHandler(&handlerServiceMock{
+			chunkFn: func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error {
+				return ErrUploadChunkExceedsSize
+			},
+		}, &handlerLoggerMock{})
+		handler.UploadChunkHandler(ctx)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d", rec.Code)
+		}
+		var body map[string]string
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		expectedMessage := i18n.GetMessage("TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE")
+		if body["error"] != expectedMessage || expectedMessage == "" {
+			t.Fatalf("unexpected error message %q", body["error"])
+		}
+	})
+
 	t.Run("CompleteUploadHandler invalid zip", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(rec)

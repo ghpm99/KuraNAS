@@ -224,6 +224,10 @@ func (s *Service) UploadChunk(file *multipart.FileHeader, dto UploadTakeoutChunk
 		return ErrUploadOffsetMismatch
 	}
 
+	if session.ExpectedSize > 0 && session.ReceivedSize+file.Size > session.ExpectedSize {
+		return ErrUploadChunkExceedsSize
+	}
+
 	src, err := file.Open()
 	if err != nil {
 		return fmt.Errorf("UploadChunk open chunk: %w", err)

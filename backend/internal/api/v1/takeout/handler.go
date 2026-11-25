@@ -104,6 +104,8 @@ func (h *Handler) UploadChunkHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
 		case errors.Is(err, ErrUploadOffsetMismatch):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_OFFSET_MISMATCH")})
+		case errors.Is(err, ErrUploadChunkExceedsSize):
+			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE")})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
 		}
