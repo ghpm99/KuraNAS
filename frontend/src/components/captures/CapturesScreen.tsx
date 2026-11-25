@@ -1,4 +1,4 @@
-import ErrorState from '@/components/errorState/errorState';
+import ListFeedback from '@/components/listFeedback/ListFeedback';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
@@ -33,7 +33,10 @@ const CapturesScreen = () => {
         isError,
         errorMessage,
         retryLoading,
-        isEmpty,
+        isNextPageError,
+        hasNextPage,
+        isFetchingNextPage,
+        fetchNextPage,
         deletingId,
         captureAwaitingDeletion,
         requestRemoval,
@@ -58,101 +61,107 @@ const CapturesScreen = () => {
                 </div>
             )}
 
-            {isError && (
-                <ErrorState
-                    title={t('CAPTURES_ERROR')}
-                    backendMessage={errorMessage}
+            {!isLoading && (
+                <ListFeedback
+                    isEmpty={items.length === 0}
+                    isError={isError}
+                    isNextPageError={isNextPageError}
+                    errorTitle={t('CAPTURES_ERROR')}
+                    errorMessage={errorMessage}
                     onRetry={retryLoading}
-                />
-            )}
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    onLoadMore={fetchNextPage}
+                    emptyState={<div className={styles.state}>{t('CAPTURES_EMPTY')}</div>}
+                >
+                    <ul className={styles.list}>
+                        {items.map((capture) => {
+                            const thumb = captureThumbnailHref(capture);
+                            const episode = formatEpisode(capture);
+                            const heading = capture.title || capture.name;
 
-            {isEmpty && <div className={styles.state}>{t('CAPTURES_EMPTY')}</div>}
-
-            {!isLoading && !isError && items.length > 0 && (
-                <ul className={styles.list}>
-                    {items.map((capture) => {
-                        const thumb = captureThumbnailHref(capture);
-                        const episode = formatEpisode(capture);
-                        const heading = capture.title || capture.name;
-
-                        return (
-                            <li key={capture.id} className={styles.card}>
-                                <div className={styles.thumb}>
-                                    {thumb ? (
-                                        <img
-                                            className={styles.thumbImg}
-                                            src={thumb}
-                                            alt={heading}
-                                            loading="lazy"
-                                        />
-                                    ) : (
-                                        <Film size={28} aria-hidden />
-                                    )}
-                                </div>
-
-                                <div className={styles.body}>
-                                    <div className={styles.headingRow}>
-                                        <h2 className={styles.cardTitle}>{heading}</h2>
-                                        <Chip
-                                            size="small"
-                                            className={statusClass[capture.status]}
-                                            label={t(captureStatusLabelKey(capture.status))}
-                                        />
+                            return (
+                                <li key={capture.id} className={styles.card}>
+                                    <div className={styles.thumb}>
+                                        {thumb ? (
+                                            <img
+                                                className={styles.thumbImg}
+                                                src={thumb}
+                                                alt={heading}
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <Film size={28} aria-hidden />
+                                        )}
                                     </div>
 
-                                    {(capture.episode_title || episode) && (
-                                        <p className={styles.subtitle}>
-                                            {[episode, capture.episode_title]
-                                                .filter(Boolean)
-                                                .join(' · ')}
-                                        </p>
-                                    )}
+                                    <div className={styles.body}>
+                                        <div className={styles.headingRow}>
+                                            <h2 className={styles.cardTitle}>{heading}</h2>
+                                            <Chip
+                                                size="small"
+                                                className={statusClass[capture.status]}
+                                                label={t(captureStatusLabelKey(capture.status))}
+                                            />
+                                        </div>
 
-                                    <div className={styles.meta}>
-                                        {capture.platform && (
+                                        {(capture.episode_title || episode) && (
+                                            <p className={styles.subtitle}>
+                                                {[episode, capture.episode_title]
+                                                    .filter(Boolean)
+                                                    .join(' · ')}
+                                            </p>
+                                        )}
+
+                                        <div className={styles.meta}>
+                                            {capture.platform && (
+                                                <Chip
+                                                    size="small"
+                                                    variant="outlined"
+                                                    label={capture.platform}
+                                                />
+                                            )}
                                             <Chip
                                                 size="small"
                                                 variant="outlined"
-                                                label={capture.platform}
+                                                label={`${t('CAPTURES_SIZE')}: ${formatSize(capture.size)}`}
                                             />
-                                        )}
-                                        <Chip
-                                            size="small"
-                                            variant="outlined"
-                                            label={`${t('CAPTURES_SIZE')}: ${formatSize(capture.size)}`}
-                                        />
-                                        <span className={styles.date}>
-                                            {new Date(capture.created_at).toLocaleDateString()}
-                                        </span>
+                                            <span className={styles.date}>
+                                                {new Date(capture.created_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className={styles.actions}>
-                                    {capture.source_url && (
-                                        <Button
-                                            component="a"
-                                            href={capture.source_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                    <div className={styles.actions}>
+                                        {capture.source_url && (
+                                            <Button
+                                                component="a"
+                                                href={capture.source_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                size="small"
+                                                startIcon={<ExternalLink size={14} />}
+                                            >
+                                                {t('CAPTURES_SOURCE_LINK')}
+                                            </Button>
+                                        )}
+                                        <IconButton
+                                            aria-label={t('CAPTURES_DELETE')}
                                             size="small"
-                                            startIcon={<ExternalLink size={14} />}
+                                            disabled={deletingId === capture.id}
+                                            onClick={() => requestRemoval(capture)}
                                         >
-                                            {t('CAPTURES_SOURCE_LINK')}
-                                        </Button>
-                                    )}
-                                    <IconButton
-                                        aria-label={t('CAPTURES_DELETE')}
-                                        size="small"
-                                        disabled={deletingId === capture.id}
-                                        onClick={() => requestRemoval(capture)}
-                                    >
-                                        <Trash2 size={16} />
-                                    </IconButton>
-                                </div>
-                            </li>
-                        );
-                    })}
-                </ul>
+                                            <Trash2 size={16} />
+                                        </IconButton>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                    {!hasNextPage && !isNextPageError ? (
+                        <div className={styles.state}>{t('CAPTURES_END')}</div>
+                    ) : null}
+                </ListFeedback>
             )}
 
             <CaptureDeleteDialog

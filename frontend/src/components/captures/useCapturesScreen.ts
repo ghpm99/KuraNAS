@@ -3,10 +3,23 @@ import { captureThumbnailHref, deleteCapture, getCaptures } from '@/service/capt
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { formatSize } from '@/shared/utils/formatSize';
 import type { Capture, CaptureStatus } from '@/types/captures';
-import type { Pagination } from '@/types/pagination';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getNextPageNumber } from '@/shared/pagination/getNextPageNumber';
+import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useMemo, useState } from 'react';
+
+export const CAPTURES_PAGE_SIZE = 50;
+export const capturesQueryKey = ['captures'] as const;
+
+const removeDuplicateIds = (captures: Capture[]): Capture[] => {
+    const seenIds = new Set<number>();
+    return captures.filter((capture) => {
+        if (seenIds.has(capture.id)) return false;
+        seenIds.add(capture.id);
+        return true;
+    });
+};
 
 export const captureStatusLabelKey = (status: CaptureStatus): string => {
     switch (status) {
@@ -30,11 +43,17 @@ export const useCapturesScreen = () => {
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [captureAwaitingDeletion, setCaptureAwaitingDeletion] = useState<Capture | null>(null);
 
-    const { data, isLoading, isError, error, refetch } = useQuery<Pagination<Capture>>({
-        queryKey: ['captures'],
-        queryFn: () => getCaptures(),
+    const capturesQuery = useInfiniteQuery({
+        queryKey: capturesQueryKey,
+        queryFn: ({ pageParam = 1 }) =>
+            getCaptures({ page: pageParam, pageSize: CAPTURES_PAGE_SIZE }),
+        initialPageParam: 1,
+        getNextPageParam: getNextPageNumber,
         refetchOnWindowFocus: false,
     });
+    const retryFailedPage = useRetryFailedPage(capturesQuery);
+    const isLoading = capturesQuery.isPending;
+    const isError = capturesQuery.isError;
 
     const removeMutation = useMutation({
         mutationFn: (id: number) => deleteCapture(id),
@@ -46,17 +65,28 @@ export const useCapturesScreen = () => {
             enqueueSnackbar(t(messageKey), { variant: 'success' });
         },
         onError: (deletionError) => {
-            enqueueSnackbar(extractBackendErrorMessage(deletionError) ?? t('CAPTURE_DELETE_ERROR'), {
-                variant: 'error',
-            });
+            enqueueSnackbar(
+                extractBackendErrorMessage(deletionError) ?? t('CAPTURE_DELETE_ERROR'),
+                {
+                    variant: 'error',
+                }
+            );
         },
         onSettled: () => {
             setDeletingId(null);
-            queryClient.invalidateQueries({ queryKey: ['captures'] });
+            queryClient.invalidateQueries({ queryKey: capturesQueryKey });
         },
     });
 
-    const items = useMemo(() => data?.items ?? [], [data]);
+    const items = useMemo(
+        () =>
+            removeDuplicateIds(
+                capturesQuery.data?.pages.flatMap((page) =>
+                    Array.isArray(page?.items) ? page.items : []
+                ) ?? []
+            ),
+        [capturesQuery.data]
+    );
 
     const confirmRemoval = () => {
         if (!captureAwaitingDeletion) return;
@@ -69,9 +99,14 @@ export const useCapturesScreen = () => {
         items,
         isLoading,
         isError,
-        errorMessage: extractBackendErrorMessage(error) ?? t('CONNECTION_BANNER_UNAVAILABLE'),
-        retryLoading: () => {
-            refetch();
+        errorMessage:
+            extractBackendErrorMessage(capturesQuery.error) ?? t('CONNECTION_BANNER_UNAVAILABLE'),
+        retryLoading: retryFailedPage,
+        isNextPageError: capturesQuery.isFetchNextPageError,
+        hasNextPage: Boolean(capturesQuery.hasNextPage),
+        isFetchingNextPage: capturesQuery.isFetchingNextPage,
+        fetchNextPage: () => {
+            void capturesQuery.fetchNextPage();
         },
         isEmpty: !isLoading && !isError && items.length === 0,
         deletingId,

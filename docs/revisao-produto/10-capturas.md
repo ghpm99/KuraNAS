@@ -69,7 +69,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 
 ### Frontend
 - [x] 14. `service/captures.ts`: filtros `status`/`platform`, `failure_reason` no tipo, `promoteCapture(id)`, adaptador de paginação compartilhado, payload sem `items` é erro — `00/RN-11`, `RN-53`, `§8`. Depende da 03 e 04. Seam test.
-- [ ] 15. Lista com scroll infinito conforme `00` — `RF-01`, `00/RN-02 a RN-09`, `CA-06`.
+- [x] 15. Lista com scroll infinito conforme `00` — `RF-01`, `00/RN-02 a RN-09`, `CA-06`.
 - [x] 16. Erro da primeira carga mostra a mensagem do servidor com "Tentar de novo"; forma inválida é erro — `00/RN-10`, `RN-11`, `RN-41`.
 - [ ] 17. "Recarregar" no cabeçalho e revalidação ao voltar o foco — `00/RN-12 a RN-14`, `CA-07`.
 - [ ] 18. "Tentar de novo" no item `failed` chama `POST /captures/:id/promote` — `RF-04`, `CA-10`, `00/RN-34`. Seam test. Depende da 03, 14 e 19.
