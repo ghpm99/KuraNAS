@@ -151,9 +151,6 @@ func (s *Service) availableBytesAtUploadRoot() (int64, error) {
 }
 
 func (s *Service) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error) {
-	if !isGeneratedUploadID(uploadID) {
-		return TakeoutUploadStatusDto{}, ErrUploadSessionNotFound
-	}
 	session, err := s.loadTakeoutUploadSession(uploadID)
 	if err != nil {
 		return TakeoutUploadStatusDto{}, err
@@ -166,9 +163,6 @@ func (s *Service) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, erro
 }
 
 func (s *Service) CancelUpload(uploadID string) error {
-	if !isGeneratedUploadID(uploadID) {
-		return ErrUploadSessionNotFound
-	}
 	if _, err := s.loadTakeoutUploadSession(uploadID); err != nil {
 		return err
 	}
@@ -262,7 +256,7 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 	}
 
 	if session.ExpectedSize > 0 && session.ReceivedSize != session.ExpectedSize {
-		return TakeoutImportResultDto{}, ErrUploadIncomplete
+		return TakeoutImportResultDto{}, UploadIncompleteError{ExpectedSize: session.ExpectedSize, ReceivedSize: session.ReceivedSize}
 	}
 
 	zipPath := s.takeoutUploadTempFilePath(dto.UploadID)
@@ -361,6 +355,9 @@ func (s *Service) saveTakeoutUploadSession(session TakeoutUploadSession) error {
 }
 
 func (s *Service) loadTakeoutUploadSession(uploadID string) (TakeoutUploadSession, error) {
+	if !isGeneratedUploadID(uploadID) {
+		return TakeoutUploadSession{}, ErrUploadSessionNotFound
+	}
 	payload, err := os.ReadFile(s.takeoutUploadSessionMetaPath(uploadID))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

@@ -1,6 +1,9 @@
 package takeout
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	ErrInvalidZipFile         = errors.New("invalid zip file")
@@ -14,3 +17,16 @@ var (
 	ErrInvalidUploadFileName  = errors.New("upload file name must end in .zip")
 	ErrInsufficientStorage    = errors.New("insufficient storage for upload")
 )
+
+type UploadIncompleteError struct {
+	ExpectedSize int64
+	ReceivedSize int64
+}
+
+func (incompleteError UploadIncompleteError) Error() string {
+	return fmt.Sprintf("%s: expected %d bytes, received %d", ErrUploadIncomplete.Error(), incompleteError.ExpectedSize, incompleteError.ReceivedSize)
+}
+
+func (incompleteError UploadIncompleteError) Is(target error) bool {
+	return target == ErrUploadIncomplete
+}

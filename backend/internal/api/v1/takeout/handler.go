@@ -54,7 +54,8 @@ func (h *Handler) InitUploadHandler(c *gin.Context) {
 			c.JSON(http.StatusInsufficientStorage, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
+		applog.ErrorWithStack("takeout: failed to init upload session", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_INIT_ERROR")})
 		return
 	}
 
@@ -101,13 +102,14 @@ func (h *Handler) UploadChunkHandler(c *gin.Context) {
 		h.completeError(logModel, err)
 		switch {
 		case errors.Is(err, ErrUploadSessionNotFound):
-			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
 		case errors.Is(err, ErrUploadOffsetMismatch):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_OFFSET_MISMATCH")})
 		case errors.Is(err, ErrUploadChunkExceedsSize):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_CHUNK_EXCEEDS_SIZE")})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
+			applog.ErrorWithStack("takeout: failed to store upload chunk", err, "upload_id", dto.UploadID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_CHUNK_ERROR")})
 		}
 		return
 	}
@@ -137,13 +139,14 @@ func (h *Handler) CompleteUploadHandler(c *gin.Context) {
 		h.completeError(logModel, err)
 		switch {
 		case errors.Is(err, ErrUploadSessionNotFound):
-			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
 		case errors.Is(err, ErrUploadIncomplete):
-			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_INCOMPLETE")})
+			c.JSON(http.StatusBadRequest, gin.H{"error": incompleteUploadMessage(err)})
 		case errors.Is(err, ErrInvalidZipFile):
 			c.JSON(http.StatusBadRequest, gin.H{"error": i18n.GetMessage("TAKEOUT_INVALID_ZIP")})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
+			applog.ErrorWithStack("takeout: failed to complete upload", err, "upload_id", dto.UploadID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_COMPLETE_ERROR")})
 		}
 		return
 	}
@@ -168,7 +171,8 @@ func (h *Handler) GetUploadStatusHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
+		applog.ErrorWithStack("takeout: failed to read upload status", err, "upload_id", c.Param("upload_id"))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_STATUS_ERROR")})
 		return
 	}
 
@@ -198,6 +202,14 @@ func (h *Handler) CancelUploadHandler(c *gin.Context) {
 
 	h.completeSuccess(logModel)
 	c.Status(http.StatusNoContent)
+}
+
+func incompleteUploadMessage(err error) string {
+	var incompleteError UploadIncompleteError
+	if !errors.As(err, &incompleteError) {
+		return i18n.GetMessage("TAKEOUT_UPLOAD_INCOMPLETE_GENERIC")
+	}
+	return i18n.Translate("TAKEOUT_UPLOAD_INCOMPLETE", incompleteError.ExpectedSize, incompleteError.ReceivedSize)
 }
 
 func (h *Handler) createLog(logModel logger.LoggerModel) logger.LoggerModel {

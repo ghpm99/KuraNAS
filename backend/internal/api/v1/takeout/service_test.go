@@ -363,29 +363,30 @@ func TestGenerateTakeoutUploadID(t *testing.T) {
 }
 
 func TestSaveAndLoadTakeoutSessionRoundTrip(t *testing.T) {
+	generatedUploadID := strings.Repeat("ab", takeoutUploadIDLength/2)
 	root := t.TempDir()
 	setEntryPoint(t, root)
 	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
 	session := TakeoutUploadSession{
-		UploadID:      "abc",
+		UploadID:      generatedUploadID,
 		FileName:      "takeout.zip",
 		ExpectedSize:  1,
 		ReceivedSize:  1,
 		CreatedAt:     time.Now(),
 		LastUpdatedAt: time.Now(),
 	}
-	if err := os.MkdirAll(service.takeoutUploadSessionDir("abc"), 0755); err != nil {
+	if err := os.MkdirAll(service.takeoutUploadSessionDir(generatedUploadID), 0755); err != nil {
 		t.Fatalf("failed to create session dir: %v", err)
 	}
 	if err := service.saveTakeoutUploadSession(session); err != nil {
 		t.Fatalf("saveTakeoutUploadSession returned error: %v", err)
 	}
-	loaded, err := service.loadTakeoutUploadSession("abc")
+	loaded, err := service.loadTakeoutUploadSession(generatedUploadID)
 	if err != nil {
 		t.Fatalf("loadTakeoutUploadSession returned error: %v", err)
 	}
-	if loaded.UploadID != "abc" {
-		t.Fatalf("expected upload id abc")
+	if loaded.UploadID != generatedUploadID {
+		t.Fatalf("expected upload id generated")
 	}
 }
 
