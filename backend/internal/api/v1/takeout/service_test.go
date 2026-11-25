@@ -11,6 +11,7 @@ import (
 	"nas-go/api/pkg/database"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -490,5 +491,37 @@ func TestInitUploadDoesNotResumeFullyReceivedSession(t *testing.T) {
 	}
 	if secondInit.Resumed || secondInit.UploadID == firstInit.UploadID {
 		t.Fatalf("fully received session must not resume, got %+v", secondInit)
+	}
+}
+
+func TestGetUploadStatusReturnsSizeAndReceivedSize(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if err := service.UploadChunk(buildChunkHeader(t, "chunk.bin", "hello"), UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+
+	status, err := service.GetUploadStatus(initResult.UploadID)
+	if err != nil {
+		t.Fatalf("GetUploadStatus returned error: %v", err)
+	}
+	if status.UploadID != initResult.UploadID || status.Size != 10 || status.ReceivedSize != 5 {
+		t.Fatalf("unexpected status %+v", status)
+	}
+}
+
+func TestGetUploadStatusRejectsUnknownAndMalformedIDs(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+
+	unknownButWellFormedID := strings.Repeat("a", takeoutUploadIDLength)
+	for _, uploadID := range []string{unknownButWellFormedID, "..", "../x", ""} {
+		if _, err := service.GetUploadStatus(uploadID); !errors.Is(err, ErrUploadSessionNotFound) {
+			t.Fatalf("id %q: expected ErrUploadSessionNotFound, got %v", uploadID, err)
+		}
 	}
 }

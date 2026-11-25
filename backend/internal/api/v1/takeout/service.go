@@ -21,6 +21,8 @@ import (
 
 const takeoutUploadChunkSize int64 = 2 * 1024 * 1024
 
+const takeoutUploadIDLength = 32
+
 type notificationServiceInterface interface {
 	GroupOrCreate(dto notifications.CreateNotificationDto) (notifications.NotificationDto, error)
 }
@@ -106,6 +108,29 @@ func (s *Service) InitUpload(dto InitTakeoutUploadDto) (InitTakeoutUploadResultD
 		UploadID:  uploadID,
 		ChunkSize: takeoutUploadChunkSize,
 	}, nil
+}
+
+func (s *Service) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error) {
+	if !isGeneratedUploadID(uploadID) {
+		return TakeoutUploadStatusDto{}, ErrUploadSessionNotFound
+	}
+	session, err := s.loadTakeoutUploadSession(uploadID)
+	if err != nil {
+		return TakeoutUploadStatusDto{}, err
+	}
+	return TakeoutUploadStatusDto{
+		UploadID:     session.UploadID,
+		Size:         session.ExpectedSize,
+		ReceivedSize: session.ReceivedSize,
+	}, nil
+}
+
+func isGeneratedUploadID(uploadID string) bool {
+	if len(uploadID) != takeoutUploadIDLength {
+		return false
+	}
+	_, err := hex.DecodeString(uploadID)
+	return err == nil
 }
 
 func (s *Service) findOpenSessionByFile(fileName string, expectedSize int64) (TakeoutUploadSession, bool) {

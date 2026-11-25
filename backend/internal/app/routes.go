@@ -669,6 +669,7 @@ func RegisterTakeoutRoutes(router *gin.RouterGroup, context *AppContext) {
 	takeoutRoutes.POST("/upload/init", context.Takeout.Handler.InitUploadHandler)
 	takeoutRoutes.POST("/upload/chunk", context.Takeout.Handler.UploadChunkHandler)
 	takeoutRoutes.POST("/upload/complete", context.Takeout.Handler.CompleteUploadHandler)
+	takeoutRoutes.GET("/upload/:upload_id", context.Takeout.Handler.GetUploadStatusHandler)
 }
 
 func RegisterDistributionRoutes(router *gin.RouterGroup, context *AppContext) {

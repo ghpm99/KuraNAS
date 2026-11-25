@@ -146,6 +146,30 @@ func (h *Handler) CompleteUploadHandler(c *gin.Context) {
 	c.JSON(http.StatusAccepted, result)
 }
 
+func (h *Handler) GetUploadStatusHandler(c *gin.Context) {
+	logModel := h.createLog(logger.LoggerModel{
+		Name:        "GetTakeoutUploadStatus",
+		Description: "Reading takeout upload session progress",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	})
+
+	status, err := h.service.GetUploadStatus(c.Param("upload_id"))
+	if err != nil {
+		h.completeError(logModel, err)
+		if errors.Is(err, ErrUploadSessionNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("SETTINGS_LIBRARY_SAVE_ERROR")})
+		return
+	}
+
+	h.completeSuccess(logModel)
+	c.JSON(http.StatusOK, status)
+}
+
 func (h *Handler) createLog(logModel logger.LoggerModel) logger.LoggerModel {
 	if h.logService == nil {
 		return logModel

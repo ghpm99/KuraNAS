@@ -26,3 +26,9 @@ type TakeoutImportResultDto struct {
 	ImportID int    `json:"import_id"`
 	Message  string `json:"message"`
 }
+
+type TakeoutUploadStatusDto struct {
+	UploadID     string `json:"upload_id"`
+	Size         int64  `json:"size"`
+	ReceivedSize int64  `json:"received_size"`
+}

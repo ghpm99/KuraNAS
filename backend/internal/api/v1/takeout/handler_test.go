@@ -18,6 +18,7 @@ type handlerServiceMock struct {
 	initFn     func(dto InitTakeoutUploadDto) (InitTakeoutUploadResultDto, error)
 	chunkFn    func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error
 	completeFn func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
+	statusFn   func(uploadID string) (TakeoutUploadStatusDto, error)
 }
 
 type handlerLoggerMock struct{}
@@ -58,6 +59,13 @@ func (m *handlerServiceMock) CompleteUpload(dto CompleteTakeoutUploadDto) (Takeo
 		return m.completeFn(dto)
 	}
 	return TakeoutImportResultDto{JobID: 12, ImportID: 5, Message: "ok"}, nil
+}
+
+func (m *handlerServiceMock) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error) {
+	if m.statusFn != nil {
+		return m.statusFn(uploadID)
+	}
+	return TakeoutUploadStatusDto{UploadID: uploadID, Size: 10, ReceivedSize: 4}, nil
 }
 
 func buildJSONRequest(method string, url string, body string) *http.Request {
@@ -330,5 +338,51 @@ func TestInitUploadHandlerReturnsResumeFields(t *testing.T) {
 	}
 	if body.UploadID != "u1" || body.ChunkSize != 2048 || body.ReceivedSize != 4 || !body.Resumed {
 		t.Fatalf("unexpected body %+v", body)
+	}
+}
+
+func TestGetUploadStatusHandlerReturnsSessionProgress(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/takeout/upload/:upload_id", NewHandler(&handlerServiceMock{}, nil).GetUploadStatusHandler)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/takeout/upload/abc", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	var body struct {
+		UploadID     string `json:"upload_id"`
+		Size         int64  `json:"size"`
+		ReceivedSize int64  `json:"received_size"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.UploadID != "abc" || body.Size != 10 || body.ReceivedSize != 4 {
+		t.Fatalf("unexpected body %+v", body)
+	}
+}
+
+func TestGetUploadStatusHandlerReturns404ForUnknownSession(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service := &handlerServiceMock{statusFn: func(string) (TakeoutUploadStatusDto, error) {
+		return TakeoutUploadStatusDto{}, ErrUploadSessionNotFound
+	}}
+	router := gin.New()
+	router.GET("/takeout/upload/:upload_id", NewHandler(service, nil).GetUploadStatusHandler)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/takeout/upload/abc", nil))
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rec.Code)
+	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Error == "" {
+		t.Fatalf("expected error message, got %q (%v)", rec.Body.String(), err)
 	}
 }
