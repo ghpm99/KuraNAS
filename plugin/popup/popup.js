@@ -65,6 +65,7 @@
   const hybridStatusEl = $("#hybridStatus");
   const qualityModal = $("#qualityModal");
   const qualityListEl = $("#qualityList");
+  const captureResult = globalThis.KuraNasCaptureResult;
   const btnCloseModal = $("#btnCloseModal");
   const apiUrlInput = $("#apiUrl");
   const btnSaveSettings = $("#btnSaveSettings");
@@ -203,31 +204,48 @@
     const actions = document.createElement("div");
     actions.className = "media-actions";
 
+    const statusEl = document.createElement("div");
+    statusEl.className = "capture-status";
+    statusEl.hidden = true;
+    info.appendChild(statusEl);
+
+    let primaryButton = null;
+    const tracker = {
+      show(result, isBusy) {
+        statusEl.hidden = false;
+        statusEl.textContent = result.text;
+        statusEl.className = `capture-status ${result.kind}`;
+        if (primaryButton) primaryButton.disabled = isBusy;
+      },
+    };
+
     if (item.type === "hls") {
       actions.appendChild(
         createActionButton("Baixar", "btn btn-primary btn-small", () =>
-          handleHLSDownload(item)
+          handleHLSDownload(item, tracker)
         )
       );
     } else if (item.type === "dash") {
       actions.appendChild(
         createActionButton("Baixar", "btn btn-primary btn-small", () =>
-          handleDASHDownload(item)
+          handleDASHDownload(item, tracker)
         )
       );
     } else if (item.type === "blob") {
       actions.appendChild(
         createActionButton("Capturar", "btn btn-primary btn-small", () =>
-          handleBlobCapture(item)
+          handleBlobCapture(item, tracker)
         )
       );
     } else {
       actions.appendChild(
         createActionButton("Baixar", "btn btn-primary btn-small", () =>
-          handleDirectDownload(item)
+          handleDirectDownload(item, tracker)
         )
       );
     }
+
+    primaryButton = actions.firstChild;
 
     actions.appendChild(
       createActionButton("Copiar", "btn btn-secondary btn-small", () =>
@@ -272,11 +290,23 @@
     return name ? name.trim() : null;
   }
 
-  async function handleHLSDownload(item) {
+  async function sendCaptureMessage(tracker, message) {
+    tracker.show(captureResult.SENDING_RESULT, true);
+    try {
+      const response = await chrome.runtime.sendMessage(message);
+      tracker.show(captureResult.describeCaptureResponse(response), false);
+      return response;
+    } catch (error) {
+      tracker.show(captureResult.describeCaptureFailure(error), false);
+      return null;
+    }
+  }
+
+  async function handleHLSDownload(item, tracker) {
     const name = await promptName("video_hls");
     if (!name) return;
 
-    const response = await chrome.runtime.sendMessage({
+    const response = await sendCaptureMessage(tracker, {
       action: "download_hls",
       tabId: currentTabId,
       url: item.url,
@@ -284,22 +314,22 @@
     });
 
     if (response && response.type === "master") {
-      showQualityModal("HLS", response.variants, (variant) => {
-        chrome.runtime.sendMessage({
+      showQualityModal("HLS", response.variants, (variant) =>
+        sendCaptureMessage(tracker, {
           action: "download_hls",
           tabId: currentTabId,
           url: variant.url,
           name,
-        });
-      });
+        })
+      );
     }
   }
 
-  async function handleDASHDownload(item) {
+  async function handleDASHDownload(item, tracker) {
     const name = await promptName("video_dash");
     if (!name) return;
 
-    const response = await chrome.runtime.sendMessage({
+    const response = await sendCaptureMessage(tracker, {
       action: "download_dash",
       tabId: currentTabId,
       url: item.url,
@@ -307,23 +337,23 @@
     });
 
     if (response && response.type === "dash_manifest") {
-      showQualityModal("DASH", response.representations, (rep) => {
-        chrome.runtime.sendMessage({
+      showQualityModal("DASH", response.representations, (rep) =>
+        sendCaptureMessage(tracker, {
           action: "download_dash",
           tabId: currentTabId,
           url: item.url,
           name,
           representationId: rep.id,
-        });
-      });
+        })
+      );
     }
   }
 
-  async function handleBlobCapture(item) {
+  async function handleBlobCapture(item, tracker) {
     const name = await promptName("captura_blob");
     if (!name) return;
 
-    chrome.runtime.sendMessage({
+    await sendCaptureMessage(tracker, {
       action: "upload_blob_capture",
       tabId: currentTabId,
       blobUrl: item.url,
@@ -331,11 +361,11 @@
     });
   }
 
-  async function handleDirectDownload(item) {
+  async function handleDirectDownload(item, tracker) {
     const name = await promptName("video_direto");
     if (!name) return;
 
-    chrome.runtime.sendMessage({
+    await sendCaptureMessage(tracker, {
       action: "download_direct",
       tabId: currentTabId,
       url: item.url,

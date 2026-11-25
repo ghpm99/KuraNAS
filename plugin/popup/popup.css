@@ -381,3 +381,21 @@ body {
 .fetch-status-success { color: #8fbc8f; }
 .fetch-status-error { color: #ff6b6b; }
 .fetch-status-pending { color: #ffd700; }
+
+.capture-status {
+  margin-top: 2px;
+  font-size: 11px;
+  word-break: break-word;
+}
+
+.capture-status.progress {
+  color: #e0b050;
+}
+
+.capture-status.success {
+  color: #5cb85c;
+}
+
+.capture-status.error {
+  color: #e05c5c;
+}
