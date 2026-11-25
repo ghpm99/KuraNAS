@@ -11,6 +11,7 @@ require (
 	github.com/hashicorp/mdns v1.0.6
 	github.com/joho/godotenv v1.5.1
 	github.com/kardianos/service v1.2.2
+	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.1
 	golang.org/x/image v0.42.0
