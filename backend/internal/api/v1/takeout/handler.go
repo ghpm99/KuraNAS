@@ -140,6 +140,8 @@ func (h *Handler) CompleteUploadHandler(c *gin.Context) {
 		switch {
 		case errors.Is(err, ErrUploadSessionNotFound):
 			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
+		case errors.Is(err, ErrUploadAlreadyCompleted):
+			c.JSON(http.StatusConflict, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_ALREADY_COMPLETED")})
 		case errors.Is(err, ErrUploadIncomplete):
 			c.JSON(http.StatusBadRequest, gin.H{"error": incompleteUploadMessage(err)})
 		case errors.Is(err, ErrInvalidZipFile):

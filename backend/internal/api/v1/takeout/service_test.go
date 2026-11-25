@@ -726,3 +726,55 @@ func TestCompleteUploadEmitsOneStartedNotificationWithImportAndJobIDs(t *testing
 		t.Fatalf("unexpected metadata: %+v", metadata)
 	}
 }
+
+func uploadFullSessionForTest(t *testing.T, service *Service, fileName string) string {
+	t.Helper()
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: fileName, Size: 5})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if err := service.UploadChunk(buildChunkHeader(t, "chunk.bin", "hello"), UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+	return initResult.UploadID
+}
+
+func TestCompleteUploadTwiceReturnsAlreadyCompletedAndCreatesOneJob(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	createdJobs := 0
+	dispatcher := &uploadDispatcherMock{createJobFn: func(tx *sql.Tx, job jobs.JobModel) (jobs.JobModel, error) {
+		createdJobs++
+		job.ID = createdJobs
+		return job, nil
+	}}
+	service := newTakeoutServiceForTest(dispatcher)
+	uploadID := uploadFullSessionForTest(t, service, "takeout.zip")
+
+	if _, err := service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: uploadID}); err != nil {
+		t.Fatalf("first CompleteUpload returned error: %v", err)
+	}
+	_, err := service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: uploadID})
+	if !errors.Is(err, ErrUploadAlreadyCompleted) {
+		t.Fatalf("expected ErrUploadAlreadyCompleted, got %v", err)
+	}
+	if createdJobs != 1 {
+		t.Fatalf("expected one job, got %d", createdJobs)
+	}
+	if _, err := service.GetUploadStatus(uploadID); err != nil {
+		t.Fatalf("GetUploadStatus must keep working, got %v", err)
+	}
+}
+
+func TestInitUploadDoesNotResumeCompletedSession(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	uploadID := uploadFullSessionForTest(t, service, "takeout.zip")
+	if _, err := service.CompleteUpload(CompleteTakeoutUploadDto{UploadID: uploadID}); err != nil {
+		t.Fatalf("CompleteUpload returned error: %v", err)
+	}
+
+	_, hasOpenSession := service.findOpenSessionByFile("takeout.zip", 5)
+	if hasOpenSession {
+		t.Fatalf("completed session must not be resumed")
+	}
+}

@@ -29,12 +29,13 @@ type TakeoutMetadata struct {
 }
 
 type TakeoutUploadSession struct {
-	UploadID      string    `json:"upload_id"`
-	FileName      string    `json:"file_name"`
-	ExpectedSize  int64     `json:"expected_size"`
-	ReceivedSize  int64     `json:"received_size"`
-	CreatedAt     time.Time `json:"created_at"`
-	LastUpdatedAt time.Time `json:"last_updated_at"`
+	UploadID      string     `json:"upload_id"`
+	FileName      string     `json:"file_name"`
+	ExpectedSize  int64      `json:"expected_size"`
+	ReceivedSize  int64      `json:"received_size"`
+	CreatedAt     time.Time  `json:"created_at"`
+	LastUpdatedAt time.Time  `json:"last_updated_at"`
+	CompletedAt   *time.Time `json:"completed_at,omitempty"`
 }
 
 type ExtractedFile struct {
@@ -59,4 +60,8 @@ type ImportSummary struct {
 	AlreadyExisting int
 	Ignored         int
 	FailedEntries   int
+}
+
+func (session TakeoutUploadSession) isCompleted() bool {
+	return session.CompletedAt != nil
 }

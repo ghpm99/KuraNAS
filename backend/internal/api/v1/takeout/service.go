@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/notifications"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/database"
 	"nas-go/api/pkg/diskspace"
 	"nas-go/api/pkg/i18n"
@@ -198,7 +199,7 @@ func (s *Service) findOpenSessionByFile(fileName string, expectedSize int64) (Ta
 			continue
 		}
 		isSameFile := session.FileName == fileName && session.ExpectedSize == expectedSize
-		isOpen := session.ReceivedSize < session.ExpectedSize
+		isOpen := session.ReceivedSize < session.ExpectedSize && !session.isCompleted()
 		if isSameFile && isOpen {
 			return session, true
 		}
@@ -254,6 +255,10 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 		return TakeoutImportResultDto{}, err
 	}
 
+	if session.isCompleted() {
+		return TakeoutImportResultDto{}, ErrUploadAlreadyCompleted
+	}
+
 	if session.ExpectedSize > 0 && session.ReceivedSize != session.ExpectedSize {
 		return TakeoutImportResultDto{}, UploadIncompleteError{ExpectedSize: session.ExpectedSize, ReceivedSize: session.ReceivedSize}
 	}
@@ -261,15 +266,6 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 	zipPath := s.takeoutUploadTempFilePath(dto.UploadID)
 	if !hasZipExtension(session.FileName) {
 		return TakeoutImportResultDto{}, ErrInvalidZipFile
-	}
-
-	payload, err := json.Marshal(map[string]any{
-		"zip_path":  zipPath,
-		"upload_id": dto.UploadID,
-		"file_name": session.FileName,
-	})
-	if err != nil {
-		return TakeoutImportResultDto{}, fmt.Errorf("CompleteUpload marshal payload: %w", err)
 	}
 
 	var createdJob jobs.JobModel
@@ -295,6 +291,22 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 		}
 		createdJob = jobModel
 
+		createdImportID, createImportErr := s.ImportCreator.CreateQueuedImport(tx, createdJob.ID, session.FileName, session.ExpectedSize)
+		if createImportErr != nil {
+			return createImportErr
+		}
+		importID = createdImportID
+
+		payload, payloadErr := json.Marshal(map[string]any{
+			"zip_path":  zipPath,
+			"upload_id": dto.UploadID,
+			"file_name": session.FileName,
+			"import_id": importID,
+		})
+		if payloadErr != nil {
+			return fmt.Errorf("CompleteUpload marshal payload: %w", payloadErr)
+		}
+
 		_, createStepErr := s.UploadJobDispatcher.CreateStep(tx, jobs.StepModel{
 			JobID:       createdJob.ID,
 			Type:        "takeout_extract",
@@ -305,16 +317,16 @@ func (s *Service) CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportRes
 			Progress:    0,
 			Payload:     payload,
 		})
-		if createStepErr != nil {
-			return createStepErr
-		}
-
-		createdImportID, createImportErr := s.ImportCreator.CreateQueuedImport(tx, createdJob.ID, session.FileName, session.ExpectedSize)
-		importID = createdImportID
-		return createImportErr
+		return createStepErr
 	})
 	if err != nil {
 		return TakeoutImportResultDto{}, fmt.Errorf("CompleteUpload create job: %w", err)
+	}
+
+	completedAt := time.Now()
+	session.CompletedAt = &completedAt
+	if saveErr := s.saveTakeoutUploadSession(session); saveErr != nil {
+		applog.ErrorWithStack("takeout: failed to mark upload session as completed", saveErr, "upload_id", dto.UploadID)
 	}
 
 	s.emitImportStartedNotification(session.FileName, importID, createdJob.ID)

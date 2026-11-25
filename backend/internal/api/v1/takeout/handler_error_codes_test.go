@@ -123,3 +123,23 @@ func TestInitUploadHandlerInternalErrorUsesTakeoutKey(t *testing.T) {
 		t.Fatalf("unexpected message %q", message)
 	}
 }
+
+func TestCompleteUploadHandlerReturns409ForAlreadyCompletedUpload(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = buildJSONRequest(http.MethodPost, "/takeout/upload/complete", `{"upload_id":"u1"}`)
+	service := &handlerServiceMock{completeFn: func(CompleteTakeoutUploadDto) (TakeoutImportResultDto, error) {
+		return TakeoutImportResultDto{}, ErrUploadAlreadyCompleted
+	}}
+
+	NewHandler(service, nil).CompleteUploadHandler(ctx)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("expected 409, got %d", recorder.Code)
+	}
+	message := decodeErrorMessage(t, recorder)
+	if message != i18n.GetMessage("TAKEOUT_UPLOAD_ALREADY_COMPLETED") || message == "" {
+		t.Fatalf("unexpected message %q", message)
+	}
+}

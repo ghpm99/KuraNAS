@@ -12,6 +12,7 @@ var (
 	ErrUploadSessionNotFound  = errors.New("upload session not found")
 	ErrUploadOffsetMismatch   = errors.New("upload offset mismatch")
 	ErrUploadChunkExceedsSize = errors.New("upload chunk exceeds declared size")
+	ErrUploadAlreadyCompleted = errors.New("upload already completed")
 	ErrUploadIncomplete       = errors.New("upload incomplete")
 	ErrInvalidUploadSize      = errors.New("upload size must be greater than zero")
 	ErrInvalidUploadFileName  = errors.New("upload file name must end in .zip")
