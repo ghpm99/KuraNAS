@@ -11,10 +11,6 @@ type capturePromotePayload struct {
 	CaptureID int `json:"capture_id"`
 }
 
-// executeCapturePromoteStep runs the capture promotion: it delegates entirely to
-// the captures service so the promotion logic (metadata parse, destination
-// resolution, home_file pre-register, poster download, move) stays in that
-// domain and the engine just supplies the worker plumbing.
 func executeCapturePromoteStep(context *WorkerContext, step jobs.StepModel) error {
 	if context == nil || context.CapturesService == nil {
 		return fmt.Errorf("captures service is required for capture promote step")

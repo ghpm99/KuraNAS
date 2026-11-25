@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-// captureMetadata is the subset of the plugin's standardized metadata payload
-// the promotion consumes. The plugin owns the full schema (see
-// plugin/content/metadata-detector.js); every field is optional, so a missing
-// one simply leaves the corresponding capture column empty. The raw payload is
-// preserved verbatim in captures.raw_metadata, so new fields never need a
-// backend change to be retained.
 type captureMetadata struct {
 	Platform      string   `json:"platform"`
 	SourceURL     string   `json:"source_url"`
@@ -33,9 +27,6 @@ type captureMetadata struct {
 	PosterURL     string   `json:"poster_url"`
 }
 
-// parseCaptureMetadata decodes the raw payload, tolerating an absent or invalid
-// blob by returning a zero value — promotion always proceeds (decided: sempre
-// promove; metadado ruim é problema do usuário).
 func parseCaptureMetadata(raw json.RawMessage) captureMetadata {
 	var meta captureMetadata
 	if len(raw) == 0 {
@@ -45,8 +36,6 @@ func parseCaptureMetadata(raw json.RawMessage) captureMetadata {
 	return meta
 }
 
-// resolvedTitle is the title used both for the library path and the captures
-// row, falling back to the recording name when the metadata carries no title.
 func resolvedTitle(meta captureMetadata, capture CaptureModel) string {
 	title := strings.TrimSpace(meta.Title)
 	if title == "" {
@@ -55,16 +44,6 @@ func resolvedTitle(meta captureMetadata, capture CaptureModel) string {
 	return title
 }
 
-// buildCaptureRelPath computes the destination path (relative to the videos
-// library root) from the data, not the content_type — the real discriminator is
-// whether an episode number is present:
-//   - with episode -> <title>/Temporada <season>/E<episode> - <episode_title>.ext
-//     (no season -> no Temporada folder);
-//   - otherwise    -> <title> (<release_year>).ext (no year -> <title>.ext).
-//
-// The extension is preserved from the uploaded recording. The video stream is
-// never re-encoded, but MP4 captures are remuxed to a faststart/AAC file on
-// promotion (see placeRecordingInLibrary) so the extension still holds.
 func buildCaptureRelPath(meta captureMetadata, capture CaptureModel) string {
 	ext := filepath.Ext(capture.FileName)
 	if ext == "" {
@@ -93,9 +72,6 @@ func buildCaptureRelPath(meta captureMetadata, capture CaptureModel) string {
 	return title + ext
 }
 
-// collisionAvoidantPath returns absPath when free, otherwise the first
-// "<base> (n)<ext>" (n>=2) variant that does not yet exist on disk — each
-// capture is its own file (decided: sufixar (n)).
 func collisionAvoidantPath(absPath string) string {
 	if !pathExistsOnDisk(absPath) {
 		return absPath
@@ -115,8 +91,6 @@ func pathExistsOnDisk(path string) bool {
 	return err == nil
 }
 
-// applyMetadataToCapture copies the parsed semantic fields onto the capture row
-// so captures becomes the source of truth for the rich metadata.
 func applyMetadataToCapture(capture *CaptureModel, meta captureMetadata) {
 	capture.Title = resolvedTitle(meta, *capture)
 	capture.EpisodeTitle = strings.TrimSpace(meta.EpisodeTitle)

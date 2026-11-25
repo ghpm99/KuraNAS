@@ -76,16 +76,8 @@ type captureUploadSession struct {
 	LastUpdatedAt time.Time       `json:"last_updated_at"`
 }
 
-// uploadStagingDirName is the hidden subtree (under the configured captures root)
-// where in-progress chunked uploads are assembled before being finalized and
-// moved out. The captures root lives OUTSIDE every storage root (configurable via
-// system settings, validated on save), so neither the partial uploads nor the
-// finished captures are part of the indexed library — the filesystem watcher
-// never sees them, which is why no per-chunk indexing storm can happen.
 const uploadStagingDirName = ".uploads"
 
-// defaultCapturesSubdir is the captures folder name used as a fallback when no
-// captures path has been configured/applied yet.
 const defaultCapturesSubdir = "capturas"
 
 func NewService(
@@ -188,15 +180,6 @@ func (s *Service) InitCaptureUpload(dto InitCaptureUploadDto) (InitCaptureUpload
 	}, nil
 }
 
-// resumeByEpisodeKey applies the per-episode resume contract. It returns
-// handled=true only to resume an open upload session carrying this episode_key
-// (continuing an upload interrupted mid-flight, handing back its upload_id and
-// received offset so the client appends from there instead of opening a second
-// file). Re-recording an already-completed episode is deliberately allowed
-// (decided: regra (c) — it becomes a new capture), so there is no
-// AlreadyComplete short-circuit here.
-//
-// handled=false means there is no open session and a fresh one must be made.
 func (s *Service) resumeByEpisodeKey(episodeKey string) (InitCaptureUploadResultDto, bool, error) {
 	open, found, err := s.findOpenSessionByEpisodeKey(episodeKey)
 	if err != nil {
@@ -214,10 +197,6 @@ func (s *Service) resumeByEpisodeKey(episodeKey string) (InitCaptureUploadResult
 	return InitCaptureUploadResultDto{}, false, nil
 }
 
-// findOpenSessionByEpisodeKey scans the on-disk upload session directory for an
-// incomplete session tagged with the given episode_key. Sessions live as
-// meta.json files (see saveCaptureUploadSession), so the lookup is a directory
-// walk; garbage/unreadable entries are skipped rather than failing the init.
 func (s *Service) findOpenSessionByEpisodeKey(episodeKey string) (captureUploadSession, bool, error) {
 	entries, err := os.ReadDir(s.captureUploadRootDir())
 	if err != nil {
@@ -289,8 +268,6 @@ func (s *Service) CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDt
 	}
 
 	if session.ReceivedSize == 0 {
-		// No chunk ever arrived: there is no temp file to finalize. Fail fast with
-		// a typed error so the handler answers 400 instead of a misleading 500.
 		uploadErr := fmt.Errorf("CompleteCaptureUpload: %w (upload_id %s)", ErrEmptyCapture, dto.UploadID)
 		_ = os.RemoveAll(s.captureUploadSessionDir(dto.UploadID))
 		s.emitUploadFailedNotification(dto.UploadID, session.Name, uploadErr)
@@ -462,10 +439,6 @@ func (s *Service) persistCaptureAndDispatch(
 		return CaptureDto{}, err
 	}
 
-	// The capture row exists; dispatch its promotion. Promotion (metadata parse,
-	// destination resolution, home_file pre-register, poster, move) runs in the
-	// capture_process job and ends with the file in the watched library, where
-	// the regular pipeline indexes it.
 	if s.UploadJobDispatcher != nil {
 		_, jobErr := s.UploadJobDispatcher.CreateCaptureProcessJob(result.ID)
 		if jobErr != nil {
@@ -549,11 +522,6 @@ func buildCaptureDir(name string) string {
 	return filepath.Join(capturesRootDir(), safeName)
 }
 
-// capturesRootDir is the directory where captures are saved. It is configured in
-// system settings and validated to live OUTSIDE every storage root, so captures
-// (and their upload staging) are never indexed/watched. When no path has been
-// applied yet (e.g. before settings load, or in unit tests) it falls back to the
-// historical location next to the entry point.
 func capturesRootDir() string {
 	if path := strings.TrimSpace(config.AppConfig.CapturesPath); path != "" {
 		return path
@@ -561,11 +529,6 @@ func capturesRootDir() string {
 	return filepath.Join(config.AppConfig.EntryPoint, defaultCapturesSubdir)
 }
 
-// validateCaptureMetadata rejects a non-empty metadata payload that is not valid
-// JSON before it is stored in the captures.raw_metadata jsonb column. The
-// metadata.json sidecar was retired — the database is the source of truth — so
-// this is the single validation point. An empty payload is allowed (captures
-// may arrive without metadata).
 func validateCaptureMetadata(raw json.RawMessage) error {
 	if len(raw) == 0 {
 		return nil

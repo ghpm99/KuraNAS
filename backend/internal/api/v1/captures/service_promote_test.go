@@ -405,10 +405,10 @@ func TestDownloadPosterRejectsNonHTTPS(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// httptest serves http, not https; downloadPoster only accepts https, so a
+	// httptest serves http, not https; downloadPosterBestEffort only accepts https, so a
 	// plain http URL must be a no-op (no file written).
 	service := &Service{}
-	service.downloadPoster(captureMetadata{ThumbnailURL: server.URL}, 4242)
+	service.downloadPosterBestEffort(captureMetadata{ThumbnailURL: server.URL}, 4242)
 	if _, err := os.Stat(posterSourcePath(4242)); !os.IsNotExist(err) {
 		_ = os.Remove(posterSourcePath(4242))
 		t.Fatal("expected http poster url to be rejected")

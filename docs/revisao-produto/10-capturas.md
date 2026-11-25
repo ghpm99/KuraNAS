@@ -64,7 +64,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [x] 09. Notificações de falha deixam de gravar o erro cru no metadata; gravam o motivo traduzido; o erro cru fica só em `applog` — `00/RN-40`, `RN-42`.
 - [x] 10. Rollback da promoção também remove o pôster gravado para o `file_id` desfeito — `RN-09`.
 - [x] 11. Testes de handler decodificam a resposta real e fixam os campos da lista, detalhe, `init` e `complete` — `00/CA-16`. Só teste.
-- [ ] 12. Comentários de corpo removidos do pacote `captures` e de `step_capture_promote.go`; testes deixam de gravar `etc/` dentro do pacote. Sem mudança de comportamento.
+- [x] 12. Comentários de corpo removidos do pacote `captures` e de `step_capture_promote.go`; testes deixam de gravar `etc/` dentro do pacote. Sem mudança de comportamento.
 - [ ] 13. `CAPTURES_PAGE_EYEBROW` removida dos dois idiomas (conferir uso antes) — `00/RN-43`.
 
 ### Frontend

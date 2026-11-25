@@ -26,14 +26,9 @@ import (
 const (
 	posterDownloadTimeout = 8 * time.Second
 	maxPosterBytes        = 10 * 1024 * 1024
-	// remuxTimeout bounds the ffmpeg remux. Video is stream-copied (no re-encode)
-	// so this is I/O-bound; the generous ceiling only guards a stalled process on
-	// a very large file. The worker step itself has no context to cancel us.
-	remuxTimeout = 30 * time.Minute
+	remuxTimeout          = 30 * time.Minute
 )
 
-// remuxRecording rewrites a captured recording into a broadly-compatible MP4.
-// It is a package var so tests can swap the real ffmpeg call for a stub.
 var remuxRecording = ffmpegRemuxForPlayback
 
 // PromoteCapture turns an uploaded capture into an organized video in the
@@ -113,9 +108,7 @@ func (s *Service) PromoteCapture(captureID int) error {
 			fmt.Errorf("PromoteCapture: persist capture metadata: %w", updateErr))
 	}
 
-	// Poster is fetched before the move and never gates promotion: a failed
-	// download just means the thumbnail step later falls back to an ffmpeg frame.
-	s.downloadPoster(meta, fileID)
+	s.downloadPosterBestEffort(meta, fileID)
 
 	if placementErr := placeRecordingInLibrary(stagingPath, finalPath); placementErr != nil {
 		s.deletePreRegisteredFile(captureID, fileID)
@@ -145,13 +138,6 @@ func (e *recordingPlacementError) failureReason() string {
 	return i18n.GetMessage(e.reasonKey)
 }
 
-// placeRecordingInLibrary moves the staged recording into the watched library,
-// remuxing MP4-family captures into a broadly-compatible file first. The plugin
-// emits fragmented MP4 with Opus audio, which the Android/ExoPlayer Mp4 demuxer
-// cannot play; the remux copies the video stream, transcodes the audio to AAC
-// and writes a faststart file. A failed remux fails the placement and leaves
-// the library untouched, so an unplayable file never enters it. Other
-// containers (e.g. WebM) are moved as-is.
 func placeRecordingInLibrary(stagingPath, finalPath string) *recordingPlacementError {
 	if isRemuxableContainer(finalPath) {
 		if err := remuxRecording(stagingPath, finalPath); err != nil {
@@ -167,8 +153,6 @@ func placeRecordingInLibrary(stagingPath, finalPath string) *recordingPlacementE
 	return nil
 }
 
-// isRemuxableContainer reports whether the destination is an MP4-family container
-// where stream-copying the (H.264) video into a faststart MP4 is valid.
 func isRemuxableContainer(path string) bool {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".mp4", ".m4v", ".mov":
@@ -178,9 +162,6 @@ func isRemuxableContainer(path string) bool {
 	}
 }
 
-// ffmpegRemuxForPlayback writes destPath from srcPath: video stream-copied, audio
-// transcoded to AAC, faststart. A partial output is removed on failure so the
-// caller's fallback move can recreate the destination.
 func ffmpegRemuxForPlayback(srcPath, destPath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), remuxTimeout)
 	defer cancel()
@@ -240,18 +221,11 @@ var thumbnailRootPath = func() string {
 	return config.GetBuildConfig("ThumbnailPath")
 }
 
-// posterSourcePath is the agreed location of a capture's source poster:
-// <ThumbnailPath>/video/source/<file_id>. video.GetVideoThumbnail reads from
-// here before falling back to an ffmpeg frame — the two sides must stay in sync.
 func posterSourcePath(fileID int) string {
 	return filepath.Join(thumbnailRootPath(), "video", "source", strconv.Itoa(fileID))
 }
 
-// downloadPoster fetches the capture's poster (thumbnail_url, falling back to
-// poster_url) and stores it as the source poster. It is strictly best-effort:
-// only https URLs are accepted, and any failure is logged and swallowed so the
-// promotion is never gated on artwork.
-func (s *Service) downloadPoster(meta captureMetadata, fileID int) {
+func (s *Service) downloadPosterBestEffort(meta captureMetadata, fileID int) {
 	url := strings.TrimSpace(meta.ThumbnailURL)
 	if url == "" {
 		url = strings.TrimSpace(meta.PosterURL)
@@ -270,9 +244,6 @@ func (s *Service) downloadPoster(meta captureMetadata, fileID int) {
 	}
 }
 
-// fetchPosterImage GETs the URL with a short timeout and returns its bytes,
-// rejecting a non-200 status, a non-image content type, and capping the read at
-// maxPosterBytes. The scheme guard lives in the caller.
 func fetchPosterImage(url string) ([]byte, error) {
 	client := &http.Client{Timeout: posterDownloadTimeout}
 	resp, err := client.Get(url)

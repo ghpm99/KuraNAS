@@ -15,11 +15,9 @@ const (
 	CaptureStatusFailed    CaptureStatus = "failed"
 )
 
-// CaptureModel is the source of truth for a capture's rich metadata. The scalar
-// semantic columns are filled during promotion by parsing RawMetadata; the raw
-// payload is preserved verbatim so future jobs can re-derive fields without the
-// retired metadata.json sidecar. FileID links the promoted recording to its
-// home_file row (nil until promotion pre-registers it).
+// CaptureModel is the source of truth for a capture and its metadata. RawMetadata
+// keeps the client payload verbatim; the semantic columns are derived from it
+// during promotion. FileID is nil until promotion pre-registers the home_file row.
 type CaptureModel struct {
 	ID         int
 	Name       string

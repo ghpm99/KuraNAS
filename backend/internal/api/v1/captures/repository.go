@@ -22,8 +22,6 @@ func (r *Repository) GetDbContext() *database.DbContext {
 	return r.DbContext
 }
 
-// rowScanner is satisfied by both *sql.Row and *sql.Rows so the column mapping
-// lives in one place (scanCapture) for every read path.
 type rowScanner interface {
 	Scan(dest ...any) error
 }
@@ -98,8 +96,6 @@ func ptrToNullInt(v *int) sql.NullInt64 {
 	return sql.NullInt64{Int64: int64(*v), Valid: true}
 }
 
-// decodeStringArray turns a jsonb array column into []string, tolerating NULL,
-// empty, or malformed payloads by returning nil rather than failing the scan.
 func decodeStringArray(raw []byte) []string {
 	if len(raw) == 0 {
 		return nil
