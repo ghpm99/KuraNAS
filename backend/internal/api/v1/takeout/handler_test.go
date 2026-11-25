@@ -9,6 +9,7 @@ import (
 	"nas-go/api/pkg/logger"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,7 @@ type handlerServiceMock struct {
 	chunkFn    func(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error
 	completeFn func(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
 	statusFn   func(uploadID string) (TakeoutUploadStatusDto, error)
+	cancelFn   func(uploadID string) error
 }
 
 type handlerLoggerMock struct{}
@@ -66,6 +68,13 @@ func (m *handlerServiceMock) GetUploadStatus(uploadID string) (TakeoutUploadStat
 		return m.statusFn(uploadID)
 	}
 	return TakeoutUploadStatusDto{UploadID: uploadID, Size: 10, ReceivedSize: 4}, nil
+}
+
+func (m *handlerServiceMock) CancelUpload(uploadID string) error {
+	if m.cancelFn != nil {
+		return m.cancelFn(uploadID)
+	}
+	return nil
 }
 
 func buildJSONRequest(method string, url string, body string) *http.Request {
@@ -384,5 +393,49 @@ func TestGetUploadStatusHandlerReturns404ForUnknownSession(t *testing.T) {
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Error == "" {
 		t.Fatalf("expected error message, got %q (%v)", rec.Body.String(), err)
+	}
+}
+
+func TestCancelUploadHandlerReturns204(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.DELETE("/takeout/upload/:upload_id", NewHandler(&handlerServiceMock{}, nil).CancelUploadHandler)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/takeout/upload/abc", nil))
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", rec.Code)
+	}
+}
+
+func TestCancelUploadHandlerReturns404ForUnknownSession(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service := &handlerServiceMock{cancelFn: func(string) error { return ErrUploadSessionNotFound }}
+	router := gin.New()
+	router.DELETE("/takeout/upload/:upload_id", NewHandler(service, nil).CancelUploadHandler)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/takeout/upload/abc", nil))
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rec.Code)
+	}
+}
+
+func TestCancelUploadHandlerReturns500WithoutLeakingRawError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	service := &handlerServiceMock{cancelFn: func(string) error { return errors.New("disk exploded") }}
+	router := gin.New()
+	router.DELETE("/takeout/upload/:upload_id", NewHandler(service, nil).CancelUploadHandler)
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/takeout/upload/abc", nil))
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500, got %d", rec.Code)
+	}
+	if strings.Contains(rec.Body.String(), "disk exploded") {
+		t.Fatalf("raw error leaked: %s", rec.Body.String())
 	}
 }

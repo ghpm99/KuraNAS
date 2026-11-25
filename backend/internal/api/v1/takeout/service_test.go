@@ -525,3 +525,52 @@ func TestGetUploadStatusRejectsUnknownAndMalformedIDs(t *testing.T) {
 		}
 	}
 }
+
+func TestCancelUploadRemovesSessionFolder(t *testing.T) {
+	setEntryPoint(t, t.TempDir())
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	initResult, err := service.InitUpload(InitTakeoutUploadDto{FileName: "takeout.zip", Size: 10})
+	if err != nil {
+		t.Fatalf("InitUpload returned error: %v", err)
+	}
+	if err := service.UploadChunk(buildChunkHeader(t, "chunk.bin", "hello"), UploadTakeoutChunkDto{UploadID: initResult.UploadID, Offset: 0}); err != nil {
+		t.Fatalf("UploadChunk returned error: %v", err)
+	}
+
+	if err := service.CancelUpload(initResult.UploadID); err != nil {
+		t.Fatalf("CancelUpload returned error: %v", err)
+	}
+
+	if _, err := os.Stat(service.takeoutUploadSessionDir(initResult.UploadID)); !os.IsNotExist(err) {
+		t.Fatalf("expected session folder removed, stat err: %v", err)
+	}
+	if err := service.CancelUpload(initResult.UploadID); !errors.Is(err, ErrUploadSessionNotFound) {
+		t.Fatalf("expected ErrUploadSessionNotFound on second cancel, got %v", err)
+	}
+}
+
+func TestCancelUploadMalformedIDNeverDeletesOutsideSession(t *testing.T) {
+	entryPoint := t.TempDir()
+	setEntryPoint(t, entryPoint)
+	service := newTakeoutServiceForTest(&uploadDispatcherMock{})
+	outsideFile := filepath.Join(entryPoint, "keep.txt")
+	if err := os.WriteFile(outsideFile, []byte("keep"), 0644); err != nil {
+		t.Fatalf("write outside file: %v", err)
+	}
+	if err := os.MkdirAll(UploadSessionsRootDir(), 0755); err != nil {
+		t.Fatalf("mkdir sessions root: %v", err)
+	}
+
+	for _, uploadID := range []string{"..", "../..", "../keep.txt", ".", "", "abc"} {
+		if err := service.CancelUpload(uploadID); !errors.Is(err, ErrUploadSessionNotFound) {
+			t.Fatalf("id %q: expected ErrUploadSessionNotFound, got %v", uploadID, err)
+		}
+	}
+
+	if _, err := os.Stat(outsideFile); err != nil {
+		t.Fatalf("outside file must survive: %v", err)
+	}
+	if _, err := os.Stat(UploadSessionsRootDir()); err != nil {
+		t.Fatalf("sessions root must survive: %v", err)
+	}
+}

@@ -125,6 +125,23 @@ func (s *Service) GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, erro
 	}, nil
 }
 
+func (s *Service) CancelUpload(uploadID string) error {
+	if !isGeneratedUploadID(uploadID) {
+		return ErrUploadSessionNotFound
+	}
+	if _, err := s.loadTakeoutUploadSession(uploadID); err != nil {
+		return err
+	}
+	sessionDir, isInsideSessionsArea := UploadSessionDirOfZip(s.takeoutUploadTempFilePath(uploadID))
+	if !isInsideSessionsArea {
+		return ErrUploadSessionNotFound
+	}
+	if err := os.RemoveAll(sessionDir); err != nil {
+		return fmt.Errorf("CancelUpload remove session dir: %w", err)
+	}
+	return nil
+}
+
 func isGeneratedUploadID(uploadID string) bool {
 	if len(uploadID) != takeoutUploadIDLength {
 		return false

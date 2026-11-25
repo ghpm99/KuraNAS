@@ -31,7 +31,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 01. `init` recusa `size` ausente ou ≤ 0 e `file_name` sem `.zip` (sem diferenciar maiúsculas) com `400` e mensagem própria; `complete` compara a extensão sem diferenciar maiúsculas — `RN-01`, `§7`, `CA-08`.
 - [x] 02. `init` com o mesmo `file_name` e `size` de uma sessão aberta devolve o mesmo `upload_id`, `received_size` e `resumed: true`; nova sessão devolve `received_size: 0`, `resumed: false` — `RN-02`, `§7`, `CA-05`. Seam no handler.
 - [x] 03. `GET /takeout/upload/:upload_id` devolve `{upload_id, size, received_size}`; `404` quando não existe — `RN-02`, `§7`.
-- [ ] 04. `DELETE /takeout/upload/:upload_id` apaga a sessão, `204`; `404` quando não existe — `RF-02`, `§7`.
+- [x] 04. `DELETE /takeout/upload/:upload_id` apaga a sessão, `204`; `404` quando não existe — `RF-02`, `§7`.
 - [ ] 05. `init` responde `507` quando o espaço livre é menor que `size` — `RN-09`, `§7`, `§8`. Depende da 01.
 - [ ] 06. `chunk` recusa parte que ultrapassa o `size` declarado — `RN-02`.
 - [ ] 07. Erros do envio com chaves `TAKEOUT_*` próprias, sessão inexistente `404`, `TAKEOUT_UPLOAD_INCOMPLETE` com `i18n.Translate`, `file_name` vazio `400` — `00/RN-40`, `RN-41`. Depende da 01.

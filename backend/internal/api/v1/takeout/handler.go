@@ -3,6 +3,7 @@ package takeout
 import (
 	"errors"
 	"fmt"
+	"nas-go/api/pkg/applog"
 	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/logger"
 	"net/http"
@@ -168,6 +169,30 @@ func (h *Handler) GetUploadStatusHandler(c *gin.Context) {
 
 	h.completeSuccess(logModel)
 	c.JSON(http.StatusOK, status)
+}
+
+func (h *Handler) CancelUploadHandler(c *gin.Context) {
+	logModel := h.createLog(logger.LoggerModel{
+		Name:        "CancelTakeoutUpload",
+		Description: "Cancelling takeout upload session",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	})
+
+	if err := h.service.CancelUpload(c.Param("upload_id")); err != nil {
+		h.completeError(logModel, err)
+		if errors.Is(err, ErrUploadSessionNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": i18n.GetMessage("TAKEOUT_SESSION_NOT_FOUND")})
+			return
+		}
+		applog.ErrorWithStack("takeout: failed to cancel upload session", err, "upload_id", c.Param("upload_id"))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("TAKEOUT_UPLOAD_CANCEL_ERROR")})
+		return
+	}
+
+	h.completeSuccess(logModel)
+	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) createLog(logModel logger.LoggerModel) logger.LoggerModel {

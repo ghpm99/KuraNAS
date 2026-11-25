@@ -13,6 +13,7 @@ type ServiceInterface interface {
 	UploadChunk(file *multipart.FileHeader, dto UploadTakeoutChunkDto) error
 	CompleteUpload(dto CompleteTakeoutUploadDto) (TakeoutImportResultDto, error)
 	GetUploadStatus(uploadID string) (TakeoutUploadStatusDto, error)
+	CancelUpload(uploadID string) error
 }
 
 type UploadJobDispatcherInterface interface {
