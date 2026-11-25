@@ -37,7 +37,7 @@ type ImportRecorderInterface interface {
 	MarkImportRunning(jobID int) error
 	UpdateImportProgress(jobID int, processedEntries int, totalEntries int) error
 	CloseImportCompleted(jobID int, summary ImportSummary) error
-	CloseImportFailed(jobID int, failureMessage string) error
+	CloseImportFailed(jobID int, failureMessage string, summary ImportSummary) error
 }
 
 type SidecarRecorderInterface interface {

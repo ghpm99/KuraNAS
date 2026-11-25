@@ -41,8 +41,8 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 11. `GET /takeout/imports` paginado (`created_at DESC, id DESC`) com os campos de `§7` — `RF-05`, `00/RN-17`, `RN-52`. Seam + teste `_Postgres`.
 - [x] 12. `GET /takeout/imports/:id`; `404` quando não existe — `RF-03`, `CA-06`. Depende da 11.
 - [x] 13. O extrator devolve o `ExtractResult` acumulado junto do erro — `RN-12`.
-- [ ] 13.1. Na falha, o step grava os sidecars e enfileira a indexação do que já foi gravado antes de fechar como falha — `RN-12`, `CA-09`. Depende da 13.
-- [ ] 13.2. `CloseImportFailed` grava também as contagens — `RN-12`. Depende da 13.
+- [x] 13.1. Na falha, o step grava os sidecars e enfileira a indexação do que já foi gravado antes de fechar como falha — `RN-12`, `CA-09`. Depende da 13.
+- [x] 13.2. `CloseImportFailed` grava também as contagens — `RN-12`. Depende da 13.
 - [ ] 14. Falta de espaço ou de permissão durante a importação falha com motivo traduzido próprio — `§8`, `RN-12`. Depende da 13.
 - [ ] 15. Mensagens de zip inválido dizem que o arquivo está corrompido ou ilegível — `RN-12`, `CA-08`.
 - [ ] 16. `classifyFile` usa `utils.VideoFormats` e a classificação de imagem compartilhada — `RN-04`, `06/RN-01`.

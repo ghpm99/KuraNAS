@@ -99,12 +99,31 @@ func TestImportRepositoryCloseFailed_Postgres(t *testing.T) {
 	jobID := createJobRow(t, repository)
 	importID := createQueuedImport(t, repository, jobID)
 
-	if err := repository.CloseImportFailed(jobID, "arquivo invalido"); err != nil {
+	if err := repository.CloseImportFailed(jobID, "arquivo invalido", ImportSummary{}); err != nil {
 		t.Fatalf("CloseImportFailed: %v", err)
 	}
 	failed := loadStoredImport(t, repository, importID)
 	if failed.state != "failed" || failed.failureMessage != "arquivo invalido" || !failed.endedAt.Valid {
 		t.Fatalf("unexpected failed import: %+v", failed)
+	}
+}
+
+func TestImportRepositoryCloseFailedStoresPartialCounts_Postgres(t *testing.T) {
+	repository := NewImportRepository(testutil.NewPostgresDB(t, "kuranas_takeout_import_it"))
+	jobID := createJobRow(t, repository)
+	importID := createQueuedImport(t, repository, jobID)
+	partialSummary := ImportSummary{TotalEntries: 20, Imported: 5, AlreadyExisting: 3, Ignored: 2, FailedEntries: 1}
+
+	if err := repository.CloseImportFailed(jobID, "disk full", partialSummary); err != nil {
+		t.Fatalf("CloseImportFailed: %v", err)
+	}
+	failed := loadStoredImport(t, repository, importID)
+	if failed.state != "failed" || failed.failureMessage != "disk full" || !failed.endedAt.Valid {
+		t.Fatalf("unexpected failed import: %+v", failed)
+	}
+	if failed.totalEntries != 20 || failed.processedEntries != 11 || failed.imported != 5 ||
+		failed.alreadyExisting != 3 || failed.ignored != 2 || failed.failedEntries != 1 {
+		t.Fatalf("unexpected counts: %+v", failed)
 	}
 }
 
@@ -174,7 +193,7 @@ func TestImportRepositoryGetImportReturnsStoredRow_Postgres(t *testing.T) {
 	repository := NewImportRepository(testutil.NewPostgresDB(t, "kuranas_takeout_import_it"))
 	jobID := createJobRow(t, repository)
 	importID := createQueuedImport(t, repository, jobID)
-	if err := repository.CloseImportFailed(jobID, "disk full"); err != nil {
+	if err := repository.CloseImportFailed(jobID, "disk full", ImportSummary{}); err != nil {
 		t.Fatalf("CloseImportFailed: %v", err)
 	}
 

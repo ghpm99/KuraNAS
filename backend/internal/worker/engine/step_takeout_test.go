@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"errors"
+	"nas-go/api/internal/api/v1/files"
 	"nas-go/api/internal/api/v1/jobs"
 	"nas-go/api/internal/api/v1/libraries"
 	"nas-go/api/internal/api/v1/takeout"
@@ -213,6 +214,7 @@ type takeoutImportRecorderMock struct {
 	events           []string
 	completedSummary takeout.ImportSummary
 	failureMessage   string
+	failedSummary    takeout.ImportSummary
 	recordedJobID    int
 	closeErr         error
 	progressUpdates  [][2]int
@@ -235,8 +237,9 @@ func (m *takeoutImportRecorderMock) CloseImportCompleted(jobID int, summary take
 	return m.closeErr
 }
 
-func (m *takeoutImportRecorderMock) CloseImportFailed(jobID int, failureMessage string) error {
+func (m *takeoutImportRecorderMock) CloseImportFailed(jobID int, failureMessage string, summary takeout.ImportSummary) error {
 	m.events = append(m.events, "failed")
+	m.failedSummary = summary
 	m.failureMessage = failureMessage
 	return m.closeErr
 }
@@ -423,4 +426,137 @@ func TestExecuteTakeoutExtractStepFailureNotificationCarriesEventMetadata(t *tes
 		t.Fatalf("expected extraction error")
 	}
 	assertTakeoutEventMetadata(t, notifier.dtos[0].Metadata, "takeout_import_failed")
+}
+
+type resolverFailingOnVideosMock struct {
+	librariesServiceMock
+}
+
+func (m *resolverFailingOnVideosMock) GetLibraryByCategory(category libraries.LibraryCategory) (libraries.LibraryDto, error) {
+	if category == libraries.LibraryCategoryVideos {
+		return libraries.LibraryDto{}, errors.New("videos library unavailable")
+	}
+	return m.librariesServiceMock.GetLibraryByCategory(category)
+}
+
+type uploadProcessJobSpy struct {
+	files.ServiceInterface
+	enqueuedBatches [][]string
+}
+
+func (spy *uploadProcessJobSpy) CreateUploadProcessJob(paths []string) (int, error) {
+	spy.enqueuedBatches = append(spy.enqueuedBatches, paths)
+	return 1, nil
+}
+
+func writeTakeoutZipWithEntries(t *testing.T, zipPath string, entryNames []string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("failed to create zip: %v", err)
+	}
+	defer zipFile.Close()
+	writer := zip.NewWriter(zipFile)
+	for _, entryName := range entryNames {
+		entry, createErr := writer.Create(entryName)
+		if createErr != nil {
+			t.Fatalf("failed to create zip entry: %v", createErr)
+		}
+		_, _ = entry.Write([]byte(takeoutZipEntryContent(entryName)))
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("failed to close zip writer: %v", err)
+	}
+}
+
+func takeoutZipEntryContent(entryName string) string {
+	if !strings.HasSuffix(entryName, ".json") {
+		return "content"
+	}
+	photoTitle := strings.TrimSuffix(filepath.Base(entryName), ".json")
+	return `{"title":"` + photoTitle + `","description":"Praia","geoData":{"latitude":-23.5,"longitude":-46.6}}`
+}
+
+type abortedTakeoutRun struct {
+	stepErr        error
+	sidecars       *sidecarRecorderSpy
+	indexing       *uploadProcessJobSpy
+	imports        *takeoutImportRecorderMock
+	notifier       *fakeWorkerNotifSvc
+	imageLibrary   string
+	expectedFailed string
+}
+
+func runTakeoutStepAbortedByVideoLibrary(t *testing.T, entryNames []string) abortedTakeoutRun {
+	t.Helper()
+	loadTranslationsForTest(t)
+	tempDir := t.TempDir()
+	zipPath := filepath.Join(tempDir, "upload", "takeout.zip")
+	writeTakeoutZipWithEntries(t, zipPath, entryNames)
+	imageLibrary := filepath.Join(tempDir, "Imagens")
+	payload, _ := json.Marshal(TakeoutStepPayload{ZipPath: zipPath, UploadID: "u1", ImportID: 5})
+
+	run := abortedTakeoutRun{
+		sidecars:       &sidecarRecorderSpy{},
+		indexing:       &uploadProcessJobSpy{},
+		imports:        &takeoutImportRecorderMock{},
+		notifier:       &fakeWorkerNotifSvc{},
+		imageLibrary:   imageLibrary,
+		expectedFailed: i18n.GetMessage("NOTIFICATION_TAKEOUT_IMPORT_FAILED_MESSAGE"),
+	}
+	run.stepErr = executeTakeoutExtractStep(&WorkerContext{
+		LibrariesService:       &resolverFailingOnVideosMock{librariesServiceMock{paths: map[libraries.LibraryCategory]string{libraries.LibraryCategoryImages: imageLibrary}}},
+		TakeoutSidecarRecorder: run.sidecars,
+		FilesService:           run.indexing,
+		TakeoutImports:         run.imports,
+		NotificationService:    run.notifier,
+	}, jobs.StepModel{JobID: 9, Payload: payload})
+	return run
+}
+
+func TestExecuteTakeoutExtractStepAbortedExtractionStillIndexesAlreadyWrittenFiles(t *testing.T) {
+	run := runTakeoutStepAbortedByVideoLibrary(t, []string{
+		"Takeout/Google Fotos/IMG_01.jpg",
+		"Takeout/Google Fotos/IMG_01.jpg.json",
+		"Takeout/Google Fotos/IMG_02.jpg",
+		"Takeout/Google Fotos/IMG_02.jpg.json",
+		"Takeout/Google Fotos/clip.mp4",
+	})
+
+	if run.stepErr == nil {
+		t.Fatalf("expected extraction error")
+	}
+	expectedPaths := []string{
+		filepath.Join(run.imageLibrary, "takeout", "IMG_01.jpg"),
+		filepath.Join(run.imageLibrary, "takeout", "IMG_02.jpg"),
+	}
+	if len(run.indexing.enqueuedBatches) != 1 || !reflect.DeepEqual(run.indexing.enqueuedBatches[0], expectedPaths) {
+		t.Fatalf("expected one indexing job for %v, got %v", expectedPaths, run.indexing.enqueuedBatches)
+	}
+	if len(run.sidecars.saved) != 2 {
+		t.Fatalf("expected sidecars for the 2 written files, got %+v", run.sidecars.saved)
+	}
+	if strings.Join(run.imports.events, ",") != "running,failed" || run.imports.failureMessage != run.expectedFailed {
+		t.Fatalf("expected import closed as failed with translated message, got %v %q", run.imports.events, run.imports.failureMessage)
+	}
+	if len(run.notifier.dtos) != 1 || run.notifier.dtos[0].Message != run.expectedFailed {
+		t.Fatalf("expected one failure notification, got %+v", run.notifier.dtos)
+	}
+}
+
+func TestExecuteTakeoutExtractStepAbortedExtractionWithoutWrittenFilesEnqueuesNoIndexing(t *testing.T) {
+	run := runTakeoutStepAbortedByVideoLibrary(t, []string{"Takeout/Google Fotos/clip.mp4"})
+
+	if run.stepErr == nil {
+		t.Fatalf("expected extraction error")
+	}
+	if len(run.indexing.enqueuedBatches) != 0 {
+		t.Fatalf("expected no indexing job, got %v", run.indexing.enqueuedBatches)
+	}
+	if strings.Join(run.imports.events, ",") != "running,failed" {
+		t.Fatalf("unexpected events %v", run.imports.events)
+	}
 }

@@ -32,9 +32,10 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 	progressReporter := newTakeoutProgressReporter(context, step)
 	extraction, err := takeout.ExtractTakeoutWithProgress(payload.ZipPath, context.LibrariesService, progressReporter.report)
 	if err != nil {
+		persistExtractedTakeoutFiles(context, extraction)
 		applog.Error("takeout import failed", "step_id", step.ID, "job_id", step.JobID, "zip_path", payload.ZipPath, "error", err.Error())
 		failureMessage := i18n.GetMessage(takeoutFailureMessageKey(err))
-		recordTakeoutImportFailed(context, step, failureMessage)
+		recordTakeoutImportFailed(context, step, failureMessage, extraction)
 		if context.NotificationService != nil {
 			_, _ = context.NotificationService.GroupOrCreate(notifications.CreateNotificationDto{
 				Type:     string(notifications.NotificationTypeError),
@@ -47,17 +48,7 @@ func executeTakeoutExtractStep(context *WorkerContext, step jobs.StepModel) erro
 		return err
 	}
 
-	recordTakeoutSidecars(context, extraction)
-
-	if context.FilesService != nil {
-		paths := make([]string, 0, len(extraction.Files))
-		for _, extracted := range extraction.Files {
-			paths = append(paths, extracted.DestinationPath)
-		}
-		if len(paths) > 0 {
-			_, _ = context.FilesService.CreateUploadProcessJob(paths)
-		}
-	}
+	persistExtractedTakeoutFiles(context, extraction)
 
 	recordTakeoutImportCompleted(context, step, extraction)
 
@@ -97,6 +88,22 @@ func removeTakeoutUploadSession(zipPath string) {
 	if err := os.RemoveAll(sessionDir); err != nil {
 		applog.Error("takeout cleanup: remove upload session failed", "session_dir", sessionDir, "error", err.Error())
 	}
+}
+
+func persistExtractedTakeoutFiles(context *WorkerContext, extraction takeout.ExtractResult) {
+	recordTakeoutSidecars(context, extraction)
+	enqueueTakeoutIndexing(context, extraction)
+}
+
+func enqueueTakeoutIndexing(context *WorkerContext, extraction takeout.ExtractResult) {
+	if context.FilesService == nil || len(extraction.Files) == 0 {
+		return
+	}
+	extractedPaths := make([]string, 0, len(extraction.Files))
+	for _, extracted := range extraction.Files {
+		extractedPaths = append(extractedPaths, extracted.DestinationPath)
+	}
+	_, _ = context.FilesService.CreateUploadProcessJob(extractedPaths)
 }
 
 func recordTakeoutSidecars(context *WorkerContext, extraction takeout.ExtractResult) {
@@ -144,11 +151,18 @@ func recordTakeoutImportCompleted(context *WorkerContext, step jobs.StepModel, e
 	}
 }
 
-func recordTakeoutImportFailed(context *WorkerContext, step jobs.StepModel, failureMessage string) {
+func recordTakeoutImportFailed(context *WorkerContext, step jobs.StepModel, failureMessage string, extraction takeout.ExtractResult) {
 	if context.TakeoutImports == nil {
 		return
 	}
-	if err := context.TakeoutImports.CloseImportFailed(step.JobID, failureMessage); err != nil {
+	summary := takeout.ImportSummary{
+		TotalEntries:    extraction.TotalEntries,
+		Imported:        extraction.Imported,
+		AlreadyExisting: extraction.AlreadyExisting,
+		Ignored:         extraction.Ignored,
+		FailedEntries:   extraction.FailedEntries,
+	}
+	if err := context.TakeoutImports.CloseImportFailed(step.JobID, failureMessage, summary); err != nil {
 		applog.Error("takeout import record: close failed failed", "job_id", step.JobID, "error", err.Error())
 	}
 }

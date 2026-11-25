@@ -55,9 +55,18 @@ func (r *ImportRepository) CloseImportCompleted(jobID int, summary ImportSummary
 	})
 }
 
-func (r *ImportRepository) CloseImportFailed(jobID int, failureMessage string) error {
+func (r *ImportRepository) CloseImportFailed(jobID int, failureMessage string, summary ImportSummary) error {
 	return r.execForJob("CloseImportFailed", func(transaction *sql.Tx) error {
-		_, err := transaction.Exec(queries.CloseTakeoutImportFailedQuery, jobID, failureMessage)
+		_, err := transaction.Exec(
+			queries.CloseTakeoutImportFailedQuery,
+			jobID,
+			failureMessage,
+			summary.TotalEntries,
+			summary.Imported,
+			summary.AlreadyExisting,
+			summary.Ignored,
+			summary.FailedEntries,
+		)
 		return err
 	})
 }
