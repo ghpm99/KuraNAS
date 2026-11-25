@@ -2563,5 +2563,15 @@
 	"TAKEOUT_IMPORT_NOT_FOUND": "Importação do Takeout não encontrada.",
 	"TAKEOUT_IMPORT_GET_ERROR": "Não foi possível carregar a importação do Takeout. Tente novamente.",
 	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NO_SPACE_MESSAGE": "Não há espaço livre suficiente no disco para importar o Google Takeout. Libere espaço e tente novamente.",
-	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE": "O servidor não tem permissão para gravar na biblioteca de destino, então o Google Takeout não foi importado."
+	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE": "O servidor não tem permissão para gravar na biblioteca de destino, então o Google Takeout não foi importado.",
+	"INGEST_HISTORY_TITLE": "Histórico",
+	"INGEST_HISTORY_LOAD_ERROR": "Não foi possível carregar o histórico de downloads.",
+	"INGEST_HISTORY_EMPTY": "Nenhum download concluído ainda.",
+	"INGEST_HISTORY_END": "Fim do histórico",
+	"INGEST_HISTORY_STATE_COMPLETED": "Concluído",
+	"INGEST_HISTORY_STATE_FAILED": "Falhou",
+	"INGEST_HISTORY_STATE_CANCELED": "Cancelado",
+	"INGEST_HISTORY_OPEN": "Abrir",
+	"INGEST_HISTORY_OPEN_FOLDER": "Ver na pasta",
+	"INGEST_HISTORY_LOCATION_ERROR": "Não foi possível localizar o arquivo baixado."
 }

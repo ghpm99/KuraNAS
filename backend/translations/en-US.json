@@ -2563,5 +2563,15 @@
 	"TAKEOUT_IMPORT_NOT_FOUND": "Takeout import not found.",
 	"TAKEOUT_IMPORT_GET_ERROR": "Could not load the Takeout import. Try again.",
 	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NO_SPACE_MESSAGE": "There is not enough free disk space to import the Google Takeout. Free up space and try again.",
-	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE": "The server has no permission to write to the destination library, so the Google Takeout was not imported."
+	"NOTIFICATION_TAKEOUT_IMPORT_FAILED_NOT_WRITABLE_MESSAGE": "The server has no permission to write to the destination library, so the Google Takeout was not imported.",
+	"INGEST_HISTORY_TITLE": "History",
+	"INGEST_HISTORY_LOAD_ERROR": "Could not load the download history.",
+	"INGEST_HISTORY_EMPTY": "No finished downloads yet.",
+	"INGEST_HISTORY_END": "End of history",
+	"INGEST_HISTORY_STATE_COMPLETED": "Completed",
+	"INGEST_HISTORY_STATE_FAILED": "Failed",
+	"INGEST_HISTORY_STATE_CANCELED": "Canceled",
+	"INGEST_HISTORY_OPEN": "Open",
+	"INGEST_HISTORY_OPEN_FOLDER": "Show in folder",
+	"INGEST_HISTORY_LOCATION_ERROR": "Could not locate the downloaded file."
 }
