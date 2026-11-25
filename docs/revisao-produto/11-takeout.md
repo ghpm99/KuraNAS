@@ -51,7 +51,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 
 ### Frontend
 - [ ] 19. `service/takeout.ts`: status e cancelamento da sessão, lista e detalhe de importações; `received_size`/`resumed` no tipo do `init`; payload sem `items` é erro — `00/RN-11`, `§7`. Depende da 02, 03, 04, 11, 12. Seam test.
-- [ ] 20. Erro do envio mostra a mensagem do servidor; fallback `TAKEOUT_UPLOAD_ERROR` sem `%s` — `RF-04`, `00/RN-41`.
+- [x] 20. Erro do envio mostra a mensagem do servidor; fallback `TAKEOUT_UPLOAD_ERROR` sem `%s` — `RF-04`, `00/RN-41`.
 - [ ] 21. Fila de vários zips, um por vez, recusa individual de não-`.zip` — `RF-01`, `RN-01`.
 - [ ] 22. Área de soltar e `<input>` aceitam vários arquivos — `RF-01`. Depende da 21.
 - [ ] 23. Explicação curta de como gerar a exportação no Google — `RF-01`.

@@ -4,6 +4,7 @@ import {
 	initTakeoutUpload,
 	uploadTakeoutChunk,
 } from '@/service/takeout';
+import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { useCallback, useMemo, useState } from 'react';
 
 export type TakeoutUploadState = 'idle' | 'selecting' | 'uploading' | 'completing' | 'done' | 'error';
@@ -85,9 +86,9 @@ const useTakeoutUpload = () => {
 			setJobId(completeResult.job_id);
 			setProgress(100);
 			setState('done');
-		} catch {
+		} catch (uploadError) {
 			setState('error');
-			setErrorMessage(t('TAKEOUT_IMPORT_FAILED'));
+			setErrorMessage(extractBackendErrorMessage(uploadError) ?? t('TAKEOUT_UPLOAD_ERROR'));
 		}
 	}, [selectedFile, t]);
 

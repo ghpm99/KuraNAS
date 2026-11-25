@@ -78,8 +78,8 @@ describe('components/takeout/useTakeoutUpload', () => {
 		expect(result.current.state).toBe('idle');
 	});
 
-	it('sets error state on upload failure', async () => {
-		initTakeoutUploadMock.mockRejectedValue(new Error('network'));
+	const failUploadWith = async (rejection: unknown) => {
+		initTakeoutUploadMock.mockRejectedValue(rejection);
 
 		const { result } = renderHook(() => useTakeoutUpload());
 		const file = new File(['hello'], 'takeout.zip', { type: 'application/zip' });
@@ -92,8 +92,23 @@ describe('components/takeout/useTakeoutUpload', () => {
 			await result.current.startUpload();
 		});
 
+		return result;
+	};
+
+	it('shows the server message verbatim on upload failure', async () => {
+		const result = await failUploadWith({
+			response: { data: { error: 'O arquivo deve terminar em .zip' } },
+		});
+
 		expect(result.current.state).toBe('error');
-		expect(result.current.errorMessage).toBe('TAKEOUT_IMPORT_FAILED');
+		expect(result.current.errorMessage).toBe('O arquivo deve terminar em .zip');
+	});
+
+	it('falls back to the upload error key when there is no server response', async () => {
+		const result = await failUploadWith(new Error('network'));
+
+		expect(result.current.state).toBe('error');
+		expect(result.current.errorMessage).toBe('TAKEOUT_UPLOAD_ERROR');
 	});
 
 	it('returns empty progressMessage when no file selected', () => {
