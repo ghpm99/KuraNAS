@@ -2584,6 +2584,8 @@
 	"CAPTURES_FILTER_STATUS_ALL": "All",
 	"CAPTURES_FILTER_EMPTY": "No captures match this filter.",
 	"CAPTURES_FILTER_CLEAR": "Clear filters",
+	"CAPTURES_EMPTY_DESCRIPTION": "Captures are videos recorded or downloaded by the KuraNAS browser extension and sent here.",
+	"CAPTURES_EMPTY_INSTALL_EXTENSION": "Install the extension",
 	"CAPTURE_RETRY_PROMOTION_STARTED": "Capture processing restarted.",
 	"CAPTURE_RETRY_PROMOTION_ERROR": "Could not try again.",
 	"INGEST_HISTORY_RETRY": "Try again",
