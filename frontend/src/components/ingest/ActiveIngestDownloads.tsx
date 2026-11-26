@@ -3,7 +3,7 @@ import ErrorState from '@/components/errorState/errorState';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/shared/utils/formatSize';
 import styles from './ActiveIngestDownloads.module.css';
-import { formatRemainingTime } from './formatRemainingTime';
+import { formatRemainingTime } from '@/shared/transfer/formatRemainingTime';
 import { useActiveIngestDownloads } from './useActiveIngestDownloads';
 
 const ActiveIngestDownloads = () => {
@@ -61,7 +61,7 @@ const ActiveIngestDownloads = () => {
                                     })} · `}
                                 {download.eta_seconds !== null
                                     ? t('INGEST_ACTIVE_ETA', {
-                                          time: formatRemainingTime(download.eta_seconds),
+                                          time: formatRemainingTime(download.eta_seconds, t),
                                       })
                                     : t('INGEST_ACTIVE_ETA_UNKNOWN')}
                             </Typography>
