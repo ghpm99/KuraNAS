@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import IngestForm from './IngestForm';
 import { apiBase } from '@/service';
+import { lastIngestChoiceStorageKey } from './lastIngestChoicePreference';
 
 jest.mock('@/service', () => ({
     apiBase: { get: jest.fn(), post: jest.fn() },
@@ -44,6 +45,7 @@ const waitForSubmitEnabled = () =>
 describe('IngestForm (seam)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        window.localStorage.clear();
         mockedApi.get.mockImplementation((path: string) =>
             Promise.resolve({ data: path === '/ingest/targets' ? targets : presets })
         );
@@ -130,6 +132,104 @@ describe('IngestForm (seam)', () => {
                 '/ingest/fetch',
                 expect.objectContaining({ preset: 'audio', target_root: '/data/videos' })
             )
+        );
+    });
+
+    it('stores destination, subfolder and preset of a successful submit', async () => {
+        window.localStorage.setItem(
+            lastIngestChoiceStorageKey,
+            JSON.stringify({ targetRoot: '/data/music', subfolder: 'Rock', preset: 'audio' })
+        );
+        renderForm();
+        await waitForSubmitEnabled();
+
+        typeUrl('https://example.com/one');
+        fireEvent.click(submitButton());
+
+        await waitFor(() =>
+            expect(
+                JSON.parse(window.localStorage.getItem(lastIngestChoiceStorageKey) ?? 'null')
+            ).toEqual({ targetRoot: '/data/music', subfolder: 'Rock', preset: 'audio' })
+        );
+    });
+
+    it('stores the choice made in the session after submitting', async () => {
+        renderForm();
+        await waitForSubmitEnabled();
+
+        fireEvent.mouseDown(screen.getByLabelText('INGEST_FORM_PRESET_LABEL'));
+        fireEvent.click(await screen.findByRole('option', { name: 'Audio only' }));
+        typeUrl('https://example.com/one');
+        fireEvent.click(submitButton());
+
+        await waitFor(() =>
+            expect(
+                JSON.parse(window.localStorage.getItem(lastIngestChoiceStorageKey) ?? 'null')
+            ).toEqual({ targetRoot: '/data/videos', subfolder: '', preset: 'audio' })
+        );
+    });
+
+    it('opens with the stored destination, subfolder and preset', async () => {
+        window.localStorage.setItem(
+            lastIngestChoiceStorageKey,
+            JSON.stringify({ targetRoot: '/data/music', subfolder: 'Rock', preset: 'audio' })
+        );
+        renderForm();
+        await waitForSubmitEnabled();
+
+        expect(screen.getByText('Music')).toBeDefined();
+        expect(screen.getByText('Audio only')).toBeDefined();
+        expect(screen.getByText('Rock')).toBeDefined();
+
+        typeUrl('https://example.com/one');
+        fireEvent.click(submitButton());
+        await waitFor(() =>
+            expect(mockedApi.post).toHaveBeenCalledWith('/ingest/fetch', {
+                url: 'https://example.com/one',
+                preset: 'audio',
+                target_root: '/data/music',
+                subfolder: 'Rock',
+            })
+        );
+    });
+
+    it('falls back to the first destination without subfolder when the stored root is gone', async () => {
+        window.localStorage.setItem(
+            lastIngestChoiceStorageKey,
+            JSON.stringify({ targetRoot: '/data/removed', subfolder: 'Rock', preset: 'audio' })
+        );
+        renderForm();
+        await waitForSubmitEnabled();
+
+        typeUrl('https://example.com/one');
+        fireEvent.click(submitButton());
+        await waitFor(() =>
+            expect(mockedApi.post).toHaveBeenCalledWith('/ingest/fetch', {
+                url: 'https://example.com/one',
+                preset: 'audio',
+                target_root: '/data/videos',
+                subfolder: '',
+            })
+        );
+    });
+
+    it('falls back to the first preset when the stored preset does not exist', async () => {
+        window.localStorage.setItem(
+            lastIngestChoiceStorageKey,
+            JSON.stringify({ targetRoot: '/data/music', subfolder: 'Rock', preset: 'gone' })
+        );
+        renderForm();
+        await waitForSubmitEnabled();
+
+        typeUrl('https://example.com/one');
+        fireEvent.click(submitButton());
+        await waitFor(() =>
+            expect(mockedApi.post).toHaveBeenCalledWith('/ingest/fetch', {
+                url: 'https://example.com/one',
+                preset: 'best',
+                target_root: '/data/music',
+                subfolder: 'Rock',
+            })
         );
     });
 });

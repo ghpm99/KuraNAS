@@ -8,14 +8,16 @@ import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMe
 import { validateIngestUrl } from './ingestUrlValidation';
 import { activeIngestDownloadsQueryKey } from './ingestQueryKeys';
 import { subfolderFromDiskPath } from './subfolderFromDiskPath';
+import { loadLastIngestChoice, saveLastIngestChoice } from './lastIngestChoicePreference';
 
 export const useIngestForm = () => {
     const { t } = useI18n();
     const queryClient = useQueryClient();
     const [url, setUrl] = useState('');
-    const [selectedTargetRoot, setSelectedTargetRoot] = useState('');
-    const [selectedPreset, setSelectedPreset] = useState('');
-    const [subfolder, setSubfolder] = useState('');
+    const [lastChoice] = useState(loadLastIngestChoice);
+    const [selectedTargetRoot, setSelectedTargetRoot] = useState(lastChoice?.targetRoot ?? '');
+    const [selectedPreset, setSelectedPreset] = useState(lastChoice?.preset ?? '');
+    const [chosenSubfolder, setChosenSubfolder] = useState(lastChoice?.subfolder ?? '');
     const [urlErrorKey, setUrlErrorKey] = useState<string | null>(null);
     const [subfolderError, setSubfolderError] = useState<string | null>(null);
     const [serverError, setServerError] = useState<string | null>(null);
@@ -42,12 +44,24 @@ export const useIngestForm = () => {
 
     const targets = Array.isArray(targetsQuery.data) ? targetsQuery.data : [];
     const presets = Array.isArray(presetsQuery.data) ? presetsQuery.data : [];
-    const targetRoot = selectedTargetRoot || targets[0]?.path || '';
-    const preset = selectedPreset || presets[0]?.key || '';
+    const isSelectedTargetRootAvailable = targets.some(
+        (target) => target.path === selectedTargetRoot
+    );
+    const isSelectedPresetAvailable = presets.some(
+        (availablePreset) => availablePreset.key === selectedPreset
+    );
+    const targetRoot = isSelectedTargetRootAvailable ? selectedTargetRoot : targets[0]?.path || '';
+    const preset = isSelectedPresetAvailable ? selectedPreset : presets[0]?.key || '';
+    const subfolder = isSelectedTargetRootAvailable ? chosenSubfolder : '';
 
     const submitMutation = useMutation({
         mutationFn: fetchFromUrl,
-        onSuccess: () => {
+        onSuccess: (_response, sentRequest) => {
+            saveLastIngestChoice({
+                targetRoot: sentRequest.target_root,
+                subfolder: sentRequest.subfolder,
+                preset: sentRequest.preset,
+            });
             setUrl('');
             setServerError(null);
             void queryClient.invalidateQueries({ queryKey: activeIngestDownloadsQueryKey });
@@ -76,7 +90,7 @@ export const useIngestForm = () => {
 
     const changeTargetRoot = (value: string) => {
         setSelectedTargetRoot(value);
-        setSubfolder('');
+        setChosenSubfolder('');
         setSubfolderError(null);
     };
 
@@ -86,7 +100,7 @@ export const useIngestForm = () => {
         try {
             const folderDiskPath = folderId ? (await getFileLocation(folderId)).disk_path : path;
             if (folderDiskPath === undefined) {
-                setSubfolder('');
+                setChosenSubfolder('');
                 return;
             }
             const relativeSubfolder = subfolderFromDiskPath(targetRoot, folderDiskPath);
@@ -94,7 +108,7 @@ export const useIngestForm = () => {
                 setSubfolderError(t('INGEST_FORM_SUBFOLDER_OUTSIDE_ROOT'));
                 return;
             }
-            setSubfolder(relativeSubfolder);
+            setChosenSubfolder(relativeSubfolder);
         } catch (error) {
             setSubfolderError(
                 extractBackendErrorMessage(error) ?? t('INGEST_FORM_SUBFOLDER_ERROR')
