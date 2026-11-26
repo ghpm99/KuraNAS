@@ -50,6 +50,16 @@ describe('CapturesScreen', () => {
         expect(screen.getByText('CAPTURES_PAGE_TITLE')).toBeInTheDocument();
     });
 
+    it('explains captures and links to the extension install page when the list is empty', async () => {
+        mockedGetCaptures.mockResolvedValue({ items: [], pagination: {} });
+        renderScreen();
+        expect(await screen.findByText('CAPTURES_EMPTY')).toBeInTheDocument();
+        expect(screen.getByText('CAPTURES_EMPTY_DESCRIPTION')).toBeInTheDocument();
+        expect(
+            screen.getByRole('link', { name: 'CAPTURES_EMPTY_INSTALL_EXTENSION' })
+        ).toHaveAttribute('href', '/downloads');
+    });
+
     it('shows the server message verbatim and refetches on retry', async () => {
         mockedGetCaptures.mockRejectedValueOnce({ response: { data: { error: 'banco indisponível' } } });
         mockedGetCaptures.mockResolvedValueOnce({ items: [capture({ title: 'Recovered' })], pagination: {} });

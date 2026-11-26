@@ -1,4 +1,7 @@
 import ListFeedback from '@/components/listFeedback/ListFeedback';
+import EmptyState from '@/components/emptyState/emptyState';
+import { appRoutes } from '@/app/routes';
+import { Link } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton, MenuItem, TextField } from '@mui/material';
@@ -136,7 +139,21 @@ const CapturesScreen = () => {
                                 </Button>
                             </div>
                         ) : (
-                            <div className={styles.state}>{t('CAPTURES_EMPTY')}</div>
+                            <EmptyState
+                                icon={<Film size={28} aria-hidden />}
+                                title={t('CAPTURES_EMPTY')}
+                                description={t('CAPTURES_EMPTY_DESCRIPTION')}
+                                actions={
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        component={Link}
+                                        to={appRoutes.downloads}
+                                    >
+                                        {t('CAPTURES_EMPTY_INSTALL_EXTENSION')}
+                                    </Button>
+                                }
+                            />
                         )
                     }
                 >
