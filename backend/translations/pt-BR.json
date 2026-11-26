@@ -2600,5 +2600,6 @@
 	"TAKEOUT_IMPORT_FAILED": "A importação falhou.",
 	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Não foi possível consultar o andamento da importação.",
 	"INGEST_FORM_YTDLP_MISSING": "O yt-dlp não está instalado, então não é possível baixar por endereço.",
-	"INGEST_FORM_YTDLP_MISSING_LINK": "Abrir configurações do yt-dlp"
+	"INGEST_FORM_YTDLP_MISSING_LINK": "Abrir configurações do yt-dlp",
+	"ANALYTICS_KPI_FOLDERS_TOTAL": "Total de pastas"
 }
