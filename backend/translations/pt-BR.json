@@ -2594,5 +2594,9 @@
 	"ANALYTICS_HEALTH_ERROR_TAKEOUT": "Falha ao extrair o Takeout",
 	"ANALYTICS_HEALTH_ERROR_THUMBNAIL": "Falha ao gerar miniatura",
 	"ANALYTICS_HEALTH_ERROR_TIER_MIGRATION": "Falha ao migrar arquivos entre camadas",
-	"ERROR_ANALYTICS_INVALID_PROCESSING_STAGE": "Etapa de processamento inválida. Use checksum, metadata, thumbnail, document_text ou ai, ou omita o parâmetro."
+	"ERROR_ANALYTICS_INVALID_PROCESSING_STAGE": "Etapa de processamento inválida. Use checksum, metadata, thumbnail, document_text ou ai, ou omita o parâmetro.",
+	"TAKEOUT_IMPORT_PROGRESS": "Processados {{processed}} de {{total}}",
+	"TAKEOUT_IMPORT_FINISHED": "Importação concluída.",
+	"TAKEOUT_IMPORT_FAILED": "A importação falhou.",
+	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Não foi possível consultar o andamento da importação."
 }

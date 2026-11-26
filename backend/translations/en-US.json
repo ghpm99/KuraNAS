@@ -2594,5 +2594,9 @@
 	"ANALYTICS_HEALTH_ERROR_TAKEOUT": "Failed to extract Takeout",
 	"ANALYTICS_HEALTH_ERROR_THUMBNAIL": "Failed to generate thumbnail",
 	"ANALYTICS_HEALTH_ERROR_TIER_MIGRATION": "Failed to migrate files between tiers",
-	"ERROR_ANALYTICS_INVALID_PROCESSING_STAGE": "Invalid processing stage. Use checksum, metadata, thumbnail, document_text or ai, or omit it."
+	"ERROR_ANALYTICS_INVALID_PROCESSING_STAGE": "Invalid processing stage. Use checksum, metadata, thumbnail, document_text or ai, or omit it.",
+	"TAKEOUT_IMPORT_PROGRESS": "Processed {{processed}} of {{total}}",
+	"TAKEOUT_IMPORT_FINISHED": "Import finished.",
+	"TAKEOUT_IMPORT_FAILED": "The import failed.",
+	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Could not check the import progress."
 }
