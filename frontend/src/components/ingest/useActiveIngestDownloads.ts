@@ -6,7 +6,7 @@ import { cancelJob } from '@/service/jobs';
 import { getIngestDownloads, getIngestPresets } from '@/service/ingest';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import type { IngestDownload } from '@/types/ingest';
-import { useInFlightIds } from './useInFlightIds';
+import { useInFlightIds } from '@/shared/hooks/useInFlightIds';
 import { activeIngestDownloadsQueryKey, finishedIngestDownloadsQueryKey } from './ingestQueryKeys';
 
 export const ACTIVE_DOWNLOADS_POLL_INTERVAL_MS = 2000;

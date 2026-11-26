@@ -7,7 +7,7 @@ import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import type { IngestDownload } from '@/types/ingest';
 import { activeIngestDownloadsQueryKey, finishedIngestDownloadsQueryKey } from './ingestQueryKeys';
-import { useInFlightIds } from './useInFlightIds';
+import { useInFlightIds } from '@/shared/hooks/useInFlightIds';
 
 export const FINISHED_DOWNLOADS_PAGE_SIZE = 20;
 
