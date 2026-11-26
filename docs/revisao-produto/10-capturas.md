@@ -74,7 +74,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [ ] 17. "Recarregar" no cabeçalho e revalidação ao voltar o foco — `00/RN-12 a RN-14`, `CA-07`.
 - [ ] 18. "Tentar de novo" no item `failed` chama `POST /captures/:id/promote` — `RF-04`, `CA-10`, `00/RN-34`. Seam test. Depende da 03, 14 e 19.
 - [x] 19. Item `failed` mostra o `failure_reason` — `RF-05`, `CA-10`.
-- [ ] 20. Atualização a cada 2 s enquanto houver item `uploaded` ou `promoting` — `RF-03`, `CA-07`. Depende da 01.
+- [x] 20. Atualização a cada 2 s enquanto houver item `uploaded` ou `promoting` — `RF-03`, `CA-07`. Depende da 01.
 - [ ] 21. "Assistir" no item promovido com `file_id` — `RF-04`, `CA-08`.
 - [ ] 21.1. "Ver na pasta" leva à pasta do vídeo promovido — `RF-04`.
 - [x] 22. Exclusão com retorno visível de sucesso (citando `library_file_kept`) e erro — `RN-11`, `CA-09`, `00/RN-33`, `CA-14`.

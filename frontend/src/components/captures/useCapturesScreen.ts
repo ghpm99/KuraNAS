@@ -10,7 +10,18 @@ import { useSnackbar } from 'notistack';
 import { useMemo, useState } from 'react';
 
 export const CAPTURES_PAGE_SIZE = 50;
+export const CAPTURES_PROCESSING_REFETCH_INTERVAL_MS = 2000;
 export const capturesQueryKey = ['captures'] as const;
+
+const isCaptureProcessing = (capture: Capture): boolean =>
+    capture.status === 'uploaded' || capture.status === 'promoting';
+
+const hasProcessingCapture = (
+    pages: ReadonlyArray<{ items?: Capture[] } | undefined> | undefined
+): boolean =>
+    (pages ?? []).some(
+        (page) => Array.isArray(page?.items) && page.items.some(isCaptureProcessing)
+    );
 
 const removeDuplicateIds = (captures: Capture[]): Capture[] => {
     const seenIds = new Set<number>();
@@ -50,6 +61,10 @@ export const useCapturesScreen = () => {
         initialPageParam: 1,
         getNextPageParam: getNextPageNumber,
         refetchOnWindowFocus: false,
+        refetchInterval: (query) =>
+            hasProcessingCapture(query.state.data?.pages)
+                ? CAPTURES_PROCESSING_REFETCH_INTERVAL_MS
+                : false,
     });
     const retryFailedPage = useRetryFailedPage(capturesQuery);
     const isLoading = capturesQuery.isPending;
