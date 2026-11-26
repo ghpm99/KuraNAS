@@ -13,6 +13,11 @@ jest.mock('@/components/i18n/provider/i18nContext', () => ({
     }),
 }));
 
+jest.mock('@/components/analytics/AnalyticsStorageIndicators', () => ({
+    __esModule: true,
+    default: () => <div>storage-indicators</div>,
+}));
+
 jest.mock('@/shared/hooks/useReindexJob', () => ({
     __esModule: true,
     default: () => ({
