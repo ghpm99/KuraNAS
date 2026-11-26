@@ -2576,6 +2576,7 @@
 	"CAPTURES_RELOAD": "Recarregar",
 	"CAPTURES_RELOAD_ERROR": "Não foi possível recarregar as capturas.",
 	"CAPTURES_RETRY_PROMOTION": "Tentar de novo",
+	"CAPTURES_WATCH": "Assistir",
 	"CAPTURE_RETRY_PROMOTION_STARTED": "Processamento da captura reiniciado.",
 	"CAPTURE_RETRY_PROMOTION_ERROR": "Não foi possível tentar de novo.",
 	"INGEST_HISTORY_RETRY": "Tentar de novo",
