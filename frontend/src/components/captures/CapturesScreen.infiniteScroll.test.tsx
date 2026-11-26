@@ -10,6 +10,14 @@ jest.mock('@/service', () => ({
 }));
 
 const mockedApi = apiBase as unknown as { get: jest.Mock };
+const capturesGet = jest.fn();
+
+const routeCapturesRequests = () =>
+    mockedApi.get.mockImplementation((url: string, config: unknown) =>
+        url === '/captures/platforms'
+            ? Promise.resolve({ data: { items: [] } })
+            : capturesGet(url, config)
+    );
 
 const backendCapture = (id: number) => ({
     id,
@@ -45,27 +53,30 @@ const renderScreen = () => {
 };
 
 describe('CapturesScreen infinite scroll', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        routeCapturesRequests();
+    });
 
     it('sends page_size 50, appends the next page, ignores a duplicate id and marks the end', async () => {
-        mockedApi.get
+        capturesGet
             .mockResolvedValueOnce(backendPage([1, 2], 1, true))
             .mockResolvedValueOnce(backendPage([2, 3], 2, false));
         renderScreen();
 
         expect(await screen.findByText('recording_1')).toBeInTheDocument();
-        expect(mockedApi.get.mock.calls[0][1].params).toMatchObject({ page: 1, page_size: 50 });
+        expect(capturesGet.mock.calls[0][1].params).toMatchObject({ page: 1, page_size: 50 });
 
         fireEvent.click(await screen.findByRole('button', { name: 'LOAD_MORE' }));
 
         expect(await screen.findByText('recording_3')).toBeInTheDocument();
-        expect(mockedApi.get.mock.calls[1][1].params).toMatchObject({ page: 2, page_size: 50 });
+        expect(capturesGet.mock.calls[1][1].params).toMatchObject({ page: 2, page_size: 50 });
         expect(screen.getAllByText('recording_2')).toHaveLength(1);
         expect(screen.getByText('CAPTURES_END')).toBeInTheDocument();
     });
 
     it('keeps the loaded items and offers retry when the next page fails', async () => {
-        mockedApi.get
+        capturesGet
             .mockResolvedValueOnce(backendPage([1], 1, true))
             .mockRejectedValueOnce({ response: { data: { error: 'falha na página' } } })
             .mockResolvedValueOnce(backendPage([2], 2, false));

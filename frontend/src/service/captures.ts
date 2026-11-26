@@ -36,6 +36,16 @@ export const getCaptures = async ({
     return response.data;
 };
 
+export const getCapturePlatforms = async (): Promise<string[]> => {
+    const response = await apiBase.get<{ items: unknown[] }>('/captures/platforms');
+    if (!Array.isArray(response.data?.items)) {
+        throw new Error('invalid capture platforms response');
+    }
+    return response.data.items.filter(
+        (platform): platform is string => typeof platform === 'string'
+    );
+};
+
 export const getCaptureById = async (id: number): Promise<Capture> => {
     const response = await apiBase.get<Capture>(`/captures/${id}`);
     return response.data;

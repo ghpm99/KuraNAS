@@ -3,6 +3,7 @@ import {
     captureThumbnailHref,
     deleteCapture,
     getCaptureById,
+    getCapturePlatforms,
     getCaptures,
     promoteCapture,
 } from './captures';
@@ -40,6 +41,17 @@ const baseCapture = (overrides: Partial<Capture> = {}): Capture => ({
 
 describe('captures service', () => {
     beforeEach(() => jest.clearAllMocks());
+
+    it('getCapturePlatforms requests the platforms and returns the items', async () => {
+        mockedGet.mockResolvedValue({ data: { items: ['crunchyroll', 'youtube'] } });
+        await expect(getCapturePlatforms()).resolves.toEqual(['crunchyroll', 'youtube']);
+        expect(mockedGet).toHaveBeenCalledWith('/captures/platforms');
+    });
+
+    it('getCapturePlatforms rejects a payload without items', async () => {
+        mockedGet.mockResolvedValue({ data: {} });
+        await expect(getCapturePlatforms()).rejects.toThrow();
+    });
 
     it('getCaptures sends pagination and filters', async () => {
         mockedGet.mockResolvedValue({ data: { items: [], pagination: {} } });

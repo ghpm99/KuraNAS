@@ -44,6 +44,11 @@ export const useCapturesFilters = () => {
         [updateFilters]
     );
 
+    const changePlatform = useCallback(
+        (platform: string) => updateFilters({ platform }),
+        [updateFilters]
+    );
+
     const clearFilters = useCallback(() => {
         setNameInput('');
         setSearchParams(
@@ -59,6 +64,7 @@ export const useCapturesFilters = () => {
         nameInput,
         changeNameInput: setNameInput,
         changeStatus,
+        changePlatform,
         clearFilters,
         hasActiveFilters: hasActiveCapturesFilters(appliedFilters),
     };

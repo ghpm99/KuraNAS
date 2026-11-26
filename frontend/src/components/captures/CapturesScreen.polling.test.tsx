@@ -10,6 +10,14 @@ jest.mock('@/service', () => ({
 }));
 
 const mockedApi = apiBase as unknown as { get: jest.Mock };
+const capturesGet = jest.fn();
+
+const routeCapturesRequests = () =>
+    mockedApi.get.mockImplementation((url: string, config: unknown) =>
+        url === '/captures/platforms'
+            ? Promise.resolve({ data: { items: [] } })
+            : capturesGet(url, config)
+    );
 
 const buildCapture = (id: number, status: string) => ({
     id,
@@ -54,6 +62,7 @@ describe('CapturesScreen processing polling', () => {
     beforeEach(() => {
         jest.useFakeTimers();
         jest.clearAllMocks();
+        routeCapturesRequests();
     });
 
     afterEach(() => {
@@ -61,7 +70,7 @@ describe('CapturesScreen processing polling', () => {
     });
 
     it('refetches every 2s while a capture is promoting and updates it in place without the loading state', async () => {
-        mockedApi.get
+        capturesGet
             .mockResolvedValueOnce(
                 buildPage([buildCapture(1, 'promoting'), buildCapture(2, 'promoted')])
             )
@@ -73,11 +82,11 @@ describe('CapturesScreen processing polling', () => {
             await jest.advanceTimersByTimeAsync(0);
         });
         expect(screen.getByText('CAPTURES_STATUS_PROMOTING')).toBeTruthy();
-        expect(mockedApi.get).toHaveBeenCalledTimes(1);
+        expect(capturesGet).toHaveBeenCalledTimes(1);
 
         await advanceTwoSeconds();
 
-        expect(mockedApi.get).toHaveBeenCalledTimes(2);
+        expect(capturesGet).toHaveBeenCalledTimes(2);
         expect(screen.queryByText('CAPTURES_LOADING')).toBeNull();
         expect(screen.queryByText('CAPTURES_STATUS_PROMOTING')).toBeNull();
         expect(screen.getAllByText('CAPTURES_STATUS_PROMOTED')).toHaveLength(2);
@@ -86,7 +95,7 @@ describe('CapturesScreen processing polling', () => {
 
     it('never shows the loading state while refetching', async () => {
         let resolveRefetch: (value: unknown) => void = () => undefined;
-        mockedApi.get
+        capturesGet
             .mockResolvedValueOnce(buildPage([buildCapture(1, 'uploaded')]))
             .mockImplementationOnce(() => new Promise((resolve) => (resolveRefetch = resolve)));
         renderScreen();
@@ -96,7 +105,7 @@ describe('CapturesScreen processing polling', () => {
 
         await advanceTwoSeconds();
 
-        expect(mockedApi.get).toHaveBeenCalledTimes(2);
+        expect(capturesGet).toHaveBeenCalledTimes(2);
         expect(screen.queryByText('CAPTURES_LOADING')).toBeNull();
         expect(screen.getByText('recording_1')).toBeTruthy();
         await act(async () => {
@@ -105,7 +114,7 @@ describe('CapturesScreen processing polling', () => {
     });
 
     it('stops polling once nothing is uploaded or promoting', async () => {
-        mockedApi.get.mockResolvedValue(
+        capturesGet.mockResolvedValue(
             buildPage([buildCapture(1, 'promoted'), buildCapture(2, 'failed')])
         );
         renderScreen();
@@ -116,6 +125,6 @@ describe('CapturesScreen processing polling', () => {
         await advanceTwoSeconds();
         await advanceTwoSeconds();
 
-        expect(mockedApi.get).toHaveBeenCalledTimes(1);
+        expect(capturesGet).toHaveBeenCalledTimes(1);
     });
 });

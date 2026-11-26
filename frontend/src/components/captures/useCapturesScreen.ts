@@ -73,6 +73,7 @@ export const useCapturesScreen = (filters: CapturesFilters = emptyCapturesFilter
                 pageSize: CAPTURES_PAGE_SIZE,
                 name: filters.name || undefined,
                 status: filters.status || undefined,
+                platform: filters.platform || undefined,
             }),
         initialPageParam: 1,
         getNextPageParam: getNextPageNumber,

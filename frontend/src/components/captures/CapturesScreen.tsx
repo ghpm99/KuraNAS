@@ -12,6 +12,7 @@ import { useRef } from 'react';
 import CapturePromotedActions from './CapturePromotedActions';
 import CaptureDeleteDialog from './CaptureDeleteDialog';
 import styles from './CapturesScreen.module.css';
+import CapturePlatformFilter from './CapturePlatformFilter';
 import { captureStatuses } from './capturesFilters';
 import { useCapturesFilters } from './useCapturesFilters';
 import { useCapturesScreen } from './useCapturesScreen';
@@ -111,6 +112,10 @@ const CapturesScreen = () => {
                         </MenuItem>
                     ))}
                 </TextField>
+                <CapturePlatformFilter
+                    selectedPlatform={filters.appliedFilters.platform}
+                    onChange={filters.changePlatform}
+                />
             </div>
 
             {isLoading && (
