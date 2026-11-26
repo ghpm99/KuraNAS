@@ -2525,6 +2525,8 @@
 	"TAKEOUT_UPLOAD_CANCEL_ERROR": "Could not cancel the Takeout upload. Try again.",
 	"ERROR_CAPTURE_GET_FAILED": "Failed to get capture",
 	"CAPTURES_PLATFORMS_LOAD_ERROR": "Could not load the capture platforms.",
+	"TAKEOUT_UPLOAD_WAITING_CONNECTION": "Connection lost. Trying to resume the upload…",
+	"TAKEOUT_UPLOAD_CONNECTION_LOST": "No connection to the server for too long. Send the file again to continue where it stopped.",
 	"TAKEOUT_UPLOAD_ERROR": "Could not upload the Takeout file. Try again.",
 	"TAKEOUT_UPLOAD_INSUFFICIENT_STORAGE": "Not enough free space on the server to receive this file",
 	"NAV_INGEST": "Download from URL",
