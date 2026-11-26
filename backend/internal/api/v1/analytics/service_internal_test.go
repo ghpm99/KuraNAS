@@ -6,7 +6,9 @@ import (
 	"errors"
 	"nas-go/api/pkg/ai"
 	"nas-go/api/pkg/database"
+	"nas-go/api/pkg/i18n"
 	"nas-go/api/pkg/utils"
+	"strings"
 	"testing"
 	"time"
 )
@@ -552,23 +554,28 @@ func TestToHealthDtoVariants(t *testing.T) {
 		}
 	})
 
-	t.Run("error without description keeps name", func(t *testing.T) {
+	t.Run("recent errors are translated per step type without the raw error", func(t *testing.T) {
+		serverPath := "/srv/kuranas/library/private/photo.jpg"
 		result := toHealthDto(HealthModel{
-			Status:       sql.NullString{Valid: false},
-			RecentErrors: []LogErrorModel{{Name: "Error1", Description: sql.NullString{Valid: false}, CreatedAt: time.Now()}},
+			Status: sql.NullString{Valid: false},
+			RecentErrors: []LogErrorModel{
+				{Name: "metadata", Description: sql.NullString{String: "open " + serverPath + ": permission denied", Valid: true}, CreatedAt: time.Now()},
+				{Name: "unknown_step", Description: sql.NullString{String: "boom " + serverPath, Valid: true}, CreatedAt: time.Now().Add(-time.Minute)},
+			},
 		})
-		if len(result.RecentErrors) != 1 || result.RecentErrors[0] != "Error1" {
+		if len(result.RecentErrors) != 2 {
 			t.Fatalf("unexpected errors: %v", result.RecentErrors)
 		}
-	})
-
-	t.Run("error with empty description keeps name", func(t *testing.T) {
-		result := toHealthDto(HealthModel{
-			Status:       sql.NullString{Valid: false},
-			RecentErrors: []LogErrorModel{{Name: "Error2", Description: sql.NullString{String: "", Valid: true}, CreatedAt: time.Now()}},
-		})
-		if result.RecentErrors[0] != "Error2" {
-			t.Fatalf("expected just name, got %s", result.RecentErrors[0])
+		if result.RecentErrors[0] != i18n.GetMessage("ANALYTICS_HEALTH_ERROR_METADATA") {
+			t.Fatalf("expected metadata message, got %q", result.RecentErrors[0])
+		}
+		if result.RecentErrors[1] != i18n.GetMessage(healthErrorGenericKey) {
+			t.Fatalf("expected generic message, got %q", result.RecentErrors[1])
+		}
+		for _, message := range result.RecentErrors {
+			if strings.Contains(message, serverPath) || strings.Contains(message, "permission denied") {
+				t.Fatalf("raw error leaked: %q", message)
+			}
 		}
 	})
 }

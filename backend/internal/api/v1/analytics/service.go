@@ -493,11 +493,7 @@ func toHealthDto(model HealthModel) HealthDto {
 		return model.RecentErrors[i].CreatedAt.After(model.RecentErrors[j].CreatedAt)
 	})
 	for _, item := range model.RecentErrors {
-		description := item.Name
-		if item.Description.Valid && item.Description.String != "" {
-			description = fmt.Sprintf("%s: %s", item.Name, item.Description.String)
-		}
-		errorsList = append(errorsList, description)
+		errorsList = append(errorsList, translateHealthErrorStepType(item.Name))
 	}
 
 	return HealthDto{
