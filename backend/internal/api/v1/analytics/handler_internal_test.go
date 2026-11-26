@@ -23,6 +23,9 @@ type serviceStub struct {
 	capturedPage       int
 	capturedPageSize   int
 	calledGroupsPage   bool
+	failuresToReturn   utils.PaginationResponse[ProcessingFailureDto]
+	capturedStage      ProcessingStage
+	calledFailuresPage bool
 }
 
 func (s *serviceStub) GetStorage(period string) (StorageStatsDto, error) {
@@ -226,5 +229,9 @@ func TestHandlerRemainingEndpoints(t *testing.T) {
 }
 
 func (s *serviceStub) GetProcessingFailuresPage(stage ProcessingStage, page int, pageSize int) (utils.PaginationResponse[ProcessingFailureDto], error) {
-	return utils.PaginationResponse[ProcessingFailureDto]{}, nil
+	s.calledFailuresPage = true
+	s.capturedStage = stage
+	s.capturedPage = page
+	s.capturedPageSize = pageSize
+	return s.failuresToReturn, s.err
 }

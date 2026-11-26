@@ -41,7 +41,7 @@ Spec: `docs/especificacao/16-analytics.md`. A seção "Situação em 2026-11-10"
 - [x] 04. `GET /analytics/trash` → `{item_count, size_bytes}` pela mesma fonte de `/trash/summary` — `RF-02`, §7. Seam no handler.
 - [x] 05. `type_distribution.sql` devolve só as cinco categorias (`archive` em `other`) — `RF-04`, `CA-02`. Teste `_Postgres` da soma.
 - [x] 06. Query, repositório e service de falhas de processamento `{file_id, name, stage, error, failed_at}`, `error` traduzido, filtro `stage`, ordem estável — `RF-10`, §7, `00/RN-17`, `RN-41`.
-- [ ] 07. Handler e rota `GET /analytics/processing/failures` paginados, `400` em `stage` inválido — `RF-10`, `CA-11`. Depende da 06.
+- [x] 07. Handler e rota `GET /analytics/processing/failures` paginados, `400` em `stage` inválido — `RF-10`, `CA-11`. Depende da 06.
 - [ ] 08. `POST /analytics/processing/retry-failed` (`stage` opcional), `202` com `job_id` ou `200` com `job_id: null` — `RF-10`, §7. Depende da 06.
 - [x] 09. `/analytics/library` ganha `total`, `with_metadata`, `pending`, `failed` por tipo de mídia — `RF-10`.
 - [x] 10. `health.recent_errors` com mensagem traduzida em vez do erro cru — `00/RN-40`, `RN-41`.

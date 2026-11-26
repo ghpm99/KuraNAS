@@ -553,6 +553,7 @@ func RegisterAnalyticsRoutes(router *gin.RouterGroup, context *AppContext) {
 	analytics.GET("/duplicates/groups", handler.GetDuplicateGroupsHandler)
 	analytics.GET("/library", handler.GetLibraryHandler)
 	analytics.GET("/processing", handler.GetProcessingHandler)
+	analytics.GET("/processing/failures", handler.GetProcessingFailuresHandler)
 	analytics.GET("/health", handler.GetHealthHandler)
 	analytics.GET("/ai-usage", handler.GetAIUsageHandler)
 	analytics.GET("/trash", handler.GetTrashHandler)
