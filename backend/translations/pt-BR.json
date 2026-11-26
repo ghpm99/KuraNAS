@@ -2593,5 +2593,6 @@
 	"ANALYTICS_HEALTH_ERROR_SCAN": "Falha ao varrer os arquivos",
 	"ANALYTICS_HEALTH_ERROR_TAKEOUT": "Falha ao extrair o Takeout",
 	"ANALYTICS_HEALTH_ERROR_THUMBNAIL": "Falha ao gerar miniatura",
-	"ANALYTICS_HEALTH_ERROR_TIER_MIGRATION": "Falha ao migrar arquivos entre camadas"
+	"ANALYTICS_HEALTH_ERROR_TIER_MIGRATION": "Falha ao migrar arquivos entre camadas",
+	"ERROR_ANALYTICS_INVALID_PROCESSING_STAGE": "Etapa de processamento inválida. Use checksum, metadata, thumbnail, document_text ou ai, ou omita o parâmetro."
 }
