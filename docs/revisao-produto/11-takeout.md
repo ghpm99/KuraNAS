@@ -53,7 +53,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 19. `service/takeout.ts`: status e cancelamento da sessão, lista e detalhe de importações; `received_size`/`resumed` no tipo do `init`; payload sem `items` é erro — `00/RN-11`, `§7`. Depende da 02, 03, 04, 11, 12. Seam test.
 - [x] 20. Erro do envio mostra a mensagem do servidor; fallback `TAKEOUT_UPLOAD_ERROR` sem `%s` — `RF-04`, `00/RN-41`.
 - [x] 21. Fila de vários zips, um por vez, recusa individual de não-`.zip` — `RF-01`, `RN-01`.
-- [ ] 22. Área de soltar e `<input>` aceitam vários arquivos — `RF-01`. Depende da 21.
+- [x] 22. Área de soltar e `<input>` aceitam vários arquivos — `RF-01`. Depende da 21.
 - [x] 23. Explicação curta de como gerar a exportação no Google — `RF-01`.
 - [ ] 24. Retomada do envio pelo `received_size` com espera crescente — `RN-02`, `CA-05`. Depende da 02 e 19.
 - [ ] 25. "Cancelar" por zip chama `DELETE /takeout/upload/:upload_id` — `RF-02`. Seam. Depende da 04 e 19.

@@ -40,6 +40,29 @@ describe('TakeoutDropZone', () => {
 		expect(onSelectFile).toHaveBeenCalledWith(file);
 	});
 
+	it('selects every dropped file, in order', () => {
+		render(<TakeoutDropZone onSelectFile={onSelectFile} />);
+		const first = new File(['a'], 'takeout-001.zip', { type: 'application/zip' });
+		const second = new File(['b'], 'takeout-002.zip', { type: 'application/zip' });
+
+		fireEvent.drop(getZone(), { dataTransfer: { files: createFileList([first, second]) } });
+
+		expect(onSelectFile.mock.calls).toEqual([[first], [second]]);
+	});
+
+	it('lets the file input pick several files', () => {
+		render(<TakeoutDropZone onSelectFile={onSelectFile} />);
+		const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+		const first = new File(['a'], 'takeout-001.zip', { type: 'application/zip' });
+		const second = new File(['b'], 'takeout-002.zip', { type: 'application/zip' });
+
+		expect(input.multiple).toBe(true);
+		Object.defineProperty(input, 'files', { value: createFileList([first, second]) });
+		fireEvent.change(input);
+
+		expect(onSelectFile.mock.calls).toEqual([[first], [second]]);
+	});
+
 	it('does not call onSelectFile when drop has no files', () => {
 		render(<TakeoutDropZone onSelectFile={onSelectFile} />);
 		const zone = getZone();

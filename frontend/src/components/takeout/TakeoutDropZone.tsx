@@ -11,24 +11,21 @@ const TakeoutDropZone = ({ onSelectFile }: TakeoutDropZoneProps) => {
 	const { t } = useI18n();
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
-	const pickFile = (files: FileList | null) => {
-		if (!files || files.length === 0) {
-			return;
+	const pickFiles = (files: FileList | null) => {
+		if (!files) return;
+		for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
+			const file = files.item(fileIndex);
+			if (file) onSelectFile(file);
 		}
-		const file = files.item(0);
-		if (!file) {
-			return;
-		}
-		onSelectFile(file);
 	};
 
 	const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-		pickFile(event.target.files);
+		pickFiles(event.target.files);
 	};
 
 	const handleDrop = (event: DragEvent<HTMLDivElement>) => {
 		event.preventDefault();
-		pickFile(event.dataTransfer.files);
+		pickFiles(event.dataTransfer.files);
 	};
 
 	return (
@@ -52,6 +49,7 @@ const TakeoutDropZone = ({ onSelectFile }: TakeoutDropZoneProps) => {
 			<input
 				ref={inputRef}
 				type="file"
+				multiple
 				accept=".zip,application/zip"
 				className={styles.input}
 				onChange={handleInputChange}
