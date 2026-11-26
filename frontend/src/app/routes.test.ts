@@ -4,6 +4,8 @@ import {
     buildDocumentViewerUrl,
     buildFavoritesUrl,
     buildFilesUrl,
+    buildImageFolderUrl,
+    buildVideoFolderUrl,
     buildVideoPlayerUrl,
     getFileBrowserRootPath,
     getImageRoute,
@@ -18,6 +20,17 @@ import {
 describe('app routes helpers', () => {
     it('builds the video player url from the file id', () => {
         expect(buildVideoPlayerUrl(42)).toBe('/video/42');
+    });
+
+    it('builds the image and video folder urls with the encoded folder filter', () => {
+        expect(buildImageFolderUrl('/Imagens/takeout')).toBe(
+            '/images/folders?folder=%2FImagens%2Ftakeout'
+        );
+        expect(buildVideoFolderUrl('/Videos/takeout')).toBe(
+            '/videos/folders?folder=%2FVideos%2Ftakeout'
+        );
+        expect(buildImageFolderUrl('')).toBe('/images/folders');
+        expect(buildVideoFolderUrl('')).toBe('/videos/folders');
     });
 
     it('matches video player routes', () => {

@@ -93,6 +93,20 @@ export const getVideoRoute = (section: VideoSection) => {
 export const isVideoRoute = (pathname: string) =>
     pathname === appRoutes.videos || pathname.startsWith(`${appRoutes.videos}/`);
 
+export const buildImageFolderUrl = (folderPath: string): string => {
+    const foldersRoute = getImageRoute('folders');
+    return folderPath
+        ? `${foldersRoute}?${new URLSearchParams({ folder: folderPath })}`
+        : foldersRoute;
+};
+
+export const buildVideoFolderUrl = (folderPath: string): string => {
+    const foldersRoute = getVideoRoute('folders');
+    return folderPath
+        ? `${foldersRoute}?${new URLSearchParams({ folder: folderPath })}`
+        : foldersRoute;
+};
+
 export const getAnalyticsRoute = (section: AnalyticsSection) => {
     if (section === 'overview') {
         return appRoutes.analytics;
