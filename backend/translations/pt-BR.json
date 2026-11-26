@@ -2579,5 +2579,19 @@
 	"ANALYTICS_PROCESSING_FAILURE_METADATA": "Não foi possível ler os metadados do arquivo.",
 	"ANALYTICS_PROCESSING_FAILURE_THUMBNAIL": "Não foi possível gerar a miniatura do arquivo.",
 	"ANALYTICS_PROCESSING_FAILURE_DOCUMENT_TEXT": "Não foi possível indexar o texto do documento.",
-	"ANALYTICS_PROCESSING_FAILURE_AI": "A análise de IA falhou."
+	"ANALYTICS_PROCESSING_FAILURE_AI": "A análise de IA falhou.",
+	"ANALYTICS_HEALTH_ERROR_AI": "Falha em uma etapa de inteligência artificial",
+	"ANALYTICS_HEALTH_ERROR_BACKUP": "Falha ao executar o backup",
+	"ANALYTICS_HEALTH_ERROR_CAPTURE": "Falha ao promover a captura",
+	"ANALYTICS_HEALTH_ERROR_CHECKSUM": "Falha ao calcular o checksum",
+	"ANALYTICS_HEALTH_ERROR_DOWNLOAD": "Falha ao baixar o arquivo remoto",
+	"ANALYTICS_HEALTH_ERROR_EMAIL": "Falha ao processar e-mails",
+	"ANALYTICS_HEALTH_ERROR_GENERIC": "Falha em uma etapa de processamento",
+	"ANALYTICS_HEALTH_ERROR_METADATA": "Falha ao ler metadados",
+	"ANALYTICS_HEALTH_ERROR_PERSIST": "Falha ao salvar no catálogo",
+	"ANALYTICS_HEALTH_ERROR_PLAYLIST": "Falha ao indexar playlists",
+	"ANALYTICS_HEALTH_ERROR_SCAN": "Falha ao varrer os arquivos",
+	"ANALYTICS_HEALTH_ERROR_TAKEOUT": "Falha ao extrair o Takeout",
+	"ANALYTICS_HEALTH_ERROR_THUMBNAIL": "Falha ao gerar miniatura",
+	"ANALYTICS_HEALTH_ERROR_TIER_MIGRATION": "Falha ao migrar arquivos entre camadas"
 }

@@ -2579,5 +2579,19 @@
 	"ANALYTICS_PROCESSING_FAILURE_METADATA": "Could not read the file metadata.",
 	"ANALYTICS_PROCESSING_FAILURE_THUMBNAIL": "Could not generate the file thumbnail.",
 	"ANALYTICS_PROCESSING_FAILURE_DOCUMENT_TEXT": "Could not index the document text.",
-	"ANALYTICS_PROCESSING_FAILURE_AI": "The AI analysis failed."
+	"ANALYTICS_PROCESSING_FAILURE_AI": "The AI analysis failed.",
+	"ANALYTICS_HEALTH_ERROR_AI": "An artificial intelligence step failed",
+	"ANALYTICS_HEALTH_ERROR_BACKUP": "Failed to run backup",
+	"ANALYTICS_HEALTH_ERROR_CAPTURE": "Failed to promote capture",
+	"ANALYTICS_HEALTH_ERROR_CHECKSUM": "Failed to compute checksum",
+	"ANALYTICS_HEALTH_ERROR_DOWNLOAD": "Failed to download remote file",
+	"ANALYTICS_HEALTH_ERROR_EMAIL": "Failed to process emails",
+	"ANALYTICS_HEALTH_ERROR_GENERIC": "A processing step failed",
+	"ANALYTICS_HEALTH_ERROR_METADATA": "Failed to read metadata",
+	"ANALYTICS_HEALTH_ERROR_PERSIST": "Failed to save to the catalog",
+	"ANALYTICS_HEALTH_ERROR_PLAYLIST": "Failed to index playlists",
+	"ANALYTICS_HEALTH_ERROR_SCAN": "Failed to scan files",
+	"ANALYTICS_HEALTH_ERROR_TAKEOUT": "Failed to extract Takeout",
+	"ANALYTICS_HEALTH_ERROR_THUMBNAIL": "Failed to generate thumbnail",
+	"ANALYTICS_HEALTH_ERROR_TIER_MIGRATION": "Failed to migrate files between tiers"
 }
