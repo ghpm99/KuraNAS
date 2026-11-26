@@ -1,13 +1,15 @@
 import ListFeedback from '@/components/listFeedback/ListFeedback';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
-import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
+import { Button, Chip, CircularProgress, IconButton, MenuItem, TextField } from '@mui/material';
 import { ExternalLink, Film, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import type { Capture, CaptureStatus } from '@/types/captures';
 import { useRef } from 'react';
 import CapturePromotedActions from './CapturePromotedActions';
 import CaptureDeleteDialog from './CaptureDeleteDialog';
 import styles from './CapturesScreen.module.css';
+import { captureStatuses } from './capturesFilters';
+import { useCapturesFilters } from './useCapturesFilters';
 import { useCapturesScreen } from './useCapturesScreen';
 
 const statusClass: Record<CaptureStatus, string | undefined> = {
@@ -28,6 +30,7 @@ const formatEpisode = (capture: Capture): string => {
 };
 
 const CapturesScreen = () => {
+    const filters = useCapturesFilters();
     const {
         t,
         items,
@@ -51,7 +54,7 @@ const CapturesScreen = () => {
         formatSize,
         captureThumbnailHref,
         captureStatusLabelKey,
-    } = useCapturesScreen();
+    } = useCapturesScreen(filters.appliedFilters);
 
     const screenTopRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +81,34 @@ const CapturesScreen = () => {
                 }
             />
 
+            <div className={styles.filters}>
+                <TextField
+                    type="search"
+                    size="small"
+                    placeholder={t('CAPTURES_SEARCH_PLACEHOLDER')}
+                    value={filters.nameInput}
+                    onChange={(event) => filters.changeNameInput(event.target.value)}
+                    slotProps={{ htmlInput: { 'aria-label': t('CAPTURES_SEARCH_PLACEHOLDER') } }}
+                />
+                <TextField
+                    select
+                    size="small"
+                    label={t('CAPTURES_FILTER_STATUS')}
+                    value={filters.appliedFilters.status}
+                    onChange={(event) =>
+                        filters.changeStatus(event.target.value as CaptureStatus | '')
+                    }
+                    sx={{ minWidth: 180 }}
+                >
+                    <MenuItem value="">{t('CAPTURES_FILTER_STATUS_ALL')}</MenuItem>
+                    {captureStatuses.map((status) => (
+                        <MenuItem key={status} value={status}>
+                            {t(captureStatusLabelKey(status))}
+                        </MenuItem>
+                    ))}
+                </TextField>
+            </div>
+
             {isLoading && (
                 <div className={styles.state}>
                     <CircularProgress size={20} />
@@ -96,7 +127,18 @@ const CapturesScreen = () => {
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     onLoadMore={fetchNextPage}
-                    emptyState={<div className={styles.state}>{t('CAPTURES_EMPTY')}</div>}
+                    emptyState={
+                        filters.hasActiveFilters ? (
+                            <div className={styles.state}>
+                                <span>{t('CAPTURES_FILTER_EMPTY')}</span>
+                                <Button size="small" onClick={filters.clearFilters}>
+                                    {t('CAPTURES_FILTER_CLEAR')}
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className={styles.state}>{t('CAPTURES_EMPTY')}</div>
+                        )
+                    }
                 >
                     <ul className={styles.list}>
                         {items.map((capture) => {

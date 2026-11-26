@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
@@ -33,7 +34,9 @@ const renderScreen = () => {
     return render(
         <QueryClientProvider client={client}>
             <SnackbarProvider>
-                <CapturesScreen />
+                <MemoryRouter>
+                    <CapturesScreen />
+                </MemoryRouter>
             </SnackbarProvider>
         </QueryClientProvider>
     );

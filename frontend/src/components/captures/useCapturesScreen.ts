@@ -16,6 +16,7 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import { useSnackbar } from 'notistack';
 import { useMemo, useState } from 'react';
 import { useInFlightIds } from '@/shared/hooks/useInFlightIds';
+import { emptyCapturesFilters, type CapturesFilters } from './capturesFilters';
 
 export const CAPTURES_PAGE_SIZE = 50;
 export const CAPTURES_PROCESSING_REFETCH_INTERVAL_MS = 2000;
@@ -55,17 +56,24 @@ export const captureStatusLabelKey = (status: CaptureStatus): string => {
     }
 };
 
-export const useCapturesScreen = () => {
+export const useCapturesScreen = (filters: CapturesFilters = emptyCapturesFilters) => {
     const { t } = useI18n();
     const queryClient = useQueryClient();
     const { enqueueSnackbar } = useSnackbar();
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [captureAwaitingDeletion, setCaptureAwaitingDeletion] = useState<Capture | null>(null);
 
+    const filteredCapturesQueryKey = [...capturesQueryKey, filters] as const;
+
     const capturesQuery = useInfiniteQuery({
-        queryKey: capturesQueryKey,
+        queryKey: filteredCapturesQueryKey,
         queryFn: ({ pageParam = 1 }) =>
-            getCaptures({ page: pageParam, pageSize: CAPTURES_PAGE_SIZE }),
+            getCaptures({
+                page: pageParam,
+                pageSize: CAPTURES_PAGE_SIZE,
+                name: filters.name || undefined,
+                status: filters.status || undefined,
+            }),
         initialPageParam: 1,
         getNextPageParam: getNextPageNumber,
         refetchOnWindowFocus: true,
@@ -76,7 +84,7 @@ export const useCapturesScreen = () => {
                 : false,
     });
     const retryFailedPage = useRetryFailedPage(capturesQuery);
-    const reloadFromStart = useReloadInfiniteListFromStart(capturesQueryKey, capturesQuery);
+    const reloadFromStart = useReloadInfiniteListFromStart(filteredCapturesQueryKey, capturesQuery);
     const isLoading = capturesQuery.isPending;
     const isReloading = capturesQuery.isRefetching && !capturesQuery.isFetchingNextPage;
 
