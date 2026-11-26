@@ -464,6 +464,10 @@ func (s *Service) GetCaptures(filter CaptureFilter, page int, pageSize int) (uti
 	return ParsePaginationToDto(&pagination), nil
 }
 
+func (s *Service) GetCapturePlatforms() ([]string, error) {
+	return s.Repository.GetCapturePlatforms()
+}
+
 func (s *Service) findCaptureModel(id int) (CaptureModel, error) {
 	model, err := s.Repository.GetCaptureByID(id)
 	if errors.Is(err, sql.ErrNoRows) {

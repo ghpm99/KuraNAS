@@ -596,6 +596,7 @@ func RegisterCapturesRoutes(router *gin.RouterGroup, context *AppContext) {
 	capturesGroup.POST("/upload/chunk", context.Captures.Handler.UploadCaptureChunkHandler)
 	capturesGroup.POST("/upload/complete", context.Captures.Handler.CompleteCaptureUploadHandler)
 	capturesGroup.GET("", context.Captures.Handler.GetCapturesHandler)
+	capturesGroup.GET("/platforms", context.Captures.Handler.GetCapturePlatformsHandler)
 	capturesGroup.GET("/:id", context.Captures.Handler.GetCaptureByIDHandler)
 	capturesGroup.DELETE("/:id", context.Captures.Handler.DeleteCaptureHandler)
 	capturesGroup.POST("/:id/promote", context.Captures.Handler.RetryCapturePromotionHandler)

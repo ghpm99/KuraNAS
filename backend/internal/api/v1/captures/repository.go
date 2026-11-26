@@ -220,6 +220,32 @@ func (r *Repository) GetCaptureByID(id int) (CaptureModel, error) {
 	return m, nil
 }
 
+func (r *Repository) GetCapturePlatforms() ([]string, error) {
+	platforms := []string{}
+
+	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
+		rows, queryErr := tx.Query(queries.GetCapturePlatformsQuery)
+		if queryErr != nil {
+			return queryErr
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var platform string
+			if scanErr := rows.Scan(&platform); scanErr != nil {
+				return scanErr
+			}
+			platforms = append(platforms, platform)
+		}
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, fmt.Errorf("GetCapturePlatforms: %w", err)
+	}
+
+	return platforms, nil
+}
+
 // GetCaptureByEpisodeKey returns the most recent completed capture archived
 // under the given episode_key. The boolean is false (with a nil error) when no
 // capture matches, so the caller can distinguish "not archived yet" from a real

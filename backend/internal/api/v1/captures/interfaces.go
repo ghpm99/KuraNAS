@@ -14,6 +14,7 @@ type RepositoryInterface interface {
 	CreateCapture(transaction *sql.Tx, capture CaptureModel) (CaptureModel, error)
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureModel], error)
 	GetCaptureByID(id int) (CaptureModel, error)
+	GetCapturePlatforms() ([]string, error)
 	GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error)
 	UpdateCapturePromotion(transaction *sql.Tx, capture CaptureModel) error
 	MarkCapturePromoting(transaction *sql.Tx, id int) error
@@ -47,6 +48,7 @@ type ServiceInterface interface {
 	CompleteCaptureUpload(dto CompleteCaptureUploadDto) (CaptureDto, error)
 	GetCaptures(filter CaptureFilter, page int, pageSize int) (utils.PaginationResponse[CaptureDto], error)
 	GetCaptureByID(id int) (CaptureDto, error)
+	GetCapturePlatforms() ([]string, error)
 	PromoteCapture(captureID int) error
 	RetryCapturePromotion(captureID int) (int, error)
 	DeleteCapture(id int) (bool, error)

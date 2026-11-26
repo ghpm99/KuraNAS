@@ -49,6 +49,10 @@ func (m *capturesHandlerServiceMock) GetCaptureByID(id int) (CaptureDto, error) 
 	return CaptureDto{ID: id, Name: "test"}, nil
 }
 
+func (m *capturesHandlerServiceMock) GetCapturePlatforms() ([]string, error) {
+	return []string{"crunchyroll"}, nil
+}
+
 func (m *capturesHandlerServiceMock) PromoteCapture(captureID int) error {
 	return nil
 }

@@ -27,3 +27,6 @@ var MarkCapturePromotionFailedQuery string
 
 //go:embed mark_capture_promoting.sql
 var MarkCapturePromotingQuery string
+
+//go:embed get_capture_platforms.sql
+var GetCapturePlatformsQuery string

@@ -315,3 +315,26 @@ func isValidCaptureStatus(status CaptureStatus) bool {
 	}
 	return false
 }
+
+func (h *Handler) GetCapturePlatformsHandler(c *gin.Context) {
+	loggerModel, _ := h.logService.CreateLog(logger.LoggerModel{
+		Name:        "GetCapturePlatforms",
+		Description: "Listing capture platforms",
+		Level:       logger.LogLevelInfo,
+		Status:      logger.LogStatusPending,
+		IPAddress:   c.ClientIP(),
+	}, nil)
+
+	platforms, err := h.service.GetCapturePlatforms()
+	if err != nil {
+		h.logService.CompleteWithErrorLog(loggerModel, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": i18n.GetMessage("CAPTURES_PLATFORMS_LOAD_ERROR")})
+		return
+	}
+	if platforms == nil {
+		platforms = []string{}
+	}
+
+	h.logService.CompleteWithSuccessLog(loggerModel)
+	c.JSON(http.StatusOK, gin.H{"items": platforms})
+}

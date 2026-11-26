@@ -87,6 +87,10 @@ func (r *repoMock) GetCaptureByID(id int) (CaptureModel, error) {
 	return CaptureModel{ID: id, Name: "test"}, nil
 }
 
+func (r *repoMock) GetCapturePlatforms() ([]string, error) {
+	return []string{}, nil
+}
+
 func (r *repoMock) GetCaptureByEpisodeKey(episodeKey string) (CaptureModel, bool, error) {
 	if r.getByEpisodeKeyFn != nil {
 		return r.getByEpisodeKeyFn(episodeKey)

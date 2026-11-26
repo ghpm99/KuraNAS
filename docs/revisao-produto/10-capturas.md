@@ -79,7 +79,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [x] 21.1. "Ver na pasta" leva à pasta do vídeo promovido — `RF-04`.
 - [x] 22. Exclusão com retorno visível de sucesso (citando `library_file_kept`) e erro — `RN-11`, `CA-09`, `00/RN-33`, `CA-14`.
 - [x] 23. Busca por nome e filtro por estado na URL — `RF-02`, `00/RN-19 a RN-22`. Depende da 04 e 15.
-- [ ] 23.1. `GET /captures/platforms`: plataformas distintas e não vazias, em ordem alfabética, `{"items": [...]}`; `.sql` próprio; teste do handler decodifica a resposta — `RF-02`, §8, `00/CA-16`.
+- [x] 23.1. `GET /captures/platforms`: plataformas distintas e não vazias, em ordem alfabética, `{"items": [...]}`; `.sql` próprio; teste do handler decodifica a resposta — `RF-02`, §8, `00/CA-16`.
 - [ ] 23.2. Filtro por plataforma na tela, na URL, com as opções de `GET /captures/platforms` — `RF-02`, `00/RN-19 a RN-21`. Depende da 23 e da 23.1.
 - [x] 24. Estado vazio explica o que são capturas e aponta para a extensão — `RF-06`.
 - [x] 25. Data relativa até 7 dias pelo formatador compartilhado — `00/RN-44`.
