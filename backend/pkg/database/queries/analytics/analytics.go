@@ -29,6 +29,9 @@ var DuplicatesSummaryQuery string
 //go:embed library_metadata_summary.sql
 var LibraryMetadataSummaryQuery string
 
+//go:embed library_media_type_summary.sql
+var LibraryMediaTypeSummaryQuery string
+
 //go:embed processing_queue_summary.sql
 var ProcessingQueueSummaryQuery string
 

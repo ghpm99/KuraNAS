@@ -307,18 +307,45 @@ func buildDuplicateGroupsPage(groups []DuplicateGroupDetailModel, page int, page
 func (r *Repository) GetLibrarySummary() (LibrarySummaryModel, error) {
 	var result LibrarySummaryModel
 	err := r.DbContext.QueryTx(func(tx *sql.Tx) error {
-		return tx.QueryRow(queries.LibraryMetadataSummaryQuery).Scan(
+		err := tx.QueryRow(queries.LibraryMetadataSummaryQuery).Scan(
 			&result.CategorizedMedia,
 			&result.AudioWithMetadata,
 			&result.VideoWithMetadata,
 			&result.ImageWithMetadata,
 			&result.ImageClassified,
 		)
+		if err != nil {
+			return err
+		}
+		result.ByMediaType, err = scanLibraryMediaTypes(tx)
+		return err
 	})
 	if err != nil {
 		return result, fmt.Errorf("analytics library summary failed: %w", err)
 	}
 	return result, nil
+}
+
+func scanLibraryMediaTypes(tx *sql.Tx) ([]LibraryMediaTypeModel, error) {
+	rows, err := tx.Query(
+		queries.LibraryMediaTypeSummaryQuery,
+		pq.Array(DuplicateCategoryVideo.includedFormats()),
+		pq.Array(DuplicateCategoryImage.includedFormats()),
+		pq.Array(DuplicateCategoryAudio.includedFormats()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	mediaTypes := []LibraryMediaTypeModel{}
+	for rows.Next() {
+		var mediaType LibraryMediaTypeModel
+		if err := rows.Scan(&mediaType.MediaType, &mediaType.Total, &mediaType.WithMetadata, &mediaType.Pending, &mediaType.Failed); err != nil {
+			return nil, err
+		}
+		mediaTypes = append(mediaTypes, mediaType)
+	}
+	return mediaTypes, rows.Err()
 }
 
 func (r *Repository) GetProcessingSummary() (ProcessingSummaryModel, error) {

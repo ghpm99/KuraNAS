@@ -7,6 +7,9 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
+
+	"nas-go/api/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -58,11 +61,18 @@ func (populatedService) GetDuplicateGroups(int) ([]DuplicateGroupDto, error) {
 }
 
 func (populatedService) GetLibrary() (LibraryDto, error) {
-	return LibraryDto{CategorizedMedia: 1, AudioWithMetadata: 2, VideoWithMetadata: 3, ImageWithMetadata: 4, ImageClassified: 5}, nil
+	return LibraryDto{CategorizedMedia: 1, AudioWithMetadata: 2, VideoWithMetadata: 3, ImageWithMetadata: 4, ImageClassified: 5, ByMediaType: []LibraryMediaTypeDto{{MediaType: "audio", Total: 3, WithMetadata: 1, Pending: 1, Failed: 1}}}, nil
 }
 
 func (populatedService) GetProcessing() (ProcessingDto, error) {
 	return ProcessingDto{MetadataPending: 1, MetadataFailed: 2, ThumbnailPending: 3, ThumbnailFailed: 4, RecurringTimeouts: 5}, nil
+}
+
+func (populatedService) GetProcessingFailuresPage(ProcessingStage, int, int) (utils.PaginationResponse[ProcessingFailureDto], error) {
+	return utils.PaginationResponse[ProcessingFailureDto]{
+		Items:      []ProcessingFailureDto{{FileID: 7, Name: "a.jpg", Stage: "thumbnail", Error: "falha", FailedAt: time.Date(2026, 11, 25, 10, 0, 0, 0, time.UTC)}},
+		Pagination: utils.Pagination{Page: 1, PageSize: 20},
+	}, nil
 }
 
 func (populatedService) GetHealth() (HealthDto, error) {
@@ -156,7 +166,7 @@ func TestAnalyticsJSONContractObjects(t *testing.T) {
 			register: func(router *gin.Engine, handler *Handler) {
 				router.GET("/analytics/library", handler.GetLibraryHandler)
 			},
-			expectedKeys: []string{"audio_with_metadata", "categorized_media", "image_classified", "image_with_metadata", "video_with_metadata"},
+			expectedKeys: []string{"audio_with_metadata", "by_media_type", "categorized_media", "image_classified", "image_with_metadata", "video_with_metadata"},
 		},
 		{
 			name: "processing",
@@ -262,4 +272,14 @@ func TestAnalyticsJSONContractLists(t *testing.T) {
 			assertKeys(t, testCase.name, testCase.expectedKeys, firstElement(t, body))
 		})
 	}
+}
+
+func TestAnalyticsJSONContractLibraryByMediaType(t *testing.T) {
+	body := requestPopulatedJSON(t, "library", "/analytics/library", func(router *gin.Engine, handler *Handler) {
+		router.GET("/analytics/library", handler.GetLibraryHandler)
+	})
+
+	byMediaType := body.(map[string]any)["by_media_type"]
+
+	assertKeys(t, "by_media_type", []string{"failed", "media_type", "pending", "total", "with_metadata"}, firstElement(t, byMediaType))
 }

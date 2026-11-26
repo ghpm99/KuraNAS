@@ -86,12 +86,21 @@ type DuplicateGroupDetailModel struct {
 	Files []DuplicateCopyModel
 }
 
+type LibraryMediaTypeModel struct {
+	MediaType    string
+	Total        int64
+	WithMetadata int64
+	Pending      int64
+	Failed       int64
+}
+
 type LibrarySummaryModel struct {
 	CategorizedMedia  int64
 	AudioWithMetadata int64
 	VideoWithMetadata int64
 	ImageWithMetadata int64
 	ImageClassified   int64
+	ByMediaType       []LibraryMediaTypeModel
 }
 
 type ProcessingSummaryModel struct {

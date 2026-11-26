@@ -183,7 +183,22 @@ func (s *Service) GetLibrary() (LibraryDto, error) {
 		VideoWithMetadata: model.VideoWithMetadata,
 		ImageWithMetadata: model.ImageWithMetadata,
 		ImageClassified:   model.ImageClassified,
+		ByMediaType:       toLibraryMediaTypeDtos(model.ByMediaType),
 	}, nil
+}
+
+func toLibraryMediaTypeDtos(models []LibraryMediaTypeModel) []LibraryMediaTypeDto {
+	dtos := make([]LibraryMediaTypeDto, 0, len(models))
+	for _, model := range models {
+		dtos = append(dtos, LibraryMediaTypeDto{
+			MediaType:    model.MediaType,
+			Total:        model.Total,
+			WithMetadata: model.WithMetadata,
+			Pending:      model.Pending,
+			Failed:       model.Failed,
+		})
+	}
+	return dtos
 }
 
 func (s *Service) GetProcessing() (ProcessingDto, error) {

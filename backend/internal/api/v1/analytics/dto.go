@@ -86,12 +86,21 @@ type DuplicateGroupDetailDto struct {
 	Files []DuplicateCopyDto `json:"files"`
 }
 
+type LibraryMediaTypeDto struct {
+	MediaType    string `json:"media_type"`
+	Total        int64  `json:"total"`
+	WithMetadata int64  `json:"with_metadata"`
+	Pending      int64  `json:"pending"`
+	Failed       int64  `json:"failed"`
+}
+
 type LibraryDto struct {
-	CategorizedMedia  int64 `json:"categorized_media"`
-	AudioWithMetadata int64 `json:"audio_with_metadata"`
-	VideoWithMetadata int64 `json:"video_with_metadata"`
-	ImageWithMetadata int64 `json:"image_with_metadata"`
-	ImageClassified   int64 `json:"image_classified"`
+	CategorizedMedia  int64                 `json:"categorized_media"`
+	AudioWithMetadata int64                 `json:"audio_with_metadata"`
+	VideoWithMetadata int64                 `json:"video_with_metadata"`
+	ImageWithMetadata int64                 `json:"image_with_metadata"`
+	ImageClassified   int64                 `json:"image_classified"`
+	ByMediaType       []LibraryMediaTypeDto `json:"by_media_type"`
 }
 
 type ProcessingDto struct {

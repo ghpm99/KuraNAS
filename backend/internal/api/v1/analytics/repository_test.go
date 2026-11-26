@@ -286,13 +286,16 @@ func TestRepositoryGetLibrarySummary(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(queries.LibraryMetadataSummaryQuery)).
 		WillReturnRows(sqlmock.NewRows([]string{"cat", "audio", "video", "image", "classified"}).
 			AddRow(4, 1, 2, 1, 1))
+	mock.ExpectQuery(regexp.QuoteMeta(queries.LibraryMediaTypeSummaryQuery)).
+		WillReturnRows(sqlmock.NewRows([]string{"media_type", "total", "with_metadata", "pending", "failed"}).
+			AddRow("audio", 3, 1, 1, 1))
 	mock.ExpectRollback()
 
 	result, err := repo.GetLibrarySummary()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.CategorizedMedia != 4 || result.VideoWithMetadata != 2 {
+	if result.CategorizedMedia != 4 || result.VideoWithMetadata != 2 || len(result.ByMediaType) != 1 || result.ByMediaType[0].Failed != 1 {
 		t.Fatalf("unexpected library summary: %+v", result)
 	}
 }
