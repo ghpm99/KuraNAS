@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen, renderHook, act } from '@testing-library/react';
 import { AnalyticsProvider } from './index';
 import { useAnalyticsOverview } from './analyticsContext';
@@ -75,9 +76,11 @@ describe('AnalyticsProvider', () => {
 
     it('composes overview data from slice queries', () => {
         render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
+            <MemoryRouter>
+                <AnalyticsProvider>
+                    <ConsumerComponent />
+                </AnalyticsProvider>
+            </MemoryRouter>
         );
 
         expect(screen.getByTestId('period').textContent).toBe('7d');
@@ -88,9 +91,11 @@ describe('AnalyticsProvider', () => {
 
     it('keys the period-dependent queries with the current period', () => {
         render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
+            <MemoryRouter>
+                <AnalyticsProvider>
+                    <ConsumerComponent />
+                </AnalyticsProvider>
+            </MemoryRouter>
         );
 
         expect(lastQueriesArg.queries[0].queryKey).toEqual(['analytics', 'storage', '7d']);
@@ -99,9 +104,11 @@ describe('AnalyticsProvider', () => {
     it('reports loading while slices resolve', () => {
         mode = 'loading';
         render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
+            <MemoryRouter>
+                <AnalyticsProvider>
+                    <ConsumerComponent />
+                </AnalyticsProvider>
+            </MemoryRouter>
         );
 
         expect(screen.getByTestId('loading').textContent).toBe('true');
@@ -111,9 +118,11 @@ describe('AnalyticsProvider', () => {
     it('surfaces an error key when the storage slice fails', () => {
         mode = 'storage-error';
         render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
+            <MemoryRouter>
+                <AnalyticsProvider>
+                    <ConsumerComponent />
+                </AnalyticsProvider>
+            </MemoryRouter>
         );
 
         expect(screen.getByTestId('error').textContent).toBe('ANALYTICS_ERROR_LOAD_BLOCK');
@@ -122,9 +131,11 @@ describe('AnalyticsProvider', () => {
 
     it('refreshes every slice and updates the period', () => {
         render(
-            <AnalyticsProvider>
-                <ConsumerComponent />
-            </AnalyticsProvider>
+            <MemoryRouter>
+                <AnalyticsProvider>
+                    <ConsumerComponent />
+                </AnalyticsProvider>
+            </MemoryRouter>
         );
 
         act(() => {

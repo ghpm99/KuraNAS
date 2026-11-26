@@ -1,3 +1,4 @@
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { AnalyticsProvider } from './index';
 import { useAnalyticsOverview } from './analyticsContext';
@@ -26,7 +27,12 @@ const routeResponse = (url: string) => {
         case '/analytics/storage':
             return {
                 data: {
-                    storage: { total_bytes: 1000, used_bytes: 500, free_bytes: 500, growth_bytes: 10 },
+                    storage: {
+                        total_bytes: 1000,
+                        used_bytes: 500,
+                        free_bytes: 500,
+                        growth_bytes: 10,
+                    },
                     counts: { files_total: 12, files_added: 2, folders: 4 },
                 },
             };
@@ -80,8 +86,26 @@ const routeResponse = (url: string) => {
     }
 };
 
+const LocationProbe = () => {
+    const { search } = useLocation();
+    return <span data-testid="location-search">{search}</span>;
+};
+
+const renderAtUrl = (initialUrl: string) =>
+    render(
+        <QueryClientProvider client={createQueryClient()}>
+            <MemoryRouter initialEntries={[initialUrl]}>
+                <AnalyticsProvider>
+                    <Consumer />
+                    <LocationProbe />
+                </AnalyticsProvider>
+            </MemoryRouter>
+        </QueryClientProvider>
+    );
+
 const Consumer = () => {
-    const { period, duplicatesType, loading, error, data, setPeriod, refresh } = useAnalyticsOverview();
+    const { period, duplicatesType, loading, error, data, setPeriod, refresh } =
+        useAnalyticsOverview();
     return (
         <div>
             <span data-testid="period">{period}</span>
@@ -104,9 +128,11 @@ describe('providers/analyticsProvider', () => {
     it('requests duplicates without a type filter by default', async () => {
         render(
             <QueryClientProvider client={createQueryClient()}>
-                <AnalyticsProvider>
-                    <Consumer />
-                </AnalyticsProvider>
+                <MemoryRouter>
+                    <AnalyticsProvider>
+                        <Consumer />
+                    </AnalyticsProvider>
+                </MemoryRouter>
             </QueryClientProvider>
         );
 
@@ -121,9 +147,11 @@ describe('providers/analyticsProvider', () => {
     it('passes the images-only duplicates filter to both duplicates endpoints', async () => {
         render(
             <QueryClientProvider client={createQueryClient()}>
-                <AnalyticsProvider duplicatesType="image">
-                    <Consumer />
-                </AnalyticsProvider>
+                <MemoryRouter>
+                    <AnalyticsProvider duplicatesType="image">
+                        <Consumer />
+                    </AnalyticsProvider>
+                </MemoryRouter>
             </QueryClientProvider>
         );
 
@@ -141,9 +169,11 @@ describe('providers/analyticsProvider', () => {
         const queryClient = createQueryClient();
         render(
             <QueryClientProvider client={queryClient}>
-                <AnalyticsProvider>
-                    <Consumer />
-                </AnalyticsProvider>
+                <MemoryRouter>
+                    <AnalyticsProvider>
+                        <Consumer />
+                    </AnalyticsProvider>
+                </MemoryRouter>
             </QueryClientProvider>
         );
 
@@ -171,13 +201,55 @@ describe('providers/analyticsProvider', () => {
         const queryClient = createQueryClient();
         render(
             <QueryClientProvider client={queryClient}>
-                <AnalyticsProvider>
-                    <Consumer />
-                </AnalyticsProvider>
+                <MemoryRouter>
+                    <AnalyticsProvider>
+                        <Consumer />
+                    </AnalyticsProvider>
+                </MemoryRouter>
             </QueryClientProvider>
         );
 
         await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
         expect(screen.getByTestId('error')).toHaveTextContent('ANALYTICS_ERROR_LOAD_BLOCK');
+    });
+
+    it('uses the period from the URL query param', async () => {
+        renderAtUrl('/analytics?period=30d');
+
+        await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
+        expect(screen.getByTestId('period')).toHaveTextContent('30d');
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/storage', {
+            params: { period: '30d' },
+        });
+    });
+
+    it('falls back to 7d and rewrites the URL when the period param is invalid', async () => {
+        renderAtUrl('/analytics?period=bogus&type=image');
+
+        await waitFor(() =>
+            expect(screen.getByTestId('location-search')).toHaveTextContent('period=7d')
+        );
+        expect(screen.getByTestId('period')).toHaveTextContent('7d');
+        expect(screen.getByTestId('location-search')).toHaveTextContent('type=image');
+        expect(mockedApiGet).not.toHaveBeenCalledWith('/analytics/storage', {
+            params: { period: 'bogus' },
+        });
+    });
+
+    it('writes the chosen period to the URL keeping other params', async () => {
+        renderAtUrl('/analytics?type=image');
+
+        await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('no'));
+        act(() => {
+            screen.getByText('period').click();
+        });
+
+        await waitFor(() =>
+            expect(screen.getByTestId('location-search')).toHaveTextContent('period=30d')
+        );
+        expect(screen.getByTestId('location-search')).toHaveTextContent('type=image');
+        expect(mockedApiGet).toHaveBeenCalledWith('/analytics/hot-folders', {
+            params: { period: '30d' },
+        });
     });
 });
