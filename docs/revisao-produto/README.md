@@ -34,7 +34,7 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 10 | [Capturas (plugin)](10-capturas.md) | em execução | em paralelo com o fim do 09 (pedido do dono 2026-11-25); 35 lacunas, D1–D5 🚫 |
 | 11 | [Takeout](11-takeout.md) | em execução | em paralelo com 09 e 10 (pedido do dono 2026-11-25); D1–D2 🚫 |
 | 12 | [Analytics](12-analytics.md) | em execução | em paralelo com 09–11 (pedido do dono 2026-11-25); D1–D2 🚫 |
-| 13 | Notificações e jobs | pendente | |
+| 13 | Notificações e jobs | pendente | data relativa das notificações vai até 30 dias; trocar por `shared/utils/formatRelativeDate` (7 dias, `00/RN-44`) |
 | 14 | Diário de atividades | pendente | |
 | 15 | Assistente | pendente | |
 | 16 | Configurações — raízes, tiering, backup, watch folders, bibliotecas, acesso, desligamento, atualizador, IA | pendente | |
