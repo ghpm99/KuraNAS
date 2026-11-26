@@ -60,7 +60,7 @@ describe('CapturesScreen retry promotion (seam)', () => {
         await screen.findByText('recording_1');
         const listLoadsBefore = mockedApi.get.mock.calls.length;
 
-        fireEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_RETRY_PROMOTION' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_RETRY_PROMOTION' })[0] as HTMLElement);
 
         await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/captures/1/promote'));
         expect(await screen.findByText('CAPTURE_RETRY_PROMOTION_STARTED')).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe('CapturesScreen retry promotion (seam)', () => {
         renderScreen();
         await screen.findByText('recording_1');
 
-        fireEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_RETRY_PROMOTION' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_RETRY_PROMOTION' })[0] as HTMLElement);
 
         await waitFor(() => {
             const [firstButton, secondButton] = screen.getAllByRole('button', {
@@ -93,7 +93,7 @@ describe('CapturesScreen retry promotion (seam)', () => {
         renderScreen();
         await screen.findByText('recording_1');
 
-        fireEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_RETRY_PROMOTION' })[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_RETRY_PROMOTION' })[0] as HTMLElement);
 
         expect(await screen.findByText('A captura não está com falha.')).toBeInTheDocument();
     });

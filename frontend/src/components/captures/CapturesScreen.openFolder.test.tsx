@@ -89,7 +89,7 @@ describe('CapturesScreen open folder action (seam)', () => {
         renderScreen();
         await screen.findByText('recording_1');
 
-        await userEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_OPEN_FOLDER' })[0]);
+        await userEvent.click(screen.getAllByRole('button', { name: 'CAPTURES_OPEN_FOLDER' })[0] as HTMLElement);
 
         expect(await screen.findAllByText('CAPTURES_OPEN_FOLDER_ERROR')).toHaveLength(1);
     });
