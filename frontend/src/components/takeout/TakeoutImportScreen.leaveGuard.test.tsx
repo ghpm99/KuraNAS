@@ -16,6 +16,7 @@ jest.mock('./useTakeoutUpload', () => ({
 		progress: 0,
 		fileName: '',
 		jobId: null,
+		importId: null,
 		errorMessage: '',
 		progressMessage: '',
 		selectFile: jest.fn(),

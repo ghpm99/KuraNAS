@@ -58,7 +58,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [ ] 24. Retomada do envio pelo `received_size` com espera crescente — `RN-02`, `CA-05`. Depende da 02 e 19.
 - [ ] 25. "Cancelar" por zip chama `DELETE /takeout/upload/:upload_id` — `RF-02`. Seam. Depende da 04 e 19.
 - [ ] 26. Velocidade e tempo restante na barra do envio — `RF-02`.
-- [ ] 27. Etapa de importação: consulta `GET /takeout/imports/:id` a cada 2 s e mostra processados/total; remove o `job #N` literal — `RF-02`, `CA-06`. Depende da 12 e 19.
+- [x] 27. Etapa de importação: consulta `GET /takeout/imports/:id` a cada 2 s e mostra processados/total; remove o `job #N` literal — `RF-02`, `CA-06`. Depende da 12 e 19.
 - [x] 28. Rótulos próprios de iniciar e limpar; progresso por interpolação — `00/RN-43`, `RN-44`.
 - [ ] 29. Resumo ao concluir e atalhos para as fotos e vídeos importados — `RF-03`, `CA-11`. Depende da 27.
 - [ ] 30. Falha mostra o `error` do servidor e "Tentar de novo" — `RF-04`, `RN-06`. Depende da 27.

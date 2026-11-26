@@ -16,6 +16,7 @@ let hookState: {
 	progress: number;
 	fileName: string;
 	jobId: number | null;
+	importId: number | null;
 	errorMessage: string;
 	progressMessage: string;
 };
@@ -45,6 +46,7 @@ describe('TakeoutImportScreen', () => {
 			progress: 0,
 			fileName: '',
 			jobId: null,
+			importId: null,
 			errorMessage: '',
 			progressMessage: '',
 		};
@@ -98,10 +100,9 @@ describe('TakeoutImportScreen', () => {
 
 	it('shows success message on complete', () => {
 		hookState.state = 'done';
-		hookState.jobId = 42;
 		render(<TakeoutImportScreen />);
 		expect(screen.getByText(/TAKEOUT_UPLOAD_COMPLETE/)).toBeInTheDocument();
-		expect(screen.getByText(/job #42/)).toBeInTheDocument();
+		expect(screen.queryByText(/job #/)).not.toBeInTheDocument();
 	});
 
 	it('shows success without job id', () => {

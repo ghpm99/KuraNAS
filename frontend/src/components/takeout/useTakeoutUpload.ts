@@ -17,6 +17,7 @@ const useTakeoutUpload = () => {
 	const [progress, setProgress] = useState(0);
 	const [uploadedBytes, setUploadedBytes] = useState(0);
 	const [jobId, setJobId] = useState<number | null>(null);
+	const [importId, setImportId] = useState<number | null>(null);
 	const [errorMessage, setErrorMessage] = useState('');
 
 	const fileName = selectedFile?.name ?? '';
@@ -32,6 +33,8 @@ const useTakeoutUpload = () => {
 			setProgress(0);
 			setUploadedBytes(0);
 			setJobId(null);
+		setImportId(null);
+			setImportId(null);
 			setErrorMessage('');
 			setState('selecting');
 		},
@@ -44,6 +47,7 @@ const useTakeoutUpload = () => {
 		setProgress(0);
 		setUploadedBytes(0);
 		setJobId(null);
+		setImportId(null);
 		setErrorMessage('');
 	}, []);
 
@@ -71,6 +75,7 @@ const useTakeoutUpload = () => {
 			setState('completing');
 			const completeResult = await completeTakeoutUpload(initResult.upload_id);
 			setJobId(completeResult.job_id);
+			setImportId(completeResult.import_id ?? null);
 			setProgress(100);
 			setState('done');
 		} catch (uploadError) {
@@ -94,6 +99,7 @@ const useTakeoutUpload = () => {
 		progress,
 		fileName,
 		jobId,
+		importId,
 		errorMessage,
 		progressMessage,
 		selectFile,

@@ -7,6 +7,7 @@ import Link from '@mui/material/Link';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import useConfirmLeaveWhileUploading from '@/features/files/upload/useConfirmLeaveWhileUploading';
+import TakeoutImportProgress from './TakeoutImportProgress';
 import TakeoutDropZone from './TakeoutDropZone';
 import useTakeoutUpload from './useTakeoutUpload';
 import styles from './TakeoutImportScreen.module.css';
@@ -17,7 +18,7 @@ const TakeoutImportScreen = () => {
         state,
         progress,
         fileName,
-        jobId,
+        importId,
         errorMessage,
         progressMessage,
         selectFile,
@@ -75,10 +76,10 @@ const TakeoutImportScreen = () => {
             ) : null}
 
             {state === 'done' ? (
-                <Alert severity="success">
-                    {t('TAKEOUT_UPLOAD_COMPLETE')} {jobId ? `(job #${jobId})` : ''}
-                </Alert>
+                <Alert severity="success">{t('TAKEOUT_UPLOAD_COMPLETE')}</Alert>
             ) : null}
+
+            {state === 'done' && importId !== null ? <TakeoutImportProgress importId={importId} /> : null}
 
             {state === 'error' ? <Alert severity="error">{errorMessage}</Alert> : null}
 
