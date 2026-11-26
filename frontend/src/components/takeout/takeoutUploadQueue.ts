@@ -1,6 +1,7 @@
 export type TakeoutQueueEntryState =
     | 'queued'
     | 'uploading'
+    | 'waitingConnection'
     | 'completing'
     | 'done'
     | 'error'
@@ -34,8 +35,13 @@ export const updateQueueEntry = (
 export const findNextQueuedEntry = (entries: TakeoutQueueEntry[]): TakeoutQueueEntry | undefined =>
     entries.find((entry) => entry.state === 'queued');
 
+const isEntryInFlight = (entry: TakeoutQueueEntry): boolean =>
+    entry.state === 'uploading' ||
+    entry.state === 'waitingConnection' ||
+    entry.state === 'completing';
+
 export const isQueueBusy = (entries: TakeoutQueueEntry[]): boolean =>
-    entries.some((entry) => entry.state === 'uploading' || entry.state === 'completing');
+    entries.some((entry) => isEntryInFlight(entry));
 
 export const removeSettledEntries = (entries: TakeoutQueueEntry[]): TakeoutQueueEntry[] =>
-    entries.filter((entry) => entry.state === 'uploading' || entry.state === 'completing');
+    entries.filter((entry) => isEntryInFlight(entry));

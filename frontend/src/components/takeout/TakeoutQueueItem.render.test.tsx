@@ -25,6 +25,15 @@ describe('TakeoutQueueItem without mocks', () => {
         expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
     });
 
+    it('shows the progress bar and the reconnecting text while waiting for the connection', () => {
+        renderWithoutBackend(
+            <TakeoutQueueItem entry={entryWith({ state: 'waitingConnection', uploadedBytes: 2 })} />
+        );
+
+        expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+        expect(screen.getByText('TAKEOUT_UPLOAD_WAITING_CONNECTION')).toBeInTheDocument();
+    });
+
     it('shows the processing text while completing', () => {
         renderWithoutBackend(<TakeoutQueueItem entry={entryWith({ state: 'completing' })} />);
 

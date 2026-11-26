@@ -1,5 +1,4 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { completeTakeoutUpload, initTakeoutUpload, uploadTakeoutChunk } from '@/service/takeout';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -10,6 +9,8 @@ import {
     updateQueueEntry,
     type TakeoutQueueEntry,
 } from './takeoutUploadQueue';
+import { TakeoutConnectionLostError } from './takeoutConnectionLostError';
+import { uploadTakeoutZipInChunks } from './uploadTakeoutZipInChunks';
 
 const useTakeoutUploadQueue = () => {
     const { t } = useI18n();
@@ -43,24 +44,33 @@ const useTakeoutUploadQueue = () => {
         [commitEntries, t]
     );
 
+    const describeUploadFailure = useCallback(
+        (uploadError: unknown): string => {
+            if (uploadError instanceof TakeoutConnectionLostError) {
+                return t('TAKEOUT_UPLOAD_CONNECTION_LOST');
+            }
+            return extractBackendErrorMessage(uploadError) ?? t('TAKEOUT_UPLOAD_ERROR');
+        },
+        [t]
+    );
+
     const uploadEntry = useCallback(
         async (entry: TakeoutQueueEntry) => {
             const { file } = entry;
             try {
                 changeEntry(entry.id, { state: 'uploading', uploadedBytes: 0, errorMessage: '' });
-                const initResult = await initTakeoutUpload(file.name, file.size);
-                const chunkSize = Math.max(1, initResult.chunk_size);
-
-                let offset = 0;
-                while (offset < file.size) {
-                    const chunk = file.slice(offset, offset + chunkSize);
-                    await uploadTakeoutChunk(initResult.upload_id, chunk, offset);
-                    offset += chunk.size;
-                    changeEntry(entry.id, { uploadedBytes: offset });
-                }
-
-                changeEntry(entry.id, { state: 'completing' });
-                const completeResult = await completeTakeoutUpload(initResult.upload_id);
+                let stateAfterReconnect: 'uploading' | 'completing' = 'uploading';
+                const completeResult = await uploadTakeoutZipInChunks(file, {
+                    onProgress: (uploadedBytes) => changeEntry(entry.id, { uploadedBytes }),
+                    onWaitingConnection: (isWaiting) =>
+                        changeEntry(entry.id, {
+                            state: isWaiting ? 'waitingConnection' : stateAfterReconnect,
+                        }),
+                    onCompleting: () => {
+                        stateAfterReconnect = 'completing';
+                        changeEntry(entry.id, { state: 'completing' });
+                    },
+                });
                 changeEntry(entry.id, {
                     state: 'done',
                     importId: completeResult.import_id ?? null,
@@ -68,12 +78,11 @@ const useTakeoutUploadQueue = () => {
             } catch (uploadError) {
                 changeEntry(entry.id, {
                     state: 'error',
-                    errorMessage:
-                        extractBackendErrorMessage(uploadError) ?? t('TAKEOUT_UPLOAD_ERROR'),
+                    errorMessage: describeUploadFailure(uploadError),
                 });
             }
         },
-        [changeEntry, t]
+        [changeEntry, describeUploadFailure]
     );
 
     const startQueue = useCallback(async () => {

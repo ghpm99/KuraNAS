@@ -40,6 +40,15 @@ const TakeoutQueueItem = ({ entry }: TakeoutQueueItemProps) => {
                 </>
             ) : null}
 
+            {entry.state === 'waitingConnection' ? (
+                <>
+                    <LinearProgress variant="determinate" value={uploadPercentage(entry)} />
+                    <Typography variant="body2">
+                        {t('TAKEOUT_UPLOAD_WAITING_CONNECTION')}
+                    </Typography>
+                </>
+            ) : null}
+
             {entry.state === 'completing' ? (
                 <>
                     <LinearProgress variant="determinate" value={100} />
