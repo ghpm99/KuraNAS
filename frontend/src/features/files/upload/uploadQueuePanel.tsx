@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, RotateCcw, X } from 'lucide-react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/shared/utils/formatSize';
 import ConflictPolicySelect from './conflictPolicySelect';
-import { formatRemainingTime } from './formatRemainingTime';
+import { formatRemainingTime } from '@/shared/transfer/formatRemainingTime';
 import useUploadQueueContext from './uploadQueueContext';
 import { isActiveItem, isFinishedItem, isRetryableItem, type UploadItem } from './uploadQueueTypes';
 import styles from './uploadQueuePanel.module.css';

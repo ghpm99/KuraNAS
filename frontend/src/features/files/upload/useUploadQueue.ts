@@ -8,7 +8,7 @@ import {
 } from './conflictPolicyPreference';
 import type { FileTransferOutcome, FileTransferPhase, TransferFileFn } from './fileTransferTypes';
 import { transferFile as transferFileByChunkingWhenLarge } from './transferFile';
-import { createTransferRateTracker } from './transferRateTracker';
+import { createTransferRateTracker } from '@/shared/transfer/transferRateTracker';
 import { connectionLostErrorKey, UploadConnectionLostError } from './uploadConnectionLostError';
 import {
     isAwaitingDecision,
