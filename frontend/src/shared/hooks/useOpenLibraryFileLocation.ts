@@ -9,29 +9,32 @@ const folderUrlOf = (logicalPath: string): string => {
     return buildFilesUrl(folderPath === '/' ? '' : folderPath);
 };
 
-export const useOpenIngestDownloadLocation = () => {
+/**
+ * Leva um item de lista (download, captura…) ao arquivo da biblioteca que ele gerou:
+ * `openFile` abre o arquivo em Arquivos e `openFolder` abre a pasta que o contém.
+ * Quando a localização não pode ser resolvida, `failedItemId` guarda o id do item da lista.
+ */
+export const useOpenLibraryFileLocation = () => {
     const navigate = useNavigate();
-    const [failedDownloadId, setFailedDownloadId] = useState<number | null>(null);
+    const [failedItemId, setFailedItemId] = useState<number | null>(null);
 
     const navigateToFile = async (
-        downloadId: number,
+        itemId: number,
         fileId: number,
         buildUrl: (logicalPath: string) => string
     ) => {
-        setFailedDownloadId(null);
+        setFailedItemId(null);
         try {
             const location = await getFileLocation(fileId);
             navigate(buildUrl(location.logical_path));
         } catch {
-            setFailedDownloadId(downloadId);
+            setFailedItemId(itemId);
         }
     };
 
     return {
-        failedDownloadId,
-        openFile: (downloadId: number, fileId: number) =>
-            navigateToFile(downloadId, fileId, buildFilesUrl),
-        openFolder: (downloadId: number, fileId: number) =>
-            navigateToFile(downloadId, fileId, folderUrlOf),
+        failedItemId,
+        openFile: (itemId: number, fileId: number) => navigateToFile(itemId, fileId, buildFilesUrl),
+        openFolder: (itemId: number, fileId: number) => navigateToFile(itemId, fileId, folderUrlOf),
     };
 };

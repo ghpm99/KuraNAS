@@ -6,7 +6,7 @@ import { formatDateTime } from '@/shared/utils/formatDateTime';
 import type { IngestDownload } from '@/types/ingest';
 import styles from './ActiveIngestDownloads.module.css';
 import { useFinishedIngestDownloads } from './useFinishedIngestDownloads';
-import { useOpenIngestDownloadLocation } from './useOpenIngestDownloadLocation';
+import { useOpenLibraryFileLocation } from '@/shared/hooks/useOpenLibraryFileLocation';
 
 const stateLabelKeyOf = (state: string): string => {
     if (state === 'completed') return 'INGEST_HISTORY_STATE_COMPLETED';
@@ -22,7 +22,7 @@ const destinationOf = (download: IngestDownload): string =>
 const FinishedIngestDownloads = () => {
     const { t } = useI18n();
     const history = useFinishedIngestDownloads();
-    const location = useOpenIngestDownloadLocation();
+    const location = useOpenLibraryFileLocation();
 
     return (
         <section className={styles.block}>
@@ -108,7 +108,7 @@ const FinishedIngestDownloads = () => {
                                         </Button>
                                     </div>
                                 ) : null}
-                                {location.failedDownloadId === download.id ? (
+                                {location.failedItemId === download.id ? (
                                     <Typography variant="body2" color="error">
                                         {t('INGEST_HISTORY_LOCATION_ERROR')}
                                     </Typography>
