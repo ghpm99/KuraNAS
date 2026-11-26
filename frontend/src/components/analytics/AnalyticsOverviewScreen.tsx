@@ -4,6 +4,7 @@ import AnalyticsChartCard from '@/components/analytics/AnalyticsChartCard';
 import AnalyticsReindexAction from '@/components/analytics/AnalyticsReindexAction';
 import AnalyticsKpiCard from '@/components/analytics/AnalyticsKpiCard';
 import AnalyticsSection from '@/components/analytics/AnalyticsSection';
+import AnalyticsStorageIndicators from '@/components/analytics/AnalyticsStorageIndicators';
 import { type AnalyticsScreenState } from '@/components/analytics/useAnalyticsScreenState';
 import {
     Box,
@@ -67,28 +68,9 @@ const AnalyticsOverviewScreen = ({ state }: AnalyticsOverviewScreenProps) => {
                 <AnalyticsReindexAction onFinished={() => void refresh()} />
             </div>
 
+            <AnalyticsStorageIndicators />
+
             <div className={styles.grid}>
-                <div className={styles.span4}>
-                    <AnalyticsKpiCard
-                        title={t('ANALYTICS_KPI_STORAGE')}
-                        value={`${formatBytes(data?.storage.used_bytes ?? 0)} / ${formatBytes(data?.storage.total_bytes ?? 0)}`}
-                        helpText={`${t('ANALYTICS_FREE')}: ${formatBytes(data?.storage.free_bytes ?? 0)}`}
-                    />
-                </div>
-                <div className={styles.span4}>
-                    <AnalyticsKpiCard
-                        title={t('ANALYTICS_KPI_GROWTH')}
-                        value={`${data?.storage.growth_bytes && data.storage.growth_bytes > 0 ? '+' : ''}${formatBytes(data?.storage.growth_bytes ?? 0)}`}
-                        helpText={t('ANALYTICS_KPI_GROWTH_HELP')}
-                    />
-                </div>
-                <div className={styles.span4}>
-                    <AnalyticsKpiCard
-                        title={t('ANALYTICS_KPI_FILES_ADDED')}
-                        value={String(data?.counts.files_added ?? 0)}
-                        helpText={`${t('ANALYTICS_FILE_COUNT')}: ${(data?.counts.files_total ?? 0).toLocaleString()}`}
-                    />
-                </div>
                 <div className={styles.span4}>
                     <AnalyticsKpiCard
                         title={t('ANALYTICS_KPI_HOT_FOLDERS')}

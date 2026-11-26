@@ -9,6 +9,11 @@ jest.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
 }));
 
+jest.mock('@/components/analytics/AnalyticsStorageIndicators', () => ({
+    __esModule: true,
+    default: () => <div>storage-indicators</div>,
+}));
+
 const mockStartReindex = jest.fn();
 
 jest.mock('@/shared/hooks/useReindexJob', () => ({
@@ -168,13 +173,17 @@ describe('AnalyticsOverviewScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/analytics');
     });
 
-    it('renders all 7 KPI cards', () => {
+    it('delegates the storage indicators to their own block', () => {
+        render(<AnalyticsOverviewScreen state={createState()} />);
+
+        expect(screen.getByText('storage-indicators')).toBeInTheDocument();
+        expect(screen.queryByText('ANALYTICS_KPI_STORAGE')).not.toBeInTheDocument();
+    });
+
+    it('renders the remaining KPI cards', () => {
         const state = createState();
         render(<AnalyticsOverviewScreen state={state} />);
 
-        expect(screen.getByText('ANALYTICS_KPI_STORAGE')).toBeInTheDocument();
-        expect(screen.getByText('ANALYTICS_KPI_GROWTH')).toBeInTheDocument();
-        expect(screen.getByText('ANALYTICS_KPI_FILES_ADDED')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_KPI_HOT_FOLDERS')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_KPI_DUPLICATES')).toBeInTheDocument();
         expect(screen.getByText('ANALYTICS_KPI_INDEX_STATUS')).toBeInTheDocument();
@@ -184,27 +193,6 @@ describe('AnalyticsOverviewScreen', () => {
         expect(
             screen.getByText('ANALYTICS_KPI_AI_USAGE_HELP failures=2 latency=150')
         ).toBeInTheDocument();
-    });
-
-    it('renders storage KPI with formatted bytes', () => {
-        const state = createState();
-        render(<AnalyticsOverviewScreen state={state} />);
-
-        expect(screen.getByText('400 B / 1000 B')).toBeInTheDocument();
-    });
-
-    it('renders growth KPI with positive prefix', () => {
-        const state = createState();
-        render(<AnalyticsOverviewScreen state={state} />);
-
-        expect(screen.getByText('+50 B')).toBeInTheDocument();
-    });
-
-    it('renders files added count', () => {
-        const state = createState();
-        render(<AnalyticsOverviewScreen state={state} />);
-
-        expect(screen.getByText('15')).toBeInTheDocument();
     });
 
     it('renders analytics sections', () => {
@@ -335,9 +323,7 @@ describe('AnalyticsOverviewScreen', () => {
         const state = createState({ data: null });
         render(<AnalyticsOverviewScreen state={state} />);
 
-        expect(screen.getByText('ANALYTICS_KPI_STORAGE')).toBeInTheDocument();
-        expect(screen.getByText('0 B / 0 B')).toBeInTheDocument();
-        expect(screen.getByText('ANALYTICS_KPI_FILES_ADDED')).toBeInTheDocument();
+        expect(screen.getByText('ANALYTICS_INDEX_HEALTH')).toBeInTheDocument();
     });
 
     it('handles empty hot_folders', () => {
