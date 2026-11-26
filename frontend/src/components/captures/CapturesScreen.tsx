@@ -1,4 +1,5 @@
 import ListFeedback from '@/components/listFeedback/ListFeedback';
+import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
 import EmptyState from '@/components/emptyState/emptyState';
 import { appRoutes } from '@/app/routes';
 import { Link } from 'react-router-dom';
@@ -216,7 +217,7 @@ const CapturesScreen = () => {
                                                 label={`${t('CAPTURES_SIZE')}: ${formatSize(capture.size)}`}
                                             />
                                             <span className={styles.date}>
-                                                {new Date(capture.created_at).toLocaleDateString()}
+                                                {formatRelativeDate(capture.created_at)}
                                             </span>
                                         </div>
                                     </div>

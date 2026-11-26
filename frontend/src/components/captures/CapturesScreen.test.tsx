@@ -60,6 +60,17 @@ describe('CapturesScreen', () => {
         ).toHaveAttribute('href', '/downloads');
     });
 
+    it('shows the capture date relative to now for recent captures', async () => {
+        document.documentElement.lang = 'en-US';
+        const threeHoursAgo = new Date(Date.now() - 3 * 3_600_000).toISOString();
+        mockedGetCaptures.mockResolvedValue({
+            items: [capture({ title: 'Recent', created_at: threeHoursAgo })],
+            pagination: {},
+        });
+        renderScreen();
+        expect(await screen.findByText('3 hours ago')).toBeInTheDocument();
+    });
+
     it('shows the server message verbatim and refetches on retry', async () => {
         mockedGetCaptures.mockRejectedValueOnce({ response: { data: { error: 'banco indisponível' } } });
         mockedGetCaptures.mockResolvedValueOnce({ items: [capture({ title: 'Recovered' })], pagination: {} });

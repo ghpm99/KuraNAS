@@ -81,7 +81,7 @@ Spec: `docs/especificacao/12-capturas.md`. A seção "Situação em 2026-11-10" 
 - [x] 23. Busca por nome e filtro por estado na URL — `RF-02`, `00/RN-19 a RN-22`. Depende da 04 e 15.
 - [ ] 23.1. Filtro por plataforma, na URL, com as plataformas vindas do servidor — `RF-02`, `00/RN-19 a RN-21`. Depende da 23.
 - [x] 24. Estado vazio explica o que são capturas e aponta para a extensão — `RF-06`.
-- [ ] 25. Data relativa até 7 dias pelo formatador compartilhado — `00/RN-44`.
+- [x] 25. Data relativa até 7 dias pelo formatador compartilhado — `00/RN-44`.
 - [x] 26. Teste de render de `CapturesScreen` sem mock — regra do projeto, `00/RN-30`.
 - [x] 27. Comentário de `service/captures.ts:48-50` removido.
 
