@@ -30,6 +30,35 @@ describe('TakeoutQueueItem without mocks', () => {
         expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
     });
 
+    it('shows speed and remaining time while uploading when the rate is known', () => {
+        renderWithoutBackend(
+            <TakeoutQueueItem
+                entry={entryWith({
+                    state: 'uploading',
+                    uploadedBytes: 2,
+                    bytesPerSecond: 1024,
+                    remainingSeconds: 30,
+                })}
+                onCancel={jest.fn()}
+            />
+        );
+
+        expect(screen.getByText(/FILES_UPLOAD_SPEED/)).toBeInTheDocument();
+        expect(screen.getByText(/FILES_UPLOAD_REMAINING/)).toBeInTheDocument();
+    });
+
+    it('shows no speed or remaining time while uploading without a rate', () => {
+        const { container } = renderWithoutBackend(
+            <TakeoutQueueItem
+                entry={entryWith({ state: 'uploading', uploadedBytes: 2 })}
+                onCancel={jest.fn()}
+            />
+        );
+
+        expect(container.textContent).not.toContain('FILES_UPLOAD_SPEED');
+        expect(container.textContent).not.toContain('FILES_UPLOAD_REMAINING');
+    });
+
     it('shows the progress bar and the reconnecting text while waiting for the connection', () => {
         renderWithoutBackend(
             <TakeoutQueueItem

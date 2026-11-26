@@ -1,4 +1,5 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
+import { formatRemainingTime } from '@/shared/transfer/formatRemainingTime';
 import { formatSize } from '@/shared/utils/formatSize';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -19,6 +20,18 @@ const uploadPercentage = (entry: TakeoutQueueEntry): number =>
     entry.file.size === 0
         ? 100
         : Math.min(100, Math.round((entry.uploadedBytes / entry.file.size) * 100));
+
+const describeTransferRate = (
+    entry: TakeoutQueueEntry,
+    t: (key: string, params?: Record<string, string>) => string
+): string => {
+    const speedText = t('FILES_UPLOAD_SPEED', { speed: formatSize(entry.bytesPerSecond ?? 0) });
+    if (entry.remainingSeconds === undefined) return speedText;
+    const remainingText = t('FILES_UPLOAD_REMAINING', {
+        time: formatRemainingTime(entry.remainingSeconds, t),
+    });
+    return `${speedText} · ${remainingText}`;
+};
 
 const TakeoutQueueItem = ({ entry, onCancel }: TakeoutQueueItemProps) => {
     const { t } = useI18n();
@@ -42,6 +55,9 @@ const TakeoutQueueItem = ({ entry, onCancel }: TakeoutQueueItemProps) => {
                             total: formatSize(entry.file.size),
                         })}
                     </Typography>
+                    {entry.bytesPerSecond ? (
+                        <Typography variant="body2">{describeTransferRate(entry, t)}</Typography>
+                    ) : null}
                 </>
             ) : null}
 

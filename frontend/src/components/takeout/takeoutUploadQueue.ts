@@ -13,6 +13,8 @@ export type TakeoutQueueEntry = {
     file: File;
     state: TakeoutQueueEntryState;
     uploadedBytes: number;
+    bytesPerSecond?: number;
+    remainingSeconds?: number;
     importId: number | null;
     errorMessage: string;
 };

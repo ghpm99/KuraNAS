@@ -9,6 +9,7 @@ import {
     updateQueueEntry,
     type TakeoutQueueEntry,
 } from './takeoutUploadQueue';
+import { createTransferRateTracker } from '@/shared/transfer/transferRateTracker';
 import { cancelTakeoutUpload } from '@/service/takeout';
 import { TakeoutConnectionLostError } from './takeoutConnectionLostError';
 import { uploadTakeoutZipInChunks } from './uploadTakeoutZipInChunks';
@@ -66,6 +67,7 @@ const useTakeoutUploadQueue = () => {
                 uploadId: null as string | null,
             };
             uploadSessionsRef.current.set(entry.id, uploadSession);
+            const rateTracker = createTransferRateTracker();
             try {
                 changeEntry(entry.id, { state: 'uploading', uploadedBytes: 0, errorMessage: '' });
                 let stateAfterReconnect: 'uploading' | 'completing' = 'uploading';
@@ -75,11 +77,23 @@ const useTakeoutUploadQueue = () => {
                         onSessionStarted: (uploadId) => {
                             uploadSession.uploadId = uploadId;
                         },
-                        onProgress: (uploadedBytes) => changeEntry(entry.id, { uploadedBytes }),
-                        onWaitingConnection: (isWaiting) =>
+                        onProgress: (uploadedBytes) =>
                             changeEntry(entry.id, {
-                                state: isWaiting ? 'waitingConnection' : stateAfterReconnect,
+                                uploadedBytes,
+                                ...rateTracker.record(uploadedBytes, file.size),
                             }),
+                        onWaitingConnection: (isWaiting) => {
+                            if (!isWaiting) {
+                                changeEntry(entry.id, { state: stateAfterReconnect });
+                                return;
+                            }
+                            rateTracker.reset();
+                            changeEntry(entry.id, {
+                                state: 'waitingConnection',
+                                bytesPerSecond: undefined,
+                                remainingSeconds: undefined,
+                            });
+                        },
                         onCompleting: () => {
                             stateAfterReconnect = 'completing';
                             changeEntry(entry.id, { state: 'completing' });
