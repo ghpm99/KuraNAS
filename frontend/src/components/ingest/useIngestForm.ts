@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import useI18n from '@/components/i18n/provider/i18nContext';
 import type { FolderPickerResult } from '@/components/folderPicker/folderPicker';
-import { fetchFromUrl, getIngestPresets, getIngestTargets } from '@/service/ingest';
+import { fetchFromUrl, getIngestPresets, getIngestTargets, getYtDlpStatus } from '@/service/ingest';
 import { getFileLocation } from '@/service/files';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { validateIngestUrl } from './ingestUrlValidation';
@@ -31,6 +31,14 @@ export const useIngestForm = () => {
         queryFn: getIngestPresets,
         refetchOnWindowFocus: false,
     });
+
+    const ytDlpStatusQuery = useQuery({
+        queryKey: ['ytdlp-status'],
+        queryFn: getYtDlpStatus,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+    const isYtDlpMissing = ytDlpStatusQuery.data?.installed === false;
 
     const targets = Array.isArray(targetsQuery.data) ? targetsQuery.data : [];
     const presets = Array.isArray(presetsQuery.data) ? presetsQuery.data : [];
@@ -121,7 +129,9 @@ export const useIngestForm = () => {
         isSubmitting: submitMutation.isPending,
         isFolderPickerOpen,
         isClipboardAvailable,
-        canSubmit: targetRoot !== '' && preset !== '' && !submitMutation.isPending,
+        isYtDlpMissing,
+        canSubmit:
+            targetRoot !== '' && preset !== '' && !isYtDlpMissing && !submitMutation.isPending,
         changeUrl,
         pasteUrlFromClipboard,
         changeTargetRoot,

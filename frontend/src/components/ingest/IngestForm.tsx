@@ -1,4 +1,6 @@
 import { Alert, Button, MenuItem, TextField, Typography } from '@mui/material';
+import { Link } from 'react-router-dom';
+import { appRoutes } from '@/app/routes';
 import FolderPicker from '@/components/folderPicker/folderPicker';
 import styles from './IngestForm.module.css';
 import { useIngestForm } from './useIngestForm';
@@ -76,6 +78,15 @@ const IngestForm = () => {
                     </MenuItem>
                 ))}
             </TextField>
+
+            {form.isYtDlpMissing && (
+                <Alert severity="warning">
+                    {t('INGEST_FORM_YTDLP_MISSING')}{' '}
+                    <Link to={`${appRoutes.settings}#yt-dlp`}>
+                        {t('INGEST_FORM_YTDLP_MISSING_LINK')}
+                    </Link>
+                </Alert>
+            )}
 
             {form.serverError && <Alert severity="error">{form.serverError}</Alert>}
 

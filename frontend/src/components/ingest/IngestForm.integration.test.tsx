@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import IngestForm from './IngestForm';
 import { apiBase } from '@/service';
 
@@ -24,7 +25,9 @@ const renderForm = () => {
     });
     return render(
         <QueryClientProvider client={client}>
-            <IngestForm />
+            <MemoryRouter>
+                <IngestForm />
+            </MemoryRouter>
         </QueryClientProvider>
     );
 };
