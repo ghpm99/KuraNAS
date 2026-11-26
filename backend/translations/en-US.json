@@ -2598,5 +2598,7 @@
 	"TAKEOUT_IMPORT_PROGRESS": "Processed {{processed}} of {{total}}",
 	"TAKEOUT_IMPORT_FINISHED": "Import finished.",
 	"TAKEOUT_IMPORT_FAILED": "The import failed.",
-	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Could not check the import progress."
+	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Could not check the import progress.",
+	"INGEST_FORM_YTDLP_MISSING": "yt-dlp is not installed, so downloading by URL is not possible.",
+	"INGEST_FORM_YTDLP_MISSING_LINK": "Open yt-dlp settings"
 }

@@ -2598,5 +2598,7 @@
 	"TAKEOUT_IMPORT_PROGRESS": "Processados {{processed}} de {{total}}",
 	"TAKEOUT_IMPORT_FINISHED": "Importação concluída.",
 	"TAKEOUT_IMPORT_FAILED": "A importação falhou.",
-	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Não foi possível consultar o andamento da importação."
+	"TAKEOUT_IMPORT_PROGRESS_ERROR": "Não foi possível consultar o andamento da importação.",
+	"INGEST_FORM_YTDLP_MISSING": "O yt-dlp não está instalado, então não é possível baixar por endereço.",
+	"INGEST_FORM_YTDLP_MISSING_LINK": "Abrir configurações do yt-dlp"
 }
