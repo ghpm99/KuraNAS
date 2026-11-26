@@ -50,10 +50,14 @@ describe('service/takeout', () => {
 			data: { upload_id: 'u1', chunk_size: 1024, received_size: 512, resumed: true },
 		});
 		const result = await initTakeoutUpload('takeout.zip', 100);
-		expect(mockedApi.post).toHaveBeenCalledWith('/takeout/upload/init', {
-			file_name: 'takeout.zip',
-			size: 100,
-		});
+		expect(mockedApi.post).toHaveBeenCalledWith(
+			'/takeout/upload/init',
+			{
+				file_name: 'takeout.zip',
+				size: 100,
+			},
+			{ signal: undefined }
+		);
 		expect(result.upload_id).toBe('u1');
 	});
 
@@ -75,9 +79,13 @@ describe('service/takeout', () => {
 	it('completes takeout upload', async () => {
 		mockedApi.post.mockResolvedValue({ data: { job_id: 20, message: 'ok' } });
 		const result = await completeTakeoutUpload('u1');
-		expect(mockedApi.post).toHaveBeenCalledWith('/takeout/upload/complete', {
-			upload_id: 'u1',
-		});
+		expect(mockedApi.post).toHaveBeenCalledWith(
+			'/takeout/upload/complete',
+			{
+				upload_id: 'u1',
+			},
+			{ signal: undefined }
+		);
 		expect(result.job_id).toBe(20);
 	});
 
@@ -95,7 +103,9 @@ describe('service/takeout', () => {
 			data: { upload_id: 'u1', size: 100, received_size: 40 },
 		});
 		const result = await getTakeoutUploadStatus('u1');
-		expect(mockedApi.get).toHaveBeenCalledWith('/takeout/upload/u1');
+		expect(mockedApi.get).toHaveBeenCalledWith('/takeout/upload/u1', {
+			signal: undefined,
+		});
 		expect(result).toEqual({ upload_id: 'u1', size: 100, received_size: 40 });
 	});
 

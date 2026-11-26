@@ -29,6 +29,7 @@ jest.mock('./useTakeoutUploadQueue', () => ({
         addFile: mockAddFile,
         startQueue: mockStartQueue,
         clearSettled: mockClearSettled,
+        cancelEntry: jest.fn(),
     }),
 }));
 

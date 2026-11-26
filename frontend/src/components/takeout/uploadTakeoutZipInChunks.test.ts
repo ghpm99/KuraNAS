@@ -55,6 +55,7 @@ const buildHarness = (connectionLossLimitMs = 10 * 60 * 1000) => {
         onProgress: jest.fn(),
         onWaitingConnection: jest.fn(),
         onCompleting: jest.fn(),
+        onSessionStarted: jest.fn(),
     };
     return { dependencies, callbacks, sleeps };
 };
@@ -78,7 +79,12 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
         const { dependencies, callbacks } = buildHarness();
         scriptPosts(initResponse(8, true), []);
 
-        const result = await uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies);
+        const result = await uploadTakeoutZipInChunks(
+            zipOfTenBytes(),
+            callbacks,
+            new AbortController().signal,
+            dependencies
+        );
 
         expect(chunkOffsets()).toEqual([8]);
         expect(callbacks.onProgress).toHaveBeenNthCalledWith(1, 8);
@@ -90,16 +96,25 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
         scriptPosts(initResponse(), [{}, networkError()]);
         mockedApi.get.mockResolvedValue({ data: { upload_id: 'u1', size: 10, received_size: 4 } });
 
-        await uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies);
+        await uploadTakeoutZipInChunks(
+            zipOfTenBytes(),
+            callbacks,
+            new AbortController().signal,
+            dependencies
+        );
 
         expect(sleeps).toEqual([1000]);
-        expect(mockedApi.get).toHaveBeenCalledWith('/takeout/upload/u1');
+        expect(mockedApi.get).toHaveBeenCalledWith('/takeout/upload/u1', {
+            signal: expect.any(AbortSignal),
+        });
         expect(chunkOffsets()).toEqual([0, 4, 4, 8]);
         expect(callbacks.onWaitingConnection).toHaveBeenNthCalledWith(1, true);
         expect(callbacks.onWaitingConnection).toHaveBeenLastCalledWith(false);
-        expect(mockedApi.post).toHaveBeenLastCalledWith('/takeout/upload/complete', {
-            upload_id: 'u1',
-        });
+        expect(mockedApi.post).toHaveBeenLastCalledWith(
+            '/takeout/upload/complete',
+            { upload_id: 'u1' },
+            { signal: expect.any(AbortSignal) }
+        );
     });
 
     it('doubles the wait on consecutive drops up to the maximum', async () => {
@@ -111,7 +126,12 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
             .mockRejectedValueOnce(networkError())
             .mockResolvedValue({ data: { upload_id: 'u1', size: 10, received_size: 0 } });
 
-        await uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies);
+        await uploadTakeoutZipInChunks(
+            zipOfTenBytes(),
+            callbacks,
+            new AbortController().signal,
+            dependencies
+        );
 
         expect(sleeps).toEqual([1000, 2000, 4000, 4000]);
     });
@@ -122,7 +142,12 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
         mockedApi.get.mockRejectedValue(networkError());
 
         await expect(
-            uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies)
+            uploadTakeoutZipInChunks(
+                zipOfTenBytes(),
+                callbacks,
+                new AbortController().signal,
+                dependencies
+            )
         ).rejects.toBeInstanceOf(TakeoutConnectionLostError);
     });
 
@@ -132,7 +157,12 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
         scriptPosts(initResponse(), [failure]);
 
         await expect(
-            uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies)
+            uploadTakeoutZipInChunks(
+                zipOfTenBytes(),
+                callbacks,
+                new AbortController().signal,
+                dependencies
+            )
         ).rejects.toBe(failure);
 
         expect(sleeps).toEqual([]);
@@ -145,7 +175,12 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
         scriptPosts(initResponse(), [serverError(400)]);
         mockedApi.get.mockResolvedValue({ data: { upload_id: 'u1', size: 10, received_size: 4 } });
 
-        await uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies);
+        await uploadTakeoutZipInChunks(
+            zipOfTenBytes(),
+            callbacks,
+            new AbortController().signal,
+            dependencies
+        );
 
         expect(sleeps).toEqual([]);
         expect(chunkOffsets()).toEqual([0, 4, 8]);
@@ -158,7 +193,44 @@ describe('components/takeout/uploadTakeoutZipInChunks', () => {
         mockedApi.get.mockResolvedValue({ data: { upload_id: 'u1', size: 10, received_size: 0 } });
 
         await expect(
-            uploadTakeoutZipInChunks(zipOfTenBytes(), callbacks, dependencies)
+            uploadTakeoutZipInChunks(
+                zipOfTenBytes(),
+                callbacks,
+                new AbortController().signal,
+                dependencies
+            )
         ).rejects.toBe(failure);
+    });
+
+    it('stops without completing when aborted in the middle and reports the session', async () => {
+        const { dependencies, callbacks } = buildHarness();
+        const abortController = new AbortController();
+        const abortReason = new Error('canceled by user');
+        let chunkCalls = 0;
+        mockedApi.post.mockImplementation((url: string) => {
+            if (url === '/takeout/upload/init') return Promise.resolve(initResponse());
+            chunkCalls += 1;
+            if (chunkCalls === 2) {
+                abortController.abort(abortReason);
+                return Promise.reject(networkError());
+            }
+            return Promise.resolve({ data: {} });
+        });
+
+        await expect(
+            uploadTakeoutZipInChunks(
+                zipOfTenBytes(),
+                callbacks,
+                abortController.signal,
+                dependencies
+            )
+        ).rejects.toBe(abortReason);
+
+        expect(callbacks.onSessionStarted).toHaveBeenCalledWith('u1');
+        expect(callbacks.onCompleting).not.toHaveBeenCalled();
+        expect(mockedApi.get).not.toHaveBeenCalled();
+        expect(mockedApi.post.mock.calls.map(([url]) => url)).not.toContain(
+            '/takeout/upload/complete'
+        );
     });
 });

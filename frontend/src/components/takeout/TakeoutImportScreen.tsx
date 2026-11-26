@@ -12,7 +12,7 @@ import styles from './TakeoutImportScreen.module.css';
 
 const TakeoutImportScreen = () => {
     const { t } = useI18n();
-    const { entries, addFile, startQueue, clearSettled, isBusy, hasQueuedEntries } =
+    const { entries, addFile, startQueue, clearSettled, cancelEntry, isBusy, hasQueuedEntries } =
         useTakeoutUploadQueue();
 
     useConfirmLeaveWhileUploading(isBusy);
@@ -57,7 +57,7 @@ const TakeoutImportScreen = () => {
             <TakeoutDropZone onSelectFile={addFile} />
 
             {entries.map((entry) => (
-                <TakeoutQueueItem key={entry.id} entry={entry} />
+                <TakeoutQueueItem key={entry.id} entry={entry} onCancel={cancelEntry} />
             ))}
 
             <div className={styles.actions}>

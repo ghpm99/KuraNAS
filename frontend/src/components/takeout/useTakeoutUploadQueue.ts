@@ -9,6 +9,7 @@ import {
     updateQueueEntry,
     type TakeoutQueueEntry,
 } from './takeoutUploadQueue';
+import { cancelTakeoutUpload } from '@/service/takeout';
 import { TakeoutConnectionLostError } from './takeoutConnectionLostError';
 import { uploadTakeoutZipInChunks } from './uploadTakeoutZipInChunks';
 
@@ -18,6 +19,9 @@ const useTakeoutUploadQueue = () => {
     const latestEntriesRef = useRef<TakeoutQueueEntry[]>([]);
     const nextEntryNumberRef = useRef(0);
     const isProcessingRef = useRef(false);
+    const uploadSessionsRef = useRef(
+        new Map<string, { controller: AbortController; uploadId: string | null }>()
+    );
 
     const commitEntries = useCallback((nextEntries: TakeoutQueueEntry[]) => {
         latestEntriesRef.current = nextEntries;
@@ -57,29 +61,46 @@ const useTakeoutUploadQueue = () => {
     const uploadEntry = useCallback(
         async (entry: TakeoutQueueEntry) => {
             const { file } = entry;
+            const uploadSession = {
+                controller: new AbortController(),
+                uploadId: null as string | null,
+            };
+            uploadSessionsRef.current.set(entry.id, uploadSession);
             try {
                 changeEntry(entry.id, { state: 'uploading', uploadedBytes: 0, errorMessage: '' });
                 let stateAfterReconnect: 'uploading' | 'completing' = 'uploading';
-                const completeResult = await uploadTakeoutZipInChunks(file, {
-                    onProgress: (uploadedBytes) => changeEntry(entry.id, { uploadedBytes }),
-                    onWaitingConnection: (isWaiting) =>
-                        changeEntry(entry.id, {
-                            state: isWaiting ? 'waitingConnection' : stateAfterReconnect,
-                        }),
-                    onCompleting: () => {
-                        stateAfterReconnect = 'completing';
-                        changeEntry(entry.id, { state: 'completing' });
+                const completeResult = await uploadTakeoutZipInChunks(
+                    file,
+                    {
+                        onSessionStarted: (uploadId) => {
+                            uploadSession.uploadId = uploadId;
+                        },
+                        onProgress: (uploadedBytes) => changeEntry(entry.id, { uploadedBytes }),
+                        onWaitingConnection: (isWaiting) =>
+                            changeEntry(entry.id, {
+                                state: isWaiting ? 'waitingConnection' : stateAfterReconnect,
+                            }),
+                        onCompleting: () => {
+                            stateAfterReconnect = 'completing';
+                            changeEntry(entry.id, { state: 'completing' });
+                        },
                     },
-                });
+                    uploadSession.controller.signal
+                );
                 changeEntry(entry.id, {
                     state: 'done',
                     importId: completeResult.import_id ?? null,
                 });
             } catch (uploadError) {
+                if (uploadSession.controller.signal.aborted) {
+                    return;
+                }
                 changeEntry(entry.id, {
                     state: 'error',
                     errorMessage: describeUploadFailure(uploadError),
                 });
+            } finally {
+                uploadSessionsRef.current.delete(entry.id);
             }
         },
         [changeEntry, describeUploadFailure]
@@ -101,6 +122,43 @@ const useTakeoutUploadQueue = () => {
         }
     }, [uploadEntry]);
 
+    const deleteReceivedPartsOf = useCallback(
+        async (entryId: string, uploadId: string) => {
+            try {
+                await cancelTakeoutUpload(uploadId);
+            } catch (cancelError) {
+                changeEntry(entryId, {
+                    errorMessage:
+                        extractBackendErrorMessage(cancelError) ?? t('TAKEOUT_CANCEL_ERROR'),
+                });
+            }
+        },
+        [changeEntry, t]
+    );
+
+    const cancelEntry = useCallback(
+        async (id: string) => {
+            const entry = latestEntriesRef.current.find((candidate) => candidate.id === id);
+            if (!entry) return;
+            if (entry.state === 'queued') {
+                changeEntry(id, { state: 'canceled' });
+                return;
+            }
+            const uploadSession = uploadSessionsRef.current.get(id);
+            if (
+                !uploadSession ||
+                (entry.state !== 'uploading' && entry.state !== 'waitingConnection')
+            ) {
+                return;
+            }
+            uploadSession.controller.abort();
+            changeEntry(id, { state: 'canceled', errorMessage: '' });
+            if (uploadSession.uploadId === null) return;
+            await deleteReceivedPartsOf(id, uploadSession.uploadId);
+        },
+        [changeEntry, deleteReceivedPartsOf]
+    );
+
     const clearSettled = useCallback(() => {
         commitEntries(removeSettledEntries(latestEntriesRef.current));
     }, [commitEntries]);
@@ -110,6 +168,7 @@ const useTakeoutUploadQueue = () => {
         addFile,
         startQueue,
         clearSettled,
+        cancelEntry,
         isBusy: isQueueBusy(entries),
         hasQueuedEntries: findNextQueuedEntry(entries) !== undefined,
     };

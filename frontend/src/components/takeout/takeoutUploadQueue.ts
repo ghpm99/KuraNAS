@@ -5,7 +5,8 @@ export type TakeoutQueueEntryState =
     | 'completing'
     | 'done'
     | 'error'
-    | 'rejected';
+    | 'rejected'
+    | 'canceled';
 
 export type TakeoutQueueEntry = {
     id: string;

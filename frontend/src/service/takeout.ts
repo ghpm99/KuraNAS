@@ -10,19 +10,25 @@ import type {
 
 export const initTakeoutUpload = async (
 	fileName: string,
-	size: number
+	size: number,
+	signal?: AbortSignal
 ): Promise<InitTakeoutUploadResponse> => {
-	const response = await apiBase.post<InitTakeoutUploadResponse>('/takeout/upload/init', {
-		file_name: fileName,
-		size,
-	});
+	const response = await apiBase.post<InitTakeoutUploadResponse>(
+		'/takeout/upload/init',
+		{
+			file_name: fileName,
+			size,
+		},
+		{ signal }
+	);
 	return response.data;
 };
 
 export const uploadTakeoutChunk = async (
 	uploadId: string,
 	chunk: Blob,
-	offset: number
+	offset: number,
+	signal?: AbortSignal
 ): Promise<{ received: boolean }> => {
 	const formData = new FormData();
 	formData.append('chunk', chunk);
@@ -33,21 +39,32 @@ export const uploadTakeoutChunk = async (
 		headers: {
 			'Content-Type': 'multipart/form-data',
 		},
+		signal,
 	});
 	return response.data;
 };
 
 export const completeTakeoutUpload = async (
-	uploadId: string
+	uploadId: string,
+	signal?: AbortSignal
 ): Promise<CompleteTakeoutUploadResponse> => {
-	const response = await apiBase.post<CompleteTakeoutUploadResponse>('/takeout/upload/complete', {
-		upload_id: uploadId,
-	});
+	const response = await apiBase.post<CompleteTakeoutUploadResponse>(
+		'/takeout/upload/complete',
+		{
+			upload_id: uploadId,
+		},
+		{ signal }
+	);
 	return response.data;
 };
 
-export const getTakeoutUploadStatus = async (uploadId: string): Promise<TakeoutUploadStatus> => {
-	const response = await apiBase.get<TakeoutUploadStatus>(`/takeout/upload/${uploadId}`);
+export const getTakeoutUploadStatus = async (
+	uploadId: string,
+	signal?: AbortSignal
+): Promise<TakeoutUploadStatus> => {
+	const response = await apiBase.get<TakeoutUploadStatus>(`/takeout/upload/${uploadId}`, {
+		signal,
+	});
 	return response.data;
 };
 

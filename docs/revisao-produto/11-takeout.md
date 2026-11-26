@@ -56,7 +56,7 @@ Spec: `docs/especificacao/13-takeout.md`. A seção "Situação em 2026-11-10" e
 - [x] 22. Área de soltar e `<input>` aceitam vários arquivos — `RF-01`. Depende da 21.
 - [x] 23. Explicação curta de como gerar a exportação no Google — `RF-01`.
 - [x] 24. Retomada do envio pelo `received_size` com espera crescente — `RN-02`, `CA-05`. Depende da 02 e 19.
-- [ ] 25. "Cancelar" por zip chama `DELETE /takeout/upload/:upload_id` — `RF-02`. Seam. Depende da 04 e 19.
+- [x] 25. "Cancelar" por zip chama `DELETE /takeout/upload/:upload_id` — `RF-02`. Seam. Depende da 04 e 19.
 - [ ] 26. Velocidade e tempo restante na barra do envio — `RF-02`.
 - [x] 27. Etapa de importação: consulta `GET /takeout/imports/:id` a cada 2 s e mostra processados/total; remove o `job #N` literal — `RF-02`, `CA-06`. Depende da 12 e 19.
 - [x] 28. Rótulos próprios de iniciar e limpar; progresso por interpolação — `00/RN-43`, `RN-44`.

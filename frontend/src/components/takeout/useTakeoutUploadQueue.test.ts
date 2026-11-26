@@ -49,18 +49,21 @@ describe('components/takeout/useTakeoutUploadQueue', () => {
             await result.current.startQueue();
         });
 
-        expect(mockedApi.post).toHaveBeenCalledWith('/takeout/upload/init', {
-            file_name: 'takeout.zip',
-            size: 5,
-        });
+        expect(mockedApi.post).toHaveBeenCalledWith(
+            '/takeout/upload/init',
+            { file_name: 'takeout.zip', size: 5 },
+            { signal: expect.any(AbortSignal) }
+        );
         expect(mockedApi.post).toHaveBeenCalledWith(
             '/takeout/upload/chunk',
             expect.any(FormData),
             expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
         );
-        expect(mockedApi.post).toHaveBeenCalledWith('/takeout/upload/complete', {
-            upload_id: 'u1',
-        });
+        expect(mockedApi.post).toHaveBeenCalledWith(
+            '/takeout/upload/complete',
+            { upload_id: 'u1' },
+            { signal: expect.any(AbortSignal) }
+        );
         expect(result.current.entries[0]).toMatchObject({
             state: 'done',
             importId: 7,

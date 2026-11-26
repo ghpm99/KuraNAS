@@ -1,6 +1,7 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
 import { formatSize } from '@/shared/utils/formatSize';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import TakeoutImportProgress from './TakeoutImportProgress';
@@ -8,14 +9,18 @@ import type { TakeoutQueueEntry } from './takeoutUploadQueue';
 
 type TakeoutQueueItemProps = {
     entry: TakeoutQueueEntry;
+    onCancel: (entryId: string) => void;
 };
+
+const isCancelable = (entry: TakeoutQueueEntry): boolean =>
+    entry.state === 'queued' || entry.state === 'uploading' || entry.state === 'waitingConnection';
 
 const uploadPercentage = (entry: TakeoutQueueEntry): number =>
     entry.file.size === 0
         ? 100
         : Math.min(100, Math.round((entry.uploadedBytes / entry.file.size) * 100));
 
-const TakeoutQueueItem = ({ entry }: TakeoutQueueItemProps) => {
+const TakeoutQueueItem = ({ entry, onCancel }: TakeoutQueueItemProps) => {
     const { t } = useI18n();
 
     return (
@@ -54,6 +59,20 @@ const TakeoutQueueItem = ({ entry }: TakeoutQueueItemProps) => {
                     <LinearProgress variant="determinate" value={100} />
                     <Typography variant="body2">{t('TAKEOUT_PROCESSING')}</Typography>
                 </>
+            ) : null}
+
+            {isCancelable(entry) ? (
+                <Button size="small" onClick={() => onCancel(entry.id)}>
+                    {t('TAKEOUT_CANCEL')}
+                </Button>
+            ) : null}
+
+            {entry.state === 'canceled' ? (
+                <Typography variant="body2">{t('TAKEOUT_CANCELED')}</Typography>
+            ) : null}
+
+            {entry.state === 'canceled' && entry.errorMessage !== '' ? (
+                <Alert severity="error">{entry.errorMessage}</Alert>
             ) : null}
 
             {entry.state === 'done' ? (
