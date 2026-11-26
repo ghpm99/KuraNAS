@@ -6,6 +6,8 @@ interface AnalyticsSectionProps {
     title: string;
     loading: boolean;
     errorKey?: string;
+    errorMessage?: string;
+    onRetry?: () => void;
     empty?: boolean;
     emptyKey?: string;
     children: React.ReactNode;
@@ -15,6 +17,8 @@ export default function AnalyticsSection({
     title,
     loading,
     errorKey,
+    errorMessage,
+    onRetry,
     empty,
     emptyKey,
     children,
@@ -24,7 +28,13 @@ export default function AnalyticsSection({
             <CardHeader title={title} titleTypographyProps={{ variant: 'h6' }} />
             <CardContent>
                 {loading ? <Skeleton variant="rectangular" height={160} /> : null}
-                {!loading && errorKey ? <AnalyticsErrorState messageKey={errorKey} /> : null}
+                {!loading && errorKey ? (
+                    <AnalyticsErrorState
+                        messageKey={errorKey}
+                        backendMessage={errorMessage}
+                        onRetry={onRetry}
+                    />
+                ) : null}
                 {!loading && !errorKey && empty ? (
                     <AnalyticsEmptyState messageKey={emptyKey ?? 'ANALYTICS_EMPTY'} />
                 ) : null}

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import AnalyticsEmptyState from './AnalyticsEmptyState';
 import AnalyticsErrorState from './AnalyticsErrorState';
 import AnalyticsKpiCard from './AnalyticsKpiCard';
@@ -69,5 +69,25 @@ describe('components/analytics', () => {
             </AnalyticsSection>
         );
         expect(screen.getByText('Loaded content')).toBeInTheDocument();
+    });
+
+    it('shows the server message and retries from the error state', () => {
+        const onRetry = jest.fn();
+        render(
+            <AnalyticsSection
+                title="Section"
+                loading={false}
+                errorKey="ANALYTICS_ERROR_LOAD_BLOCK"
+                errorMessage="Banco indisponível"
+                onRetry={onRetry}
+            >
+                <div>Loaded content</div>
+            </AnalyticsSection>
+        );
+
+        expect(screen.getByText('Banco indisponível')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'translated:TRY_AGAIN' }));
+        expect(onRetry).toHaveBeenCalledTimes(1);
+        expect(screen.queryByText('Loaded content')).not.toBeInTheDocument();
     });
 });

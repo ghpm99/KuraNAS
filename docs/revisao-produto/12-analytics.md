@@ -53,7 +53,7 @@ Spec: `docs/especificacao/16-analytics.md`. A seção "Situação em 2026-11-10"
 
 ### Frontend
 - [ ] 16. `service/analytics.ts`: lixeira, falhas paginadas, reprocessar, tipos novos de `tiers`, biblioteca e IA; formato inválido é erro — `00/RN-11`, §7. Depende da 03, 04, 07, 08, 09, 12. Seam do reprocessar.
-- [ ] 17. Hook `useAnalyticsBlockQuery` (uma consulta por bloco, sem fallback de zero) e `AnalyticsSection` com "Tentar de novo" — `RN-03`, `00/RN-52`.
+- [x] 17. Hook `useAnalyticsBlockQuery` (uma consulta por bloco, sem fallback de zero) e `AnalyticsSection` com "Tentar de novo" — `RN-03`, `00/RN-52`.
 - [x] 18. Período em `?period=` na URL — `RN-04`, `CA-03`.
 - [ ] 19. Bloco de indicadores com consulta própria (usado, livre, total, crescimento, arquivos e pastas) — `RF-02`, `RN-03`, `CA-04`. Depende da 17 e 18.
 - [ ] 20. Indicadores de tier e de lixeira — `RF-02`, `RN-01`, `RN-03`. Depende da 16 e 17.
