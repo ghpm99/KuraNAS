@@ -2,9 +2,11 @@ import ListFeedback from '@/components/listFeedback/ListFeedback';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
-import { ExternalLink, Film, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
+import { ExternalLink, Film, Play, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import type { Capture, CaptureStatus } from '@/types/captures';
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { buildVideoPlayerUrl } from '@/app/routes';
 import CaptureDeleteDialog from './CaptureDeleteDialog';
 import styles from './CapturesScreen.module.css';
 import { useCapturesScreen } from './useCapturesScreen';
@@ -162,6 +164,17 @@ const CapturesScreen = () => {
                                     </div>
 
                                     <div className={styles.actions}>
+                                        {capture.status === 'promoted' &&
+                                            typeof capture.file_id === 'number' && (
+                                                <Button
+                                                    size="small"
+                                                    component={Link}
+                                                    to={buildVideoPlayerUrl(capture.file_id)}
+                                                    startIcon={<Play size={14} />}
+                                                >
+                                                    {t('CAPTURES_WATCH')}
+                                                </Button>
+                                            )}
                                         {capture.source_url && (
                                             <Button
                                                 component="a"

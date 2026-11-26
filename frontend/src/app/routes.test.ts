@@ -4,6 +4,7 @@ import {
     buildDocumentViewerUrl,
     buildFavoritesUrl,
     buildFilesUrl,
+    buildVideoPlayerUrl,
     getFileBrowserRootPath,
     getImageRoute,
     getMusicRoute,
@@ -15,6 +16,10 @@ import {
 } from './routes';
 
 describe('app routes helpers', () => {
+    it('builds the video player url from the file id', () => {
+        expect(buildVideoPlayerUrl(42)).toBe('/video/42');
+    });
+
     it('matches video player routes', () => {
         expect(isVideoPlayerRoute('/video/10')).toBe(true);
         expect(isVideoPlayerRoute('/music')).toBe(false);

@@ -1,5 +1,6 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import CapturesScreen from './CapturesScreen';
 import { getCaptures, deleteCapture } from '@/service/captures';
 import type { Capture } from '@/types/captures';
@@ -32,7 +33,9 @@ const renderScreen = () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
         <QueryClientProvider client={client}>
-            <CapturesScreen />
+            <MemoryRouter>
+                <CapturesScreen />
+            </MemoryRouter>
         </QueryClientProvider>
     );
 };

@@ -29,6 +29,9 @@ export const appRoutes = {
 export const isVideoPlayerRoute = (pathname: string) =>
     pathname.startsWith(`${appRoutes.videoPlayerBase}/`);
 
+export const buildVideoPlayerUrl = (fileId: number): string =>
+    `${appRoutes.videoPlayerBase}/${fileId}`;
+
 export type ImageSection =
     | 'library'
     | 'recent'
