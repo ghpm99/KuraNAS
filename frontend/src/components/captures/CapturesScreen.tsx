@@ -2,7 +2,7 @@ import ListFeedback from '@/components/listFeedback/ListFeedback';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
-import { ExternalLink, Film, RefreshCw, Trash2 } from 'lucide-react';
+import { ExternalLink, Film, RefreshCw, RotateCcw, Trash2 } from 'lucide-react';
 import type { Capture, CaptureStatus } from '@/types/captures';
 import { useRef } from 'react';
 import CaptureDeleteDialog from './CaptureDeleteDialog';
@@ -40,6 +40,8 @@ const CapturesScreen = () => {
         hasNextPage,
         isFetchingNextPage,
         fetchNextPage,
+        retryPromotion,
+        isRetryingPromotion,
         deletingId,
         captureAwaitingDeletion,
         requestRemoval,
@@ -170,6 +172,16 @@ const CapturesScreen = () => {
                                                 startIcon={<ExternalLink size={14} />}
                                             >
                                                 {t('CAPTURES_SOURCE_LINK')}
+                                            </Button>
+                                        )}
+                                        {capture.status === 'failed' && (
+                                            <Button
+                                                size="small"
+                                                startIcon={<RotateCcw size={14} />}
+                                                disabled={isRetryingPromotion(capture.id)}
+                                                onClick={() => void retryPromotion(capture.id)}
+                                            >
+                                                {t('CAPTURES_RETRY_PROMOTION')}
                                             </Button>
                                         )}
                                         <IconButton

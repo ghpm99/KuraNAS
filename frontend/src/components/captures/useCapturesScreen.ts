@@ -1,5 +1,10 @@
 import useI18n from '@/components/i18n/provider/i18nContext';
-import { captureThumbnailHref, deleteCapture, getCaptures } from '@/service/captures';
+import {
+    captureThumbnailHref,
+    deleteCapture,
+    getCaptures,
+    promoteCapture,
+} from '@/service/captures';
 import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMessage';
 import { formatSize } from '@/shared/utils/formatSize';
 import type { Capture, CaptureStatus } from '@/types/captures';
@@ -10,6 +15,7 @@ import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
 import { useMemo, useState } from 'react';
+import { useInFlightIds } from '@/shared/hooks/useInFlightIds';
 
 export const CAPTURES_PAGE_SIZE = 50;
 export const CAPTURES_PROCESSING_REFETCH_INTERVAL_MS = 2000;
@@ -106,6 +112,30 @@ export const useCapturesScreen = () => {
         },
     });
 
+    const { isInFlight: isRetryingPromotion, runExclusively } = useInFlightIds();
+
+    const promotionMutation = useMutation({
+        mutationFn: (id: number) => promoteCapture(id),
+        onSuccess: () => {
+            enqueueSnackbar(t('CAPTURE_RETRY_PROMOTION_STARTED'), { variant: 'success' });
+            void queryClient.invalidateQueries({ queryKey: capturesQueryKey });
+        },
+        onError: (promotionError) => {
+            enqueueSnackbar(
+                extractBackendErrorMessage(promotionError) ?? t('CAPTURE_RETRY_PROMOTION_ERROR'),
+                { variant: 'error' }
+            );
+        },
+    });
+
+    const retryPromotion = (id: number) =>
+        runExclusively(id, () =>
+            promotionMutation.mutateAsync(id).then(
+                () => undefined,
+                () => undefined
+            )
+        );
+
     const items = useMemo(
         () =>
             removeDuplicateIds(
@@ -139,6 +169,8 @@ export const useCapturesScreen = () => {
             void capturesQuery.fetchNextPage();
         },
         isEmpty: !isLoading && !isError && items.length === 0,
+        retryPromotion,
+        isRetryingPromotion,
         deletingId,
         captureAwaitingDeletion,
         requestRemoval: setCaptureAwaitingDeletion,
