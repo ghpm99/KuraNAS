@@ -2573,6 +2573,8 @@
 	"INGEST_ACTIVE_CANCEL": "Cancelar",
 	"INGEST_ACTIVE_CANCEL_ERROR": "Não foi possível cancelar o download.",
 	"CAPTURES_END": "Fim da lista de capturas",
+	"CAPTURES_RELOAD": "Recarregar",
+	"CAPTURES_RELOAD_ERROR": "Não foi possível recarregar as capturas.",
 	"INGEST_HISTORY_RETRY": "Tentar de novo",
 	"INGEST_HISTORY_RETRY_ERROR": "Não foi possível tentar o download de novo.",
 	"ANALYTICS_PROCESSING_FAILURE_CHECKSUM": "Não foi possível calcular o checksum do arquivo.",
