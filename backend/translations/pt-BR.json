@@ -2585,6 +2585,8 @@
 	"CAPTURES_FILTER_STATUS_ALL": "Todos",
 	"CAPTURES_FILTER_EMPTY": "Nenhuma captura encontrada para este filtro.",
 	"CAPTURES_FILTER_CLEAR": "Limpar filtros",
+	"CAPTURES_FILTER_PLATFORM": "Plataforma",
+	"CAPTURES_FILTER_PLATFORM_ALL": "Todas",
 	"CAPTURES_EMPTY_DESCRIPTION": "As capturas são vídeos gravados ou baixados pela extensão do KuraNAS no navegador e enviados para cá.",
 	"CAPTURES_EMPTY_INSTALL_EXTENSION": "Instalar a extensão",
 	"CAPTURE_RETRY_PROMOTION_STARTED": "Processamento da captura reiniciado.",
