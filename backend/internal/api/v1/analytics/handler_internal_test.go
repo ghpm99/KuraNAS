@@ -224,3 +224,7 @@ func TestHandlerRemainingEndpoints(t *testing.T) {
 		}
 	}
 }
+
+func (s *serviceStub) GetProcessingFailuresPage(stage ProcessingStage, page int, pageSize int) (utils.PaginationResponse[ProcessingFailureDto], error) {
+	return utils.PaginationResponse[ProcessingFailureDto]{}, nil
+}

@@ -2574,5 +2574,10 @@
 	"INGEST_ACTIVE_CANCEL_ERROR": "Não foi possível cancelar o download.",
 	"CAPTURES_END": "Fim da lista de capturas",
 	"INGEST_HISTORY_RETRY": "Tentar de novo",
-	"INGEST_HISTORY_RETRY_ERROR": "Não foi possível tentar o download de novo."
+	"INGEST_HISTORY_RETRY_ERROR": "Não foi possível tentar o download de novo.",
+	"ANALYTICS_PROCESSING_FAILURE_CHECKSUM": "Não foi possível calcular o checksum do arquivo.",
+	"ANALYTICS_PROCESSING_FAILURE_METADATA": "Não foi possível ler os metadados do arquivo.",
+	"ANALYTICS_PROCESSING_FAILURE_THUMBNAIL": "Não foi possível gerar a miniatura do arquivo.",
+	"ANALYTICS_PROCESSING_FAILURE_DOCUMENT_TEXT": "Não foi possível indexar o texto do documento.",
+	"ANALYTICS_PROCESSING_FAILURE_AI": "A análise de IA falhou."
 }

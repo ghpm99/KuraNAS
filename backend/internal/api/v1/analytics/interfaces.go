@@ -22,6 +22,7 @@ type RepositoryInterface interface {
 	GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailModel], error)
 	GetLibrarySummary() (LibrarySummaryModel, error)
 	GetProcessingSummary() (ProcessingSummaryModel, error)
+	GetProcessingFailuresPage(stage ProcessingStage, page int, pageSize int) (utils.PaginationResponse[ProcessingFailureModel], error)
 	GetHealth() (HealthModel, error)
 }
 
@@ -44,6 +45,7 @@ type ServiceInterface interface {
 	GetDuplicateGroupsPage(category DuplicateCategory, page int, pageSize int) (utils.PaginationResponse[DuplicateGroupDetailDto], error)
 	GetLibrary() (LibraryDto, error)
 	GetProcessing() (ProcessingDto, error)
+	GetProcessingFailuresPage(stage ProcessingStage, page int, pageSize int) (utils.PaginationResponse[ProcessingFailureDto], error)
 	GetHealth() (HealthDto, error)
 	GetAIUsage() (AIUsageDto, error)
 	GetTrash() (TrashDto, error)

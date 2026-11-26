@@ -2574,5 +2574,10 @@
 	"INGEST_ACTIVE_CANCEL_ERROR": "Could not cancel the download.",
 	"CAPTURES_END": "End of captures list",
 	"INGEST_HISTORY_RETRY": "Try again",
-	"INGEST_HISTORY_RETRY_ERROR": "Could not retry the download."
+	"INGEST_HISTORY_RETRY_ERROR": "Could not retry the download.",
+	"ANALYTICS_PROCESSING_FAILURE_CHECKSUM": "Could not calculate the file checksum.",
+	"ANALYTICS_PROCESSING_FAILURE_METADATA": "Could not read the file metadata.",
+	"ANALYTICS_PROCESSING_FAILURE_THUMBNAIL": "Could not generate the file thumbnail.",
+	"ANALYTICS_PROCESSING_FAILURE_DOCUMENT_TEXT": "Could not index the document text.",
+	"ANALYTICS_PROCESSING_FAILURE_AI": "The AI analysis failed."
 }

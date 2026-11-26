@@ -55,3 +55,6 @@ var DuplicatesTopGroupsImagesQuery string
 
 //go:embed duplicates_groups_page.sql
 var DuplicatesGroupsPageQuery string
+
+//go:embed processing_failures_page.sql
+var ProcessingFailuresPageQuery string

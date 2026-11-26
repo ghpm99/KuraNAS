@@ -590,3 +590,7 @@ func TestParseInsightsResponse(t *testing.T) {
 		}
 	})
 }
+
+func (stub *repositoryStub) GetProcessingFailuresPage(stage ProcessingStage, page int, pageSize int) (utils.PaginationResponse[ProcessingFailureModel], error) {
+	return utils.PaginationResponse[ProcessingFailureModel]{}, nil
+}
