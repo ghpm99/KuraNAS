@@ -2577,6 +2577,8 @@
 	"CAPTURES_RELOAD_ERROR": "Não foi possível recarregar as capturas.",
 	"CAPTURES_RETRY_PROMOTION": "Tentar de novo",
 	"CAPTURES_WATCH": "Assistir",
+	"CAPTURES_OPEN_FOLDER": "Ver na pasta",
+	"CAPTURES_OPEN_FOLDER_ERROR": "Não foi possível abrir a pasta do vídeo.",
 	"CAPTURE_RETRY_PROMOTION_STARTED": "Processamento da captura reiniciado.",
 	"CAPTURE_RETRY_PROMOTION_ERROR": "Não foi possível tentar de novo.",
 	"INGEST_HISTORY_RETRY": "Tentar de novo",

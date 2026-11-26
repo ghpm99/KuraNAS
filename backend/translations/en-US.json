@@ -2577,6 +2577,8 @@
 	"CAPTURES_RELOAD_ERROR": "Could not reload the captures.",
 	"CAPTURES_RETRY_PROMOTION": "Try again",
 	"CAPTURES_WATCH": "Watch",
+	"CAPTURES_OPEN_FOLDER": "Show in folder",
+	"CAPTURES_OPEN_FOLDER_ERROR": "Could not open the video's folder.",
 	"CAPTURE_RETRY_PROMOTION_STARTED": "Capture processing restarted.",
 	"CAPTURE_RETRY_PROMOTION_ERROR": "Could not try again.",
 	"INGEST_HISTORY_RETRY": "Try again",
