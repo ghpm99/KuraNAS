@@ -30,8 +30,8 @@ Regras invariantes: contrato HTTP só cresce (campos/params novos, nunca remover
 | 06 | [Vídeos](06-videos.md) | ✅ concluída (2026-10-15) | 85 lacunas (sub-itens em commits próprios); 58.1 🚫 aguarda decisão de autoplay; `make ci` verde |
 | 07 | [Favoritos](07-favoritos.md) | ✅ concluída (2026-11-10) | 31 lacunas (sub-itens em commits próprios); 24–26 🚫 aguardam decisão do dono; `make ci` verde |
 | 08 | [Lixeira](08-lixeira.md) | ✅ concluída (2026-11-10) | 30 lacunas (web, backend e Android); 31–36 🚫 aguardam decisão do dono; Android validado só por build e testes unitários; `make ci` verde |
-| 09 | [Downloads / ingestão por URL](09-ingestao-por-url.md) | em execução | parado atrás das tasks 20–46 de `docs/melhorias/`; lacunas 01–09 resolvidas, ordem das demais no fim do arquivo |
-| 10 | [Capturas (plugin)](10-capturas.md) | em execução | em paralelo com o fim do 09 (pedido do dono 2026-11-25); 35 lacunas, D1–D5 🚫 |
+| 09 | [Downloads / ingestão por URL](09-ingestao-por-url.md) | ✅ concluída (2026-11-25) | lacunas resolvidas; 35 🚫 aguarda o destino de notificação do item 13; 24–28 🚫 aguardam decisão do dono; `make ci` verde |
+| 10 | [Capturas (plugin)](10-capturas.md) | ✅ concluída (2026-11-25) | 35 lacunas + sub-itens 21.1, 23.1 (`GET /captures/platforms`), 23.2; D1–D5 🚫; `make ci` verde |
 | 11 | [Takeout](11-takeout.md) | em execução | em paralelo com 09 e 10 (pedido do dono 2026-11-25); D1–D2 🚫 |
 | 12 | [Analytics](12-analytics.md) | em execução | em paralelo com 09–11 (pedido do dono 2026-11-25); D1–D2 🚫 |
 | 13 | Notificações e jobs | pendente | data relativa das notificações vai até 30 dias; trocar por `shared/utils/formatRelativeDate` (7 dias, `00/RN-44`) |

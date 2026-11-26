@@ -43,7 +43,7 @@ Escopo: `backend/internal/api/v1/ingest/` (fetch, targets, presets, ciclo de vid
 - [x] 32. Ao iniciar o servidor, todo registro `queued` ou `running` vira `failed` com motivo traduzido "interrompido pelo reinício do servidor", e o job correspondente não recomeça — `11/RN-15`, `11 §8`. Depende da 29. *(comportamento provisório de D-05; a lacuna 28 continua aguardando o dono)*
 - [x] 33. `POST /ingest/downloads/:id/retry`: cria pedido novo com o mesmo endereço, destino e formato; `201` com o item novo; `409` quando o pedido não está `failed` nem `canceled`; `404` quando não existe — `11/RN-17`, `CA-08`. Depende da 29.
 - [x] 34. `POST /ingest/fetch` recusa com `503` e mensagem própria quando o yt-dlp não está instalado, em vez de enfileirar um job que vai falhar — `11/RN-12`, `CA-10`.
-- [ ] 35. A notificação de conclusão leva ao arquivo baixado — `11/CA-07`. Depende da 30 e do destino explícito de notificação (`15 §8`, "a criar": tipo e identificador do alvo), que é lacuna do item 13 deste board; fica 🚫 até lá.
+- 🚫 35. A notificação de conclusão leva ao arquivo baixado — `11/CA-07`. Depende da 30 e do destino explícito de notificação (`15 §8`, "a criar": tipo e identificador do alvo), que é lacuna do item 13 deste board; fica 🚫 até lá.
 
 ### Frontend
 - [x] 15. `service/ingest.ts`: `fetchFromUrl`, `getIngestTargets`, `getIngestPresets`, `getIngestDownloads` (paginado, usando o adaptador de paginação compartilhado — `00/RN-53`) e `retryIngestDownload`, com tipos iguais ao item de `11 §7`. Depende da 31 e da 33.
