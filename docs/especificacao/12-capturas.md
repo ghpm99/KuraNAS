@@ -101,8 +101,10 @@ Extensão do navegador (detecção de mídia, download de mídia sem proteção,
 | Método | Rota | Uso |
 |---|---|---|
 | POST | `/captures/:id/promote` | repete a promoção de uma captura que falhou (RN-09, RF-04) |
+| GET | `/captures/platforms` | plataformas distintas das capturas existentes, para o filtro (RF-02) |
 
 - **Item de `/captures`** ganha `failure_reason`: o motivo traduzido quando o estado é "falhou" (RN-09, RF-05), vazio nos demais.
+- **`GET /captures/platforms`**: `200` com `{"items": ["crunchyroll", …]}` — valores distintos e não vazios do campo `platform`, em ordem alfabética; lista vazia quando não há captura com plataforma. Sem paginação (o conjunto é pequeno e fechado pelos adaptadores da extensão).
 - **`POST /captures/:id/promote`**: sem corpo. `202` com `{"job_id"}`; `409` quando a captura não está no estado "falhou"; `404` quando não existe.
 - **`GET /captures`** passa a aceitar `status` (os valores que o campo `status` do item já usa) e `platform`, além de `name` e `media_type`. Valor inválido → `400`.
 - **`DELETE /captures/:id`** (RN-11): em captura **não** promovida apaga o registro e o arquivo recebido; em captura promovida apaga **só o registro** — o arquivo da biblioteca (para o qual `file_path` aponta depois da promoção) e o item `file_id` não são tocados. A resposta `{"deleted": true}` ganha `library_file_kept` (`true` quando havia vídeo promovido).
