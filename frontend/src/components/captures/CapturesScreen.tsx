@@ -2,8 +2,9 @@ import ListFeedback from '@/components/listFeedback/ListFeedback';
 import PageContainer from '@/components/layout/PageContainer';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button, Chip, CircularProgress, IconButton } from '@mui/material';
-import { ExternalLink, Film, Trash2 } from 'lucide-react';
+import { ExternalLink, Film, RefreshCw, Trash2 } from 'lucide-react';
 import type { Capture, CaptureStatus } from '@/types/captures';
+import { useRef } from 'react';
 import CaptureDeleteDialog from './CaptureDeleteDialog';
 import styles from './CapturesScreen.module.css';
 import { useCapturesScreen } from './useCapturesScreen';
@@ -31,6 +32,8 @@ const CapturesScreen = () => {
         items,
         isLoading,
         isError,
+        isReloading,
+        reload,
         errorMessage,
         retryLoading,
         isNextPageError,
@@ -47,11 +50,29 @@ const CapturesScreen = () => {
         captureStatusLabelKey,
     } = useCapturesScreen();
 
+    const screenTopRef = useRef<HTMLDivElement>(null);
+
+    const reloadFromTop = () => {
+        screenTopRef.current?.scrollIntoView({ block: 'start' });
+        void reload();
+    };
+
     return (
         <PageContainer>
+            <div ref={screenTopRef} />
             <PageHeader
                 title={t('CAPTURES_PAGE_TITLE')}
                 subtitle={t('CAPTURES_PAGE_DESCRIPTION')}
+                actions={
+                    <Button
+                        size="small"
+                        startIcon={<RefreshCw size={14} />}
+                        disabled={isLoading || isReloading}
+                        onClick={reloadFromTop}
+                    >
+                        {t('CAPTURES_RELOAD')}
+                    </Button>
+                }
             />
 
             {isLoading && (

@@ -4,6 +4,8 @@ import { extractBackendErrorMessage } from '@/shared/utils/extractBackendErrorMe
 import { formatSize } from '@/shared/utils/formatSize';
 import type { Capture, CaptureStatus } from '@/types/captures';
 import { getNextPageNumber } from '@/shared/pagination/getNextPageNumber';
+import useReloadInfiniteListFromStart from '@/shared/hooks/useReloadInfiniteListFromStart';
+import { focusRevalidationStaleTimeMs } from '@/components/providers/queryFreshness';
 import useRetryFailedPage from '@/shared/hooks/useRetryFailedPage';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSnackbar } from 'notistack';
@@ -60,14 +62,25 @@ export const useCapturesScreen = () => {
             getCaptures({ page: pageParam, pageSize: CAPTURES_PAGE_SIZE }),
         initialPageParam: 1,
         getNextPageParam: getNextPageNumber,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
+        staleTime: focusRevalidationStaleTimeMs,
         refetchInterval: (query) =>
             hasProcessingCapture(query.state.data?.pages)
                 ? CAPTURES_PROCESSING_REFETCH_INTERVAL_MS
                 : false,
     });
     const retryFailedPage = useRetryFailedPage(capturesQuery);
+    const reloadFromStart = useReloadInfiniteListFromStart(capturesQueryKey, capturesQuery);
     const isLoading = capturesQuery.isPending;
+    const isReloading = capturesQuery.isRefetching && !capturesQuery.isFetchingNextPage;
+
+    const reload = async () => {
+        const { isReloadFailed, reloadError } = await reloadFromStart();
+        if (!isReloadFailed) return;
+        enqueueSnackbar(extractBackendErrorMessage(reloadError) ?? t('CAPTURES_RELOAD_ERROR'), {
+            variant: 'error',
+        });
+    };
     const isError = capturesQuery.isError;
 
     const removeMutation = useMutation({
@@ -114,6 +127,8 @@ export const useCapturesScreen = () => {
         items,
         isLoading,
         isError,
+        isReloading,
+        reload,
         errorMessage:
             extractBackendErrorMessage(capturesQuery.error) ?? t('CONNECTION_BANNER_UNAVAILABLE'),
         retryLoading: retryFailedPage,
